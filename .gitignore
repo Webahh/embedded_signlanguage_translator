@@ -1,0 +1,15 @@
+# IDE
+.settings/
+*.launch
+
+# temps
+*.o
+*.d
+*.elf
+*.bin
+*.map
+
+# Executables / binaries
+*.exe
+*.out
+*.dll
