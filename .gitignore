@@ -1,6 +1,7 @@
 # IDE
 .settings/
 *.launch
+ml_pipeline/.idea/
 
 # temps
 *.o
@@ -13,3 +14,22 @@
 *.exe
 *.out
 *.dll
+
+# Python cache
+ml_pipeline/__pycache__/
+ml_pipeline/**/*.pyc
+
+# Virtual environment
+ml_pipeline/venv/
+
+# Generated gesture data
+ml_pipeline/resources
+
+# Optional raw videos
+ml_pipeline/resources/videos/
+
+# Trained models
+ml_pipeline/model/*.h5
+ml_pipeline/model/*.keras
+ml_pipeline/model/*.pt
+ml_pipeline/model/*.pth
