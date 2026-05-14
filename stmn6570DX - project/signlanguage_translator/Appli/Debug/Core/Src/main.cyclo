@@ -1,5 +1,0 @@
-../Core/Src/main.c:76:5:main	10
-../Core/Src/main.c:123:6:PeriphCommonClock_Config	2
-../Core/Src/main.c:344:1:__io__putchar	1
-../Core/Src/main.c:349:5:_write	1
-../Core/Src/main.c:359:6:Error_Handler	1

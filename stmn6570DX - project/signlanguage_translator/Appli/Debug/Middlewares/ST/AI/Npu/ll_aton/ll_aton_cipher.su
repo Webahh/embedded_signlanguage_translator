@@ -1,5 +1,0 @@
-/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/signlanguage_translator/Middlewares/ST/AI/Npu/ll_aton/ll_aton_cipher.c:71:5:LL_Streng_EncryptionInit	8	static
-/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/signlanguage_translator/Middlewares/ST/AI/Npu/ll_aton/ll_aton_cipher.c:111:5:LL_Streng_WeightEncryptionInit	40	static
-/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/signlanguage_translator/Middlewares/ST/AI/Npu/ll_aton/ll_aton_cipher.c:130:5:LL_Busif_SetKeys	12	static
-/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/signlanguage_translator/Middlewares/ST/AI/Npu/ll_aton/ll_aton_cipher.c:170:5:LL_EpochCtrl_EncryptionInit	8	static
-/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/signlanguage_translator/Middlewares/ST/AI/Npu/ll_aton/ll_aton_cipher.c:198:5:LL_DmaCypherInit	200	static
