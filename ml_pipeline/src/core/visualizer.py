@@ -8,10 +8,8 @@ from queue import Queue
 
 from hand_pose_detector import LANDMARK_NAMES, POS_MAX, Hand
 
-
 DEFAULT_WIDTH = 1280
 DEFAULT_HEIGHT = 740
-
 
 def draw_skeleton(img, pose: Hand, joints=True, bones=True, info=True):
     """

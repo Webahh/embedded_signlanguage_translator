@@ -7,6 +7,8 @@ import pickle
 import os
 from src.core.hand_pose_detector import HandPoseDetector, Hand, POS_MAX
 from src.gesture_generation.gesture import Gesture
+from src.augmentation.augmentation_pipeline import AugmentationPipeline
+from src.augmentation.pipeline_functions import pip_func_mirror, pip_func_random_translate, pip_func_random_zoom
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
@@ -93,8 +95,8 @@ def generate_gestures(
             else:
                 print(f"Warnung: Konnte kein Label aus Datei '{file}' extrahieren.")
 
-        elif file.startswith("alph_rb_") and file.endswith(".mkv"):
-            match = re.match(r"alph_rb_([A-Z])", file, re.IGNORECASE)
+        elif file.startswith("alph_og_") and file.endswith(".mkv"):
+            match = re.match(r"alph_og_([A-Z])", file, re.IGNORECASE)
             if match:
                 label = match.group(1).upper()
                 training_data.append((os.path.join(video_dir, file), label))
@@ -115,19 +117,27 @@ def generate_gestures(
 
     print("Video processing finished, running augmentation pipeline")
 
-    print("Video processing finished, saving original gestures")
-
     base_gestures = [g for parts in base_gestures for g in parts if len(g.frames)]
+
+    pipeline = AugmentationPipeline()
+    pipeline.add("mirr", pip_func_mirror)
+    pipeline.add("rtrans", pip_func_random_translate, count=2, max_offset=(POS_MAX // 3))
+    pipeline.add("rzoom", pip_func_random_zoom, count=2, min_factor=0.5, max_factor=1.5)
 
     for gesture in base_gestures:
         save_gesture(output_dir, gesture, augtype="orig")
-    """
-    AUG PIPELINE HERE
-    """
+
+    def augment_gesture(gesture):
+        print(f"Augmenting {gesture.label}...")
+        for aug_gesture, augtype in pipeline.augment(gesture):
+            save_gesture(output_dir, aug_gesture, augtype=augtype)
+
+    for gesture in base_gestures:
+        augment_gesture(gesture)
 
 
     print(
-        f"{len(base_gestures)} Videos verarbeitet und mit Augmentierungen gespeichert."
+        f"{len(base_gestures)} Augmentation done and saved."
     )
 
 
