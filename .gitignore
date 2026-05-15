@@ -3,12 +3,27 @@
 *.launch
 ml_pipeline/.idea/
 
+# meta data
+.mxproject
+*.launch
+
 # temps
 *.o
+*.obj
 *.d
+*.su
 *.elf
-*.bin
+*.axf
 *.map
+*.list
+*.hex
+*.bin
+*.srec
+*.log
+*.tmp
+*.bak
+*.swp
+*.cache
 
 # Executables / binaries
 *.exe
