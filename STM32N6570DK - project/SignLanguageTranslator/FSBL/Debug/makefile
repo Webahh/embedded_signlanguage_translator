@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (14.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -63,8 +63,8 @@ all: main-build
 main-build: SignLanguageTranslator_FSBL.elf secondary-outputs
 
 # Tool invocations
-SignLanguageTranslator_FSBL.elf SignLanguageTranslator_FSBL.map: $(OBJS) $(USER_OBJS) /home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX\ -\ project/SignLanguageTranslator/FSBL/STM32N657X0HXQ_AXISRAM2_fsbl.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "SignLanguageTranslator_FSBL.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m55 -T"/home/oliver/Documents/GitHub/embedded_signlanguage_translator/stmn6570DX - project/SignLanguageTranslator/FSBL/STM32N657X0HXQ_AXISRAM2_fsbl.ld" --specs=nosys.specs -Wl,-Map="SignLanguageTranslator_FSBL.map" -Wl,--gc-sections -static -Wl,--cmse-implib -Wl,--out-implib=./secure_nsclib.o --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+SignLanguageTranslator_FSBL.elf SignLanguageTranslator_FSBL.map: $(OBJS) $(USER_OBJS) /home/oliver/Documents/GitHub/embedded_signlanguage_translator/STM32N6570DK\ -\ project/SignLanguageTranslator/FSBL/STM32N657X0HXQ_AXISRAM2_fsbl.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "SignLanguageTranslator_FSBL.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m55 -T"/home/oliver/Documents/GitHub/embedded_signlanguage_translator/STM32N6570DK - project/SignLanguageTranslator/FSBL/STM32N657X0HXQ_AXISRAM2_fsbl.ld" --specs=nosys.specs -Wl,-Map="SignLanguageTranslator_FSBL.map" -Wl,--gc-sections -static -Wl,--cmse-implib -Wl,--out-implib=./secure_nsclib.o --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

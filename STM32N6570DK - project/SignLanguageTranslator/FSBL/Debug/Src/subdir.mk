@@ -1,10 +1,11 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (14.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Src/gpio_driver.c \
 ../Src/main.c \
 ../Src/stm32n6xx_hal_msp.c \
 ../Src/stm32n6xx_it.c \
@@ -13,6 +14,7 @@ C_SRCS += \
 ../Src/system_stm32n6xx_fsbl.c 
 
 OBJS += \
+./Src/gpio_driver.o \
 ./Src/main.o \
 ./Src/stm32n6xx_hal_msp.o \
 ./Src/stm32n6xx_it.o \
@@ -21,6 +23,7 @@ OBJS += \
 ./Src/system_stm32n6xx_fsbl.o 
 
 C_DEPS += \
+./Src/gpio_driver.d \
 ./Src/main.d \
 ./Src/stm32n6xx_hal_msp.d \
 ./Src/stm32n6xx_it.d \
@@ -36,7 +39,7 @@ Src/%.o Src/%.su Src/%.cyclo: ../Src/%.c Src/subdir.mk
 clean: clean-Src
 
 clean-Src:
-	-$(RM) ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32n6xx_hal_msp.cyclo ./Src/stm32n6xx_hal_msp.d ./Src/stm32n6xx_hal_msp.o ./Src/stm32n6xx_hal_msp.su ./Src/stm32n6xx_it.cyclo ./Src/stm32n6xx_it.d ./Src/stm32n6xx_it.o ./Src/stm32n6xx_it.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32n6xx_fsbl.cyclo ./Src/system_stm32n6xx_fsbl.d ./Src/system_stm32n6xx_fsbl.o ./Src/system_stm32n6xx_fsbl.su
+	-$(RM) ./Src/gpio_driver.cyclo ./Src/gpio_driver.d ./Src/gpio_driver.o ./Src/gpio_driver.su ./Src/main.cyclo ./Src/main.d ./Src/main.o ./Src/main.su ./Src/stm32n6xx_hal_msp.cyclo ./Src/stm32n6xx_hal_msp.d ./Src/stm32n6xx_hal_msp.o ./Src/stm32n6xx_hal_msp.su ./Src/stm32n6xx_it.cyclo ./Src/stm32n6xx_it.d ./Src/stm32n6xx_it.o ./Src/stm32n6xx_it.su ./Src/syscalls.cyclo ./Src/syscalls.d ./Src/syscalls.o ./Src/syscalls.su ./Src/sysmem.cyclo ./Src/sysmem.d ./Src/sysmem.o ./Src/sysmem.su ./Src/system_stm32n6xx_fsbl.cyclo ./Src/system_stm32n6xx_fsbl.d ./Src/system_stm32n6xx_fsbl.o ./Src/system_stm32n6xx_fsbl.su
 
 .PHONY: clean-Src
 

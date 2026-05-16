@@ -1,11 +1,14 @@
 # IDE
 .settings/
+.metadata/
 *.launch
 ml_pipeline/.idea/
 
 # meta data
 .mxproject
-*.launch
+
+# CubeMX build artifacts
+**/Debug/
 
 # temps
 *.o
