@@ -1,4 +1,12 @@
-../Src/main.c:55:5:main	5
-../Src/main.c:111:6:SystemClock_Config	9
-../Src/main.c:213:13:MX_GPIO_Init	1
-../Src/main.c:232:6:Error_Handler	1
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:199:22:ARM_MPU_Enable	1
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:212:22:ARM_MPU_Disable	1
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:257:22:ARM_MPU_SetMemAttrEx	2
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:274:22:ARM_MPU_SetMemAttr	1
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:324:22:ARM_MPU_SetRegionEx	1
+../../Drivers/CMSIS/Include/m-profile/armv8m_mpu.h:336:22:ARM_MPU_SetRegion	1
+../../Drivers/STM32N6xx_HAL_Driver/Inc/stm32n6xx_ll_bus.h:1407:22:LL_AHB4_GRP1_EnableClock	1
+../Src/main.c:13:5:main	5
+../Src/main.c:45:6:SystemClock_Config	9
+../Src/main.c:136:13:MX_LTDC_Init	3
+../Src/main.c:193:13:MX_GPIO_Init	1
+../Src/main.c:214:6:Error_Handler	1
