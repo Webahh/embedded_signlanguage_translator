@@ -95,7 +95,7 @@ def generate_gestures(
             else:
                 print(f"Warnung: Konnte kein Label aus Datei '{file}' extrahieren.")
 
-        elif file.startswith("alph_og_") and file.endswith(".mkv"):
+        elif file.startswith("alph_og_") and file.endswith(".mp4"):
             match = re.match(r"alph_og_([A-Z])", file, re.IGNORECASE)
             if match:
                 label = match.group(1).upper()
@@ -122,7 +122,7 @@ def generate_gestures(
     pipeline = AugmentationPipeline()
     pipeline.add("mirr", pip_func_mirror)
     pipeline.add("rtrans", pip_func_random_translate, count=2, max_offset=(POS_MAX // 3))
-    pipeline.add("rzoom", pip_func_random_zoom, count=2, min_factor=0.5, max_factor=1.5)
+    pipeline.add("rzoom", pip_func_random_zoom, count=5, min_factor=0.5, max_factor=1.5)
 
     for gesture in base_gestures:
         save_gesture(output_dir, gesture, augtype="orig")

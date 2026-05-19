@@ -4,8 +4,8 @@ import time
 from src.gesture_generation.gesture import Gesture
 from visualizer import visualize
 
-label_filter = "L"
-augment_filter = ""  # e.g. augment_filter = "mirr"
+label_filter = "A"
+augment_filter = "rtrans"  # e.g. augment_filter = "mirr"
 gesture_dir = "../../resources/gestures"
 
 gesture_files = [

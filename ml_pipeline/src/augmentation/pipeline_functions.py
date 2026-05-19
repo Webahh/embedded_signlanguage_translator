@@ -26,12 +26,19 @@ def apply_on_gesture(function, gesture: Gesture) -> Gesture:
 def pip_func_translate(gesture: Gesture, offset: [int, int]) -> [Gesture]:
     """
     Takes a gesture and produces a copy of it with the given offset applied
-
     """
     def offset_hand(hand: Hand) -> Hand:
         return replace(hand, wrist_pos=np.array(hand.wrist_pos + offset))
 
     return [apply_on_gesture(offset_hand, gesture)]
+
+
+def pip_func_random_translate(gesture: Gesture, max_offset: int = 10_000, count=10) -> [Gesture]:
+    """
+    Takes a gesture and produces a copy of it with a random offset applied
+    """
+    offsets = np.random.randint(-max_offset, max_offset + 1, size=(count, 2))
+    return [pip_func_translate(gesture, off)[0] for off in offsets]
 
 
 def pip_func_mirror(gesture) -> [Gesture]:
@@ -56,12 +63,11 @@ def pip_func_mirror(gesture) -> [Gesture]:
     return [apply_on_gesture(mirror_hand, gesture)]
 
 
-def pip_func_random_translate(gesture: Gesture, max_offset: int = 10_000, count=10) -> [Gesture]:
-    offsets = np.random.randint(-max_offset, max_offset + 1, size=(count, 2))
-    return [pip_func_translate(gesture, off)[0] for off in offsets]
-
-
 def pip_func_scale(gesture: Gesture, factor: float = 1.1) -> [Gesture]:
+    """
+    Takes a gesture and returns a scaled copy with the given factor applied
+    """
+
     def scale_hand(hand: Hand) -> Hand:
         scaled_landmarks = {
             k: np.array(v * factor, dtype=np.int16) for k, v in hand.landmarks.items()
@@ -75,7 +81,6 @@ def pip_func_scale(gesture: Gesture, factor: float = 1.1) -> [Gesture]:
 def pip_func_jitter(gesture: Gesture, noise_level: float = 5.0) -> [Gesture]:
     """
     simulates noises with random shifts (e.g. camera or handshaking)
-
     """
     def jitter_hand(hand: Hand) -> Hand:
         new_landmarks = {
@@ -91,7 +96,6 @@ def pip_func_jitter(gesture: Gesture, noise_level: float = 5.0) -> [Gesture]:
 def pip_func_zoom(gesture: Gesture, scale_factor: float = 1.2) -> [Gesture]:
     """
     Moves the hand to the camera (z axis)
-
     """
     def zoom_hand(hand: Hand) -> Hand:
         new_landmarks = {
@@ -106,7 +110,6 @@ def pip_func_zoom(gesture: Gesture, scale_factor: float = 1.2) -> [Gesture]:
 def pip_func_random_zoom(gesture: Gesture, min_factor=0.8, max_factor=1.2, count=10) -> [Gesture]:
     """
     Random zoom, for a random position on the z axis
-
     """
     factors = np.random.uniform(min_factor, max_factor, size=count)
     return [pip_func_zoom(gesture, scale_factor=fac)[0] for fac in factors]
@@ -115,7 +118,6 @@ def pip_func_random_zoom(gesture: Gesture, min_factor=0.8, max_factor=1.2, count
 def pip_func_drop_frames(gesture: Gesture, drop_rate: float = 0.1) -> [Gesture]:
     """
     Removes analog to the drop_rate some frames
-
     """
     total = len(gesture.frames)
     keep_mask = np.random.rand(total) > drop_rate

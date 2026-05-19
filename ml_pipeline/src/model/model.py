@@ -11,10 +11,11 @@ from tensorflow.keras.layers import (
     Input,
 )
 from tensorflow.keras.models import Sequential
-#from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
 
-from src.core.hand_pose_detector import POS_MAX
 from src.model.model_input import load_training_data
+from src.core.hand_pose_detector import POS_MAX
+from src.model.model_plotter import plot_history
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
@@ -63,13 +64,15 @@ def generate_training_data(path=os.path.join(PROJECT_ROOT, "resources/gestures")
             if sum(input.flattened()) == -400:
                 continue
 
-            training_labels.append(labels[label])
-            training_inputs.append(input.flattened())
+            # normalize input data
+            flattened = np.array(input.flattened(), dtype=np.float32)
+            flattened = flattened / POS_MAX
 
-    # training_labels = to_categorical(training_labels, num_classes=label_count)
+            training_labels.append(labels[label])
+            training_inputs.append(flattened)
 
     training_labels = np.array(training_labels, dtype=int)
-    training_inputs = np.array(training_inputs, dtype=np.int16)
+    training_inputs = np.array(training_inputs, dtype=np.float32)
 
     # Shuffle training data
     shuffled = [i for i in range(len(training_labels))]
@@ -106,7 +109,7 @@ class Model:
                 Dropout(0.5),
                 # Dense(32, activation="relu"),
                 # Dropout(0.5),
-                Dense(training_data.label_count, activation="sigmoid"),
+                Dense(training_data.label_count, activation="softmax"),
             ]
         )
 
@@ -117,13 +120,20 @@ class Model:
         )
 
         self._model.summary()
-        self._model.fit(
+
+        history = self._model.fit(
             training_inputs,
             training_labels,
-            epochs=100,
+            epochs=25,
             validation_split=0.2,
             batch_size=128,
+            #callbacks=[early_stopping]
         )
+
+        with open(os.path.join(PROJECT_ROOT, "model/history.pkl"), "wb") as f:
+            pickle.dump(history.history, f)
+
+        plot_history()
 
     @property
     def label_count(self) -> int:
