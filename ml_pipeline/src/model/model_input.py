@@ -1,11 +1,11 @@
-import numpy as np
-import pickle
 import os
 import copy
+import pickle
+import numpy as np
 
 from os import path
-from src.core.hand_pose_detector import Hand, LANDMARK_NAMES
 from src.gesture_generation.gesture import Gesture
+from src.core.hand_pose_detector import Hand, LANDMARK_NAMES
 
 
 def joints(hand: Hand) -> []:
@@ -103,9 +103,9 @@ def flatten_frames(seq):
 def add_empty_frames(seq, until):
     delta = until - len(seq)
     return (
-        seq
-        + [
-            EMPTY_FRAME,
-        ]
-        * delta
+            seq
+            + [
+                EMPTY_FRAME,
+            ]
+            * delta
     )

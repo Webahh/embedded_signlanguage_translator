@@ -1,21 +1,16 @@
 import os
 import pickle
-from dataclasses import dataclass
-
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import (
-    Dense,
-    Dropout,
-    Flatten,
-    Input,
-)
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.callbacks import EarlyStopping
 
-from src.model.model_input import load_training_data
+from dataclasses import dataclass
+from keras.models import Sequential
+from keras.callbacks import EarlyStopping
+from keras.layers import Dense, Dropout, Flatten, Input
+
 from src.core.hand_pose_detector import POS_MAX
 from src.model.model_plotter import plot_history
+from src.model.model_input import load_training_data
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
@@ -107,8 +102,6 @@ class Model:
                 Dropout(0.25),
                 Dense(128, activation="relu"),
                 Dropout(0.5),
-                # Dense(32, activation="relu"),
-                # Dropout(0.5),
                 Dense(training_data.label_count, activation="softmax"),
             ]
         )
@@ -121,13 +114,18 @@ class Model:
 
         self._model.summary()
 
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=3
+        )
+
         history = self._model.fit(
             training_inputs,
             training_labels,
-            epochs=25,
+            epochs=20,
             validation_split=0.2,
             batch_size=128,
-            #callbacks=[early_stopping]
+            callbacks=[early_stopping]
         )
 
         with open(os.path.join(PROJECT_ROOT, "model/history.pkl"), "wb") as f:

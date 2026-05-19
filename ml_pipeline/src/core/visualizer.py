@@ -1,15 +1,15 @@
 import copy
 import threading
-from dataclasses import replace
-
 import cv2 as cv
 import numpy as np
-from queue import Queue
 
+from queue import Queue
+from dataclasses import replace
 from hand_pose_detector import LANDMARK_NAMES, POS_MAX, Hand
 
 DEFAULT_WIDTH = 1280
 DEFAULT_HEIGHT = 740
+
 
 def draw_skeleton(img, pose: Hand, joints=True, bones=True, info=True):
     """
@@ -56,7 +56,7 @@ def draw_skeleton(img, pose: Hand, joints=True, bones=True, info=True):
 
 
 def draw_debug_frame(
-    pose: Hand, img=None, w=DEFAULT_WIDTH, h=DEFAULT_HEIGHT, **kwargs
+        pose: Hand, img=None, w=DEFAULT_WIDTH, h=DEFAULT_HEIGHT, **kwargs
 ) -> []:
     """
     Draw the hand data onto an image.
@@ -95,7 +95,7 @@ class RunningVisalizer(Queue):
         return self.send_img_pose(None, pose)
 
     def send_img_pose(self, img, pose: [Hand]) -> bool:
-        """Sends both an image and a hand pose to the visualizer to display, returns false if the visualizer terminated"""
+        """Sends an image and a hand pose to the visualizer to display, returns false if the visualizer terminated"""
         if self.__done:
             return False
 

@@ -1,11 +1,11 @@
 import time
 import cv2 as cv
 
-from hand_pose_detector import HandPoseDetector
-from visualizer import visualize
 from src.model.model import Model
-from src.model.model_input_buffer import ModelInputBuffer
+from src.core.visualizer import visualize
 from src.model.model_input import ModelInput
+from src.core.hand_pose_detector import HandPoseDetector
+from src.model.model_input_buffer import ModelInputBuffer
 
 
 # # Use the Augmentation pipeline to build generate modified gestures, based on

@@ -1,9 +1,10 @@
-from src.model.model_input import ModelInput
-from src.model.model import Model
-import numpy as np
+import time
 import atomics
 import threading
-import time
+import numpy as np
+
+from src.model.model_input import ModelInput
+from src.model.model import Model
 
 
 class AtomicAltar:
@@ -53,9 +54,9 @@ class AtomicAltar:
 
 class ModelInputBuffer:
     def __init__(
-        self,
-        model: Model,
-        callback: callable,
+            self,
+            model: Model,
+            callback: callable,
     ):
         self._buffer = np.zeros(shape=2 * 22 * 2, dtype=np.int16)
         self._model = model

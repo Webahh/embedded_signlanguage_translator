@@ -1,12 +1,12 @@
-import multiprocessing
-import uuid
-import sys
-
-import cv2
-import pickle
 import os
-from src.core.hand_pose_detector import HandPoseDetector, Hand, POS_MAX
+import cv2
+import sys
+import uuid
+import pickle
+import multiprocessing
+
 from src.gesture_generation.gesture import Gesture
+from src.core.hand_pose_detector import HandPoseDetector, Hand, POS_MAX
 from src.augmentation.augmentation_pipeline import AugmentationPipeline
 from src.augmentation.pipeline_functions import pip_func_mirror, pip_func_random_translate, pip_func_random_zoom
 
@@ -71,8 +71,8 @@ def delete_old_gestures(output_dir):
 
 
 def generate_gestures(
-    video_dir=os.path.join(PROJECT_ROOT, "resources/videos_prototype"),
-    output_dir=os.path.join(PROJECT_ROOT, "resources/gestures")
+        video_dir=os.path.join(PROJECT_ROOT, "resources/videos_prototype"),
+        output_dir=os.path.join(PROJECT_ROOT, "resources/gestures")
 ):
     delete_old_gestures(output_dir)
 
@@ -134,7 +134,6 @@ def generate_gestures(
 
     for gesture in base_gestures:
         augment_gesture(gesture)
-
 
     print(
         f"{len(base_gestures)} Augmentation done and saved."

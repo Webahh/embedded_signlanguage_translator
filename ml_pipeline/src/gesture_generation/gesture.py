@@ -1,6 +1,7 @@
+import numpy as np
+
 from dataclasses import dataclass, replace
 from src.core.hand_pose_detector import Hand, LANDMARK_NAMES
-import numpy as np
 
 
 @dataclass(frozen=True)

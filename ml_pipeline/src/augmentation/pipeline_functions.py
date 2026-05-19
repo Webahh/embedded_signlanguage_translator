@@ -1,7 +1,8 @@
-from src.core.hand_pose_detector import Hand, POS_MAX
-from dataclasses import replace
 import numpy as np
+
+from dataclasses import replace
 from src.gesture_generation.gesture import Gesture
+from src.core.hand_pose_detector import Hand, POS_MAX
 
 
 def apply_on_gesture(function, gesture: Gesture) -> Gesture:
@@ -27,6 +28,7 @@ def pip_func_translate(gesture: Gesture, offset: [int, int]) -> [Gesture]:
     """
     Takes a gesture and produces a copy of it with the given offset applied
     """
+
     def offset_hand(hand: Hand) -> Hand:
         return replace(hand, wrist_pos=np.array(hand.wrist_pos + offset))
 
@@ -45,6 +47,7 @@ def pip_func_mirror(gesture) -> [Gesture]:
     """
     Takes a gesture and mirrors it, returns the mirrored version.
     """
+
     def mirror_hand(hand: Hand) -> Hand:
         mirrored_landmarks = {
             k: np.array([-v[0], v[1], v[2]]) for k, v in hand.landmarks.items()
@@ -82,6 +85,7 @@ def pip_func_jitter(gesture: Gesture, noise_level: float = 5.0) -> [Gesture]:
     """
     simulates noises with random shifts (e.g. camera or handshaking)
     """
+
     def jitter_hand(hand: Hand) -> Hand:
         new_landmarks = {
             name: pos + np.random.normal(0, noise_level, size=3)
@@ -97,6 +101,7 @@ def pip_func_zoom(gesture: Gesture, scale_factor: float = 1.2) -> [Gesture]:
     """
     Moves the hand to the camera (z axis)
     """
+
     def zoom_hand(hand: Hand) -> Hand:
         new_landmarks = {
             name: pos * scale_factor for name, pos in hand.landmarks.items()

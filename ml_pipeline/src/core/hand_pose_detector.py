@@ -1,8 +1,9 @@
 import copy
-from dataclasses import dataclass
 import cv2 as cv
-import mediapipe as mp
 import numpy as np
+import mediapipe as mp
+
+from dataclasses import dataclass
 
 LANDMARK_NAMES = [
     "WRIST",
@@ -27,7 +28,7 @@ LANDMARK_NAMES = [
     "PINKY_FINGER_DIP",
     "PINKY_FINGER_TIP",
 ]
-POS_MAX = 32767 # max value at i16
+POS_MAX = 32767  # max value at i16
 
 
 def create_hand_bounding_box(hand_landmarks, width, height):
