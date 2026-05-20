@@ -50,6 +50,9 @@
 									<listOptionValue builtIn="false" value="../../Drivers/CMSIS/Device/ST/STM32N6xx/Include"/>
 									<listOptionValue builtIn="false" value="../../Drivers/STM32N6xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../../Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/STM32N6570-DK"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/Components/Common"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/Components/rk050hr18"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1620349595" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -129,6 +132,9 @@
 									<listOptionValue builtIn="false" value="../../Drivers/CMSIS/Device/ST/STM32N6xx/Include"/>
 									<listOptionValue builtIn="false" value="../../Drivers/STM32N6xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../../Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/STM32N6570-DK"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/Components/Common"/>
+									<listOptionValue builtIn="false" value="../../Drivers/BSP/Components/rk050hr18"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.14907744" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
