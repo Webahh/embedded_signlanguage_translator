@@ -1,12 +1,14 @@
 import time
+
 import cv2 as cv
 
+from core import display
+from core.display import ConfidenceDisplay
 from src.model.model import Model
 from src.core.visualizer import visualize
 from src.model.model_input import ModelInput
 from src.core.hand_pose_detector import HandPoseDetector
 from src.model.model_input_buffer import ModelInputBuffer
-
 
 # # Use the Augmentation pipeline to build generate modified gestures, based on
 # # a input gesture. This can be used to generate more training data based on existing data.
@@ -76,11 +78,15 @@ from src.model.model_input_buffer import ModelInputBuffer
 #     camera.release()
 #     visualizer.terminate()
 
-
 def main():
     # Get HandPoseDetector and Visualizer instances
     hand_pose = HandPoseDetector()
     visualizer = visualize(info=False)  # info=False => Dont display joint positions
+
+    display = ConfidenceDisplay()
+    latest_result = {
+        "confidences": {}
+    }
 
     # Setup the video
     video = cv.VideoCapture(0)
@@ -89,7 +95,11 @@ def main():
 
     # Setup the model and its input buffer
     model = Model.load()
-    buffer = ModelInputBuffer(model, lambda result: print(result))
+
+    def on_inference(confidences):
+        latest_result["confidences"] = confidences
+
+    buffer = ModelInputBuffer(model, on_inference)
 
     while True:
         # Read image from video
@@ -104,6 +114,11 @@ def main():
 
         model_input = ModelInput.from_hands(hands)
         buffer.push(model_input)
+
+        img = display.draw_confidence_table(
+            img,
+            latest_result["confidences"],
+        )
 
         # Use the visualizer to display the video, aswell as the hand poses in it.
         # If the Visualizer terminates, terminate this loop as well.

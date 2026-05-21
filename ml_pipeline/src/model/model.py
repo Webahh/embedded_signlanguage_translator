@@ -160,22 +160,26 @@ class Model:
 
         self._model = model
 
-    def infer(self, buffer) -> (str, float):
+    def infer(self, buffer) -> dict:
+        """
+        Runs inference on a single model input buffer.
+
+        Returns:
+            dict: {label: confidence}
+        """
 
         x = np.array([buffer], dtype=np.float32)
         x = x / POS_MAX
 
-        outputs = self._model.predict(x, verbose=0)
-        index, confidence = 0, -1000
+        outputs = self._model.predict(x, verbose=0)[0]
 
-        print(outputs)
+        # Map each label to its confidence
+        confidences = {
+            self.label_from_index(i): float(conf)
+            for i, conf in enumerate(outputs)
+        }
 
-        for output, conf in enumerate(outputs[0]):
-            if conf > confidence:
-                confidence = conf
-                index = output
-
-        return self.label_from_index(index), confidence
+        return confidences
 
     @staticmethod
     def load(dir=os.path.join(PROJECT_ROOT, "model")):
