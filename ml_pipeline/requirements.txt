@@ -1,0 +1,8 @@
+atomics == 1.0.3
+keras == 3.12.1
+matplotlib == 3.10.9
+mediapipe == 0.10.21
+numpy == 1.26.4
+opencv-contrib-python == 4.11.0.86
+pillow == 12.2.0
+tensorflow == 2.19.1
