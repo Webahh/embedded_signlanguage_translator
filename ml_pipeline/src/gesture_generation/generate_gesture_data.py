@@ -1,4 +1,6 @@
 import os
+from cProfile import label
+
 import cv2
 import sys
 import uuid
@@ -85,9 +87,15 @@ def generate_gestures(
     import re
 
     training_data = []
+
+    # Accept single letters A-Z and the special labels SCH, Ä, Ö, Ü
+    label_pattern = r"(SCH|[A-ZÄÖÜ])"
+
     for file in os.listdir(video_dir):
+
         if file.startswith("alph_fw_") and file.endswith(".mp4"):
-            match = re.match(r"alph_fw_([A-Z])", file, re.IGNORECASE)
+            match = re.match(f"alph_fw_{label_pattern}", file, re.IGNORECASE)
+
             if match:
                 label = match.group(1).upper()
                 training_data.append((os.path.join(video_dir, file), label))
@@ -96,7 +104,8 @@ def generate_gestures(
                 print(f"Warnung: Konnte kein Label aus Datei '{file}' extrahieren.")
 
         elif file.startswith("alph_og_") and file.endswith(".mp4"):
-            match = re.match(r"alph_og_([A-Z])", file, re.IGNORECASE)
+            match = re.match(rf"alph_og_{label_pattern}", file, re.IGNORECASE)
+
             if match:
                 label = match.group(1).upper()
                 training_data.append((os.path.join(video_dir, file), label))

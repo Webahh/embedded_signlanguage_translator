@@ -51,3 +51,4 @@ ml_pipeline/model/*.h5
 ml_pipeline/model/*.keras
 ml_pipeline/model/*.pt
 ml_pipeline/model/*.pth
+/ml_pipeline/.venv
