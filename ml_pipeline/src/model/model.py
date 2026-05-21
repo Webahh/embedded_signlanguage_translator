@@ -161,8 +161,14 @@ class Model:
         self._model = model
 
     def infer(self, buffer) -> (str, float):
-        outputs = self._model.predict(np.array([buffer], dtype=np.int16), verbose=0)
+
+        x = np.array([buffer], dtype=np.float32)
+        x = x / POS_MAX
+
+        outputs = self._model.predict(x, verbose=0)
         index, confidence = 0, -1000
+
+        print(outputs)
 
         for output, conf in enumerate(outputs[0]):
             if conf > confidence:
