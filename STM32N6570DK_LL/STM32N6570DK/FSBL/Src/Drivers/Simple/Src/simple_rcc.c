@@ -47,6 +47,10 @@ void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
 		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOOEN;
 		(void)RCC->AHB4ENR;
 	}
+	else if (GPIOX == GPIOQ){
+		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOQEN;
+		(void)RCC->AHB4ENR;
+	}
 }
 
 void RCC_enable_I2C(I2C_TypeDef* I2CX){
@@ -119,20 +123,25 @@ void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
 }
 
 void RCC_enable_LTDC(void){
-	RCC->APB5ENR |= RCC_APB5ENR_LTDCEN;
-	(void)RCC->APB5ENR;
+    RCC->APB5ENSR |= RCC_APB5ENSR_LTDCENS;
+    (void)RCC->APB5ENSR;
 }
 
 void RCC_reset_LTDC(void){
 	RCC->APB5RSTSR |= RCC_APB5RSTSR_LTDCRSTS;
 	(void)RCC->APB5RSTSR;
 
-	RCC->APB5RSTSR &= RCC_APB5RSTSR_LTDCRSTS;
-	(void)RCC->APB5RSTSR;
+    RCC->APB5RSTCR |= RCC_APB5RSTCR_LTDCRSTC;
+    (void)RCC->APB5RSTCR;
 }
 
-void RCC_setLTDC_Clock_Source(){
+void RCC_setLTDC_clock_source(uint32_t source){
+    source &= 0x3U;   // 2 bits width
 
+    RCC->CCIPR4 &= ~RCC_CCIPR4_LTDCSEL;
+    RCC->CCIPR4 |=  (source << RCC_CCIPR4_LTDCSEL_Pos);
+
+    (void)RCC->CCIPR4;
 }
 
 

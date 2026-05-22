@@ -10,6 +10,13 @@
 
 #include "stm32n657xx.h"
 
+#define LTDC_CLOCK_SOURCE_PCLK5      0U
+#define LTDC_CLOCK_SOURCE_PER_CK     1U
+#define LTDC_CLOCK_SOURCE_IC16_CK    2U
+#define LTDC_CLOCK_SOURCE_HSI_DIV_CK 3U
+
+
+
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX);
 
 void RCC_enable_I2C(I2C_TypeDef* I2CX);
