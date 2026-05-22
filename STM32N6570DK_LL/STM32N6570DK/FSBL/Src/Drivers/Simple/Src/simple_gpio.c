@@ -6,53 +6,26 @@
  */
 
 #include "simple_gpio.h"
-
-/* ------------- Config Helper ------------- */
-
-static void GPIO_enableClock(GPIO_TypeDef* GPIOX){
-	if (GPIOX == GPIOA){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOB){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOBEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOC){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOCEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOD){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIODEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOE){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOEEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOF){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOFEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOG){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOGEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOH){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOHEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPION){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIONEN;
-		(void)RCC->AHB4ENR;
-	}
-	else if (GPIOX == GPIOO){
-		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOOEN;
-		(void)RCC->AHB4ENR;
-	}
-}
+#include "simple_rcc.h"
 
 /* ------------- Simple_GPIO Functions ------------- */
+
+static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af){
+    GPIOX->OSPEEDR &=
+        ~(3U << (2U * pinNr));
+
+    GPIOX->OSPEEDR |=
+        (3U << (2U * pinNr));
+
+    if (pinNr < 8) {
+        GPIOX->AFR[0] &= ~(0xFU << (4U * pinNr));
+        GPIOX->AFR[0] |=  ((uint32_t)af << (4U * pinNr));
+    }
+    else {
+        GPIOX->AFR[1] &= ~(0xFU << (4U * (pinNr - 8)));
+        GPIOX->AFR[1] |=  ((uint32_t)af << (4U * (pinNr - 8)));
+    }
+}
 
 /**
  * @brief Configure a GPIO pin.
@@ -65,12 +38,17 @@ static void GPIO_enableClock(GPIO_TypeDef* GPIOX){
  * @param mode  GPIO mode value for MODER register.
  * @param otyp  Output type value for OTYPER register.
  * @param pupdr Pull-up/pull-down value for PUPDR register.
+ * @param af	Alternate Function identifier (I2C, SPI, ...)
  */
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr){
-	GPIO_enableClock(GPIOX);
+void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af){
+	RCC_enable_GPIO(GPIOX);
 	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2 * pinNr))) | (mode  << (2 * pinNr));
 	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (otyp  << (pinNr));
 	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2 * pinNr))) | (pupdr << (2 * pinNr));
+
+	if(mode == GPIO_MODE_AF){
+		GPIO_setAF(GPIOX, pinNr, af);
+	}
 }
 
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr){
