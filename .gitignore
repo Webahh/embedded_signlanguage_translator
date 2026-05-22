@@ -40,11 +40,9 @@ ml_pipeline/**/*.pyc
 # Virtual environment
 ml_pipeline/venv/
 
-# Generated gesture data
-ml_pipeline/resources
-
-# Optional raw videos
-ml_pipeline/resources/videos/
+# Raw Videos & Generated gesture data
+ml_pipeline/resources/videos_prototype/*
+ml_pipeline/resources/gestures/*
 
 # Trained models
 ml_pipeline/model/*.h5

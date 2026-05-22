@@ -1,5 +1,4 @@
 import os
-from cProfile import label
 
 import cv2
 import sys
