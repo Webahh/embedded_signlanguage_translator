@@ -1,6 +1,0 @@
-Display
-    - Light up
-    - Does not display TestPattern
-
-LED
-    - Stops blinking when Display is set up and trying to write the TestPattern

@@ -1,0 +1,175 @@
+/*
+ * simple_timer.c
+ *
+ *  Created on: May 21, 2026
+ *      Author: Weber
+ */
+
+#include "simple_timer.h"
+
+static volatile uint32_t sys_tick_ms = 0;
+
+/* ------------- Config Helper ------------- */
+
+static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
+	if (TIMX == TIM2) {
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
+	    (void)RCC->APB2ENR;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM2_IRQn);
+	    }
+	}
+	else if (TIMX == TIM3) {
+		RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
+	    (void)RCC->APB1ENR1;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM3_IRQn);
+	    }
+	}
+	else if (TIMX == TIM4) {
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
+	    (void)RCC->APB1ENR1;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM4_IRQn);
+	    }
+	}
+	else if (TIMX == TIM5) {
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
+	    (void)RCC->APB1ENR1;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM5_IRQn);
+	    }
+	}
+	else if (TIMX == TIM6) {
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+	    (void)RCC->APB1ENR1;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM6_IRQn);
+	    }
+	}
+	else if (TIMX == TIM7) {
+	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM7EN;
+	    (void)RCC->APB1ENR1;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM7_IRQn);
+	    }
+	}
+}
+
+
+/* ------------- Simple_Timer Functions ------------- */
+
+/**
+ * @brief Configure basic timer settings.
+ *
+ * Configures prescaler, auto-reload value and optionally enables
+ * the update interrupt for the selected timer.
+ *
+ * @param TIMX        Timer instance from TIM1 to TIM8.
+ * @param preScaleVal Prescaler value. Hardware PSC is set to preScaleVal - 1.
+ * @param limit       Auto-reload value.
+ * @param use_irq     Enable update interrupt if non-zero.
+ *
+ * @note Currently assumes default bus clock settings.
+ * @note For TIM1 and TIM8 only the update interrupt is enabled.
+ */
+void TIM_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq){
+	if(preScaleVal <= 0) {
+		return;
+	}
+
+	TIM_Enable_Clock_and_NVIC(TIMX, use_irq);
+	TIMX->CR1 = 0;
+	TIMX->PSC = preScaleVal - 1;
+	TIMX->ARR = limit;
+	TIMX->CNT = 0;
+
+	if(use_irq){
+		TIMX->DIER |= TIM_DIER_UIE;
+	} else {
+		TIMX->DIER &= ~TIM_DIER_UIE;
+	}
+
+	TIMX->EGR = TIM_EGR_UG;
+	TIMX->SR = 0;
+}
+
+void TIM_Start(TIM_TypeDef* TIMX){
+	TIMX->CR1 |= TIM_CR1_CEN;
+}
+
+void TIM_Stop(TIM_TypeDef* TIMX){
+	TIMX->CR1 &= ~TIM_CR1_CEN;
+}
+
+void TIM_ResetCounter(TIM_TypeDef* TIMX){
+	TIMX->CNT = 0;
+}
+
+int TIM_GetCounter(TIM_TypeDef* TIMX){
+	return TIMX->CNT;
+}
+
+/**
+ * @brief Initialize TIM6 as millisecond delay timer.
+ *
+ * Configures TIM6 so that one update event occurs every 1 ms
+ * with the current assumed timer clock configuration.
+ */
+void delay_init(void){
+	TIM_Config(TIM6, 40, 999, 0);
+}
+
+/**
+ * @brief Blocking millisecond delay using TIM6.
+ *
+ * Uses TIM6 update events to wait for the requested number of milliseconds.
+ * This function blocks until the delay has elapsed.
+ *
+ * @param ms Delay time in milliseconds.
+ *
+ * @note 	TIM6 must be initialized with delay_init() before using this function.
+ * @note 	Do not use TIM6 for other timing tasks while this delay function is active.
+ */
+void delay_ms(int ms){
+    if(ms <= 0){
+        return;
+    }
+
+    TIM6->SR &= ~TIM_SR_UIF;
+    TIM_ResetCounter(TIM6);
+    TIM_Start(TIM6);
+
+    for(int i = 0; i < ms; i++){
+        while((TIM6->SR & TIM_SR_UIF) == 0U){
+        }
+        TIM6->SR &= ~TIM_SR_UIF;
+    }
+
+    TIM_Stop(TIM6);
+}
+
+void tick_init(void){
+    // 16 MHz / 16000 = 1 kHz = 1 ms
+    TIM_Config(TIM8, 16, 999, 1);
+    TIM_Start(TIM8);
+}
+
+void TIM8_UP_TIM13_IRQHandler(void){
+    if(TIM8->SR & TIM_SR_UIF){
+        TIM8->SR &= ~TIM_SR_UIF;
+
+        sys_tick_ms++;
+    }
+}
+
+uint32_t get_tick_ms(void){
+    return sys_tick_ms;
+}
+

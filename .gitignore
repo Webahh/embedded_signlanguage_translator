@@ -52,3 +52,7 @@ ml_pipeline/model/*.keras
 ml_pipeline/model/*.pt
 ml_pipeline/model/*.pth
 /ml_pipeline/.venv
+
+STM32N6570DK_LL/STM32N6570DK_TEST
+STM32N6570DK_LL/STM32N6570DK/FSBL/Debug/
+STM32N6570DK_LL/STM32N6570DK/APPLI/Debug/
