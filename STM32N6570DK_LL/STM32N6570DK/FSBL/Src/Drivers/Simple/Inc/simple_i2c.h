@@ -8,8 +8,16 @@
 #ifndef SIMPLE_I2C_H
 #define SIMPLE_I2C_H
 
+#include "stm32n657xx.h"
 
+typedef enum {
+	I2C_OK = 0,
+	I2C_ERROR,
+	I2C_BUSY,
+	I2C_TIMEOUT,
+	I2C_NACK,
+} I2C_Status_TypeDef;
 
-
+void I2C_Config(I2C_TypeDef* I2CX, uint32_t clock_source, uint32_t timing);
 
 #endif /* SIMPLE_I2C */

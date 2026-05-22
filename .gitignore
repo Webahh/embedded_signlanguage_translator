@@ -43,6 +43,7 @@ ml_pipeline/venv/
 # Raw Videos & Generated gesture data
 ml_pipeline/resources/videos_prototype/*
 ml_pipeline/resources/gestures/*
+ml_pipeline/resources/training_data.pkl
 
 # Trained models
 ml_pipeline/model/*.h5
