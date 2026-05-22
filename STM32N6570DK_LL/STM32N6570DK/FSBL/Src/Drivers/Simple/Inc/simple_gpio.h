@@ -22,10 +22,7 @@
 #define GPIO_PUPD_UP		1
 #define GPIO_PUPD_DOWN		2
 
-#define GPIO_AF_NONE		-1
-#define GPIO_I2C			4 // VERIFY!!!!"
-
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af);
+void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr);
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr);
 void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, int pinNr);
 void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, int pinNr);
