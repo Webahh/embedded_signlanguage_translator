@@ -1,10 +1,3 @@
-/*
- * simple_ltdc.h
- *
- *  Created on: 22.05.2026
- *      Author: Weber
- */
-
 #ifndef SIMPLE_LTDC_H
 #define SIMPLE_LTDC_H
 
@@ -29,9 +22,7 @@ typedef struct {
     uint32_t pixel_format;
 } LTDC_ConfigTypeDef;
 
-void LTDC_Config(const LTDC_ConfigTypeDef* cfg);
-void LTDC_Enable(void);
-void LTDC_Reload(void);
-
+void LCD_Init(void);
+void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b);
 
 #endif /* SIMPLE_LTDC_H */

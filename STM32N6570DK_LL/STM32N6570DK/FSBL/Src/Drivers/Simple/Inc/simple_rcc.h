@@ -26,6 +26,7 @@ void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source);
 void RCC_enable_LTDC(void);
 void RCC_reset_LTDC(void);
 void RCC_setLTDC_clock_source(uint32_t source);
+void RCC_config_LTDC_clock(void);
 
 
 #endif // SIMPLE_RCC_H

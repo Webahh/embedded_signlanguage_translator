@@ -144,4 +144,43 @@ void RCC_setLTDC_clock_source(uint32_t source){
     (void)RCC->CCIPR4;
 }
 
+void RCC_config_LTDC_clock(void){
+    /* PLL4 configuration for 25 MHz pixel clock
+     * PLL4 source = HSI (64 MHz), M=8, N=225, P1=6, P2=6
+     * VCO = (64/8) * 225 = 1800 MHz
+     * PLL4_out = 1800 / (6*6) = 50 MHz
+     * IC16 divider = 2  ->  LTDC clock = 25 MHz
+     */
+    if (!(RCC->SR & RCC_SR_PLL4RDY)) {
+        RCC->PLL4CFGR1 &= ~RCC_PLL4CFGR1_PLL4SEL;
+        RCC->PLL4CFGR1 = (RCC->PLL4CFGR1 & ~(RCC_PLL4CFGR1_PLL4DIVM | RCC_PLL4CFGR1_PLL4DIVN))
+                        | (8UL << RCC_PLL4CFGR1_PLL4DIVM_Pos)
+                        | (225UL << RCC_PLL4CFGR1_PLL4DIVN_Pos);
+
+        RCC->PLL4CFGR2 &= ~RCC_PLL4CFGR2_PLL4DIVNFRAC;
+
+        RCC->PLL4CFGR3 = (RCC->PLL4CFGR3 & ~(RCC_PLL4CFGR3_PLL4PDIV1 | RCC_PLL4CFGR3_PLL4PDIV2))
+                        | (6UL << RCC_PLL4CFGR3_PLL4PDIV1_Pos)
+                        | (6UL << RCC_PLL4CFGR3_PLL4PDIV2_Pos);
+        RCC->PLL4CFGR3 |= RCC_PLL4CFGR3_PLL4PDIVEN;
+        (void)RCC->PLL4CFGR3;
+
+        RCC->CR |= RCC_CR_PLL4ON;
+        while (!(RCC->SR & RCC_SR_PLL4RDY));
+    }
+
+    uint32_t ic16sel = RCC_IC16CFGR_IC16SEL_0 | RCC_IC16CFGR_IC16SEL_1;
+    uint32_t ic16int = (2UL - 1UL) << RCC_IC16CFGR_IC16INT_Pos;
+
+    RCC->IC16CFGR = (RCC->IC16CFGR & ~(RCC_IC16CFGR_IC16SEL | RCC_IC16CFGR_IC16INT))
+                   | ic16sel | ic16int;
+    (void)RCC->IC16CFGR;
+
+    RCC->DIVENR |= RCC_DIVENR_IC16EN;
+    (void)RCC->DIVENR;
+
+    RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
+    (void)RCC->CCIPR4;
+}
+
 
