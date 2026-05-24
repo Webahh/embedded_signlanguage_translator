@@ -48,7 +48,6 @@ int main(void){
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
     LCD_Init();
-    LCD_SetBackgroundColor(0x00, 0x00, 0x80);
     LCD_ConfigLayer1();
     LCD_Fill(LCD_COLOR_BLACK);
 

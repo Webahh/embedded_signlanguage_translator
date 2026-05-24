@@ -7,7 +7,7 @@
 
 #include "simple_lcd_framebuffer.h"
 
-__attribute__((used)) uint16_t lcd_framebuffer[LCD_WIDTH * LCD_HEIGHT];
+
 
 void LCD_Fill(uint16_t color){
     for (uint32_t i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++) {
