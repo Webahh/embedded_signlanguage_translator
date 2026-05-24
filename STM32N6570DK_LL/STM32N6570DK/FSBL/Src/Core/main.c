@@ -28,13 +28,13 @@ int main(void){
 
 	LCD_Init();
 
-	vTaskStartScheduler();
+	SCHEDULER_Init();
 
-	xTaskCreate(vLEDTask, "LED", 500);
-	xTaskCreate(vBackgroundTask, "BgColor", 1000);
+	SCHEDULER_AddTask(vLEDTask, "LED", 500);
+	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 500);
 
 	while (1) {
-		xTaskSchedulerRun();
+		SCHEDULER_Run();
 	}
 }
 
