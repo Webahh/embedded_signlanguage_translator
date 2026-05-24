@@ -7,8 +7,6 @@
 
 #include "simple_timer.h"
 
-static volatile uint32_t sys_tick_ms = 0;
-
 /* ------------- Config Helper ------------- */
 
 static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
@@ -58,6 +56,14 @@ static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
 
 	    if (use_irq){
 	    	NVIC_EnableIRQ(TIM7_IRQn);
+	    }
+	}
+	else if (TIMX == TIM8) {
+	    RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
+	    (void)RCC->APB2ENR;
+
+	    if (use_irq){
+	    	NVIC_EnableIRQ(TIM8_UP_IRQn);
 	    }
 	}
 }
@@ -156,20 +162,19 @@ void delay_ms(int ms){
 }
 
 void tick_init(void){
-    // 16 MHz / 16000 = 1 kHz = 1 ms
-    TIM_Config(TIM8, 16, 999, 1);
-    TIM_Start(TIM8);
-}
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
+    (void)RCC->APB1ENR1;
 
-void TIM8_UP_TIM13_IRQHandler(void){
-    if(TIM8->SR & TIM_SR_UIF){
-        TIM8->SR &= ~TIM_SR_UIF;
-
-        sys_tick_ms++;
-    }
+    TIM5->CR1 = 0;
+    TIM5->PSC = 39999;
+    TIM5->ARR = 0xFFFFFFFF;
+    TIM5->CNT = 0;
+    TIM5->EGR = TIM_EGR_UG;
+    TIM5->SR = 0;
+    TIM5->CR1 |= TIM_CR1_CEN;
 }
 
 uint32_t get_tick_ms(void){
-    return sys_tick_ms;
+    return TIM5->CNT;
 }
 
