@@ -31,7 +31,7 @@ int main(void){
 	vTaskStartScheduler();
 
 	xTaskCreate(vLEDTask, "LED", 500);
-	xTaskCreate(vBackgroundTask, "BgColor", 500);
+	xTaskCreate(vBackgroundTask, "BgColor", 1000);
 
 	while (1) {
 		xTaskSchedulerRun();

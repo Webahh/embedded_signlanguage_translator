@@ -1,3 +1,10 @@
+/*
+ * simple_scheduler.h
+ *
+ *  Created on: May 24, 2026
+ *      Author: Groß
+ */
+
 #ifndef SIMPLE_SCHEDULER_H
 #define SIMPLE_SCHEDULER_H
 

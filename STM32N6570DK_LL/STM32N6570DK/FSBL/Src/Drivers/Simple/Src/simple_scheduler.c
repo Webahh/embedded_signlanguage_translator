@@ -1,3 +1,10 @@
+/*
+ * simple_scheduler.c
+ *
+ *  Created on: May 24, 2026
+ *      Author: Groß
+ */
+
 #include "simple_scheduler.h"
 #include "simple_timer.h"
 
