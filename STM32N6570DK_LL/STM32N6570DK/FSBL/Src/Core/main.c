@@ -14,14 +14,14 @@ int main(void){
 
 	while (1) {
 		LCD_SetBackgroundColor(255, 0, 0);
-	    GPIO_BSRR_set(GPIOG, LED2_PIN);
+		GPIO_BSRR_Toggle(GPIOG, LED2_PIN);
 	    delay_ms(500);
 		LCD_SetBackgroundColor(0, 255, 0);
-	    GPIO_BSRR_reset(GPIOG, LED2_PIN);
+		GPIO_BSRR_Toggle(GPIOG, LED2_PIN);
 	    delay_ms(500);
 		LCD_SetBackgroundColor(0, 0, 255);
+		GPIO_BSRR_Toggle(GPIOG, LED2_PIN);
 		delay_ms(500);
-
 	}
 }
 

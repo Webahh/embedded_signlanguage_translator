@@ -102,6 +102,7 @@ void LCD_Init(void){
 }
 
 void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
+    while (!(LTDC->CDSR & LTDC_CDSR_VDES));
+    while (LTDC->CDSR & LTDC_CDSR_VDES);
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
-    LTDC->SRCR = LTDC_SRCR_IMR;
 }
