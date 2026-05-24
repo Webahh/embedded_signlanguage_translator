@@ -6,6 +6,7 @@
  */
 
 #include "simple_ltdc.h"
+#include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
 #include "simple_gpio.h"
 #include "simple_timer.h"
@@ -105,4 +106,29 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
     while (!(LTDC->CDSR & LTDC_CDSR_VDES));
     while (LTDC->CDSR & LTDC_CDSR_VDES);
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
+}
+
+void LCD_ConfigLayer1(void){
+    LTDC_Layer1->CR = 0;
+
+    LTDC_Layer1->WHPCR = (0 << LTDC_LxWHPCR_WHSTPOS_Pos)
+                       | ((LCD_WIDTH - 1) << LTDC_LxWHPCR_WHSPPOS_Pos);
+
+    LTDC_Layer1->WVPCR = (0 << LTDC_LxWVPCR_WVSTPOS_Pos)
+                       | ((LCD_HEIGHT - 1) << LTDC_LxWVPCR_WVSPPOS_Pos);
+
+    LTDC_Layer1->PFCR  = (2 << LTDC_LxPFCR_PF_Pos);
+    LTDC_Layer1->CACR  = (255 << LTDC_LxCACR_CONSTA_Pos);
+    LTDC_Layer1->BFCR  = (4 << LTDC_LxBFCR_BF1_Pos)
+                       | (5 << LTDC_LxBFCR_BF2_Pos);
+
+    LTDC_Layer1->CFBAR = (uint32_t)lcd_framebuffer;
+    LTDC_Layer1->CFBLR = (((LCD_WIDTH * 2) + 7) << LTDC_LxCFBLR_CFBLL_Pos)
+                       | ((LCD_WIDTH * 2) << LTDC_LxCFBLR_CFBP_Pos);
+    LTDC_Layer1->CFBLNR = (LCD_HEIGHT << LTDC_LxCFBLNR_CFBLNBR_Pos);
+
+    LTDC_Layer1->CR |= LTDC_LxCR_LEN;
+
+    LTDC->SRCR |= LTDC_SRCR_IMR;
+    while (LTDC->SRCR & LTDC_SRCR_IMR);
 }

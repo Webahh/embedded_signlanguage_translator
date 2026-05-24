@@ -3,6 +3,7 @@
 #include "simple_timer.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
+#include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
 
 #define LED2_PIN 10
@@ -46,9 +47,12 @@ int main(void){
 	delay_init();
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
-	LCD_Init();
+    LCD_Init();
+    LCD_SetBackgroundColor(0x00, 0x00, 0x80);
+    LCD_ConfigLayer1();
+    LCD_Fill(LCD_COLOR_BLACK);
 
-	SCHEDULER_Init();
+    SCHEDULER_Init();
 
 	SCHEDULER_AddTask(vLEDTask, "LED", 500);
 	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);

@@ -24,5 +24,6 @@ typedef struct {
 
 void LCD_Init(void);
 void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b);
+void LCD_ConfigLayer1(void);
 
 #endif /* SIMPLE_LTDC_H */
