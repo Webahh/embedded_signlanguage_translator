@@ -12,14 +12,6 @@
 #include "simple_timer.h"
 
 static void LCD_ConfigGPIO(void){
-    RCC_enable_GPIO(GPIOA);
-    RCC_enable_GPIO(GPIOB);
-    RCC_enable_GPIO(GPIOD);
-    RCC_enable_GPIO(GPIOE);
-    RCC_enable_GPIO(GPIOG);
-    RCC_enable_GPIO(GPIOH);
-    RCC_enable_GPIO(GPIOQ);
-
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
     for (int i = 0; i < 6; i++)
         GPIO_Config(GPIOA, pa_pins[i], GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF);

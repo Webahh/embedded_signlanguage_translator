@@ -55,7 +55,7 @@ int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr){
 	return (int)((GPIOX->IDR >> pinNr) & 1U);
 }
 
-void GPIO_BSRR_Toggle(GPIO_TypeDef* GPIOX, int pinNr) {
+void GPIO_BSRR_toggle(GPIO_TypeDef* GPIOX, int pinNr) {
     if (GPIOX->ODR & (1U << pinNr))
         GPIOX->BSRR = (1U << (pinNr + 16));
     else

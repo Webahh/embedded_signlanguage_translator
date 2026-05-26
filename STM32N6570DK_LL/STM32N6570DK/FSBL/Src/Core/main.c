@@ -20,7 +20,7 @@ static uint8_t  bg_seg_idx    = 0;
 static uint32_t bg_blend_start = 0;
 
 static void vLEDTask(void) {
-	GPIO_BSRR_Toggle(GPIOG, LED2_PIN);
+	GPIO_BSRR_toggle(GPIOG, LED2_PIN);
 }
 
 static void vBackgroundTask(void) {
@@ -61,6 +61,7 @@ int main(void){
 	}
 }
 
+// cant build without
 __attribute__((cmse_nonsecure_entry)) int secure_add_one(int value) {
 	return value + 1;
 }

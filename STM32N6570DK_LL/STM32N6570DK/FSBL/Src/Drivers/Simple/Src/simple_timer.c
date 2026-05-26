@@ -169,20 +169,9 @@ void delay_ms(int ms){
 void tick_init(void){
     SCB->VTOR = (uint32_t)g_pfnVectors; // Vector Table location correction
 
-    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM7EN;
-    (void)RCC->APB1ENR1;
+    TIM_Config(TIM7, 40, 999, 1);
 
-    TIM7->CR1 = 0;
-    TIM7->PSC = 39;
-    TIM7->ARR = 999;
-    TIM7->CNT = 0;
-    TIM7->EGR = TIM_EGR_UG;
-    TIM7->SR = 0;
-
-    TIM7->DIER |= TIM_DIER_UIE;
-    NVIC_EnableIRQ(TIM7_IRQn);
-
-    TIM7->CR1 |= TIM_CR1_CEN;
+    TIM_Start(TIM7);
 }
 
 void TIM7_IRQHandler(void){
