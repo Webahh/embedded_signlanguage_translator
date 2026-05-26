@@ -88,7 +88,7 @@ def generate_gestures(
     training_data = []
 
     # Accept single letters A-Z and the special labels SCH, Ä, Ö, Ü
-    label_pattern = r"(SCH|[A-ZÄÖÜ])"
+    label_pattern = r"(NONE|SCH|[A-Z]|Ä|Ö|Ü)"
 
     for file in os.listdir(video_dir):
 
