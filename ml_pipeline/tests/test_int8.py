@@ -1,16 +1,19 @@
+import os
 import sys
 import pickle
 import numpy as np
-import tensorflow as tf
 
 from dataclasses import dataclass
 
-MODEL_PATH = "model/model_int8.tflite"
-DATA_PATH = "resources/training_data.pkl"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+sys.path.insert(0, PROJECT_ROOT)
+
+from src.model.tflite_model import TFLiteModel
 
 
 @dataclass(frozen=True)
-class TrainingData:
+class _TrainingData:
     label_count: int
     labels: dict
     labels_inv: dict
@@ -18,74 +21,52 @@ class TrainingData:
     training_inputs: np.ndarray
 
 
-# Register so pickle can find it
-sys.modules["src.model.model"] = type(sys)("src.model.model")
-sys.modules["src.model.model"].TrainingData = TrainingData
+# training_data.pkl was created by running model.py as __main__,
+# so pickle references __main__.TrainingData
+import __main__
+__main__.TrainingData = _TrainingData
 
-
-def load_training_data(path):
-    with open(path, "rb") as f:
-        data = pickle.load(f)
-    return data.labels_inv, data.training_inputs, data.training_labels
+DATA_PATH = os.path.join(PROJECT_ROOT, "resources/training_data.pkl")
 
 
 def main():
-    labels_inv, training_inputs, training_labels = load_training_data(DATA_PATH)
+    with open(DATA_PATH, "rb") as f:
+        data = pickle.load(f)
+
+    training_inputs = data.training_inputs
+    training_labels = data.training_labels
+    labels_inv = data.labels_inv
+
     print(f"Loaded {len(training_inputs)} samples, {len(labels_inv)} classes")
 
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
-    interpreter.allocate_tensors()
-
-    input_details = interpreter.get_input_details()[0]
-    output_details = interpreter.get_output_details()[0]
-
-    in_scale, in_zp = input_details["quantization"]
-    out_scale, out_zp = output_details["quantization"]
+    model = TFLiteModel.load()
+    print(f"TFLite model: {model.label_count} classes\n")
 
     correct = 0
     total = 1000
-    test_indices = np.random.choice(len(training_inputs), total, replace=False)
+    indices = np.random.choice(len(training_inputs), total, replace=False)
 
-    for i, idx in enumerate(test_indices):
-        inp_float = training_inputs[idx].astype(np.float32)
-        inp_quant = (inp_float / in_scale + in_zp).astype(np.uint8)
-        inp_quant = inp_quant.reshape(1, 88, 1)
+    POS_MAX = 32767
 
-        interpreter.set_tensor(input_details["index"], inp_quant)
-        interpreter.invoke()
-        out_quant = interpreter.get_tensor(output_details["index"])[0]
-        out_float = (out_quant.astype(np.float32) - out_zp) * out_scale
+    for i, idx in enumerate(indices):
+        # training_inputs are pre-normalized (/POS_MAX); infer() normalizes
+        # raw values, so multiply back to raw int16 range
+        buffer = (training_inputs[idx] * POS_MAX).astype(np.int16).tolist()
+        confidences = model.infer(buffer)
 
-        pred_idx = int(np.argmax(out_float))
-        true_idx = int(training_labels[idx])
-        if pred_idx == true_idx:
+        pred_label = max(confidences, key=confidences.get)
+        true_label = labels_inv[int(training_labels[idx])]
+        conf = confidences[pred_label]
+
+        if pred_label == true_label:
             correct += 1
 
-        if i < 5 or (i < 20 and pred_idx != true_idx):
-            pred_label = labels_inv.get(pred_idx, "?")
-            true_label = labels_inv.get(true_idx, "?")
-            conf = out_float[pred_idx]
-            marker = "✓" if pred_idx == true_idx else "✗"
-            print(f"[{i+1:3d}] {marker} pred={pred_label}({pred_idx:2d}) "
-                  f"true={true_label}({true_idx:2d})  conf={conf:.4f}")
+        if i < 5 or (i < 20 and pred_label != true_label):
+            marker = "✓" if pred_label == true_label else "✗"
+            print(f"[{i+1:3d}] {marker} pred={pred_label} "
+                  f"true={true_label}  conf={conf:.4f}")
 
-    accuracy = correct / total * 100
-    print(f"\nTested {total} samples — Accuracy: {correct}/{total} ({accuracy:.2f}%)")
-
-    print("\nClass-wise confidence on a single sample:")
-    sample_idx = test_indices[0]
-    inp_float = training_inputs[sample_idx].astype(np.float32)
-    inp_quant = (inp_float / in_scale + in_zp).astype(np.uint8).reshape(1, 88, 1)
-    interpreter.set_tensor(input_details["index"], inp_quant)
-    interpreter.invoke()
-    out_quant = interpreter.get_tensor(output_details["index"])[0]
-    out_float = (out_quant.astype(np.float32) - out_zp) * out_scale
-    true_label = labels_inv[int(training_labels[sample_idx])]
-    print(f"True label: {true_label}")
-    for c in range(len(labels_inv)):
-        label = labels_inv.get(c, "?")
-        bar = "█" * int(out_float[c] * 100)
-        print(f"  {c:2d} {label}: {out_float[c]:.4f} {bar}")
+    print(f"\nTested {total} samples — Accuracy: {correct}/{total} ({correct/total*100:.2f}%)")
 
 
 if __name__ == "__main__":

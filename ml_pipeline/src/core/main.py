@@ -1,14 +1,27 @@
+import os
 import time
 
 import cv2 as cv
 
-from core import display
 from core.display import ConfidenceDisplay
-from src.model.model import Model
 from src.core.visualizer import visualize
 from src.model.model_input import ModelInput
 from src.core.hand_pose_detector import HandPoseDetector
 from src.model.model_input_buffer import ModelInputBuffer
+
+# Model backend
+# Set to "keras" to use the full Keras model (model.keras + class.pkl)
+# Set to "tflite" to use the INT8 quantized TFLite model (model_int8.tflite + class.pkl)
+MODEL_BACKEND = os.environ.get("MODEL_BACKEND", "keras")
+
+if MODEL_BACKEND == "tflite":
+    from src.model.tflite_model import TFLiteModel as ModelBackend
+elif MODEL_BACKEND == "keras":
+    from src.model.model import Model as ModelBackend
+    import __main__
+    __main__.Model = ModelBackend
+else:
+    raise ValueError(f"Unknown MODEL_BACKEND: {MODEL_BACKEND}")
 
 # # Use the Augmentation pipeline to build generate modified gestures, based on
 # # a input gesture. This can be used to generate more training data based on existing data.
@@ -94,7 +107,7 @@ def main():
     print(f"FPS: {fps}")
 
     # Setup the model and its input buffer
-    model = Model.load()
+    model = ModelBackend.load()
 
     def on_inference(confidences):
         latest_result["confidences"] = confidences
