@@ -1,10 +1,3 @@
-/*
- * simple_ltdc.c
- *
- *  Created on: 22.05.2026
- *      Author: Weber
- */
-
 #include "simple_ltdc.h"
 #include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
@@ -96,127 +89,124 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
 }
 
-void LCD_ConfigLayer1(void){
-    uint32_t hsync = 4U;
-    uint32_t hbp   = 4U;
-    uint32_t vsync = 4U;
-    uint32_t vbp   = 4U;
-
-    uint32_t pitch = LCD_WIDTH * LCD_BYTES_PER_PIXEL;
-
-    LTDC_Layer1->CR = 0U;
-
-    LTDC_Layer1->CKCR = 0U;
-    LTDC_Layer1->PCR = 0U;
-
-    LTDC_Layer1->AFBA0R = 0U;
-    LTDC_Layer1->AFBA1R = 0U;
-    LTDC_Layer1->AFBLR  = 0U;
-    LTDC_Layer1->AFBLNR = 0U;
-
-    LTDC_Layer1->SISR  = 0U;
-    LTDC_Layer1->SOSR  = 0U;
-    LTDC_Layer1->SVSFR = 0U;
-    LTDC_Layer1->SVSPR = 0U;
-    LTDC_Layer1->SHSFR = 0U;
-    LTDC_Layer1->SHSPR = 0U;
-
-    LTDC_Layer1->CYR0R = 0U;
-    LTDC_Layer1->CYR1R = 0U;
-
-    LTDC_Layer1->WHPCR =
-        ((hsync + hbp) << LTDC_LxWHPCR_WHSTPOS_Pos) |
-        ((hsync + hbp + LCD_WIDTH - 1U) << LTDC_LxWHPCR_WHSPPOS_Pos);
-
-    LTDC_Layer1->WVPCR =
-        ((vsync + vbp) << LTDC_LxWVPCR_WVSTPOS_Pos) |
-        ((vsync + vbp + LCD_HEIGHT - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
-
-    LTDC_Layer1->PFCR =  0U;
-    LTDC_Layer1->FPF0R = 0U;
-    LTDC_Layer1->FPF1R = 0U;
-
-    LTDC_Layer1->CACR = 0xFF;
-    LTDC_Layer1->DCCR = 0x00000000U;
-
-    LTDC_Layer1->BFCR =
-       (4U << LTDC_LxBFCR_BF1_Pos) |
-       (5U << LTDC_LxBFCR_BF2_Pos);
-
-    LTDC_Layer1->CFBAR = (uint32_t)lcd_framebuffer;
-
-    LTDC_Layer1->CFBLR =
-        (pitch << LTDC_LxCFBLR_CFBP_Pos) |
-        ((pitch + 7U) << LTDC_LxCFBLR_CFBLL_Pos);
-
-    LTDC_Layer1->CFBLNR = LCD_HEIGHT;
-
-    LTDC_Layer1->CR = LTDC_LxCR_LEN;
-
-    LTDC->SRCR = LTDC_SRCR_IMR;
-    while (LTDC->SRCR & LTDC_SRCR_IMR) {
+static uint32_t LCD_BytesPerPixel(LCD_PixelFormat fmt){
+    switch (fmt){
+        case LCD_PF_ARGB8888: return 4;
+        case LCD_PF_RGB888:   return 3;
+        case LCD_PF_RGB565:   return 2;
+        case LCD_PF_ARGB1555: return 2;
+        case LCD_PF_ARGB4444: return 2;
+        case LCD_PF_L8:       return 1;
+        case LCD_PF_AL44:     return 1;
+        case LCD_PF_AL88:     return 2;
+        default:              return 4;
     }
 }
 
-void LCD_ConfigLayer2(void){
-    uint32_t hsync = 4U;
-    uint32_t hbp   = 4U;
-    uint32_t vsync = 4U;
-    uint32_t vbp   = 4U;
+void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
+    uint32_t hsync = 4U, hbp = 4U, vsync = 4U, vbp = 4U;
+    uint32_t bpp = LCD_BytesPerPixel(cfg->pixel_format);
+    uint32_t buf_pitch = cfg->buf_width * bpp;
+    uint32_t disp_pitch = cfg->width * bpp;
 
-    uint32_t buf_pitch   = LCD_FG_WIDTH * LCD_BYTES_PER_PIXEL;
-    uint32_t disp_pitch  = 400U * LCD_BYTES_PER_PIXEL;
+    cfg->regs->CR = 0U;
 
-    LTDC_Layer2->CR = 0U;
+    cfg->regs->CKCR = 0U;
+    cfg->regs->PCR = 0U;
 
-    LTDC_Layer2->CKCR = 0U;
-    LTDC_Layer2->PCR = 0U;
+    cfg->regs->AFBA0R = 0U;
+    cfg->regs->AFBA1R = 0U;
+    cfg->regs->AFBLR  = 0U;
+    cfg->regs->AFBLNR = 0U;
 
-    LTDC_Layer2->AFBA0R = 0U;
-    LTDC_Layer2->AFBA1R = 0U;
-    LTDC_Layer2->AFBLR  = 0U;
-    LTDC_Layer2->AFBLNR = 0U;
+    cfg->regs->SISR  = 0U;
+    cfg->regs->SOSR  = 0U;
+    cfg->regs->SVSFR = 0U;
+    cfg->regs->SVSPR = 0U;
+    cfg->regs->SHSFR = 0U;
+    cfg->regs->SHSPR = 0U;
 
-    LTDC_Layer2->SISR  = 0U;
-    LTDC_Layer2->SOSR  = 0U;
-    LTDC_Layer2->SVSFR = 0U;
-    LTDC_Layer2->SVSPR = 0U;
-    LTDC_Layer2->SHSFR = 0U;
-    LTDC_Layer2->SHSPR = 0U;
+    cfg->regs->CYR0R = 0U;
+    cfg->regs->CYR1R = 0U;
 
-    LTDC_Layer2->CYR0R = 0U;
-    LTDC_Layer2->CYR1R = 0U;
+    cfg->regs->WHPCR =
+        ((hsync + hbp + cfg->x) << LTDC_LxWHPCR_WHSTPOS_Pos) |
+        ((hsync + hbp + cfg->x + cfg->width - 1U) << LTDC_LxWHPCR_WHSPPOS_Pos);
 
-    LTDC_Layer2->WHPCR =
-        ((hsync + hbp + 400U) << LTDC_LxWHPCR_WHSTPOS_Pos) |
-        ((hsync + hbp + 400U + 400U - 1U) << LTDC_LxWHPCR_WHSPPOS_Pos);
+    cfg->regs->WVPCR =
+        ((vsync + vbp + cfg->y) << LTDC_LxWVPCR_WVSTPOS_Pos) |
+        ((vsync + vbp + cfg->y + cfg->height - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
 
-    LTDC_Layer2->WVPCR =
-        ((vsync + vbp) << LTDC_LxWVPCR_WVSTPOS_Pos) |
-        ((vsync + vbp + 480U - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
+    cfg->regs->PFCR  = (uint32_t)cfg->pixel_format;
+    cfg->regs->FPF0R = 0U;
+    cfg->regs->FPF1R = 0U;
 
-    LTDC_Layer2->PFCR =  0U;
-    LTDC_Layer2->FPF0R = 0U;
-    LTDC_Layer2->FPF1R = 0U;
+    cfg->regs->CACR = cfg->const_alpha;
+    cfg->regs->DCCR = cfg->default_color;
 
-    LTDC_Layer2->CACR = 0xFF;
-    LTDC_Layer2->DCCR = 0x00000000U;
+    if (cfg->per_pixel_alpha){
+        cfg->regs->BFCR =
+           (6U << LTDC_LxBFCR_BF1_Pos) |
+           (7U << LTDC_LxBFCR_BF2_Pos);
+    } else {
+        cfg->regs->BFCR =
+           (4U << LTDC_LxBFCR_BF1_Pos) |
+           (5U << LTDC_LxBFCR_BF2_Pos);
+    }
 
-    LTDC_Layer2->BFCR =
-       (4U << LTDC_LxBFCR_BF1_Pos) |
-       (5U << LTDC_LxBFCR_BF2_Pos);
+    cfg->regs->CFBAR = (uint32_t)cfg->fb;
 
-    LTDC_Layer2->CFBAR = (uint32_t)lcd_fg_buffer;
-
-    LTDC_Layer2->CFBLR =
+    cfg->regs->CFBLR =
         (buf_pitch << LTDC_LxCFBLR_CFBP_Pos) |
         ((disp_pitch + 7U) << LTDC_LxCFBLR_CFBLL_Pos);
 
-    LTDC_Layer2->CFBLNR = 480U;
+    cfg->regs->CFBLNR = cfg->height;
 
-    LTDC_Layer2->CR = LTDC_LxCR_LEN;
+    cfg->regs->CR = LTDC_LxCR_LEN;
 
     LTDC->SRCR = LTDC_SRCR_IMR;
-    while (LTDC->SRCR & LTDC_SRCR_IMR) {
+    while (LTDC->SRCR & LTDC_SRCR_IMR);
+}
+
+void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
+    volatile uint32_t *fb = cfg->fb;
+    for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++){
+        fb[i] = color;
     }
 }
+
+void LCD_ConfigLayer1(void){
+    LCD_ConfigLayer(&LCD_Layer1Config);
+}
+
+void LCD_ConfigLayer2(void){
+    LCD_ConfigLayer(&LCD_Layer2Config);
+}
+
+LCD_LayerConfig LCD_Layer1Config = {
+    .regs           = LTDC_Layer1,
+    .fb             = lcd_framebuffer,
+    .x              = 410,
+    .y              = 10,
+    .width          = LCD_WIDTH,
+    .height         = LCD_HEIGHT,
+    .buf_width      = LCD_WIDTH,
+    .pixel_format   = LCD_PF_ARGB8888,
+    .const_alpha    = 0xFF,
+    .per_pixel_alpha = 1,
+    .default_color  = 0x00000000U,
+};
+
+LCD_LayerConfig LCD_Layer2Config = {
+    .regs           = LTDC_Layer2,
+    .fb             = lcd_fg_buffer,
+    .x              = 10,
+    .y              = 10,
+    .width          = LCD_FG_WIDTH,
+    .height         = LCD_FG_HEIGHT,
+    .buf_width      = LCD_FG_WIDTH,
+    .pixel_format   = LCD_PF_ARGB8888,
+    .const_alpha    = 0xFF,
+    .per_pixel_alpha = 1,
+    .default_color  = 0x00000000U,
+};

@@ -10,11 +10,11 @@
 
 #include <stdint.h>
 
-#define LCD_WIDTH  390
-#define LCD_HEIGHT 480
+#define LCD_WIDTH  380
+#define LCD_HEIGHT 460
 
-#define LCD_FG_WIDTH  390
-#define LCD_FG_HEIGHT 480
+#define LCD_FG_WIDTH  380
+#define LCD_FG_HEIGHT 460
 
 #define LCD_BYTES_PER_PIXEL 4U
 
