@@ -25,6 +25,7 @@
 #define GPIO_AF_NONE		-1
 #define GPIO_I2C			4 // VERIFY!!!!"
 #define LTDC_AF 			14
+#define XSPI_AF 			9
 
 void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af);
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr);

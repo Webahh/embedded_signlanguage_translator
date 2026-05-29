@@ -48,6 +48,10 @@ void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
 		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOOEN;
 		(void)RCC->AHB4ENR;
 	}
+	else if (GPIOX == GPIOP){
+		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOPEN;
+		(void)RCC->AHB4ENR;
+	}
 	else if (GPIOX == GPIOQ){
 		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOQEN;
 		(void)RCC->AHB4ENR;
@@ -156,6 +160,44 @@ void RCC_setLTDC_clock_source(uint32_t source){
     RCC->CCIPR4 |=  (source << RCC_CCIPR4_LTDCSEL_Pos);
 
     (void)RCC->CCIPR4;
+}
+
+void RCC_enable_XSPI1(void){
+    RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI1ENS;
+    (void)RCC->AHB5ENSR;
+}
+
+void RCC_reset_XSPI1(void){
+    RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPI1RSTS;
+    (void)RCC->AHB5RSTSR;
+    delay_ms(10);
+    RCC->AHB5RSTCR |= RCC_AHB5RSTCR_XSPI1RSTC;
+    (void)RCC->AHB5RSTCR;
+}
+
+void RCC_enable_XSPIM(void){
+    RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPIMENS;
+    (void)RCC->AHB5ENSR;
+}
+
+void RCC_reset_XSPIM(void){
+    RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPIMRSTS;
+    (void)RCC->AHB5RSTSR;
+    delay_ms(10);
+    RCC->AHB5RSTCR |= RCC_AHB5RSTCR_XSPIMRSTC;
+    (void)RCC->AHB5RSTCR;
+}
+
+void PWR_enable_VDDIO2(void){
+    RCC->AHB4ENSR |= RCC_AHB4ENSR_PWRENS;
+    (void)RCC->AHB4ENSR;
+    PWR->SVMCR3 |= PWR_SVMCR3_VDDIO2SV;
+    (void)PWR->SVMCR3;
+}
+
+void PWR_config_VDDIO2_1V8(void){
+    PWR->SVMCR3 &= ~PWR_SVMCR3_VDDIO2VRSEL;
+    (void)PWR->SVMCR3;
 }
 
 void RCC_config_LTDC_clock(void){

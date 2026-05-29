@@ -5,6 +5,7 @@
 #include "simple_ltdc.h"
 #include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
+#include "simple_xspi.h"
 
 #define LED2_PIN 10
 
@@ -73,8 +74,9 @@ int main(void){
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
+    PSRAM_Init();
+
     LCD_Init();
-    LCD_Fill(LCD_COLOR_GREEN);
 
     uintptr_t addr  = (uintptr_t)lcd_framebuffer;
     uintptr_t start = addr & ~31U;
@@ -85,6 +87,7 @@ int main(void){
     delay_ms(10);
 
     LCD_ConfigLayer1();
+    LCD_Fill(LCD_COLOR_GREEN);
 
 
     SCHEDULER_Init();

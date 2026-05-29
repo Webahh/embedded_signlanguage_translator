@@ -21,7 +21,9 @@
 #define LCD_COLOR_GREEN  0xFF00FF00U
 #define LCD_COLOR_BLUE   0xFF0000FFU
 
-#define lcd_framebuffer ((volatile uint32_t*)0x24064000UL)
+extern volatile uint32_t lcd_bg_buffer[LCD_WIDTH * LCD_HEIGHT];
+
+#define lcd_framebuffer lcd_bg_buffer
 
 void LCD_Fill(uint32_t color);
 void MPU_Config_Framebuffer(void);

@@ -7,6 +7,8 @@
 
 #include "simple_lcd_framebuffer.h"
 
+volatile uint32_t lcd_bg_buffer[LCD_WIDTH * LCD_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
+
 void LCD_Fill(uint32_t color){
 	volatile uint32_t* ptr = lcd_framebuffer;
 
