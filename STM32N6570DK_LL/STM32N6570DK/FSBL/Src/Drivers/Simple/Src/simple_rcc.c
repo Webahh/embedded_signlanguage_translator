@@ -5,6 +5,7 @@
  *      Author: Weber
  */
 #include "simple_rcc.h"
+#include "simple_timer.h"
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
 	if (GPIOX == GPIOA){
@@ -122,6 +123,17 @@ void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
     (void)RCC->CCIPR4;
 }
 
+void RCC_enable_LTDC_memory(void){
+    RCC->MEMENR |= RCC_MEMENR_AXISRAM1EN
+                |  RCC_MEMENR_AXISRAM2EN
+                |  RCC_MEMENR_AXISRAM3EN
+                |  RCC_MEMENR_AXISRAM4EN
+                |  RCC_MEMENR_AXISRAM5EN
+                |  RCC_MEMENR_AXISRAM6EN;
+
+    (void)RCC->MEMENR;
+}
+
 void RCC_enable_LTDC(void){
     RCC->APB5ENSR |= RCC_APB5ENSR_LTDCENS;
     (void)RCC->APB5ENSR;
@@ -130,6 +142,8 @@ void RCC_enable_LTDC(void){
 void RCC_reset_LTDC(void){
 	RCC->APB5RSTSR |= RCC_APB5RSTSR_LTDCRSTS;
 	(void)RCC->APB5RSTSR;
+
+	delay_ms(10);
 
     RCC->APB5RSTCR |= RCC_APB5RSTCR_LTDCRSTC;
     (void)RCC->APB5RSTCR;

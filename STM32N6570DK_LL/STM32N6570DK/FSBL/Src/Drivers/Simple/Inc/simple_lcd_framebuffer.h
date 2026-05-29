@@ -10,18 +10,21 @@
 
 #include <stdint.h>
 
-#define LCD_WIDTH  400
-#define LCD_HEIGHT 240
+#define LCD_WIDTH  700
+#define LCD_HEIGHT 400
 
-#define LCD_COLOR_BLACK  0x0000
-#define LCD_COLOR_WHITE  0xFFFF
-#define LCD_COLOR_RED    0xF800
-#define LCD_COLOR_GREEN  0x07E0
-#define LCD_COLOR_BLUE   0x001F
+#define LCD_BYTES_PER_PIXEL 4U
 
-#define lcd_framebuffer ((uint16_t*)0x34000000)
+#define LCD_COLOR_BLACK  0xFF000000U
+#define LCD_COLOR_WHITE  0xFFFFFFFFU
+#define LCD_COLOR_RED    0xFFFF0000U
+#define LCD_COLOR_GREEN  0xFF00FF00U
+#define LCD_COLOR_BLUE   0xFF0000FFU
 
-void LCD_Fill(uint16_t color);
-void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color);
+#define lcd_framebuffer ((volatile uint32_t*)0x24064000UL)
+
+void LCD_Fill(uint32_t color);
+void MPU_Config_Framebuffer(void);
+//void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color);
 
 #endif /* SIMPLE_LCD_FRAMEBUFFER_H */

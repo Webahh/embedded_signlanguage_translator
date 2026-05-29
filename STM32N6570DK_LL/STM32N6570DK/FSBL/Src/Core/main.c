@@ -43,13 +43,49 @@ static void vBackgroundTask(void) {
     LCD_SetBackgroundColor(r, g, b);
 }
 
+#define RIF_MASTER_INDEX_LTDC1      10U
+#define RIF_MASTER_INDEX_LTDC2      11U
+#define RIF_RISC_REG_LTDC_GROUP     3U
+
+#define HAL_RIMC_ATTR_LTDC_VALUE    0x00000310U
+#define HAL_RISC_LTDC_GROUP_VALUE   0x000005FCU
+
+static void RIF_Config_LTDC_BareMetal(void){
+    RCC->AHB3ENSR |= RCC_AHB3ENSR_RIFSCENS;
+    (void)RCC->AHB3ENSR;
+
+    RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC1] = HAL_RIMC_ATTR_LTDC_VALUE;
+    RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC2] = HAL_RIMC_ATTR_LTDC_VALUE;
+
+    RIFSC->RISC_SECCFGRx[RIF_RISC_REG_LTDC_GROUP]  = HAL_RISC_LTDC_GROUP_VALUE;
+    RIFSC->RISC_PRIVCFGRx[RIF_RISC_REG_LTDC_GROUP] = HAL_RISC_LTDC_GROUP_VALUE;
+
+    (void)RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC1];
+    (void)RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC2];
+    (void)RIFSC->RISC_SECCFGRx[RIF_RISC_REG_LTDC_GROUP];
+    (void)RIFSC->RISC_PRIVCFGRx[RIF_RISC_REG_LTDC_GROUP];
+}
+
 int main(void){
+	RIF_Config_LTDC_BareMetal();
+
 	delay_init();
+
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
     LCD_Init();
+    LCD_Fill(LCD_COLOR_GREEN);
+
+    uintptr_t addr  = (uintptr_t)lcd_framebuffer;
+    uintptr_t start = addr & ~31U;
+    uintptr_t size  = (LCD_WIDTH * LCD_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
+
+    SCB_CleanDCache_by_Addr((uint32_t*)start, size);
+
+    delay_ms(10);
+
     LCD_ConfigLayer1();
-    LCD_Fill(LCD_COLOR_BLACK);
+
 
     SCHEDULER_Init();
 

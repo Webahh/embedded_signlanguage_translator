@@ -69,8 +69,7 @@ static void LCD_ConfigTiming(void){
 }
 
 void LCD_Init(void){
-    delay_init();
-
+    RCC_enable_LTDC_memory();
     RCC_config_LTDC_clock();
 
     LCD_ConfigGPIO();
@@ -83,13 +82,10 @@ void LCD_Init(void){
 
     LCD_ConfigTiming();
 
-    LTDC->GCR |= LTDC_GCR_BCKEN;
     LTDC->GCR &= ~(LTDC_GCR_HSPOL | LTDC_GCR_VSPOL | LTDC_GCR_DEPOL | LTDC_GCR_PCPOL);
+    LTDC->GCR |= (LTDC_GCR_DEPOL | LTDC_GCR_PCPOL);
 
-    LTDC->BCCR = 0x0000FF00U;
-
-    LTDC->SRCR = LTDC_SRCR_IMR;
-    while (LTDC->SRCR & LTDC_SRCR_IMR);
+    LTDC->BCCR = 0xFFFFFFFFUL;
 
     LTDC->GCR |= LTDC_GCR_LTDCEN;
 }
@@ -101,29 +97,64 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
 }
 
 void LCD_ConfigLayer1(void){
-    uint32_t hstart = (LTDC->BPCR & LTDC_BPCR_AHBP) + 1;
-    uint32_t vstart = (LTDC->BPCR & LTDC_BPCR_AVBP) + 1;
+    uint32_t hsync = 4U;
+    uint32_t hbp   = 4U;
+    uint32_t vsync = 4U;
+    uint32_t vbp   = 4U;
 
-    LTDC_Layer1->CR = 0;
+    uint32_t pitch = LCD_WIDTH * LCD_BYTES_PER_PIXEL;
 
-    LTDC_Layer1->WHPCR = (hstart << LTDC_LxWHPCR_WHSTPOS_Pos)
-                       | ((hstart + LCD_WIDTH - 1) << LTDC_LxWHPCR_WHSPPOS_Pos);
+    LTDC_Layer1->CR = 0U;
 
-    LTDC_Layer1->WVPCR = (vstart << LTDC_LxWVPCR_WVSTPOS_Pos)
-                       | ((vstart + LCD_HEIGHT - 1) << LTDC_LxWVPCR_WVSPPOS_Pos);
+    LTDC_Layer1->CKCR = 0U;
+    LTDC_Layer1->PCR = 0U;
 
-    LTDC_Layer1->PFCR  = (2 << LTDC_LxPFCR_PF_Pos);
-    LTDC_Layer1->CACR  = (255 << LTDC_LxCACR_CONSTA_Pos);
-    LTDC_Layer1->BFCR  = (4 << LTDC_LxBFCR_BF1_Pos)
-                       | (5 << LTDC_LxBFCR_BF2_Pos);
+    LTDC_Layer1->AFBA0R = 0U;
+    LTDC_Layer1->AFBA1R = 0U;
+    LTDC_Layer1->AFBLR  = 0U;
+    LTDC_Layer1->AFBLNR = 0U;
 
-    LTDC_Layer1->CFBAR = 0x34000000U;
-    LTDC_Layer1->CFBLR = (((LCD_WIDTH * 2) + 7) << LTDC_LxCFBLR_CFBLL_Pos)
-                       | ((LCD_WIDTH * 2) << LTDC_LxCFBLR_CFBP_Pos);
-    LTDC_Layer1->CFBLNR = (LCD_HEIGHT << LTDC_LxCFBLNR_CFBLNBR_Pos);
+    LTDC_Layer1->SISR  = 0U;
+    LTDC_Layer1->SOSR  = 0U;
+    LTDC_Layer1->SVSFR = 0U;
+    LTDC_Layer1->SVSPR = 0U;
+    LTDC_Layer1->SHSFR = 0U;
+    LTDC_Layer1->SHSPR = 0U;
 
-    LTDC_Layer1->CR |= LTDC_LxCR_LEN;
+    LTDC_Layer1->CYR0R = 0U;
+    LTDC_Layer1->CYR1R = 0U;
 
-    LTDC->SRCR |= LTDC_SRCR_IMR;
-    while (LTDC->SRCR & LTDC_SRCR_IMR);
+    LTDC_Layer1->WHPCR =
+        ((hsync + hbp) << LTDC_LxWHPCR_WHSTPOS_Pos) |
+        ((hsync + hbp + LCD_WIDTH - 1U) << LTDC_LxWHPCR_WHSPPOS_Pos);
+
+    LTDC_Layer1->WVPCR =
+        ((vsync + vbp) << LTDC_LxWVPCR_WVSTPOS_Pos) |
+        ((vsync + vbp + LCD_HEIGHT - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
+
+    LTDC_Layer1->PFCR =  0U;
+    LTDC_Layer1->FPF0R = 0U;
+    LTDC_Layer1->FPF1R = 0U;
+
+    LTDC_Layer1->CACR = 0xFF;
+    LTDC_Layer1->DCCR = 0x00000000U;
+
+    LTDC_Layer1->BFCR =
+       (4U << LTDC_LxBFCR_BF1_Pos) |
+       (5U << LTDC_LxBFCR_BF2_Pos);
+
+    LTDC_Layer1->CFBAR = (uint32_t)lcd_framebuffer;
+
+    LTDC_Layer1->CFBLR =
+        (pitch << LTDC_LxCFBLR_CFBP_Pos) |
+        ((pitch + 7U) << LTDC_LxCFBLR_CFBLL_Pos);
+
+    LTDC_Layer1->CFBLNR = LCD_HEIGHT;
+
+    LTDC_Layer1->CR = LTDC_LxCR_LEN;
+
+    LTDC->SRCR = LTDC_SRCR_IMR;
+    while (LTDC->SRCR & LTDC_SRCR_IMR) {
+    }
+
 }

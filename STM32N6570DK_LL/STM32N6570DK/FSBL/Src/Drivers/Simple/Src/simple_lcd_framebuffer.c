@@ -7,14 +7,15 @@
 
 #include "simple_lcd_framebuffer.h"
 
+void LCD_Fill(uint32_t color){
+	volatile uint32_t* ptr = lcd_framebuffer;
 
-
-void LCD_Fill(uint16_t color){
     for (uint32_t i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++) {
-        lcd_framebuffer[i] = color;
+        ptr[i] = color;
     }
 }
 
+/*
 void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color){
     if (x >= LCD_WIDTH || y >= LCD_HEIGHT) {
         return;
@@ -22,5 +23,6 @@ void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color){
 
     lcd_framebuffer[y * LCD_WIDTH + x] = color;
 }
+*/
 
 
