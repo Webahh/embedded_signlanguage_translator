@@ -156,5 +156,67 @@ void LCD_ConfigLayer1(void){
     LTDC->SRCR = LTDC_SRCR_IMR;
     while (LTDC->SRCR & LTDC_SRCR_IMR) {
     }
+}
 
+void LCD_ConfigLayer2(void){
+    uint32_t hsync = 4U;
+    uint32_t hbp   = 4U;
+    uint32_t vsync = 4U;
+    uint32_t vbp   = 4U;
+
+    uint32_t buf_pitch   = LCD_FG_WIDTH * LCD_BYTES_PER_PIXEL;
+    uint32_t disp_pitch  = 400U * LCD_BYTES_PER_PIXEL;
+
+    LTDC_Layer2->CR = 0U;
+
+    LTDC_Layer2->CKCR = 0U;
+    LTDC_Layer2->PCR = 0U;
+
+    LTDC_Layer2->AFBA0R = 0U;
+    LTDC_Layer2->AFBA1R = 0U;
+    LTDC_Layer2->AFBLR  = 0U;
+    LTDC_Layer2->AFBLNR = 0U;
+
+    LTDC_Layer2->SISR  = 0U;
+    LTDC_Layer2->SOSR  = 0U;
+    LTDC_Layer2->SVSFR = 0U;
+    LTDC_Layer2->SVSPR = 0U;
+    LTDC_Layer2->SHSFR = 0U;
+    LTDC_Layer2->SHSPR = 0U;
+
+    LTDC_Layer2->CYR0R = 0U;
+    LTDC_Layer2->CYR1R = 0U;
+
+    LTDC_Layer2->WHPCR =
+        ((hsync + hbp + 400U) << LTDC_LxWHPCR_WHSTPOS_Pos) |
+        ((hsync + hbp + 400U + 400U - 1U) << LTDC_LxWHPCR_WHSPPOS_Pos);
+
+    LTDC_Layer2->WVPCR =
+        ((vsync + vbp) << LTDC_LxWVPCR_WVSTPOS_Pos) |
+        ((vsync + vbp + 480U - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
+
+    LTDC_Layer2->PFCR =  0U;
+    LTDC_Layer2->FPF0R = 0U;
+    LTDC_Layer2->FPF1R = 0U;
+
+    LTDC_Layer2->CACR = 0xFF;
+    LTDC_Layer2->DCCR = 0x00000000U;
+
+    LTDC_Layer2->BFCR =
+       (4U << LTDC_LxBFCR_BF1_Pos) |
+       (5U << LTDC_LxBFCR_BF2_Pos);
+
+    LTDC_Layer2->CFBAR = (uint32_t)lcd_fg_buffer;
+
+    LTDC_Layer2->CFBLR =
+        (buf_pitch << LTDC_LxCFBLR_CFBP_Pos) |
+        ((disp_pitch + 7U) << LTDC_LxCFBLR_CFBLL_Pos);
+
+    LTDC_Layer2->CFBLNR = 480U;
+
+    LTDC_Layer2->CR = LTDC_LxCR_LEN;
+
+    LTDC->SRCR = LTDC_SRCR_IMR;
+    while (LTDC->SRCR & LTDC_SRCR_IMR) {
+    }
 }

@@ -78,16 +78,28 @@ int main(void){
 
     LCD_Init();
 
-    uintptr_t addr  = (uintptr_t)lcd_framebuffer;
-    uintptr_t start = addr & ~31U;
-    uintptr_t size  = (LCD_WIDTH * LCD_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
-
-    SCB_CleanDCache_by_Addr((uint32_t*)start, size);
-
     delay_ms(10);
 
     LCD_ConfigLayer1();
+    LCD_ConfigLayer2();
+
     LCD_Fill(LCD_COLOR_GREEN);
+
+    for (uint32_t i = 0; i < LCD_FG_WIDTH * LCD_FG_HEIGHT; i++) {
+        lcd_fg_buffer[i] = LCD_COLOR_BLUE;
+    }
+
+    uintptr_t bg_addr  = (uintptr_t)lcd_framebuffer;
+    uintptr_t bg_start = bg_addr & ~31U;
+    uintptr_t bg_size  = (LCD_WIDTH * LCD_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
+    SCB_CleanDCache_by_Addr((uint32_t*)bg_start, bg_size);
+
+    uintptr_t fg_addr  = (uintptr_t)lcd_fg_buffer;
+    uintptr_t fg_start = fg_addr & ~31U;
+    uintptr_t fg_size  = (LCD_FG_WIDTH * LCD_FG_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
+    SCB_CleanDCache_by_Addr((uint32_t*)fg_start, fg_size);
+
+    delay_ms(10);
 
 
     SCHEDULER_Init();

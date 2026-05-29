@@ -10,8 +10,11 @@
 
 #include <stdint.h>
 
-#define LCD_WIDTH  700
-#define LCD_HEIGHT 400
+#define LCD_WIDTH  390
+#define LCD_HEIGHT 480
+
+#define LCD_FG_WIDTH  390
+#define LCD_FG_HEIGHT 480
 
 #define LCD_BYTES_PER_PIXEL 4U
 
@@ -22,6 +25,7 @@
 #define LCD_COLOR_BLUE   0xFF0000FFU
 
 extern volatile uint32_t lcd_bg_buffer[LCD_WIDTH * LCD_HEIGHT];
+extern volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT];
 
 #define lcd_framebuffer lcd_bg_buffer
 
