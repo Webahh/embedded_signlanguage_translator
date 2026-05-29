@@ -29,5 +29,11 @@ void RCC_reset_LTDC(void);
 void RCC_setLTDC_clock_source(uint32_t source);
 void RCC_config_LTDC_clock(void);
 
+void RCC_enable_DCMIPP(void);
+void RCC_reset_DCMIPP(void);
+void RCC_enable_CSI(void);
+void RCC_reset_CSI(void);
+
+void RCC_enable_PWR(void);
 
 #endif // SIMPLE_RCC_H

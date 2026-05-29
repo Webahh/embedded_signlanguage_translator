@@ -5,8 +5,14 @@
 #include "simple_ltdc.h"
 #include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
+#include "simple_camera.h"
+#include "simple_dcmipp.h"
+#include "simple_i2c.h"
+#include "simple_imx335.h"
 
-#define LED2_PIN 10
+#define LED2_PIN      10
+#define CAM_NRST_PIN  8
+#define CAM_EN_PIN    2
 
 #define BG_NUM_COLORS 3
 
@@ -18,6 +24,27 @@ static const uint8_t bg_colors[BG_NUM_COLORS][3] = {
 
 static uint8_t  bg_seg_idx    = 0;
 static uint32_t bg_blend_start = 0;
+
+static CAM_Handle hcam;
+
+static void Camera_PowerOn(void)
+{
+    RCC_enable_GPIO(GPIOC);
+    RCC_enable_GPIO(GPIOD);
+
+    GPIO_Config(GPIOC, CAM_NRST_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
+    GPIO_Config(GPIOD, CAM_EN_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
+
+    GPIO_BSRR_reset(GPIOD, CAM_EN_PIN);
+    GPIO_BSRR_reset(GPIOC, CAM_NRST_PIN);
+    delay_ms(50);
+
+    GPIO_BSRR_set(GPIOD, CAM_EN_PIN);
+    delay_ms(100);
+
+    GPIO_BSRR_set(GPIOC, CAM_NRST_PIN);
+    delay_ms(100);
+}
 
 static void vLEDTask(void) {
 	GPIO_BSRR_toggle(GPIOG, LED2_PIN);
@@ -74,18 +101,31 @@ int main(void){
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
     LCD_Init();
+    LCD_ConfigLayer1();
     LCD_Fill(LCD_COLOR_GREEN);
+
+    Camera_PowerOn();
+
+    RCC_enable_PWR();
+    PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
+
+    RCC_enable_GPIO(GPIOH);
+    GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_NONE, GPIO_I2C);
+    GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_NONE, GPIO_I2C);
+
+    I2C_Config(I2C1, 5, 0x00624B53);
+
+    if (CAM_DisplayPipe_Start(&hcam) != CAM_OK) {
+        while (1);
+    }
+
+    CAM_NNPipe_Start(&hcam);
 
     uintptr_t addr  = (uintptr_t)lcd_framebuffer;
     uintptr_t start = addr & ~31U;
     uintptr_t size  = (LCD_WIDTH * LCD_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
 
     SCB_CleanDCache_by_Addr((uint32_t*)start, size);
-
-    delay_ms(10);
-
-    LCD_ConfigLayer1();
-
 
     SCHEDULER_Init();
 
