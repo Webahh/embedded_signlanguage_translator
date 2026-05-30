@@ -83,37 +83,8 @@ int main(void){
     delay_ms(10);
 
     LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_GREEN);
+    LCD_FillLayer(&LCD_Layer2Config, LCD_COLOR_RED);
 
-    volatile uint32_t *fg = lcd_fg_buffer;
-    uint32_t rng = 1;
-    for (uint32_t y = 0; y < LCD_FG_HEIGHT; y++){
-        for (uint32_t x = 0; x < LCD_FG_WIDTH; x++){
-            if (y == 0 || y == LCD_FG_HEIGHT - 1 || x == 0 || x == LCD_FG_WIDTH - 1){
-                fg[y * LCD_FG_WIDTH + x] = LCD_COLOR_BLACK;
-            } else {
-                rng ^= rng << 13;
-                rng ^= rng >> 17;
-                rng ^= rng << 5;
-                fg[y * LCD_FG_WIDTH + x] = 0xFF000000U | (rng & 0x00FFFFFFU);
-            }
-        }
-    }
-
-    uintptr_t bg_addr  = (uintptr_t)lcd_framebuffer;
-    uintptr_t bg_start = bg_addr & ~31U;
-    uintptr_t bg_size  = (LCD_WIDTH * LCD_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
-    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)bg_start, bg_size);
-
-    uintptr_t fg_addr  = (uintptr_t)lcd_fg_buffer;
-    uintptr_t fg_start = fg_addr & ~31U;
-    uintptr_t fg_size  = (LCD_FG_WIDTH * LCD_FG_HEIGHT * LCD_BYTES_PER_PIXEL + 31U) & ~31U;
-    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)fg_start, fg_size);
-
-    __DSB();
-    (void)lcd_framebuffer[0];
-    (void)lcd_fg_buffer[0];
-    (void)lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT - 1];
-    __DSB();
 
     LCD_ConfigLayer1();
     LCD_ConfigLayer2();
