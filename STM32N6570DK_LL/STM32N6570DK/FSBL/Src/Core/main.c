@@ -9,6 +9,7 @@
 #include "simple_dcmipp.h"
 #include "simple_i2c.h"
 #include "simple_imx335.h"
+#include "simple_xspi.h"
 
 #define LED2_PIN      10
 #define CAM_NRST_PIN  8
@@ -100,10 +101,13 @@ int main(void){
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
-    LCD_Init();
-    LCD_ConfigLayer1();
-    LCD_Fill(LCD_COLOR_GREEN);
+    SCB_EnableDCache();
 
+    PSRAM_Init();
+
+    LCD_Init();
+
+    LCD_ConfigLayer1();
     Camera_PowerOn();
 
     RCC_enable_PWR();

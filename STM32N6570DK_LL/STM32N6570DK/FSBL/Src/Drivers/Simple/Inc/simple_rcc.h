@@ -35,5 +35,11 @@ void RCC_enable_CSI(void);
 void RCC_reset_CSI(void);
 
 void RCC_enable_PWR(void);
+void RCC_enable_XSPI1(void);
+void RCC_reset_XSPI1(void);
+void RCC_enable_XSPIM(void);
+void RCC_reset_XSPIM(void);
+void PWR_enable_VDDIO2(void);
+void PWR_config_VDDIO2_1V8(void);
 
 #endif // SIMPLE_RCC_H
