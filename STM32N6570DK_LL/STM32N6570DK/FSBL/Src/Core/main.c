@@ -85,7 +85,6 @@ int main(void){
     LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_GREEN);
     LCD_FillLayer(&LCD_Layer2Config, LCD_COLOR_RED);
 
-
     LCD_ConfigLayer1();
     LCD_ConfigLayer2();
 

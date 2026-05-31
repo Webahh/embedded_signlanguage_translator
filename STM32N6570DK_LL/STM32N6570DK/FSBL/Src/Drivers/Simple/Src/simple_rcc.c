@@ -162,6 +162,35 @@ void RCC_setLTDC_clock_source(uint32_t source){
     (void)RCC->CCIPR4;
 }
 
+void RCC_enable_DCMIPP(void){
+    RCC->APB5ENSR |= RCC_APB5ENSR_DCMIPPENS;
+    (void)RCC->APB5ENSR;
+}
+
+void RCC_reset_DCMIPP(void){
+    RCC->APB5RSTSR |= RCC_APB5RSTSR_DCMIPPRSTS;
+    (void)RCC->APB5RSTSR;
+    RCC->APB5RSTCR |= RCC_APB5RSTCR_DCMIPPRSTC;
+    (void)RCC->APB5RSTCR;
+}
+
+void RCC_enable_CSI(void){
+    RCC->APB5ENSR |= RCC_APB5ENSR_CSIENS;
+    (void)RCC->APB5ENSR;
+}
+
+void RCC_reset_CSI(void){
+    RCC->APB5RSTSR |= RCC_APB5RSTSR_CSIRSTS;
+    (void)RCC->APB5RSTSR;
+    RCC->APB5RSTCR |= RCC_APB5RSTCR_CSIRSTC;
+    (void)RCC->APB5RSTCR;
+}
+
+void RCC_enable_PWR(void){
+    RCC->AHB4ENR |= RCC_AHB4ENR_PWREN;
+    (void)RCC->AHB4ENR;
+}
+
 void RCC_enable_XSPI1(void){
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI1ENS;
     (void)RCC->AHB5ENSR;
@@ -238,5 +267,4 @@ void RCC_config_LTDC_clock(void){
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
 }
-
 

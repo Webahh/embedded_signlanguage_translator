@@ -19,5 +19,7 @@ typedef enum {
 } I2C_Status_TypeDef;
 
 void I2C_Config(I2C_TypeDef* I2CX, uint32_t clock_source, uint32_t timing);
+I2C_Status_TypeDef I2C_Mem_Write(I2C_TypeDef* I2CX, uint16_t dev_addr, uint16_t mem_addr,const uint8_t *data, uint16_t len);
+I2C_Status_TypeDef I2C_Mem_Read(I2C_TypeDef* I2CX, uint16_t dev_addr, uint16_t mem_addr, uint8_t *data, uint16_t len);
 
 #endif /* SIMPLE_I2C */
