@@ -39,15 +39,14 @@ void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
 
     XSPI1->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
 
-    XSPI1->CCR = (7UL << 0)
+    XSPI1->CCR = (4UL << 0)
                | (0UL << 3)
                | (0UL << 4)
-               | (7UL << 8)
+               | (4UL << 8)
                | (1UL << 11)
                | (3UL << 12)
-               | (7UL << 24)
+               | (5UL << 24)
                | (1UL << 27)
-               | (1UL << 29)
                ;
 
     XSPI1->IR  = 0xC0;
