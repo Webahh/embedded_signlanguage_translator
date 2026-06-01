@@ -217,14 +217,14 @@ void RCC_reset_XSPIM(void){
     (void)RCC->AHB5RSTCR;
 }
 
-void PWR_enable_VDDIO2(void){
+void RCC_enable_VDDIO2(void){
     RCC->AHB4ENSR |= RCC_AHB4ENSR_PWRENS;
     (void)RCC->AHB4ENSR;
     PWR->SVMCR3 |= PWR_SVMCR3_VDDIO2SV;
     (void)PWR->SVMCR3;
 }
 
-void PWR_config_VDDIO2_1V8(void){
+void RCC_config_VDDIO2_1V8(void){
     PWR->SVMCR3 &= ~PWR_SVMCR3_VDDIO2VRSEL;
     (void)PWR->SVMCR3;
 }

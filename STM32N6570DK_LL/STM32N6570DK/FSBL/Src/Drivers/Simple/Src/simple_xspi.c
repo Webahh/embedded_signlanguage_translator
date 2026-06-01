@@ -109,8 +109,8 @@ void XSPI1_EnableMemoryMappedMode(void){
 }
 
 void PSRAM_Init(void){
-    PWR_enable_VDDIO2();
-    PWR_config_VDDIO2_1V8();
+    RCC_enable_VDDIO2();
+    RCC_config_VDDIO2_1V8();
     delay_ms(5);
 
     RCC_enable_XSPI1();
