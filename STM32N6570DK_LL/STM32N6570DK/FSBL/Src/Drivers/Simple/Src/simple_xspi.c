@@ -22,7 +22,7 @@ void XSPI1_GPIO_Init(void){
 void XSPI1_Init(void){
     XSPI1->DCR1 = (6UL << 24) | (24UL << 16) | (4UL << 8);
     XSPI1->DCR2 = 3UL;
-    XSPI1->DCR3 = (13UL << 16);
+    XSPI1->DCR3 = 0x000B0000;
     XSPI1->DCR4 = 129UL;
     XSPI1->TCR  = (1UL << 28);
 }
@@ -69,7 +69,7 @@ void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
 static void PSRAM_WriteConfig(void){
     XSPI1_WriteReg(0, 0x30);
     XSPI1_WriteReg(4, 0x20);
-    XSPI1_WriteReg(8, 0x40);
+    XSPI1_WriteReg(8, 0x40 | 0x03);
 }
 
 static void PSRAM_BypassPrescaler(void){
@@ -77,13 +77,13 @@ static void PSRAM_BypassPrescaler(void){
 }
 
 void XSPI1_EnableMemoryMappedMode(void){
-    XSPI1->WCCR = (7UL << 0)
+    XSPI1->WCCR = (4UL << 0)
                  | (0UL << 3)
                  | (0UL << 4)
-                 | (7UL << 8)
+                 | (4UL << 8)
                  | (1UL << 11)
                  | (3UL << 12)
-                 | (7UL << 24)
+                 | (5UL << 24)
                  | (1UL << 27)
                  | (1UL << 29)
                  ;
@@ -91,19 +91,19 @@ void XSPI1_EnableMemoryMappedMode(void){
     XSPI1->WIR  = 0xA0;
     XSPI1->WTCR = 6;
 
-    XSPI1->CCR = (7UL << 0)
+    XSPI1->CCR = (4UL << 0)
                 | (0UL << 3)
                 | (0UL << 4)
-                | (7UL << 8)
+                | (4UL << 8)
                 | (1UL << 11)
                 | (3UL << 12)
-                | (7UL << 24)
+                | (5UL << 24)
                 | (1UL << 27)
                 | (1UL << 29)
                 ;
 
     XSPI1->IR  = 0x20;
-    XSPI1->TCR |= 6;
+    XSPI1->TCR = 6;
 
     XSPI1->CR = 0x30000000 | (7UL << 8) | 1UL;
 }
