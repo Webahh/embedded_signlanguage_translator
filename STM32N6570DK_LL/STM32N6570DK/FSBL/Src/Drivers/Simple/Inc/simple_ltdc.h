@@ -37,6 +37,7 @@ extern LCD_LayerConfig LCD_Layer2Config;
 
 void LCD_ConfigLayer(const LCD_LayerConfig *cfg);
 void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color);
+void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2);
 void LCD_ConfigLayer1(void);
 void LCD_ConfigLayer2(void);
 

@@ -175,6 +175,20 @@ void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
     }
 }
 
+void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2) {
+	volatile uint32_t *fb = cfg->fb;
+
+	for (uint32_t y = 0; y < cfg->height; y++) {
+		for(uint32_t x = 0; x < cfg->width; x++) {
+			if (x < cfg->width / 2) {
+				fb[y * cfg->width + x] = color1;
+			} else {
+				fb[y * cfg->width + x] = color2;
+			}
+		}
+	}
+}
+
 void LCD_ConfigLayer1(void){
     LCD_ConfigLayer(&LCD_Layer1Config);
 }
@@ -185,12 +199,12 @@ void LCD_ConfigLayer2(void){
 
 LCD_LayerConfig LCD_Layer1Config = {
     .regs           = LTDC_Layer1,
-    .fb             = lcd_framebuffer,
+    .fb             = lcd_bg_buffer,
     .x              = 410,
     .y              = 10,
-    .width          = LCD_WIDTH,
-    .height         = LCD_HEIGHT,
-    .buf_width      = LCD_WIDTH,
+    .width          = 20,
+    .height         = 20,
+    .buf_width      = 20,
     .pixel_format   = LCD_PF_ARGB8888,
     .const_alpha    = 0xFF,
     .per_pixel_alpha = 1,

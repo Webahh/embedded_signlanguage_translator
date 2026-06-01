@@ -74,7 +74,7 @@ int main(void){
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
 
-    SCB_EnableDCache();
+//    SCB_EnableDCache();
 
     PSRAM_Init();
 
@@ -82,19 +82,16 @@ int main(void){
 
     delay_ms(10);
 
-    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_GREEN);
-    LCD_FillLayer(&LCD_Layer2Config, LCD_COLOR_RED);
+    LCD_FillLayer2Sides(&LCD_Layer1Config, LCD_COLOR_BLUE, LCD_COLOR_RED);
 
     LCD_ConfigLayer1();
-    LCD_ConfigLayer2();
 
     delay_ms(10);
-
 
     SCHEDULER_Init();
 
 	SCHEDULER_AddTask(vLEDTask, "LED", 500);
-	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
+	//SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
 
 	while (1) {
 		SCHEDULER_Run();

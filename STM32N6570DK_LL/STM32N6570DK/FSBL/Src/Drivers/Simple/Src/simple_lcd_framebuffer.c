@@ -10,13 +10,13 @@
 volatile uint32_t lcd_bg_buffer[LCD_WIDTH * LCD_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
 volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
 
-void LCD_Fill(uint32_t color){
-	volatile uint32_t* ptr = lcd_framebuffer;
-
-    for (uint32_t i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++) {
-        ptr[i] = color;
-    }
-}
+//void LCD_Fill(uint32_t color){
+//	volatile uint32_t* ptr = lcd_framebuffer;
+//
+//    for (uint32_t i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++) {
+//        ptr[i] = color;
+//    }
+//}
 
 /*
 void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color){
