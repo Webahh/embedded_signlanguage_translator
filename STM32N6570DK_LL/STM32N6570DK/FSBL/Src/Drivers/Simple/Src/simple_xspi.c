@@ -4,6 +4,9 @@
 #include "simple_timer.h"
 #include "stm32n657xx.h"
 
+#define XSPI_FIELD(REG, FIELD, VAL) \
+    (((uint32_t)(VAL) << XSPI_##REG##_##FIELD##_Pos) & XSPI_##REG##_##FIELD##_Msk)
+
 void XSPI1_GPIO_Init(void){
     RCC_enable_GPIO(GPIOO);
     RCC_enable_GPIO(GPIOP);
@@ -20,17 +23,20 @@ void XSPI1_GPIO_Init(void){
 }
 
 void XSPI1_Init(void){
-    XSPI1->DCR1 = (6UL << 24) | (24UL << 16) | (4UL << 8);
-    XSPI1->DCR2 = 3UL;
+    XSPI1->DCR1 = XSPI_FIELD(DCR1, MTYP,    6)
+                | XSPI_FIELD(DCR1, DEVSIZE, 24)
+                | XSPI_FIELD(DCR1, CSHT,    4);
+
+    XSPI1->DCR2 = XSPI_FIELD(DCR2, PRESCALER, 3);
     XSPI1->DCR3 = 0x000B0000;
     XSPI1->DCR4 = 129UL;
-    XSPI1->TCR  = (1UL << 28);
+    XSPI1->TCR  = XSPI_TCR_DHQC;
 }
 
 void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
     uint32_t timeout;
 
-    XSPI1->CR = (7UL << 8) | 1UL;
+    XSPI1->CR = XSPI_FIELD(CR, FTHRES, 7) | XSPI_CR_EN;
 
     timeout = 1000000;
     while (XSPI1->SR & XSPI_SR_BUSY){
@@ -39,19 +45,18 @@ void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
 
     XSPI1->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
 
-    XSPI1->CCR = (7UL << 0)
-               | (0UL << 3)
-               | (0UL << 4)
-               | (7UL << 8)
-               | (1UL << 11)
-               | (3UL << 12)
-               | (7UL << 24)
-               | (1UL << 27)
-               | (1UL << 29)
-               ;
+    XSPI1->CCR = XSPI_FIELD(CCR, IMODE,  7)
+               | XSPI_FIELD(CCR, IDTR,   0)
+               | XSPI_FIELD(CCR, ISIZE,  0)
+               | XSPI_FIELD(CCR, ADMODE, 7)
+               | XSPI_FIELD(CCR, ADDTR,  1)
+               | XSPI_FIELD(CCR, ADSIZE, 3)
+               | XSPI_FIELD(CCR, DMODE,  7)
+               | XSPI_FIELD(CCR, DDTR,   1)
+               | XSPI_FIELD(CCR, DQSE,   1);
 
     XSPI1->IR  = 0xC0;
-    XSPI1->TCR = (1UL << 28);
+    XSPI1->TCR = XSPI_TCR_DHQC;
     XSPI1->AR  = reg_addr;
     XSPI1->DLR = 1;
 
@@ -66,6 +71,7 @@ void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
     XSPI1->FCR = XSPI_FCR_CTCF;
 }
 
+
 static void PSRAM_WriteConfig(void){
     XSPI1_WriteReg(0, 0x30);
     XSPI1_WriteReg(4, 0x20);
@@ -77,35 +83,35 @@ static void PSRAM_BypassPrescaler(void){
 }
 
 void XSPI1_EnableMemoryMappedMode(void){
-    XSPI1->WCCR = (4UL << 0)
-                 | (0UL << 3)
-                 | (0UL << 4)
-                 | (4UL << 8)
-                 | (1UL << 11)
-                 | (3UL << 12)
-                 | (5UL << 24)
-                 | (1UL << 27)
-                 | (1UL << 29)
-                 ;
+    XSPI1->WCCR = XSPI_FIELD(WCCR, IMODE,  4)
+                | XSPI_FIELD(WCCR, IDTR,   0)
+                | XSPI_FIELD(WCCR, ISIZE,  0)
+                | XSPI_FIELD(WCCR, ADMODE, 4)
+                | XSPI_FIELD(WCCR, ADDTR,  1)
+                | XSPI_FIELD(WCCR, ADSIZE, 3)
+                | XSPI_FIELD(WCCR, DMODE,  5)
+                | XSPI_FIELD(WCCR, DDTR,   1)
+                | XSPI_FIELD(WCCR, DQSE,   1);
 
     XSPI1->WIR  = 0xA0;
     XSPI1->WTCR = 6;
 
-    XSPI1->CCR = (4UL << 0)
-                | (0UL << 3)
-                | (0UL << 4)
-                | (4UL << 8)
-                | (1UL << 11)
-                | (3UL << 12)
-                | (5UL << 24)
-                | (1UL << 27)
-                | (1UL << 29)
-                ;
+    XSPI1->CCR = XSPI_FIELD(CCR, IMODE,  4)
+               | XSPI_FIELD(CCR, IDTR,   0)
+               | XSPI_FIELD(CCR, ISIZE,  0)
+               | XSPI_FIELD(CCR, ADMODE, 4)
+               | XSPI_FIELD(CCR, ADDTR,  1)
+               | XSPI_FIELD(CCR, ADSIZE, 3)
+               | XSPI_FIELD(CCR, DMODE,  5)
+               | XSPI_FIELD(CCR, DDTR,   1)
+               | XSPI_FIELD(CCR, DQSE,   1);
 
     XSPI1->IR  = 0x20;
     XSPI1->TCR = 6;
 
-    XSPI1->CR = 0x30000000 | (7UL << 8) | 1UL;
+    XSPI1->CR = XSPI_FIELD(CR, FMODE, 3)
+              | XSPI_FIELD(CR, FTHRES, 7)
+              | XSPI_CR_EN;
 }
 
 void PSRAM_Init(void){
