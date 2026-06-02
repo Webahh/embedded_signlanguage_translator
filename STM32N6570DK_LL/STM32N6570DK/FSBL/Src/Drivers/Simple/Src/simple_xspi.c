@@ -18,9 +18,9 @@ void XSPI1_GPIO_Init(void){
     RCC_enable_GPIO(GPIOP);
 
     GPIO_Config(GPIOO, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPIOO, 2, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPIOO, 3, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPIOO, 4, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+    for (int p = 2; p <= 4; p++) {
+    	GPIO_Config(GPIOO, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+    }
 
     GPIO_Config(GPIOP, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
     for (int p = 1; p <= 15; p++){
@@ -30,24 +30,14 @@ void XSPI1_GPIO_Init(void){
 
 /*
  * XSPI2_GPIO_Init – XSPI2 (Port 2) → NOR Flash (MX66UW1G45G)
- * All pins on GPION, AF9:
+ * All pins on GPION{0..11} with AF9:
  *   PN0=DQS0, PN1=NCS1, PN2-5=IO0-3, PN6=CLK, PN7=NCLK, PN8-11=IO4-7
  */
 void XSPI2_GPIO_Init(void){
     RCC_enable_GPIO(GPION);
-
-    GPIO_Config(GPION, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 1, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 2, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 3, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 4, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 5, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 6, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 7, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 8, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 9, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 10, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
-    GPIO_Config(GPION, 11, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+    for (int p = 0; p <= 11; p++){
+        GPIO_Config(GPION, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+    }
 }
 
 /* XSPI1 device-configuration registers: PSRAM (APS256XX) */
@@ -72,121 +62,73 @@ void XSPI2_Init(void){
 }
 
 /*
- * XSPI1_WriteReg – send a byte via indirect write to XSPI1
- * Protocol: 8-bit cmd + 32-bit address + 8-bit data, octal DTR with DQS
+ * XSPI_WriteReg – indirect register write for any XSPI instance
+ * Sends 1 byte via octal DTR protocol: 8-bit cmd + 32-bit addr + 8-bit data
  */
+static void XSPI_WriteReg(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
+    uint32_t timeout;
+
+    xspi->CR = XSPI_FIELD(CR, FTHRES, 7) | XSPI_CR_EN;
+
+    timeout = 1000000;
+    while (xspi->SR & XSPI_SR_BUSY){
+        if (--timeout == 0) break;
+    }
+
+    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+
+    xspi->CCR = XSPI_FIELD(CCR, IMODE,  7)
+              | XSPI_FIELD(CCR, IDTR,   0)
+              | XSPI_FIELD(CCR, ISIZE,  0)
+              | XSPI_FIELD(CCR, ADMODE, 7)
+              | XSPI_FIELD(CCR, ADDTR,  1)
+              | XSPI_FIELD(CCR, ADSIZE, 3)
+              | XSPI_FIELD(CCR, DMODE,  7)
+              | XSPI_FIELD(CCR, DDTR,   1)
+              | XSPI_FIELD(CCR, DQSE,   1);
+
+    xspi->IR  = 0xC0;
+    xspi->TCR = XSPI_TCR_DHQC;
+    xspi->AR  = reg_addr;
+    xspi->DLR = 1;
+
+    *((__IO uint8_t*)&xspi->DR) = value;
+    *((__IO uint8_t*)&xspi->DR) = 0x00;
+
+    timeout = 1000000;
+    while (!(xspi->SR & XSPI_SR_TCF)){
+        if (--timeout == 0) break;
+    }
+
+    xspi->AR  = 0x0;
+    xspi->FCR = XSPI_FCR_CTCF;
+}
+
 void XSPI1_WriteReg(uint8_t reg_addr, uint8_t value){
-    uint32_t timeout;
-
-    XSPI1->CR = XSPI_FIELD(CR, FTHRES, 7) | XSPI_CR_EN;
-
-    /* Wait for XSPI1 to leave busy state */
-    timeout = 1000000;
-    while (XSPI1->SR & XSPI_SR_BUSY){
-        if (--timeout == 0) break;
-    }
-
-    /* Clear transfer-complete and transfer-error flags */
-    XSPI1->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
-
-    /*
-     * Communication config: octal 8-bit instruction, 32-bit address,
-     * octal 8-bit data, all DTR with DQS strobe
-     */
-    XSPI1->CCR = XSPI_FIELD(CCR, IMODE,  7)
-               | XSPI_FIELD(CCR, IDTR,   0)
-               | XSPI_FIELD(CCR, ISIZE,  0)
-               | XSPI_FIELD(CCR, ADMODE, 7)
-               | XSPI_FIELD(CCR, ADDTR,  1)
-               | XSPI_FIELD(CCR, ADSIZE, 3)
-               | XSPI_FIELD(CCR, DMODE,  7)
-               | XSPI_FIELD(CCR, DDTR,   1)
-               | XSPI_FIELD(CCR, DQSE,   1);
-
-    XSPI1->IR  = 0xC0;             /* instruction opcode */
-    XSPI1->TCR = XSPI_TCR_DHQC;
-    XSPI1->AR  = reg_addr;         /* target configuration register */
-    XSPI1->DLR = 1;                /* send 1 data byte */
-
-    *((__IO uint8_t*)&XSPI1->DR) = value;
-    *((__IO uint8_t*)&XSPI1->DR) = 0x00;
-
-    /* Wait for transfer-complete flag */
-    timeout = 1000000;
-    while (!(XSPI1->SR & XSPI_SR_TCF)){
-        if (--timeout == 0) break;
-    }
-
-    XSPI1->AR  = 0x0;
-    XSPI1->FCR = XSPI_FCR_CTCF;
+    XSPI_WriteReg(XSPI1, reg_addr, value);
 }
 
-/*
- * XSPI2_WriteReg – indirect write to NOR Flash via XSPI2
- * Same protocol as XSPI1 (octal DTR with DQS)
- */
 void XSPI2_WriteReg(uint8_t reg_addr, uint8_t value){
-    uint32_t timeout;
-
-    XSPI2->CR = XSPI_FIELD(CR, FTHRES, 7) | XSPI_CR_EN;
-
-    timeout = 1000000;
-    while (XSPI2->SR & XSPI_SR_BUSY){
-        if (--timeout == 0) break;
-    }
-
-    XSPI2->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
-
-    XSPI2->CCR = XSPI_FIELD(CCR, IMODE,  7)
-               | XSPI_FIELD(CCR, IDTR,   0)
-               | XSPI_FIELD(CCR, ISIZE,  0)
-               | XSPI_FIELD(CCR, ADMODE, 7)
-               | XSPI_FIELD(CCR, ADDTR,  1)
-               | XSPI_FIELD(CCR, ADSIZE, 3)
-               | XSPI_FIELD(CCR, DMODE,  7)
-               | XSPI_FIELD(CCR, DDTR,   1)
-               | XSPI_FIELD(CCR, DQSE,   1);
-
-    XSPI2->IR  = 0xC0;
-    XSPI2->TCR = XSPI_TCR_DHQC;
-    XSPI2->AR  = reg_addr;
-    XSPI2->DLR = 1;
-
-    *((__IO uint8_t*)&XSPI2->DR) = value;
-    *((__IO uint8_t*)&XSPI2->DR) = 0x00;
-
-    timeout = 1000000;
-    while (!(XSPI2->SR & XSPI_SR_TCF)){
-        if (--timeout == 0) break;
-    }
-
-    XSPI2->AR  = 0x0;
-    XSPI2->FCR = XSPI_FCR_CTCF;
+    XSPI_WriteReg(XSPI2, reg_addr, value);
 }
 
 
-/* Write PSRAM (APS256XX) configuration registers via XSPI1 */
+/* Write PSRAM (APS256XX) configuration registers */
 static void PSRAM_WriteConfig(void){
-    XSPI1_WriteReg(0, 0x30);
-    XSPI1_WriteReg(4, 0x20);
-    XSPI1_WriteReg(8, 0x40 | 0x03);
+    XSPI_WriteReg(XSPI1, 0, 0x30);
+    XSPI_WriteReg(XSPI1, 4, 0x20);
+    XSPI_WriteReg(XSPI1, 8, 0x40 | 0x03);
 }
 
-/* Write NOR Flash (MX66UW1G45G) configuration registers via XSPI2 */
+/* Write NOR Flash (MX66UW1G45G) configuration registers */
 static void NOR_WriteConfig(void){
-    XSPI2_WriteReg(0, 0x30);
-    XSPI2_WriteReg(4, 0x20);
-    XSPI2_WriteReg(8, 0x40 | 0x03);
+    XSPI_WriteReg(XSPI2, 0, 0x30);
+    XSPI_WriteReg(XSPI2, 4, 0x20);
+    XSPI_WriteReg(XSPI2, 8, 0x40 | 0x03);
 }
 
-/* Bypass the clock prescaler on XSPI2 (run at full kernel-clock speed) */
-static void NOR_BypassPrescaler(void){
-    XSPI2->DCR2 = 0UL;
-}
-
-/* Bypass the clock prescaler on XSPI1 (run at full kernel-clock speed) */
-static void PSRAM_BypassPrescaler(void){
-    XSPI1->DCR2 = 0UL;
+static void XSPI_BypassPrescaler(XSPI_TypeDef *xspi){
+    xspi->DCR2 = 0UL;
 }
 
 /*
@@ -315,7 +257,7 @@ void PSRAM_Init(void){
 
     delay_ms(1);
 
-    PSRAM_BypassPrescaler();
+    XSPI_BypassPrescaler(XSPI1);
     delay_ms(1);
 
     XSPI1_EnableMemoryMappedMode();
@@ -359,7 +301,7 @@ void NOR_Init(void){
     NOR_WriteConfig();
     delay_ms(1);
 
-    NOR_BypassPrescaler();
+    XSPI_BypassPrescaler(XSPI2);
     delay_ms(1);
 
     XSPI2_EnableMemoryMappedMode();

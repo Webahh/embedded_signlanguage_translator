@@ -5,14 +5,14 @@
 #include "stm32n657xx.h"
 
 typedef enum {
-    LCD_PF_ARGB8888 = 0,
-    LCD_PF_RGB888   = 1,
-    LCD_PF_RGB565   = 2,
-    LCD_PF_ARGB1555 = 3,
-    LCD_PF_ARGB4444 = 4,
-    LCD_PF_L8       = 5,
-    LCD_PF_AL44     = 6,
-    LCD_PF_AL88     = 7,
+    LCD_PF_ARGB8888 = 0b000,
+    LCD_PF_ABGR8888 = 0b001,
+    LCD_PF_RGBA8888 = 0b010,
+    LCD_PF_BGRA8888 = 0b011,
+    LCD_PF_RGB565 	= 0b100,
+    LCD_PF_BGR565   = 0b101,
+    LCD_PF_RGB888   = 0b110,
+    LCD_PF_Flexible = 0b111,
 } LCD_PixelFormat;
 
 typedef struct {
