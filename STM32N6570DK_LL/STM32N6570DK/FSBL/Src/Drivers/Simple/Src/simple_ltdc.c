@@ -88,17 +88,21 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
 }
 
+/**
+ * @ret return bytes of pixel format except for Flexible because it is flexible
+ *		unsoported fmt: -1;
+ */
 static uint32_t LCD_BytesPerPixel(LCD_PixelFormat fmt){
     switch (fmt){
-        case LCD_PF_ARGB8888: return 4;
-        case LCD_PF_RGB888:   return 3;
-        case LCD_PF_RGB565:   return 2;
-        case LCD_PF_ARGB1555: return 2;
-        case LCD_PF_ARGB4444: return 2;
-        case LCD_PF_L8:       return 1;
-        case LCD_PF_AL44:     return 1;
-        case LCD_PF_AL88:     return 2;
-        default:              return 4;
+        case LCD_PF_ARGB8888: return  4;
+        case LCD_PF_ABGR8888: return  4;
+        case LCD_PF_RGBA8888: return  4;
+        case LCD_PF_BGRA8888: return  4;
+        case LCD_PF_RGB565:   return  2;
+        case LCD_PF_BGR565:   return  2;
+        case LCD_PF_RGB888:   return  3;
+        case LCD_PF_Flexible: return  1;
+		default:              return -1;
     }
 }
 
