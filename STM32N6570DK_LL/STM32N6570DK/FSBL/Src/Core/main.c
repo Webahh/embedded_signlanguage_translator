@@ -6,6 +6,7 @@
 #include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
 #include "simple_xspi.h"
+#include "simple_rifsc.h"
 
 #define LED2_PIN 10
 
@@ -44,31 +45,8 @@ static void vBackgroundTask(void) {
     LCD_SetBackgroundColor(r, g, b);
 }
 
-#define RIF_MASTER_INDEX_LTDC1      10U
-#define RIF_MASTER_INDEX_LTDC2      11U
-#define RIF_RISC_REG_LTDC_GROUP     3U
-
-#define HAL_RIMC_ATTR_LTDC_VALUE    0x00000310U
-#define HAL_RISC_LTDC_GROUP_VALUE   0x000005FCU
-
-static void RIF_Config_LTDC_BareMetal(void){
-    RCC->AHB3ENSR |= RCC_AHB3ENSR_RIFSCENS;
-    (void)RCC->AHB3ENSR;
-
-    RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC1] = HAL_RIMC_ATTR_LTDC_VALUE;
-    RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC2] = HAL_RIMC_ATTR_LTDC_VALUE;
-
-    RIFSC->RISC_SECCFGRx[RIF_RISC_REG_LTDC_GROUP]  = HAL_RISC_LTDC_GROUP_VALUE;
-    RIFSC->RISC_PRIVCFGRx[RIF_RISC_REG_LTDC_GROUP] = HAL_RISC_LTDC_GROUP_VALUE;
-
-    (void)RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC1];
-    (void)RIFSC->RIMC_ATTRx[RIF_MASTER_INDEX_LTDC2];
-    (void)RIFSC->RISC_SECCFGRx[RIF_RISC_REG_LTDC_GROUP];
-    (void)RIFSC->RISC_PRIVCFGRx[RIF_RISC_REG_LTDC_GROUP];
-}
-
 int main(void){
-	RIF_Config_LTDC_BareMetal();
+	Security_Config();
 
 	delay_init();
 
