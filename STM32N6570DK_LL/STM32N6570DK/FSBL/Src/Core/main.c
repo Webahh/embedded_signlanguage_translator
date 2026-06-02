@@ -77,6 +77,7 @@ int main(void){
 //    SCB_EnableDCache();
 
     PSRAM_Init();
+    NOR_Init();
 
     LCD_Init();
 

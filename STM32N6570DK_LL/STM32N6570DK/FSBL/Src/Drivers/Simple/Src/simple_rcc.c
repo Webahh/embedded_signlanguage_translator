@@ -204,6 +204,19 @@ void RCC_reset_XSPI1(void){
     (void)RCC->AHB5RSTCR;
 }
 
+void RCC_enable_XSPI2(void){
+    RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI2ENS;
+    (void)RCC->AHB5ENSR;
+}
+
+void RCC_reset_XSPI2(void){
+    RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPI2RSTS;
+    (void)RCC->AHB5RSTSR;
+    delay_ms(10);
+    RCC->AHB5RSTCR |= RCC_AHB5RSTCR_XSPI2RSTC;
+    (void)RCC->AHB5RSTCR;
+}
+
 void RCC_enable_XSPIM(void){
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPIMENS;
     (void)RCC->AHB5ENSR;
