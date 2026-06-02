@@ -62,7 +62,6 @@ int main(void){
     delay_ms(10);
 
     LCD_FillLayer2Sides(&LCD_Layer1Config, LCD_COLOR_BLUE, LCD_COLOR_RED);
-
     LCD_ConfigLayer1();
 
     delay_ms(10);
