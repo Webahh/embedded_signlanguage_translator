@@ -140,6 +140,7 @@ void RCC_enable_LTDC_memory(void){
 
 void RCC_enable_LTDC(void){
     RCC->APB5ENSR |= RCC_APB5ENSR_LTDCENS;
+    RCC->APB5LPENR |= RCC_APB5LPENR_LTDCLPEN;
     (void)RCC->APB5ENSR;
 }
 
