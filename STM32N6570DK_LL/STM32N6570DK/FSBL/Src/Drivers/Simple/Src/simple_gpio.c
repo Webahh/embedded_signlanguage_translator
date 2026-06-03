@@ -10,7 +10,7 @@
 
 /* ------------- Simple_GPIO Functions ------------- */
 
-static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af, int speed){
+static void GPIO_setAF(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t af, uint32_t speed){
     GPIOX->OSPEEDR =
         (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
         (((uint32_t)speed & 3U) << (2U * pinNr));
@@ -20,8 +20,8 @@ static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af, int speed){
         GPIOX->AFR[0] |=  ((uint32_t)af << (4U * pinNr));
     }
     else {
-        GPIOX->AFR[1] &= ~(0xFU << (4U * (pinNr - 8)));
-        GPIOX->AFR[1] |=  ((uint32_t)af << (4U * (pinNr - 8)));
+        GPIOX->AFR[1] &= ~(0xFU << (4U * (pinNr - 8U)));
+        GPIOX->AFR[1] |=  ((uint32_t)af << (4U * (pinNr - 8U)));
     }
 }
 
@@ -36,40 +36,41 @@ static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af, int speed){
  * @param mode  GPIO mode value for MODER register.
  * @param otyp  Output type value for OTYPER register.
  * @param pupdr Pull-up/pull-down value for PUPDR register.
- * @param af	Alternate Function identifier (I2C, SPI, ...)
+ * @param af	Alternate Function identifier (I2C, SPI, ...).
+ * @param speed Speed value for the alternate Function pins.
  */
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af, int speed){
+void GPIO_Config(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t mode, uint32_t otyp, uint32_t pupdr, uint32_t af, uint32_t speed){
 	RCC_enable_GPIO(GPIOX);
-	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2 * pinNr))) | (mode  << (2 * pinNr));
+	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2U * pinNr))) | (mode  << (2U * pinNr));
 	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (otyp  << (pinNr));
-	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2 * pinNr))) | (pupdr << (2 * pinNr));
+	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2U * pinNr))) | (pupdr << (2U * pinNr));
 
 	if(mode == GPIO_MODE_AF){
 		GPIO_setAF(GPIOX, pinNr, af, speed);
 	}
 }
 
-void GPIO_set_speed(GPIO_TypeDef* GPIOX, int pinNr, int speed){
+void GPIO_set_speed(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t speed){
     GPIOX->OSPEEDR =
         (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
         (((uint32_t)speed & 3U) << (2U * pinNr));
 }
 
-int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr){
-	return (int)((GPIOX->IDR >> pinNr) & 1U);
+uint32_t GPIO_get(GPIO_TypeDef* GPIOX, uint32_t pinNr){
+	return (uint32_t)((GPIOX->IDR >> pinNr) & 1U);
 }
 
-void GPIO_BSRR_toggle(GPIO_TypeDef* GPIOX, int pinNr) {
+void GPIO_BSRR_toggle(GPIO_TypeDef* GPIOX, uint32_t pinNr) {
     if (GPIOX->ODR & (1U << pinNr))
-        GPIOX->BSRR = (1U << (pinNr + 16));
+        GPIOX->BSRR = (1U << (pinNr + 16U));
     else
         GPIOX->BSRR = (1U << pinNr);
 }
 
-void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, int pinNr){
+void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, uint32_t pinNr){
 	GPIOX->BSRR = (1U<<pinNr);
 }
 
-void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, int pinNr){
-	GPIOX->BSRR = (1U<<(pinNr+16));
+void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, uint32_t pinNr){
+	GPIOX->BSRR = (1U<<(pinNr+16U));
 }

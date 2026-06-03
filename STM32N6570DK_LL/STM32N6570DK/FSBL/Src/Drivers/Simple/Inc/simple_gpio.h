@@ -32,10 +32,12 @@
 #define LTDC_AF 			14
 #define XSPI_AF 			9
 
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af, int speed);
-int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr);
-void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, int pinNr);
-void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, int pinNr);
-void GPIO_BSRR_toggle(GPIO_TypeDef* GPIOX, int pinNr);
+// TODO: write a cfg struct for the configuration of the GPIOs
+
+void GPIO_Config(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t mode, uint32_t otyp, uint32_t pupdr, uint32_t af, uint32_t speed);
+uint32_t GPIO_get(GPIO_TypeDef* GPIOX, uint32_t pinNr);
+void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, uint32_t pinNr);
+void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, uint32_t pinNr);
+void GPIO_BSRR_toggle(GPIO_TypeDef* GPIOX, uint32_t pinNr);
 
 #endif // SIMPLE_GPIO_H
