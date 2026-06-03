@@ -64,6 +64,9 @@ int main(void){
     LCD_FillLayer2Sides(&LCD_Layer1Config, LCD_COLOR_BLUE, LCD_COLOR_RED);
     LCD_ConfigLayer1();
 
+    LCD_FillLayer2Sides(&LCD_Layer2Config, LCD_COLOR_GREEN, 0xFFFFFF00);
+    LCD_ConfigLayer2();
+
     delay_ms(10);
 
     SCHEDULER_Init();

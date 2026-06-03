@@ -147,8 +147,9 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
     cfg->regs->CACR = cfg->const_alpha;
     cfg->regs->DCCR = cfg->default_color;
 
+    // BFCR
     if (cfg->per_pixel_alpha){
-        cfg->regs->BFCR =
+        cfg->regs->BFCR |=
            (6U << LTDC_LxBFCR_BF1_Pos) |
            (7U << LTDC_LxBFCR_BF2_Pos);
     } else {
@@ -156,6 +157,7 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
            (4U << LTDC_LxBFCR_BF1_Pos) |
            (5U << LTDC_LxBFCR_BF2_Pos);
     }
+    cfg->regs->BFCR |= (cfg->blendingOrder == 0)? (0U << LTDC_LxBFCR_BOR_Pos): (1U << LTDC_LxBFCR_BOR_Pos);
 
     cfg->regs->CFBAR = (uint32_t)cfg->fb;
 
@@ -213,8 +215,9 @@ LCD_LayerConfig LCD_Layer1Config = {
     .buf_width      = LCD_BG_WIDTH,
     .pixel_format   = LCD_PF_ARGB8888,
     .const_alpha    = 0xFF,
-    .per_pixel_alpha = 1,
+    .per_pixel_alpha = 0,
     .default_color  = 0x00000000U,
+	.blendingOrder  = 0,
 };
 
 LCD_LayerConfig LCD_Layer2Config = {
@@ -229,4 +232,5 @@ LCD_LayerConfig LCD_Layer2Config = {
     .const_alpha    = 0xFF,
     .per_pixel_alpha = 1,
     .default_color  = 0x00000000U,
+	.blendingOrder  = 1,
 };

@@ -27,6 +27,7 @@ typedef struct {
     uint8_t             const_alpha;   		/* C = α*Cs + (1-α)*Cd        */
     uint8_t             per_pixel_alpha;	/* 1 = per-pixel, 0 = const   */
     uint32_t            default_color; 		/* color outside window (A/R/G/B)*/
+    uint8_t				blendingOrder;      /* 0: layer set in background | 1: layer set in foreground*/
 } LCD_LayerConfig;
 
 void LCD_Init(void);
