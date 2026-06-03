@@ -23,7 +23,7 @@
 #define GPIO_PUPD_DOWN		2
 
 #define GPIO_AF_NONE		-1
-#define GPIO_I2C			4 // VERIFY!!!!"
+#define GPIO_I2C			4
 #define LTDC_AF 			14
 #define XSPI_AF 			9
 

@@ -213,10 +213,10 @@ LCD_LayerConfig LCD_Layer1Config = {
     .width          = LCD_BG_WIDTH,
     .height         = LCD_BG_HEIGHT,
     .buf_width      = LCD_BG_WIDTH,
-    .pixel_format   = LCD_PF_ARGB8888,
+    .pixel_format   = LCD_PF_BGR565,
     .const_alpha    = 0xFF,
     .per_pixel_alpha = 0,
-    .default_color  = 0x00000000U,
+    .default_color  = 0x0000U,
 	.blendingOrder  = 0,
 };
 

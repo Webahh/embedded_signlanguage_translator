@@ -306,6 +306,7 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
         else
             dcmipp->P1FCTCR |= DCMIPP_P1FCTCR_CPTMODE;
         dcmipp->P1FSCR |= DCMIPP_P1FSCR_PIPEN;
+        dcmipp->P1FCTCR |= DCMIPP_P1FCTCR_CPTREQ;
 
     } else if (pipe == DCMIPP_PIPE2) {
         dcmipp->P2PPM0AR1 = buf_addr;
@@ -314,9 +315,8 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
         else
             dcmipp->P2FCTCR |= DCMIPP_P2FCTCR_CPTMODE;
         dcmipp->P2FSCR |= DCMIPP_P2FSCR_PIPEN;
+        dcmipp->P2FCTCR |= DCMIPP_P2FCTCR_CPTREQ;
     }
-
-    dcmipp->IPGR2 |= DCMIPP_IPGR2_PSTART;
 }
 
 void DCMIPP_Pipe_Stop(uint32_t pipe)

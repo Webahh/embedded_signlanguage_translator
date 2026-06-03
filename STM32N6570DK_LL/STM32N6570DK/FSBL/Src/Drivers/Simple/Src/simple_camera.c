@@ -2,6 +2,7 @@
 #include "simple_camera.h"
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
+#include "simple_clock.h"
 
 static CAM_Handle *g_cam_h = NULL;
 
@@ -29,7 +30,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
 
 CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf)
 {
-    uint32_t id;
     DCMIPP_CSI_Conf csi_conf;
     DCMIPP_Pipe_Conf pipe_conf;
     DCMIPP_IPPlug_Conf ipplug_conf;
@@ -41,12 +41,9 @@ CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf)
     h->initialized = 0;
     g_cam_h = h;
 
+
     /* Probe and power-on IMX335 */
     if (IMX335_Probe(&h->imx335, i2c)){
-        return CAM_ERROR_ID;
-    }
-
-    if (IMX335_ReadID(&h->imx335, &id) != 0) {
         return CAM_ERROR_ID;
     }
 
