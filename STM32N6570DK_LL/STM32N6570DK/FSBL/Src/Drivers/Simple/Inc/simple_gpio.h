@@ -22,12 +22,17 @@
 #define GPIO_PUPD_UP		1
 #define GPIO_PUPD_DOWN		2
 
+#define GPIO_SPEED_LOW        	0U
+#define GPIO_SPEED_MEDIUM     	1U
+#define GPIO_SPEED_HIGH       	2U
+#define GPIO_SPEED_VERY_HIGH  	3U
+
 #define GPIO_AF_NONE		-1
 #define GPIO_I2C			4
 #define LTDC_AF 			14
 #define XSPI_AF 			9
 
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af);
+void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af, int speed);
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr);
 void GPIO_BSRR_set(GPIO_TypeDef* GPIOX, int pinNr);
 void GPIO_BSRR_reset(GPIO_TypeDef* GPIOX, int pinNr);

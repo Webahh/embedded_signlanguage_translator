@@ -10,12 +10,10 @@
 
 /* ------------- Simple_GPIO Functions ------------- */
 
-static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af){
-    GPIOX->OSPEEDR &=
-        ~(3U << (2U * pinNr));
-
-    GPIOX->OSPEEDR |=
-        (3U << (2U * pinNr));
+static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af, int speed){
+    GPIOX->OSPEEDR =
+        (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
+        (((uint32_t)speed & 3U) << (2U * pinNr));
 
     if (pinNr < 8) {
         GPIOX->AFR[0] &= ~(0xFU << (4U * pinNr));
@@ -40,15 +38,21 @@ static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af){
  * @param pupdr Pull-up/pull-down value for PUPDR register.
  * @param af	Alternate Function identifier (I2C, SPI, ...)
  */
-void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af){
+void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, int af, int speed){
 	RCC_enable_GPIO(GPIOX);
 	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2 * pinNr))) | (mode  << (2 * pinNr));
 	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (otyp  << (pinNr));
 	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2 * pinNr))) | (pupdr << (2 * pinNr));
 
 	if(mode == GPIO_MODE_AF){
-		GPIO_setAF(GPIOX, pinNr, af);
+		GPIO_setAF(GPIOX, pinNr, af, speed);
 	}
+}
+
+void GPIO_set_speed(GPIO_TypeDef* GPIOX, int pinNr, int speed){
+    GPIOX->OSPEEDR =
+        (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
+        (((uint32_t)speed & 3U) << (2U * pinNr));
 }
 
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr){

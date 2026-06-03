@@ -54,7 +54,7 @@ int main(void){
 
 	delay_init();
 
-	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
+	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
 
 //    SCB_EnableDCache();
 
@@ -72,13 +72,13 @@ int main(void){
 
     /* --- Camera power-up sequence --- */
     /* CAM_PWR_EN: PD2 = high to enable camera power */
-    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
+    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
     GPIO_BSRR_set(GPIOD, 2);
 
     delay_ms(1);
 
     /* CAM_NRST: PC8 pulse low then high to release reset */
-    GPIO_Config(GPIOC, 8, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE);
+    GPIO_Config(GPIOC, 8, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
     GPIO_BSRR_reset(GPIOC, 8);
     delay_ms(1);
     GPIO_BSRR_set(GPIOC, 8);
@@ -86,8 +86,8 @@ int main(void){
 
     /* --- Camera (IMX335) initialization --- */
     /* I2C1: PH9=SCL, PC1=SDA (AF4, open-drain, pull-up) */
-    GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C);
-    GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C);
+    GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
+    GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
     /* I2C1 @ 400 kHz (PCLK1=64MHz, PRESC=0, SCLL=83, SCLH=75, SDADEL=0, SCLDEL=11) */
     I2C_Config(I2C1, 0, 0x00B04B53);
 
