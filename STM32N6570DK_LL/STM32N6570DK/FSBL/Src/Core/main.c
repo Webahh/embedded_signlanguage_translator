@@ -87,7 +87,9 @@ int main(void){
     /* --- Camera (IMX335) initialization --- */
     /* I2C1: PH9=SCL, PC1=SDA (AF4, open-drain, pull-up) */
     GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C);
+    GPIO_set_speed(GPIOH, 9, GPIO_SPEED_MEDIUM);
     GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C);
+    GPIO_set_speed(GPIOC, 1, GPIO_SPEED_MEDIUM);
     /* I2C1 @ 400 kHz (PCLK1=64MHz, PRESC=0, SCLL=83, SCLH=75, SDADEL=0, SCLDEL=11) */
     I2C_Config(I2C1, 0, 0x00B04B53);
 

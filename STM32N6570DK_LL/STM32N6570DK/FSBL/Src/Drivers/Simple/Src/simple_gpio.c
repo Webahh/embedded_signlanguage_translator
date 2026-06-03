@@ -11,11 +11,6 @@
 /* ------------- Simple_GPIO Functions ------------- */
 
 static void GPIO_setAF(GPIO_TypeDef* GPIOX, int pinNr, int af){
-    GPIOX->OSPEEDR &=
-        ~(3U << (2U * pinNr));
-
-    GPIOX->OSPEEDR |=
-        (3U << (2U * pinNr));
 
     if (pinNr < 8) {
         GPIOX->AFR[0] &= ~(0xFU << (4U * pinNr));
@@ -49,6 +44,12 @@ void GPIO_Config(GPIO_TypeDef* GPIOX, int pinNr, int mode, int otyp, int pupdr, 
 	if(mode == GPIO_MODE_AF){
 		GPIO_setAF(GPIOX, pinNr, af);
 	}
+}
+
+void GPIO_set_speed(GPIO_TypeDef* GPIOX, int pinNr, int speed){
+    GPIOX->OSPEEDR =
+        (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
+        (((uint32_t)speed & 3U) << (2U * pinNr));
 }
 
 int GPIO_get(GPIO_TypeDef* GPIOX, int pinNr){

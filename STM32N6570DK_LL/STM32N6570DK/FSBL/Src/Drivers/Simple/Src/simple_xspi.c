@@ -20,11 +20,13 @@ void XSPI1_GPIO_Init(void){
     GPIO_Config(GPIOO, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
     for (int p = 2; p <= 4; p++) {
     	GPIO_Config(GPIOO, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+    	GPIO_set_speed(GPIOO, p, GPIO_SPEED_VERY_HIGH);
     }
 
     GPIO_Config(GPIOP, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
     for (int p = 1; p <= 15; p++){
         GPIO_Config(GPIOP, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+        GPIO_set_speed(GPIOP, p, GPIO_SPEED_VERY_HIGH);
     }
 }
 
@@ -37,6 +39,7 @@ void XSPI2_GPIO_Init(void){
     RCC_enable_GPIO(GPION);
     for (int p = 0; p <= 11; p++){
         GPIO_Config(GPION, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF);
+        GPIO_set_speed(GPION, p, GPIO_SPEED_VERY_HIGH);
     }
 }
 
