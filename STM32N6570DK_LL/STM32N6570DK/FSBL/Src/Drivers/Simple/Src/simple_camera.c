@@ -4,6 +4,9 @@
 #include "simple_ltdc.h"
 #include "simple_clock.h"
 #include "simple_dcmipp.h"
+#include "simple_gpio.h"
+#include "simple_i2c.h"
+#include "simple_timer.h"
 
 static CAM_Handle *g_cam_h = NULL;
 
@@ -29,7 +32,38 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
     }
 }
 
-CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf)
+static void CAM_HwInit(void)
+{
+    /* Enable PWR clock and VDDIO4 supply (required for GPIOH I/Os) */
+    RCC_enable_PWR();
+    PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
+
+    /* Camera power pins: PC8 = 2V8 regulator enable, PD2 = NRST */
+    GPIO_Config(GPIOC, 8, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+
+    GPIO_BSRR_reset(GPIOC, 8);
+    delay_ms(1);
+    GPIO_BSRR_reset(GPIOD, 2);
+    delay_ms(1);
+    GPIO_BSRR_set(GPIOC, 8);
+    delay_ms(1);
+    GPIO_BSRR_set(GPIOD, 2);
+    delay_ms(1);
+
+    /* I2C1 pins: PH9=SCL, PC1=SDA (AF4, open-drain, pull-up) */
+    RCC_enable_GPIO(GPIOH);
+    RCC_enable_GPIO(GPIOC);
+    GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
+    GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
+
+    /* I2C1 @ 400 kHz (PCLK1=64MHz, PRESC=0, SCLL=75, SCLH=46, SDADEL=0, SCLDEL=6) */
+    RCC_enable_I2C(I2C1);
+    RCC_setI2C_clock_source(I2C1, 0);
+    I2C_Config(I2C1, 0, 0x00602E4B);
+}
+
+CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
 {
     DCMIPP_CSI_Conf csi_conf;
     DCMIPP_Pipe_Conf pipe_conf;
@@ -42,10 +76,11 @@ CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf)
     h->initialized = 0;
     g_cam_h = h;
 
+    /* One-time hardware init */
+    CAM_HwInit();
 
     /* Probe and power-on IMX335 */
-    // TODO: Probe Timeouts when writing with I2C find the error!
-    if (IMX335_Probe(&h->imx335, i2c)){
+    if (IMX335_Probe(&h->imx335, I2C1)){
         return CAM_ERROR_ID;
     }
 

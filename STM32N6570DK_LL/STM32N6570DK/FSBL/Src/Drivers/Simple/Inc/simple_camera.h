@@ -39,7 +39,7 @@ typedef struct {
     uint8_t initialized;
 } CAM_Handle;
 
-CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf);
+CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf);
 CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h);
 CAM_Status CAM_NNPipe_Start(CAM_Handle *h);
 

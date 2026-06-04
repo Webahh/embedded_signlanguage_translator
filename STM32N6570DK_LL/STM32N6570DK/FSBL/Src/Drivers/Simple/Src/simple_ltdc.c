@@ -216,7 +216,7 @@ LCD_LayerConfig LCD_Layer1Config = {
     .pixel_format   = LCD_PF_BGR565,
     .const_alpha    = 0xFF,
     .per_pixel_alpha = 0,
-    .default_color  = 0x0000U,
+    .default_color  = 0,
 	.blendingOrder  = 0,
 };
 
