@@ -134,18 +134,15 @@ int32_t IMX335_SetMirrorFlip(IMX335_Handle *h, uint32_t config)
 
 int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)
 {
-    uint8_t  id_buf[2] = {0};
+    uint8_t id_byte = 0;
 
-    if(h == NULL || id == NULL) {
-    	return -1;
-    }
+    if (h == NULL || id == NULL)
+        return -1;
 
-    if(I2C_Mem_Read(h->i2c, h->addr, IMX335_REG_ID, id_buf, 2) != I2C_OK) {
-    	return -1;
-    }
+    if (I2C_Mem_Read(h->i2c, h->addr, IMX335_REG_ID, &id_byte, 1) != I2C_OK)
+        return -1;
 
-    *id = ((uint32_t)id_buf[0] << 8 | id_buf[1]);
-
+    *id = id_byte;
     return 0;
 }
 

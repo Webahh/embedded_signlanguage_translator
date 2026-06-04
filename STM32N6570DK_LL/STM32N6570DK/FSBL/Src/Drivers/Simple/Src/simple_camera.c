@@ -3,6 +3,7 @@
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
 #include "simple_clock.h"
+#include "simple_dcmipp.h"
 
 static CAM_Handle *g_cam_h = NULL;
 
@@ -43,6 +44,7 @@ CAM_Status CAM_Init(CAM_Handle *h, I2C_TypeDef *i2c, uint32_t nn_buf)
 
 
     /* Probe and power-on IMX335 */
+    // TODO: Probe Timeouts when writing with I2C find the error!
     if (IMX335_Probe(&h->imx335, i2c)){
         return CAM_ERROR_ID;
     }

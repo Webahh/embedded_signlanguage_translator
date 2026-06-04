@@ -15,7 +15,7 @@
 #define IMX335_REG_ID      0x3912U
 #define IMX335_CHIP_ID     0x00U
 
-#define IMX335_I2C_ADDR         0x1AU
+#define IMX335_I2C_ADDR         0x1A
 
 #define IMX335_REG_MODE_SELECT  0x3000
 #define IMX335_MODE_STREAMING   0x00

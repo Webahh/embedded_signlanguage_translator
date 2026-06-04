@@ -70,26 +70,29 @@ int main(void){
 
     delay_ms(10);
 
-    /* --- Camera power-up sequence --- */
-    /* CAM_PWR_EN: PD2 = high to enable camera power */
-    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
-    GPIO_BSRR_set(GPIOD, 2);
-
-    delay_ms(1);
-
-    /* CAM_NRST: PC8 pulse low then high to release reset */
+    /* --- Camera power-up sequence (matching BSP_CAMERA_HwReset) --- */
+    /* PC8 = 2V8 regulator enable (active high), PD2 = IMX335 NRST (active low) */
     GPIO_Config(GPIOC, 8, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+
     GPIO_BSRR_reset(GPIOC, 8);
     delay_ms(1);
+    GPIO_BSRR_reset(GPIOD, 2);
+    delay_ms(1);
     GPIO_BSRR_set(GPIOC, 8);
-    delay_ms(10);
+    delay_ms(1);
+    GPIO_BSRR_set(GPIOD, 2);
+    delay_ms(1);
 
     /* --- Camera (IMX335) initialization --- */
+    /* Enable PWR clock and VDDIO4 supply (required for GPIOH I/Os) */
+    RCC_enable_PWR();
+    PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
     /* I2C1: PH9=SCL, PC1=SDA (AF4, open-drain, pull-up) */
     GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
     GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD, GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
-    /* I2C1 @ 400 kHz (PCLK1=64MHz, PRESC=0, SCLL=83, SCLH=75, SDADEL=0, SCLDEL=11) */
-    I2C_Config(I2C1, 0, 0x00B04B53);
+    /* I2C1 @ 400 kHz (PCLK1=64MHz, PRESC=0, SCLL=75, SCLH=46, SDADEL=0, SCLDEL=6) */
+    I2C_Config(I2C1, 0, 0x00602E4B);
 
     if (CAM_Init(&h_cam, I2C1, 0) == CAM_OK) {
         /* Reconfigure LTDC layer1 to RGB565 to match camera output */
@@ -101,7 +104,7 @@ int main(void){
         LCD_Layer1Config.per_pixel_alpha = 0;
         LCD_Layer1Config.default_color = 0;
         LCD_Layer1Config.blendingOrder = 0;
-        LCD_Layer1Config.fb            = (volatile uint32_t *)h_cam.display_buf0;
+        LCD_Layer1Config.fb            = lcd_bg_buffer;
         LCD_ConfigLayer1();
 
         CAM_DisplayPipe_Start(&h_cam);

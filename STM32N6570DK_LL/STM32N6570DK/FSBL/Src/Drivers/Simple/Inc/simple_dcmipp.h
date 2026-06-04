@@ -79,7 +79,7 @@
 /*
  * CSI configuration structure
  */
-typedef struct {
+typedef struct DCMIPP_CSI_Conf {
     uint32_t num_lanes;          /* DCMIPP_CSI_ONE_DATA_LANE or _TWO_DATA_LANES */
     uint32_t phy_bitrate;        /* DCMIPP_CSI_PHY_BT_* */
     uint32_t vc;                 /* Virtual channel (0-3) */
@@ -90,7 +90,7 @@ typedef struct {
 /*
  * Pipe configuration structure
  */
-typedef struct {
+typedef struct DCMIPP_Pipe_Conf {
     uint32_t output_width;
     uint32_t output_height;
     uint32_t output_format;      /* DCMIPP_PP_FORMAT_* */
@@ -107,7 +107,7 @@ typedef struct {
 /*
  * IPPlug client configuration structure
  */
-typedef struct {
+typedef struct DCMIPP_IPPlug_Conf {
     uint32_t client_id;          /* DCMIPP_CLIENT1-5 */
     uint32_t traffic;            /* DCMIPP_TRAFFIC_* */
     uint32_t outstanding;        /* 0-15 outstanding transactions */

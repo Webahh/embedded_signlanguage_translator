@@ -10,6 +10,7 @@
 #include <stddef.h>
 
 #define I2C_TIMEOUT_MAX 1000
+#define I2C_7BIT_ADDR(addr7)	(((uint32_t)(addr7) & 0x7FU) << 1)
 
 void I2C_Config(I2C_TypeDef* I2CX, uint32_t clock_source, uint32_t timing){
 	RCC_setI2C_clock_source(I2CX, clock_source);
@@ -22,6 +23,8 @@ void I2C_Config(I2C_TypeDef* I2CX, uint32_t clock_source, uint32_t timing){
     I2CX->CR1 &= ~I2C_CR1_DNF;
 	I2CX->TIMINGR = timing;
 	I2CX->CR1 &= ~I2C_CR1_NOSTRETCH;
+
+    I2CX->OAR1 = I2C_OAR1_OA1EN; // enable own address (7-bit, address 0x00)
 
 	I2CX->CR1 |= I2C_CR1_PE; // enable after config changes!
 }
@@ -106,8 +109,11 @@ I2C_Status_TypeDef I2C_Mem_Write(I2C_TypeDef *I2CX,
               | I2C_ICR_ARLOCF
               | I2C_ICR_OVRCF;
 
+
+    I2CX->CR2 = 0; // remove stale bits from previous transactions
+
     I2CX->CR2 =
-        ((uint32_t)(dev_addr << 1) << I2C_CR2_SADD_Pos) |
+        I2C_7BIT_ADDR(dev_addr) |
         ((uint32_t)total << I2C_CR2_NBYTES_Pos) |
         I2C_CR2_START |
         I2C_CR2_AUTOEND;
@@ -155,9 +161,11 @@ I2C_Status_TypeDef I2C_Mem_Read(I2C_TypeDef *I2CX,
               | I2C_ICR_ARLOCF
               | I2C_ICR_OVRCF;
 
+    /* Phase 1: Write 16-bit register address (WRITE, SOFTEND) */
+    I2CX->CR2 = 0;
     I2CX->CR2 =
-        ((uint32_t)(dev_addr << 1) << I2C_CR2_SADD_Pos) |
-        (2UL << I2C_CR2_NBYTES_Pos) |
+        I2C_7BIT_ADDR(dev_addr) |
+        (2U << I2C_CR2_NBYTES_Pos) |
         I2C_CR2_START;
 
     ret = I2C_WaitFlag(I2CX, I2C_ISR_TXIS, 1);
@@ -171,8 +179,9 @@ I2C_Status_TypeDef I2C_Mem_Read(I2C_TypeDef *I2CX,
     ret = I2C_WaitFlag(I2CX, I2C_ISR_TC, 1);
     if (ret != I2C_OK) return ret;
 
+    /* Phase 2: Read len bytes (READ, AUTOEND) */
     I2CX->CR2 =
-        ((uint32_t)(dev_addr << 1) << I2C_CR2_SADD_Pos) |
+        I2C_7BIT_ADDR(dev_addr) |
         ((uint32_t)len << I2C_CR2_NBYTES_Pos) |
         I2C_CR2_START |
         I2C_CR2_AUTOEND |
@@ -190,4 +199,51 @@ I2C_Status_TypeDef I2C_Mem_Read(I2C_TypeDef *I2CX,
 
     I2CX->ICR = I2C_ICR_STOPCF;
     return I2C_OK;
+}
+
+I2C_Status_TypeDef I2C_IsDeviceReady(I2C_TypeDef *I2CX, uint16_t dev_addr)
+{
+    I2CX->ICR = I2C_ICR_STOPCF | I2C_ICR_NACKCF;
+
+    I2CX->CR2 &= ~(I2C_CR2_SADD | I2C_CR2_NBYTES | I2C_CR2_RELOAD |
+                   I2C_CR2_AUTOEND | I2C_CR2_START | I2C_CR2_STOP | I2C_CR2_RD_WRN);
+    I2CX->CR2 |= I2C_7BIT_ADDR(dev_addr) | I2C_CR2_START | I2C_CR2_AUTOEND;
+
+    uint32_t timeout = 200;
+    while (timeout--) {
+        uint32_t isr = I2CX->ISR;
+
+        if (isr & I2C_ISR_NACKF) {
+            I2CX->ICR = I2C_ICR_NACKCF;
+            if (isr & I2C_ISR_STOPF)
+                I2CX->ICR = I2C_ICR_STOPCF;
+            return I2C_NACK;
+        }
+        if (isr & I2C_ISR_STOPF) {
+            I2CX->ICR = I2C_ICR_STOPCF;
+            return I2C_OK;
+        }
+    }
+    return I2C_TIMEOUT;
+}
+
+/** Adress scan for finding all I2C devices
+
+    // I2C address scan
+    volatile uint8_t i2c_found[128];
+    volatile uint32_t i2c_count = 0;
+    I2C_Scan(I2C1, (uint8_t *)i2c_found, (uint32_t *)&i2c_count);
+    volatile uint32_t imx335_acked = 0;
+    for (volatile uint32_t i = 0; i < i2c_count; i++) {
+        if (i2c_found[i] == 0x1A) { imx335_acked = 1; break; }
+    }
+ */
+void I2C_Scan(I2C_TypeDef *I2CX, uint8_t *found_addrs, uint32_t *count)
+{
+    *count = 0;
+    for (uint16_t addr = 1; addr <= 0x7F; addr++) {
+        if (I2C_IsDeviceReady(I2CX, addr) == I2C_OK) {
+            found_addrs[(*count)++] = (uint8_t)addr;
+        }
+    }
 }
