@@ -104,6 +104,22 @@ static int32_t write_table(IMX335_Handle *h, const struct regval *tbl,
     return 0;
 }
 
+// Write then read back each register to confirm the value stuck
+// Returns 0 if all match, -1 on write/read error or mismatch
+static int32_t write_table_verify(IMX335_Handle *h, const struct regval *tbl, uint32_t size)
+{
+    uint8_t rb;
+    for (uint32_t i = 0; i < size; i++) {
+        if (read_reg(h, tbl[i].addr, &rb)) {
+            return -1;
+        }
+        if (rb != tbl[i].val) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 /* ---------------------------------------------------------------------------
  * API
  * ------------------------------------------------------------------------- */
@@ -123,6 +139,7 @@ int32_t IMX335_Init(IMX335_Handle *h)
     if (h->initialized)
         return 0;
 
+    /* Write all config tables fast, then verify once at the end */
     if (write_table(h, res_2592_1944_regs, ARRAY_SIZE(res_2592_1944_regs)))
         return -1;
 
@@ -130,6 +147,9 @@ int32_t IMX335_Init(IMX335_Handle *h)
         return -1;
 
     if (write_table(h, framerate_30fps_regs, ARRAY_SIZE(framerate_30fps_regs)))
+        return -1;
+
+    if (IMX335_VerifyConfig(h))
         return -1;
 
     h->initialized = 1;
@@ -162,6 +182,11 @@ int32_t IMX335_SetMirrorFlip(IMX335_Handle *h, uint32_t config)
     }
 }
 
+int32_t IMX335_EnableAutoExposure(IMX335_Handle *h)
+{
+    return write_reg(h, IMX335_REG_AEC, IMX335_AEC_ENABLE);
+}
+
 int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)
 {
     uint8_t id_byte = 0;
@@ -176,7 +201,25 @@ int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)
     return 0;
 }
 
-int32_t IMX335_EnableAutoExposure(IMX335_Handle *h)
+
+int32_t IMX335_VerifyConfig(IMX335_Handle *h)
 {
-    return write_reg(h, IMX335_REG_AEC, IMX335_AEC_ENABLE);
+    if (!h) {
+        return -1;
+    }
+
+    if (write_table_verify(h, res_2592_1944_regs, ARRAY_SIZE(res_2592_1944_regs))) {
+        return -1;
+    }
+
+    if (write_table_verify(h, mode_2l_10b_regs, ARRAY_SIZE(mode_2l_10b_regs))) {
+        return -1;
+    }
+
+    if (write_table_verify(h, framerate_30fps_regs, ARRAY_SIZE(framerate_30fps_regs))) {
+        return -1;
+    }
+
+    return 0;
 }
+

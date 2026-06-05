@@ -7,6 +7,8 @@
 
 #include "config.h"
 
+const CAM_Handle h_cam;
+
 const GPIO_cfg_TypeDef GPIO_default_cfg = {
 		.mode  	= GPIO_MODE_OUTPUT,
 		.otyp 	= GPIO_OTYPE_PP,
@@ -27,7 +29,7 @@ const GPIO_cfg_TypeDef GPIO_I2C_cfg = {
 		.mode	= GPIO_MODE_AF,
 		.otyp	= GPIO_OTYPE_OD,
 		.pupdr	= GPIO_PUPD_UP,
-		.af		= GPIO_MODE_AF,
+		.af		= GPIO_AF_I2C,
 		.speed  = GPIO_SPEED_HIGH
 };
 

@@ -43,10 +43,14 @@ void app_init(){
 
     delay_ms(10);
 
-//    if (CAM_Init(&h_cam, 0) == CAM_OK) {
-//        CAM_DisplayPipe_Start(&h_cam);
-//        CAM_NNPipe_Start(&h_cam);
-//    }
+    uint32_t error = 0;
+    if (CAM_Init(&h_cam, 0) == CAM_OK) {
+        if(CAM_DisplayPipe_Start(&h_cam)) {
+        	// Error
+        	error++;
+        }
+        CAM_NNPipe_Start(&h_cam);
+    }
 
     /* --- Scheduler --- */
     SCHEDULER_Init();

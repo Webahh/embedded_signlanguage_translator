@@ -12,6 +12,7 @@
 #include "simple_camera.h"
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
+#include "simple_csi.h"
 #include "simple_dcmipp.h"
 #include "simple_gpio.h"
 #include "simple_i2c.h"
@@ -38,13 +39,13 @@ static void CAM_HwInit(void)
     GPIO_Config(GPIOD, 2, GPIO_default_cfg);
 
     GPIO_BSRR_reset(GPIOC, 8);
-    delay_ms(1);
+    delay_ms(100);
     GPIO_BSRR_reset(GPIOD, 2);
-    delay_ms(1);
+    delay_ms(100);
     GPIO_BSRR_set(GPIOC, 8);
-    delay_ms(1);
+    delay_ms(100);
     GPIO_BSRR_set(GPIOD, 2);
-    delay_ms(1);
+    delay_ms(100);
 
     RCC_enable_GPIO(GPIOH);
     RCC_enable_GPIO(GPIOC);
@@ -53,7 +54,8 @@ static void CAM_HwInit(void)
 
     RCC_enable_I2C(I2C1);
     RCC_setI2C_clock_source(I2C1, 0);
-    I2C_Config(I2C1, 0, 0x00602E4B);
+
+    I2C_Config(I2C1, 0, 0x01B11628);
 }
 
 /* ---------------------------------------------------------------------------
@@ -62,7 +64,7 @@ static void CAM_HwInit(void)
 
 CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
 {
-    DCMIPP_CSI_Conf csi_conf;
+    CSI_Conf csi_conf;
     DCMIPP_Pipe_Conf pipe_conf;
     DCMIPP_IPPlug_Conf ipplug_conf;
 
@@ -75,23 +77,33 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     if (IMX335_Probe(&h->imx335, I2C1))
         return CAM_ERROR_ID;
 
-    /* ------ DCMIPP / CSI-2 ------ */
+    /* ------ CSI-2 ------ */
+
+    CSI_Init();
+
+    csi_conf.num_lanes        = CSI_TWO_DATA_LANES;
+    csi_conf.data_lane_mapping = CSI_DATA_LANES_PHYSICAL;
+    csi_conf.phy_bitrate       = CSI_PHY_BT_1600;
+    csi_conf.vc                = CSI_VIRTUAL_CHANNEL0;
+    csi_conf.dt_format         = CSI_DT_BPP10;
+    csi_conf.data_type         = 0x2B;
+    CSI_Config(&csi_conf);
+    CSI_SetVCConfig(csi_conf.vc, csi_conf.dt_format);
+
+    /* ------ DCMIPP ------ */
 
     DCMIPP_Init();
-
-    csi_conf.num_lanes   = DCMIPP_CSI_TWO_DATA_LANES;
-    csi_conf.phy_bitrate = DCMIPP_CSI_PHY_BT_1600;
-    csi_conf.vc          = DCMIPP_VIRTUAL_CHANNEL0;
-    csi_conf.dt_format   = DCMIPP_CSI_DT_BPP10;
-    csi_conf.data_type   = 0x2B;
-    DCMIPP_CSI_Config(&csi_conf);
 
     DCMIPP_Pipe_EnableShare(CAM_PIPE_DISPLAY, DCMIPP_PIPE_SHARE_SAME);
 
     DCMIPP_CSI_Pipe_Config(CAM_PIPE_DISPLAY, csi_conf.data_type);
     DCMIPP_CSI_Pipe_Config(CAM_PIPE_NN, csi_conf.data_type);
 
+    /* Enable VC — starts data flow after pipe config is complete */
+    CSI_StartVC(csi_conf.vc);
+
     /* ------ Display pipe: 800 x 480 RGB565 ------ */
+    /* IMX335 outputs 2592x1944 RAW10; crop full frame then downscale to 800x480 */
 
     pipe_conf.output_width  = CAM_DISPLAY_WIDTH;
     pipe_conf.output_height = CAM_DISPLAY_HEIGHT;
@@ -100,14 +112,14 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.enable_crop   = 1;
     pipe_conf.crop_x        = 0;
     pipe_conf.crop_y        = 0;
-    pipe_conf.crop_width    = CAM_DISPLAY_WIDTH;
-    pipe_conf.crop_height   = CAM_DISPLAY_HEIGHT;
-    pipe_conf.enable_downsize = 0;
+    pipe_conf.crop_width    = CAM_SENSOR_WIDTH;
+    pipe_conf.crop_height   = CAM_SENSOR_HEIGHT;
+    pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap   = 0;
-    DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf,
-                       (uint32_t *)&h->display_pitch);
+    DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf, (uint32_t *)&h->display_pitch);
 
     /* ------ NN pipe: 192 x 144 RGB888 (downscaled) ------ */
+    /* Crop full sensor frame then downscale to NN input size */
 
     pipe_conf.output_width  = CAM_NN_WIDTH;
     pipe_conf.output_height = CAM_NN_HEIGHT;
@@ -116,33 +128,50 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.enable_crop   = 1;
     pipe_conf.crop_x        = 0;
     pipe_conf.crop_y        = 0;
-    pipe_conf.crop_width    = CAM_NN_WIDTH;
-    pipe_conf.crop_height   = CAM_NN_HEIGHT;
+    pipe_conf.crop_width    = CAM_SENSOR_WIDTH;
+    pipe_conf.crop_height   = CAM_SENSOR_HEIGHT;
     pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap   = 0;
-    DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf,
-                       (uint32_t *)&h->nn_pitch);
+    DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
 
     /* ------ IPPlug (DMA bus arbiter) ------ */
-
-    ipplug_conf.client_id     = CAM_CLIENT_NN;
+    /* IPC2 => CLIENT2 (NN):  R1=0x4  R2=0xf0000   R3=0x22f0000  */
+    ipplug_conf.client_id     = DCMIPP_CLIENT2;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
-    ipplug_conf.outstanding   = 0;
-    ipplug_conf.wlru_ratio    = 16;
-    ipplug_conf.dpreg_start   = 0;
-    ipplug_conf.dpreg_end     = 559;
+    ipplug_conf.outstanding   = 0x0;
+    ipplug_conf.wlru_ratio    = 0xF;
+    ipplug_conf.dpreg_start   = 0x000;
+    ipplug_conf.dpreg_end     = 0x22F;
     DCMIPP_IPPlug_Config(&ipplug_conf);
 
+    /* IPC3 => CLIENT3:        R1=0x4  R2=0x10000   R3=0x18f0140  */
+    ipplug_conf.client_id     = DCMIPP_CLIENT3;
+    ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
+    ipplug_conf.outstanding   = 0x0;
+    ipplug_conf.wlru_ratio    = 0x1;
+    ipplug_conf.dpreg_start   = 0x140;
+    ipplug_conf.dpreg_end     = 0x18F;
+    DCMIPP_IPPlug_Config(&ipplug_conf);
+
+    /* IPC4 => CLIENT4:        R1=0x4  R2=0x10000   R3=0x1bf190  */
+    ipplug_conf.client_id     = DCMIPP_CLIENT4;
+    ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
+    ipplug_conf.outstanding   = 0x0;
+    ipplug_conf.wlru_ratio    = 0x1;
+    ipplug_conf.dpreg_start   = 0x190;
+    ipplug_conf.dpreg_end     = 0x1bf;
+    DCMIPP_IPPlug_Config(&ipplug_conf);
+
+    /* IPC5 => CLIENT4:        R1=0x024  R2=0x0   R3=0x27f0230  */
     ipplug_conf.client_id     = CAM_CLIENT_DISPLAY;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
-    ipplug_conf.outstanding   = 3;
-    ipplug_conf.wlru_ratio    = 1;
-    ipplug_conf.dpreg_start   = 560;
-    ipplug_conf.dpreg_end     = 639;
+    ipplug_conf.outstanding   = 0x2;
+    ipplug_conf.wlru_ratio    = 0x0;
+    ipplug_conf.dpreg_start   = 0x230;
+    ipplug_conf.dpreg_end     = 0x27F;
     DCMIPP_IPPlug_Config(&ipplug_conf);
 
-    DCMIPP->IPGR1 = (DCMIPP->IPGR1 & ~DCMIPP_IPGR1_MEMORYPAGE_Msk)
-                  | DCMIPP_MEM_PAGE_512B;
+    DCMIPP->IPGR1 = (DCMIPP->IPGR1 & ~DCMIPP_IPGR1_MEMORYPAGE_Msk) | DCMIPP_MEM_PAGE_512B;
 
     /* ------ Interrupts ------ */
 

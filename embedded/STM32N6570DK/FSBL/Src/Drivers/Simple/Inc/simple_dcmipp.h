@@ -12,6 +12,7 @@
 #define SIMPLE_DCMIPP_H
 
 #include "stm32n657xx.h"
+#include "simple_csi.h"
 
 /* DCMIPP Pipe identifiers */
 #define DCMIPP_PIPE0                    0U
@@ -24,21 +25,6 @@
 #define DCMIPP_CLIENT3                  3U
 #define DCMIPP_CLIENT4                  4U
 #define DCMIPP_CLIENT5                  5U
-
-/* DCMIPP Virtual Channels */
-#define DCMIPP_VIRTUAL_CHANNEL0         0U
-
-/* CSI Data Type formats (bit width) */
-#define DCMIPP_CSI_DT_BPP8              2U
-#define DCMIPP_CSI_DT_BPP10             3U
-
-/* CSI PHY Bitrates (index into PFCR.HSFR) */
-#define DCMIPP_CSI_PHY_BT_800           28U
-#define DCMIPP_CSI_PHY_BT_1600          44U
-
-/* Number of CSI data lanes */
-#define DCMIPP_CSI_ONE_DATA_LANE        1U
-#define DCMIPP_CSI_TWO_DATA_LANES       2U
 
 /* Pixel Packer formats (PxPPCR.FORMAT field) */
 #define DCMIPP_PP_FORMAT_RGB888         0U
@@ -75,17 +61,6 @@
 #define DCMIPP_PIPE_IT_VSYNCIE          DCMIPP_P1IER_VSYNCIE
 #define DCMIPP_PIPE_IT_LINEIE           DCMIPP_P1IER_LINEIE
 #define DCMIPP_PIPE_IT_OVRIE            DCMIPP_P1IER_OVRIE
-
-/*
- * CSI configuration structure
- */
-typedef struct DCMIPP_CSI_Conf {
-    uint32_t num_lanes;          /* DCMIPP_CSI_ONE_DATA_LANE or _TWO_DATA_LANES */
-    uint32_t phy_bitrate;        /* DCMIPP_CSI_PHY_BT_* */
-    uint32_t vc;                 /* Virtual channel (0-3) */
-    uint32_t dt_format;          /* DCMIPP_CSI_DT_BPP8, _BPP10, etc. */
-    uint32_t data_type;          /* CCS data type (RAW10=0x2B, RGB565=0x22, etc.) */
-} DCMIPP_CSI_Conf;
 
 /*
  * Pipe configuration structure
@@ -135,7 +110,6 @@ typedef struct DCMIPP_IPPlug_Conf {
 /* Function prototypes */
 void     DCMIPP_Init(void);
 void     DCMIPP_DeInit(void);
-void     DCMIPP_CSI_Config(DCMIPP_CSI_Conf *conf);
 void     DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type);
 void     DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pitch);
 void     DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode);
@@ -157,7 +131,6 @@ void     DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe);
 
 /* Interrupt handlers - call from IRQ */
 void     DCMIPP_IRQHandler(void);
-void     CSI_IRQHandler(void);
 
 /* Weak callbacks - override in application */
 void     DCMIPP_PIPE_FrameEventCallback(uint32_t pipe);
@@ -168,11 +141,6 @@ void     DCMIPP_PIPE_ErrorCallback(uint32_t pipe);
 static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch) {
     return (pitch + 15) & ~15U;
 }
-
-// Debug -- Delete
-extern volatile uint32_t dbg_csi_irq_count;
-extern volatile uint32_t dbg_csi_sr0_last;
-extern volatile uint32_t dbg_csi_sr1_last;
 
 extern volatile uint32_t dbg_p1_vsync_count;
 extern volatile uint32_t dbg_p1_frame_count;

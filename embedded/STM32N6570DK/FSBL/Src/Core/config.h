@@ -10,6 +10,9 @@
 
 #include "simple_gpio.h"
 #include "simple_ltdc.h"
+#include "simple_camera.h"
+
+extern const CAM_Handle h_cam;
 
 extern const GPIO_cfg_TypeDef GPIO_default_cfg;
 extern const GPIO_cfg_TypeDef GPIO_LTDC_cfg;

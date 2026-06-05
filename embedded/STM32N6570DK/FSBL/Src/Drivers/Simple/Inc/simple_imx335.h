@@ -130,4 +130,17 @@ int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id);
  */
 int32_t IMX335_EnableAutoExposure(IMX335_Handle *h);
 
+/**
+ * @brief  Verify that all written configuration registers read back correctly.
+ *
+ *         Iterates every register from all init tables, reads it back,
+ *         and compares against the written value. Returns true (0) only if
+ *         every register matches.
+ *
+ * @param  h Sensor handle (must have been initialised with IMX335_Init)
+ * @retval 0     all registers verified (true)
+ * @retval -1    at least one register mismatch or I2C error (false)
+ */
+int32_t IMX335_VerifyConfig(IMX335_Handle *h);
+
 #endif /* SIMPLE_IMX335_H */

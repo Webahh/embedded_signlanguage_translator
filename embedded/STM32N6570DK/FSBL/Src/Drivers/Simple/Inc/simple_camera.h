@@ -17,6 +17,10 @@
 #define CAM_CLIENT_NN           DCMIPP_CLIENT2
 #define CAM_CLIENT_DISPLAY      DCMIPP_CLIENT5
 
+// Sensor native output resolution (IMX335 configured for 2592x1944 RAW10)
+#define CAM_SENSOR_WIDTH        2592U
+#define CAM_SENSOR_HEIGHT       1944U
+
 // Display output width/Height  (pixels)
 #define CAM_DISPLAY_WIDTH       800U
 #define CAM_DISPLAY_HEIGHT      480U

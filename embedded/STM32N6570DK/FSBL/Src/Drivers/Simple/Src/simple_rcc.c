@@ -504,6 +504,9 @@ void RCC_reset_DCMIPP(void){
 void RCC_enable_CSI(void){
     RCC->APB5ENSR |= RCC_APB5ENSR_CSIENS;
     (void)RCC->APB5ENSR;
+
+    RCC->APB5LPENR |= RCC_APB5LPENR_CSILPEN;
+    (void)RCC->APB5LPENR;
 }
 
 void RCC_reset_CSI(void){
