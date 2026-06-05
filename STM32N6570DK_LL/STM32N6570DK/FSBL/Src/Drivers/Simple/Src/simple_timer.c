@@ -9,12 +9,23 @@
 #include "simple_rcc.h"
 
 
-static volatile uint32_t sys_tick_ms = 0;
+static volatile uint32_t sys_tick_ms = 0; // global millisecond counter
 
+/*
+ * Vector table symbol provided by the startup file.
+ * Used to explicitly set SCB->VTOR to the application vector table.
+ */
 extern uint32_t g_pfnVectors[];
 
-/* ------------- Config Helper ------------- */
+/* ------------- Simple_Timer Helper ------------- */
 
+
+/**
+ * @brief Enable timer peripheral clock and optionally its NVIC interrupt.
+ *
+ * The peripheral clock must be enabled before accessing timer registers.
+ * If interrupts are requested, the matching IRQ line is enabled in the NVIC.
+ */
 static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
     RCC_enable_TIM(TIMX);
 
@@ -48,18 +59,22 @@ static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
     }
 }
 
+/**
+ * @brief Configure a timer to generate a 1 kHz update event.
+ *
+ * The timer input clock is reduced to 1 MHz using the prescaler.
+ * With ARR = 999, the timer overflows every 1000 ticks:
+ *
+ * 1 MHz / 1000 = 1 kHz
+ *
+ * Therefore, one update event occurs every 1 ms.
+ */
 static void TIM_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
     uint32_t tim_clk = RCC_GetTIMClock(TIMX);
 
     if (tim_clk == 0U) {
         return;
     }
-
-    /*
-     * Timer counter clock = 1 MHz
-     * ARR = 1000 - 1
-     * Update event = 1 kHz = 1 ms
-     */
 
     uint32_t prescaler = tim_clk / 1000000UL;
 
@@ -162,7 +177,17 @@ void delay_ms(int ms){
     TIM_Stop(TIM6);
 }
 
+/**
+ * @brief Initialize the global millisecond tick.
+ *
+ * TIM7 is configured to generate an interrupt every 1 ms.
+ * The TIM7 interrupt handler increments sys_tick_ms.
+ */
 void tick_init(void){
+    /*
+     * Make sure the vector table base address points to the application
+     * vector table that contains TIM7_IRQHandler.
+     */
     SCB->VTOR = (uint32_t)g_pfnVectors;
 
     TIM_Config_1kHz(TIM7, 1);
@@ -170,6 +195,12 @@ void tick_init(void){
     TIM_Start(TIM7);
 }
 
+
+/**
+ * @brief TIM7 interrupt handler for the global millisecond tick.
+ *
+ * Called every 1 ms after tick_init().
+ */
 void TIM7_IRQHandler(void){
     if(TIM7->SR & TIM_SR_UIF){
         TIM7->SR &= ~TIM_SR_UIF;

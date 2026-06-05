@@ -3,6 +3,16 @@
  *
  *  Created on: 22.05.2026
  *      Author: Weber
+ *
+ * Provides helper functions for:
+ * - basic system clock setup
+ * - reading derived bus clocks
+ * - enabling and resetting selected peripherals
+ * - configuring selected peripheral clock sources
+ *
+ * This module intentionally supports only the clock sources and
+ * peripherals currently used by the project.
+ *
  */
 #include "simple_rcc.h"
 
@@ -50,16 +60,23 @@ static uint32_t RCC_GetAPBPrescalerDiv(uint32_t ppre_bits){
     return apb_div_table[ppre_bits & 0x7U];
 }
 
+/**
+ * @brief Configure a minimal system clock setup.
+ *
+ * Enables HSI and selects it as SYSCLK and CPUCLK.
+ * All relevant AHB/APB prescalers are set to /1.
+ *
+ * Resulting clock tree:
+ * - HSI    = 64 MHz
+ * - SYSCLK = HSI
+ * - CPUCLK = HSI
+ * - HCLK   = SYSCLK / 1
+ * - PCLK1  = HCLK / 1
+ * - PCLK2  = HCLK / 1
+ * - PCLK4  = HCLK / 1
+ * - PCLK5  = HCLK / 1
+ */
 void RCC_SystemClock_Config(void){
-    /*
-     * Basic system clock configuration:
-     *
-     * HSI    = 64 MHz
-     * SYSCLK = HSI
-     * HCLK   = SYSCLK / 1
-     * PCLK1  = HCLK / 1
-     * PCLK2  = HCLK / 1
-     */
 
     /* Enable HSI */
     RCC->CR |= RCC_CR_HSION;
@@ -72,8 +89,10 @@ void RCC_SystemClock_Config(void){
                     RCC_CFGR2_PPRE4 |
                     RCC_CFGR2_PPRE5);
 
-    /* Set HSI as SYSCLK and CPUCLK */
-
+    /*
+     * Set HSI as SYSCLK and CPUCLK
+     * For these fields, clearing the switch bits selects HSI.
+     */
     RCC->CFGR1 &= ~(RCC_CFGR1_SYSSW |
                     RCC_CFGR1_CPUSW);
 
@@ -100,14 +119,10 @@ uint32_t RCC_GetSYSCLK(void){
             return RCC_GetHSI();
 
         default:
-            /*
-             * Später ergänzen:
-             * case 0x1U: ...
-             * case 0x2U: ...
-             * case 0x3U: ...
-             *
-             * Für jetzt bewusst 0, damit falsche auffallen!
-             */
+        	/*
+        	 * for now others are not needed!
+        	 */
+
             return 0U;
     }
 }
@@ -122,9 +137,9 @@ uint32_t RCC_GetCPUCLK(void){
             return RCC_GetHSI();
 
         default:
-            /*
-             * Später ergänzen, sobald PLL/HSE/MSI/CSI genutzt werden.
-             */
+        	/*
+        	 * for now others are not needed!
+        	 */
             return 0U;
     }
 }
@@ -204,6 +219,19 @@ uint32_t RCC_GetPCLK5(void){
     return hclk / ppre5_div;
 }
 
+/**
+ * @brief Return the timer input clock for the selected timer.
+ *
+ * TIM2..TIM7 are connected to APB1.
+ * TIM1, TIM8 and TIM15..TIM17 are connected to APB2.
+ *
+ * @note This implementation currently returns PCLK directly.
+ *       If APB prescalers are changed later this function
+ *       needs a rework!
+ *
+ * @param TIMX Timer instance.
+ * @return Timer input clock in Hz, or 0 if the timer is unsupported.
+ */
 uint32_t RCC_GetTIMClock(TIM_TypeDef *TIMX){
     /*
      * TIM on APB1 -> PCLK1
@@ -245,6 +273,11 @@ uint32_t RCC_GetI2CClock(I2C_TypeDef *I2CX){
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
 	if (GPIOX == GPIOA){
 		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN;
+        /*
+         * Dummy read after enabling the clock.
+         * This gives the bus clock enable write time to take effect
+         * before the peripheral registers are accessed.
+         */
 		(void)RCC->AHB4ENR;
 	}
 	else if (GPIOX == GPIOB){
@@ -340,7 +373,7 @@ void RCC_reset_I2C(I2C_TypeDef* I2CX){
 }
 
 void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
-    source &= 0x7U;   // 3 bits width
+    source &= 0x7U;   // I2CSEL field are 3 bits wide
 
     if (I2CX == I2C1) {
         RCC->CCIPR4 &= ~RCC_CCIPR4_I2C1SEL;
@@ -409,6 +442,12 @@ void RCC_enable_TIM(TIM_TypeDef *TIMX){
     }
 }
 
+/**
+ * @brief Enable AXISRAM blocks used by the LTDC framebuffer.
+ *
+ * The framebuffer is stored in AXI SRAM. These memory blocks must be
+ * clock-enabled before the LTDC or CPU can reliably access the framebuffer.
+ */
 void RCC_enable_LTDC_memory(void){
     RCC->MEMENR |= RCC_MEMENR_AXISRAM1EN
                 |  RCC_MEMENR_AXISRAM2EN
@@ -518,6 +557,11 @@ void RCC_reset_XSPIM(void){
     (void)RCC->AHB5RSTCR;
 }
 
+/**
+ * @brief Enable VDDIO2 supply supervision.
+ *
+ * VDDIO2 is required for GPIOs/peripherals powered by the second I/O domain.
+ */
 void RCC_enable_VDDIO2(void){
     RCC->AHB4ENSR |= RCC_AHB4ENSR_PWRENS;
     (void)RCC->AHB4ENSR;
@@ -525,19 +569,41 @@ void RCC_enable_VDDIO2(void){
     (void)PWR->SVMCR3;
 }
 
+/**
+ * @brief Configure VDDIO2 voltage range to 1.8 V.
+ *
+ * Clears VDDIO2VRSEL to select the 1.8 V range.
+ */
 void RCC_config_VDDIO2_1V8(void){
     PWR->SVMCR3 &= ~PWR_SVMCR3_VDDIO2VRSEL;
     (void)PWR->SVMCR3;
 }
 
+/**
+ * @brief Configure LTDC pixel clock to 25 MHz.
+ *
+ * PLL4 is configured from HSI and routed through IC16 to the LTDC kernel clock.
+ *
+ * Clock calculation:
+ * - PLL4 source = HSI = 64 MHz
+ * - M = 8
+ * - N = 225
+ * - P1 = 6
+ * - P2 = 6
+ *
+ * VCO      = (64 MHz / 8) * 225 = 1800 MHz
+ * PLL4 out = 1800 MHz / (6 * 6) = 50 MHz
+ * IC16     = PLL4 out / 2 = 25 MHz
+ *
+ * The resulting 25 MHz clock is used as LTDC pixel clock.
+ *
+ * @note This configuration assumes HSI is already enabled and stable.
+ */
 void RCC_config_LTDC_25MHz_clock(void){
-    /* PLL4 configuration for 25 MHz pixel clock
-     * PLL4 source = HSI (64 MHz), M=8, N=225, P1=6, P2=6
-     * VCO = (64/8) * 225 = 1800 MHz
-     * PLL4_out = 1800 / (6*6) = 50 MHz
-     * IC16 divider = 2  ->  LTDC clock = 25 MHz
+    /*
+     * Configure PLL4 only if it is not already running.
+     * PLL parameters should not be changed while the PLL is enabled.
      */
-
     if (!(RCC->SR & RCC_SR_PLL4RDY)) {
         RCC->PLL4CFGR1 &= ~RCC_PLL4CFGR1_PLL4SEL;
         RCC->PLL4CFGR1 = (RCC->PLL4CFGR1 & ~(RCC_PLL4CFGR1_PLL4DIVM | RCC_PLL4CFGR1_PLL4DIVN))
@@ -559,6 +625,10 @@ void RCC_config_LTDC_25MHz_clock(void){
         }
     }
 
+    /*
+     * Configure IC16 as an intermediate divider for the LTDC clock.
+     * IC16 source is selected from PLL4 and divided by 2.
+     */
     uint32_t ic16sel = RCC_IC16CFGR_IC16SEL_0 | RCC_IC16CFGR_IC16SEL_1;
     uint32_t ic16int = (2UL - 1UL) << RCC_IC16CFGR_IC16INT_Pos;
 
@@ -569,6 +639,9 @@ void RCC_config_LTDC_25MHz_clock(void){
     RCC->DIVENR |= RCC_DIVENR_IC16EN;
     (void)RCC->DIVENR;
 
+    /*
+     * Select IC16 output as LTDC kernel clock source.
+     */
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
 }

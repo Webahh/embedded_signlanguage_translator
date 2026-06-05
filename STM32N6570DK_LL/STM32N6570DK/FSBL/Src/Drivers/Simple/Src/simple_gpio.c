@@ -8,8 +8,17 @@
 #include "simple_gpio.h"
 #include "simple_rcc.h"
 
-/* ------------- Simple_GPIO Functions ------------- */
+/* ------------- Simple_GPIO Helper ------------- */
 
+/**
+ * @brief Configure alternate function settings for one GPIO pin.
+ *
+ * This helper sets the output speed and selkects the alternate function
+ * number in the correct AFR register.
+ *
+ * AFR[0] is used for pins 0..7.
+ * AFR[1] is used for pins 8..15.
+ */
 static void GPIO_setAF(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t af, uint32_t speed){
     GPIOX->OSPEEDR =
         (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
@@ -25,15 +34,20 @@ static void GPIO_setAF(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t af, uint32_
     }
 }
 
+/* ------------- Simple_GPIO Functions ------------- */
+
 /**
  * @brief Configure a GPIO pin.
  *
  * Enables the GPIO port clock and configures mode, output type
  * and pull-up/pull-down setting for one pin.
  *
+ * If the pin is configured as alternate function, the AF number and
+ * GPIO speed are configured as well.
+ *
  * @param GPIOX GPIO port instance, e.g. GPIOA, GPIOB, ...
  * @param pinNr Pin number from 0 to 15.
- * @param cfg	GPIO cfg for GPIO Mode, Output Type, Pull-up/pull-down,
+ * @param cfg	GPIO cfg for GPIO mode, output type, pull-up/pull-down,
  * 				alternate function identifier and speed value.
  */
 void GPIO_Config(GPIO_TypeDef* GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg){
