@@ -3,11 +3,11 @@
 #include "simple_timer.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
-#include "image_bitmap.h"
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
 #include "simple_camera.h"
 #include "config.h"
+#include "../Assets/Inc/image_bitmap.h"
 
 #define LED2_PIN 10
 

@@ -1,4 +1,4 @@
-#include "image_bitmap.h"
+#include "../../Assets/Inc/image_bitmap.h"
 
 const uint16_t image_bitmap[IMG_WIDTH * IMG_HEIGHT] = {
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 
