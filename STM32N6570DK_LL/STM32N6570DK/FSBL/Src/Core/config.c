@@ -39,4 +39,35 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
 
+LCD_LayerConfig LCD_Layer1Config = {
+    .regs            = LTDC_Layer1,
+    .fb              = lcd_bg_buffer,
+    .x               = 0,
+    .y               = 0,
+    .width           = LCD_BG_WIDTH,
+    .height          = LCD_BG_HEIGHT,
+    .buf_width       = LCD_BG_WIDTH,
+    .pixel_format    = LCD_PF_RGB565,
+    .const_alpha     = 0xFF,
+    .per_pixel_alpha = 0,
+    .default_color   = 0,
+    .blending_order  = 0,
+};
+
+LCD_LayerConfig LCD_Layer2Config = {
+    .regs            = LTDC_Layer2,
+    .fb              = lcd_fg_buffer,
+    .x               = 10,
+    .y               = 10,
+    .width           = LCD_FG_WIDTH,
+    .height          = LCD_FG_HEIGHT,
+    .buf_width       = LCD_FG_WIDTH,
+    .pixel_format    = LCD_PF_ARGB8888,
+    .const_alpha     = 0xFF,
+    .per_pixel_alpha = 1,
+    .default_color   = 0x00000000U,
+    .blending_order  = 1,
+};
+
+
 

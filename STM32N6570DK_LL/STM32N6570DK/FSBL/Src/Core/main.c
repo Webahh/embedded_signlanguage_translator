@@ -3,7 +3,6 @@
 #include "simple_timer.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
-#include "simple_lcd_framebuffer.h"
 #include "image_bitmap.h"
 #include "simple_xspi.h"
 #include "simple_rifsc.h"

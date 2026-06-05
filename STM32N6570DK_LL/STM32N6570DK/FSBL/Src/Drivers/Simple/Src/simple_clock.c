@@ -1,14 +1,12 @@
 #include "simple_clock.h"
 
-static void wait_pll4_ready(void)
-{
+static void wait_pll4_ready(void){
     while (!(RCC->SR & RCC_SR_PLL4RDY)) {
         /* wait */
     }
 }
 
-void DCMIPP_IC17_Clock_Config(void)
-{
+void DCMIPP_IC17_Clock_Config(void){
     /*
      * PLL4 already configured to 200 MHz.
      * IC17 source = PLL4
@@ -34,8 +32,7 @@ void DCMIPP_IC17_Clock_Config(void)
     (void)RCC->CCIPR1;
 }
 
-void SystemClock_Config_DCMIPP_IC17(void)
-{
+void SystemClock_Config_DCMIPP_IC17(void){
     /*
      * Configure PLL4 only:
      *

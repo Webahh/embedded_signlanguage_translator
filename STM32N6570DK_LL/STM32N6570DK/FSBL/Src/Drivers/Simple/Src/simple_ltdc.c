@@ -1,9 +1,11 @@
 #include "simple_ltdc.h"
-#include "simple_lcd_framebuffer.h"
 #include "simple_rcc.h"
 #include "simple_gpio.h"
 #include "simple_timer.h"
 #include "config.h"
+
+volatile uint16_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
 
 static void LCD_ConfigGPIO(void){
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
@@ -220,32 +222,3 @@ void LCD_ConfigLayer2(void){
     LCD_ConfigLayer(&LCD_Layer2Config);
 }
 
-LCD_LayerConfig LCD_Layer1Config = {
-    .regs            = LTDC_Layer1,
-    .fb              = lcd_bg_buffer,
-    .x               = 0,
-    .y               = 0,
-    .width           = LCD_BG_WIDTH,
-    .height          = LCD_BG_HEIGHT,
-    .buf_width       = LCD_BG_WIDTH,
-    .pixel_format    = LCD_PF_RGB565,
-    .const_alpha     = 0xFF,
-    .per_pixel_alpha = 0,
-    .default_color   = 0,
-    .blending_order  = 0,
-};
-
-LCD_LayerConfig LCD_Layer2Config = {
-    .regs            = LTDC_Layer2,
-    .fb              = lcd_fg_buffer,
-    .x               = 10,
-    .y               = 10,
-    .width           = LCD_FG_WIDTH,
-    .height          = LCD_FG_HEIGHT,
-    .buf_width       = LCD_FG_WIDTH,
-    .pixel_format    = LCD_PF_ARGB8888,
-    .const_alpha     = 0xFF,
-    .per_pixel_alpha = 1,
-    .default_color   = 0x00000000U,
-    .blending_order  = 1,
-};
