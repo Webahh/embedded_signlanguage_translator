@@ -157,7 +157,7 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
            (4U << LTDC_LxBFCR_BF1_Pos) |
            (5U << LTDC_LxBFCR_BF2_Pos);
     }
-    cfg->regs->BFCR |= (cfg->blendingOrder == 0)? (0U << LTDC_LxBFCR_BOR_Pos): (1U << LTDC_LxBFCR_BOR_Pos);
+    cfg->regs->BFCR |= (cfg->blending_order == 0)? (0U << LTDC_LxBFCR_BOR_Pos): (1U << LTDC_LxBFCR_BOR_Pos);
 
     cfg->regs->CFBAR = (uint32_t)cfg->fb;
 
@@ -174,27 +174,41 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
 }
 
 void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
-    volatile uint32_t *fb = cfg->fb;
-    for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++){
-        fb[i] = color;
+    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
+        volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        uint16_t c = LCD_ARGBtoRGB565(color);
+        for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
+            fb[i] = c;
+    } else {
+        volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+        for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
+            fb[i] = color;
     }
 }
 
 void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2) {
-	volatile uint32_t *fb = cfg->fb;
+    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
+        volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        uint16_t c1 = LCD_ARGBtoRGB565(color1);
+        uint16_t c2 = LCD_ARGBtoRGB565(color2);
+        for (uint32_t y = 0; y < cfg->height; y++)
+            for (uint32_t x = 0; x < cfg->width; x++)
+                fb[y * cfg->width + x] = (x < cfg->width / 2) ? c1 : c2;
+    } else {
+        volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+        for (uint32_t y = 0; y < cfg->height; y++)
+            for (uint32_t x = 0; x < cfg->width; x++)
+                fb[y * cfg->width + x] = (x < cfg->width / 2) ? color1 : color2;
+    }
+}
 
-	for (uint32_t y = 0; y < cfg->height; y++) {
-		//delay_ms(10);
-		for(uint32_t x = 0; x < cfg->width; x++) {
-			if (x < cfg->width / 2) {
-
-				fb[y * cfg->width + x] = color1;
-			} else {
-
-				fb[y * cfg->width + x] = color2;
-			}
-		}
-	}
+void LCD_BlitImage(const LCD_LayerConfig *cfg, const uint16_t *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
+        volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
+            for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++)
+                fb[(dst_y + y) * cfg->buf_width + dst_x + x] = img[y * img_w + x];
+    }
 }
 
 void LCD_ConfigLayer1(void){
@@ -206,31 +220,31 @@ void LCD_ConfigLayer2(void){
 }
 
 LCD_LayerConfig LCD_Layer1Config = {
-    .regs           = LTDC_Layer1,
-    .fb             = lcd_bg_buffer,
-    .x              = 0,
-    .y              = 0,
-    .width          = LCD_BG_WIDTH,
-    .height         = LCD_BG_HEIGHT,
-    .buf_width      = LCD_BG_WIDTH,
-    .pixel_format   = LCD_PF_BGR565,
-    .const_alpha    = 0xFF,
+    .regs            = LTDC_Layer1,
+    .fb              = lcd_bg_buffer,
+    .x               = 0,
+    .y               = 0,
+    .width           = LCD_BG_WIDTH,
+    .height          = LCD_BG_HEIGHT,
+    .buf_width       = LCD_BG_WIDTH,
+    .pixel_format    = LCD_PF_RGB565,
+    .const_alpha     = 0xFF,
     .per_pixel_alpha = 0,
-    .default_color  = 0,
-	.blendingOrder  = 0,
+    .default_color   = 0,
+    .blending_order  = 0,
 };
 
 LCD_LayerConfig LCD_Layer2Config = {
-    .regs           = LTDC_Layer2,
-    .fb             = lcd_fg_buffer,
-    .x              = 10,
-    .y              = 10,
-    .width          = LCD_FG_WIDTH,
-    .height         = LCD_FG_HEIGHT,
-    .buf_width      = LCD_FG_WIDTH,
-    .pixel_format   = LCD_PF_ARGB8888,
-    .const_alpha    = 0xFF,
+    .regs            = LTDC_Layer2,
+    .fb              = lcd_fg_buffer,
+    .x               = 10,
+    .y               = 10,
+    .width           = LCD_FG_WIDTH,
+    .height          = LCD_FG_HEIGHT,
+    .buf_width       = LCD_FG_WIDTH,
+    .pixel_format    = LCD_PF_ARGB8888,
+    .const_alpha     = 0xFF,
     .per_pixel_alpha = 1,
-    .default_color  = 0x00000000U,
-	.blendingOrder  = 1,
+    .default_color   = 0x00000000U,
+    .blending_order  = 1,
 };
