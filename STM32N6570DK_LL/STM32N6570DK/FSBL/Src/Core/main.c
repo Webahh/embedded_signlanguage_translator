@@ -4,6 +4,7 @@
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
 #include "simple_lcd_framebuffer.h"
+#include "image_bitmap.h"
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
 #include "simple_camera.h"
@@ -64,15 +65,21 @@ int main(void){
 
     delay_ms(10);
 
-    LCD_FillLayer(&LCD_Layer1Config, 0b0000011111100000);
+    /* Fill background buffer with white */
+    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_WHITE);
+
+    /* Blit black & white image centered on screen */
+    LCD_BlitImage(&LCD_Layer1Config, image_bitmap, IMG_WIDTH, IMG_HEIGHT,
+                  (LCD_BG_WIDTH - IMG_WIDTH) / 2, (LCD_BG_HEIGHT - IMG_HEIGHT) / 2);
+
     LCD_ConfigLayer1();
 
     delay_ms(10);
 
-    if (CAM_Init(&h_cam, 0) == CAM_OK) {
-        CAM_DisplayPipe_Start(&h_cam);
-        CAM_NNPipe_Start(&h_cam);
-    }
+//    if (CAM_Init(&h_cam, 0) == CAM_OK) {
+//        CAM_DisplayPipe_Start(&h_cam);
+//        CAM_NNPipe_Start(&h_cam);
+//    }
 
     /* --- Scheduler --- */
     SCHEDULER_Init();

@@ -24,7 +24,7 @@
 #define LCD_COLOR_GREEN  0xFF00FF00U
 #define LCD_COLOR_BLUE   0xFF0000FFU
 
-extern volatile uint32_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT];
+extern volatile uint16_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT];
 extern volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT];
 
 #endif /* SIMPLE_LCD_FRAMEBUFFER_H */
