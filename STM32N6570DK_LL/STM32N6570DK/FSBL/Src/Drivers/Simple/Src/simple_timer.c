@@ -6,6 +6,7 @@
  */
 
 #include "simple_timer.h"
+#include "simple_rcc.h"
 
 
 static volatile uint32_t sys_tick_ms = 0;
@@ -15,64 +16,59 @@ extern uint32_t g_pfnVectors[];
 /* ------------- Config Helper ------------- */
 
 static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
-	if (TIMX == TIM2) {
-	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
-	    (void)RCC->APB2ENR;
+    RCC_enable_TIM(TIMX);
 
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM2_IRQn);
-	    }
-	}
-	else if (TIMX == TIM3) {
-		RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
-	    (void)RCC->APB1ENR1;
+    if (!use_irq) {
+        return;
+    }
 
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM3_IRQn);
-	    }
-	}
-	else if (TIMX == TIM4) {
-	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
-	    (void)RCC->APB1ENR1;
-
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM4_IRQn);
-	    }
-	}
-	else if (TIMX == TIM5) {
-	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
-	    (void)RCC->APB1ENR1;
-
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM5_IRQn);
-	    }
-	}
-	else if (TIMX == TIM6) {
-	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
-	    (void)RCC->APB1ENR1;
-
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM6_IRQn);
-	    }
-	}
-	else if (TIMX == TIM7) {
-	    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM7EN;
-	    (void)RCC->APB1ENR1;
-
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM7_IRQn);
-	    }
-	}
-	else if (TIMX == TIM8) {
-	    RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
-	    (void)RCC->APB2ENR;
-
-	    if (use_irq){
-	    	NVIC_EnableIRQ(TIM8_UP_IRQn);
-	    }
-	}
+    if (TIMX == TIM1) {
+        NVIC_EnableIRQ(TIM1_UP_IRQn);
+    }
+    else if (TIMX == TIM2) {
+        NVIC_EnableIRQ(TIM2_IRQn);
+    }
+    else if (TIMX == TIM3) {
+        NVIC_EnableIRQ(TIM3_IRQn);
+    }
+    else if (TIMX == TIM4) {
+        NVIC_EnableIRQ(TIM4_IRQn);
+    }
+    else if (TIMX == TIM5) {
+        NVIC_EnableIRQ(TIM5_IRQn);
+    }
+    else if (TIMX == TIM6) {
+        NVIC_EnableIRQ(TIM6_IRQn);
+    }
+    else if (TIMX == TIM7) {
+        NVIC_EnableIRQ(TIM7_IRQn);
+    }
+    else if (TIMX == TIM8) {
+        NVIC_EnableIRQ(TIM8_UP_IRQn);
+    }
 }
 
+static void TIM_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
+    uint32_t tim_clk = RCC_GetTIMClock(TIMX);
+
+    if (tim_clk == 0U) {
+        return;
+    }
+
+    /*
+     * Timer counter clock = 1 MHz
+     * ARR = 1000 - 1
+     * Update event = 1 kHz = 1 ms
+     */
+
+    uint32_t prescaler = tim_clk / 1000000UL;
+
+    if (prescaler == 0U) {
+        prescaler = 1U;
+    }
+
+    TIM_Config(TIMX, (int)prescaler, 999, use_irq);
+}
 
 /* ------------- Simple_Timer Functions ------------- */
 
@@ -108,7 +104,7 @@ void TIM_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq){
 	}
 
 	TIMX->EGR = TIM_EGR_UG;
-	TIMX->SR = 0;
+	TIMX->SR &= ~TIM_SR_UIF;
 }
 
 void TIM_Start(TIM_TypeDef* TIMX){
@@ -134,7 +130,7 @@ int TIM_GetCounter(TIM_TypeDef* TIMX){
  * with the current assumed timer clock configuration.
  */
 void delay_init(void){
-	TIM_Config(TIM6, 40, 999, 0);
+    TIM_Config_1kHz(TIM6, 0);
 }
 
 /**
@@ -167,9 +163,9 @@ void delay_ms(int ms){
 }
 
 void tick_init(void){
-    SCB->VTOR = (uint32_t)g_pfnVectors; // Vector Table location correction
+    SCB->VTOR = (uint32_t)g_pfnVectors;
 
-    TIM_Config(TIM7, 40, 999, 1);
+    TIM_Config_1kHz(TIM7, 1);
 
     TIM_Start(TIM7);
 }

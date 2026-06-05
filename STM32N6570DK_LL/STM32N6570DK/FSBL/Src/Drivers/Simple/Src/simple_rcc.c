@@ -6,7 +6,6 @@
  */
 #include "simple_rcc.h"
 
-
 static void RCC_WaitHSIReady(void){
     while (!(RCC->SR & RCC_SR_HSIRDY)) {
         /* wait */
@@ -15,27 +14,21 @@ static void RCC_WaitHSIReady(void){
 
 static uint32_t RCC_GetAHBPrescalerDiv(uint32_t hpre_bits){
     /*
-     * Standard STM32 AHB prescaler encoding:
+     * STM32N6 RCC_CFGR2_HPRE is 3 bits wide:
      *
-     * 0xxx: /1
-     * 1000: /2
-     * 1001: /4
-     * 1010: /8
-     * 1011: /16
-     * 1100: /64
-     * 1101: /128
-     * 1110: /256
-     * 1111: /512
+     * 0xx: /1
+     * 100: /2
+     * 101: /4
+     * 110: /8
+     * 111: /16
      */
 
-    static const uint16_t ahb_div_table[16] = {
+    static const uint8_t ahb_div_table[8] = {
         1, 1, 1, 1,
-        1, 1, 1, 1,
-        2, 4, 8, 16,
-        64, 128, 256, 512
+        2, 4, 8, 16
     };
 
-    return ahb_div_table[hpre_bits & 0xFU];
+    return ahb_div_table[hpre_bits & 0x7U];
 }
 
 static uint32_t RCC_GetAPBPrescalerDiv(uint32_t ppre_bits){
@@ -73,9 +66,11 @@ void RCC_SystemClock_Config(void){
     RCC_WaitHSIReady();
 
     /* Set prescalers to /1 */
-    RCC->CFGR2 &= ~(RCC_CFGR2_HPRE |
-                   RCC_CFGR2_PPRE1 |
-                   RCC_CFGR2_PPRE2);
+    RCC->CFGR2 &= ~(RCC_CFGR2_HPRE  |
+                    RCC_CFGR2_PPRE1 |
+                    RCC_CFGR2_PPRE2 |
+                    RCC_CFGR2_PPRE4 |
+                    RCC_CFGR2_PPRE5);
 
     /* Set HSI as SYSCLK and CPUCLK */
 
@@ -177,6 +172,74 @@ uint32_t RCC_GetPCLK2(void){
     }
 
     return hclk / ppre2_div;
+}
+
+uint32_t RCC_GetPCLK4(void){
+    uint32_t hclk = RCC_GetHCLK();
+
+    uint32_t ppre4_bits =
+        (RCC->CFGR2 & RCC_CFGR2_PPRE4) >> RCC_CFGR2_PPRE4_Pos;
+
+    uint32_t ppre4_div = RCC_GetAPBPrescalerDiv(ppre4_bits);
+
+    if (ppre4_div == 0U) {
+        return 0U;
+    }
+
+    return hclk / ppre4_div;
+}
+
+uint32_t RCC_GetPCLK5(void){
+    uint32_t hclk = RCC_GetHCLK();
+
+    uint32_t ppre5_bits =
+        (RCC->CFGR2 & RCC_CFGR2_PPRE5) >> RCC_CFGR2_PPRE5_Pos;
+
+    uint32_t ppre5_div = RCC_GetAPBPrescalerDiv(ppre5_bits);
+
+    if (ppre5_div == 0U) {
+        return 0U;
+    }
+
+    return hclk / ppre5_div;
+}
+
+uint32_t RCC_GetTIMClock(TIM_TypeDef *TIMX){
+    /*
+     * TIM on APB1 -> PCLK1
+     * TIM on APB2 -> PCLK2
+     */
+
+    if ((TIMX == TIM2) ||
+        (TIMX == TIM3) ||
+        (TIMX == TIM4) ||
+        (TIMX == TIM5) ||
+        (TIMX == TIM6) ||
+        (TIMX == TIM7)) {
+        return RCC_GetPCLK1();
+    }
+
+    if ((TIMX == TIM1) ||
+        (TIMX == TIM8) ||
+        (TIMX == TIM15) ||
+        (TIMX == TIM16) ||
+        (TIMX == TIM17)) {
+        return RCC_GetPCLK2();
+    }
+
+    return 0U;
+}
+
+uint32_t RCC_GetI2CClock(I2C_TypeDef *I2CX){
+    if ((I2CX == I2C1) || (I2CX == I2C2) || (I2CX == I2C3)) {
+        return RCC_GetPCLK1();
+    }
+
+    if (I2CX == I2C4) {
+        return RCC_GetPCLK4();
+    }
+
+    return 0U;
 }
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
@@ -299,6 +362,53 @@ void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
     (void)RCC->CCIPR4;
 }
 
+void RCC_enable_TIM(TIM_TypeDef *TIMX){
+    if (TIMX == TIM1) {
+        RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
+        (void)RCC->APB2ENR;
+    }
+    else if (TIMX == TIM2) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM2EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM3) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM3EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM4) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM5) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM6) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM7) {
+        RCC->APB1ENR1 |= RCC_APB1ENR1_TIM7EN;
+        (void)RCC->APB1ENR1;
+    }
+    else if (TIMX == TIM8) {
+        RCC->APB2ENR |= RCC_APB2ENR_TIM8EN;
+        (void)RCC->APB2ENR;
+    }
+    else if (TIMX == TIM15) {
+        RCC->APB2ENR |= RCC_APB2ENR_TIM15EN;
+        (void)RCC->APB2ENR;
+    }
+    else if (TIMX == TIM16) {
+        RCC->APB2ENR |= RCC_APB2ENR_TIM16EN;
+        (void)RCC->APB2ENR;
+    }
+    else if (TIMX == TIM17) {
+        RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
+        (void)RCC->APB2ENR;
+    }
+}
+
 void RCC_enable_LTDC_memory(void){
     RCC->MEMENR |= RCC_MEMENR_AXISRAM1EN
                 |  RCC_MEMENR_AXISRAM2EN
@@ -334,20 +444,13 @@ void RCC_setLTDC_clock_source(uint32_t source){
 }
 
 void RCC_enable_DCMIPP(void){
-	RCC->APB5ENR |= RCC_APB5ENR_DCMIPPEN;
-	(void)RCC->APB5ENR;
+    RCC->APB5ENR |= RCC_APB5ENR_DCMIPPEN;
+    (void)RCC->APB5ENR;
 
-	RCC->APB5LPENR |= RCC_APB5LPENR_DCMIPPLPEN;
-	(void)RCC->APB5LPENR;
+    RCC->APB5LPENR |= RCC_APB5LPENR_DCMIPPLPEN;
+    (void)RCC->APB5LPENR;
 
-    RCC->CCIPR1 = (RCC->CCIPR1 & ~RCC_CCIPR1_DCMIPPSEL_Msk)
-                | (0x2U << RCC_CCIPR1_DCMIPPSEL_Pos);
-    (void)RCC->CCIPR1;
-
-    RCC->DIVENR |= RCC_DIVENR_IC17EN;
-    (void)RCC->DIVENR;
-
-    RCC->APB5ENSR = RCC_APB5ENSR_DCMIPPENS;
+    RCC->APB5ENSR |= RCC_APB5ENSR_DCMIPPENS;
     (void)RCC->APB5ENSR;
 }
 
@@ -427,13 +530,14 @@ void RCC_config_VDDIO2_1V8(void){
     (void)PWR->SVMCR3;
 }
 
-void RCC_config_LTDC_clock(void){
+void RCC_config_LTDC_25MHz_clock(void){
     /* PLL4 configuration for 25 MHz pixel clock
      * PLL4 source = HSI (64 MHz), M=8, N=225, P1=6, P2=6
      * VCO = (64/8) * 225 = 1800 MHz
      * PLL4_out = 1800 / (6*6) = 50 MHz
      * IC16 divider = 2  ->  LTDC clock = 25 MHz
      */
+
     if (!(RCC->SR & RCC_SR_PLL4RDY)) {
         RCC->PLL4CFGR1 &= ~RCC_PLL4CFGR1_PLL4SEL;
         RCC->PLL4CFGR1 = (RCC->PLL4CFGR1 & ~(RCC_PLL4CFGR1_PLL4DIVM | RCC_PLL4CFGR1_PLL4DIVN))
@@ -445,11 +549,14 @@ void RCC_config_LTDC_clock(void){
         RCC->PLL4CFGR3 = (RCC->PLL4CFGR3 & ~(RCC_PLL4CFGR3_PLL4PDIV1 | RCC_PLL4CFGR3_PLL4PDIV2))
                         | (6UL << RCC_PLL4CFGR3_PLL4PDIV1_Pos)
                         | (6UL << RCC_PLL4CFGR3_PLL4PDIV2_Pos);
+
         RCC->PLL4CFGR3 |= RCC_PLL4CFGR3_PLL4PDIVEN;
         (void)RCC->PLL4CFGR3;
 
         RCC->CR |= RCC_CR_PLL4ON;
-        while (!(RCC->SR & RCC_SR_PLL4RDY));
+        while (!(RCC->SR & RCC_SR_PLL4RDY)) {
+            /* wait */
+        }
     }
 
     uint32_t ic16sel = RCC_IC16CFGR_IC16SEL_0 | RCC_IC16CFGR_IC16SEL_1;
@@ -464,74 +571,4 @@ void RCC_config_LTDC_clock(void){
 
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
-}
-
-void DCMIPP_IC17_Clock_Config(void){
-    /*
-     * PLL4 already configured to 200 MHz.
-     * IC17 source = PLL4
-     * IC17 divider = 1
-     * DCMIPPSEL = 0b10 = ic17_ck
-     */
-
-    RCC->IC17CFGR =
-        (RCC->IC17CFGR & ~(RCC_IC17CFGR_IC17SEL |
-                           RCC_IC17CFGR_IC17INT))
-        | (RCC_IC17CFGR_IC17SEL_0 | RCC_IC17CFGR_IC17SEL_1)
-        | ((1UL - 1UL) << RCC_IC17CFGR_IC17INT_Pos);
-
-    (void)RCC->IC17CFGR;
-
-    RCC->DIVENR |= RCC_DIVENR_IC17EN;
-    (void)RCC->DIVENR;
-
-    RCC->CCIPR1 =
-        (RCC->CCIPR1 & ~RCC_CCIPR1_DCMIPPSEL)
-        | (0x2UL << RCC_CCIPR1_DCMIPPSEL_Pos);
-
-    (void)RCC->CCIPR1;
-}
-
-void SystemClock_Config_DCMIPP_IC17(void){
-    /*
-     * Configure PLL4 only:
-     *
-     * HSI = 64 MHz
-     * PLL4 = 64 / 8 * 200 / (4 * 2)
-     *      = 200 MHz
-     *
-     * ic17_ck = PLL4 / 1 = 200 MHz
-     */
-
-    if (RCC->SR & RCC_SR_PLL4RDY) {
-        RCC->CR &= ~RCC_CR_PLL4ON;
-        while (RCC->SR & RCC_SR_PLL4RDY) {
-            /* wait until PLL4 disabled */
-        }
-    }
-
-    /* PLL4 source = HSI */
-    RCC->PLL4CFGR1 &= ~RCC_PLL4CFGR1_PLL4SEL;
-
-    RCC->PLL4CFGR1 =
-        (RCC->PLL4CFGR1 & ~(RCC_PLL4CFGR1_PLL4DIVM |
-                            RCC_PLL4CFGR1_PLL4DIVN))
-        | (8UL   << RCC_PLL4CFGR1_PLL4DIVM_Pos)
-        | (200UL << RCC_PLL4CFGR1_PLL4DIVN_Pos);
-
-    RCC->PLL4CFGR2 &= ~RCC_PLL4CFGR2_PLL4DIVNFRAC;
-
-    RCC->PLL4CFGR3 =
-        (RCC->PLL4CFGR3 & ~(RCC_PLL4CFGR3_PLL4PDIV1 |
-                            RCC_PLL4CFGR3_PLL4PDIV2))
-        | (4UL << RCC_PLL4CFGR3_PLL4PDIV1_Pos)
-        | (2UL << RCC_PLL4CFGR3_PLL4PDIV2_Pos);
-
-    RCC->PLL4CFGR3 |= RCC_PLL4CFGR3_PLL4PDIVEN;
-    (void)RCC->PLL4CFGR3;
-
-    RCC->CR |= RCC_CR_PLL4ON;
-    RCC_WaitHSIReady();
-
-    DCMIPP_IC17_Clock_Config();
 }

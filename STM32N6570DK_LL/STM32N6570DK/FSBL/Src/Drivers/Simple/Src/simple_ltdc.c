@@ -66,7 +66,7 @@ static void LCD_ConfigTiming(void){
 
 void LCD_Init(void){
     RCC_enable_LTDC_memory();
-    RCC_config_LTDC_clock();
+    RCC_config_LTDC_25MHz_clock();
 
     LCD_ConfigGPIO();
     LCD_PowerOn();
