@@ -12,7 +12,6 @@
 #include "simple_camera.h"
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
-#include "simple_clock.h"
 #include "simple_dcmipp.h"
 #include "simple_gpio.h"
 #include "simple_i2c.h"

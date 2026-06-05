@@ -5,8 +5,8 @@
  *      Author: Weber
  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include "simple_gpio.h"
 #include "simple_ltdc.h"

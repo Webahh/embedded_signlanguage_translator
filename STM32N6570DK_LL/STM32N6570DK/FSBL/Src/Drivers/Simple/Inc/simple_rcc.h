@@ -10,12 +10,12 @@
 
 #include "stm32n657xx.h"
 
-#define LTDC_CLOCK_SOURCE_PCLK5      0U
-#define LTDC_CLOCK_SOURCE_PER_CK     1U
-#define LTDC_CLOCK_SOURCE_IC16_CK    2U
-#define LTDC_CLOCK_SOURCE_HSI_DIV_CK 3U
+#define RCC_HSI_VALUE_HZ  				64000000UL
 
-
+#define LTDC_CLOCK_SOURCE_PCLK5      	0U
+#define LTDC_CLOCK_SOURCE_PER_CK     	1U
+#define LTDC_CLOCK_SOURCE_IC16_CK    	2U
+#define LTDC_CLOCK_SOURCE_HSI_DIV_CK 	3U
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX);
 
@@ -43,5 +43,8 @@ void RCC_enable_XSPIM(void);
 void RCC_reset_XSPIM(void);
 void RCC_enable_VDDIO2(void);
 void RCC_config_VDDIO2_1V8(void);
+
+void SystemClock_Config_DCMIPP_IC17(void);
+void DCMIPP_IC17_Clock_Config(void);
 
 #endif // SIMPLE_RCC_H
