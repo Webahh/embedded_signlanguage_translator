@@ -50,7 +50,7 @@
 									<listOptionValue builtIn="false" value="../Src/Drivers/CMSIS/Device/ST/STM32N6xx/Include"/>
 									<listOptionValue builtIn="false" value="../Src/Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../Src/Core"/>
-									<listOptionValue builtIn="false" value="../Src/Utils/Inc"/>
+									<listOptionValue builtIn="false" value="../Src/Assets/Inc"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.566776311" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
