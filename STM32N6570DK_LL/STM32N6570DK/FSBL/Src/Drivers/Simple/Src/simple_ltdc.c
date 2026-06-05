@@ -3,34 +3,35 @@
 #include "simple_rcc.h"
 #include "simple_gpio.h"
 #include "simple_timer.h"
+#include "config.h"
 
 static void LCD_ConfigGPIO(void){
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
     for (int i = 0; i < 6; i++)
-        GPIO_Config(GPIOA, pa_pins[i], GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+        GPIO_Config(GPIOA, pa_pins[i], GPIO_LTDC_cfg);
 
     uint32_t pb_pins[] = {2, 4, 11, 12, 13, 14, 15};
     for (int i = 0; i < 7; i++)
-        GPIO_Config(GPIOB, pb_pins[i], GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+        GPIO_Config(GPIOB, pb_pins[i], GPIO_LTDC_cfg);
 
-    GPIO_Config(GPIOD, 8, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
-    GPIO_Config(GPIOD, 9, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
-    GPIO_Config(GPIOD, 15, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+    GPIO_Config(GPIOD, 8, GPIO_LTDC_cfg);
+    GPIO_Config(GPIOD, 9, GPIO_LTDC_cfg);
+    GPIO_Config(GPIOD, 15, GPIO_LTDC_cfg);
 
-    GPIO_Config(GPIOE, 11, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+    GPIO_Config(GPIOE, 11, GPIO_LTDC_cfg);
 
     uint32_t pg_pins[] = {0, 1, 6, 8, 11, 12};
     for (int i = 0; i < 6; i++)
-        GPIO_Config(GPIOG, pg_pins[i], GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+        GPIO_Config(GPIOG, pg_pins[i], GPIO_LTDC_cfg);
 
-    GPIO_Config(GPIOH, 3, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
-    GPIO_Config(GPIOH, 4, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
-    GPIO_Config(GPIOH, 6, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_NONE, LTDC_AF, GPIO_SPEED_VERY_HIGH);
+    GPIO_Config(GPIOH, 3, GPIO_LTDC_cfg);
+    GPIO_Config(GPIOH, 4, GPIO_LTDC_cfg);
+    GPIO_Config(GPIOH, 6, GPIO_LTDC_cfg);
 
-    GPIO_Config(GPIOE, 1, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
-    GPIO_Config(GPIOG, 13, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
-    GPIO_Config(GPIOQ, 3, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
-    GPIO_Config(GPIOQ, 6, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+    GPIO_Config(GPIOE, 1, GPIO_default_cfg);
+    GPIO_Config(GPIOQ, 3, GPIO_default_cfg);
+    GPIO_Config(GPIOQ, 6, GPIO_default_cfg);
+    GPIO_Config(GPIOG, 13, GPIO_default_cfg);
 }
 
 static void LCD_PowerOn(void){

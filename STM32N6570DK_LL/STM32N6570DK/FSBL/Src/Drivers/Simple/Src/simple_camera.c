@@ -18,6 +18,7 @@
 #include "simple_gpio.h"
 #include "simple_i2c.h"
 #include "simple_timer.h"
+#include "config.h"
 
 /**
  * @brief  Board-level hardware initialisation for the camera
@@ -35,10 +36,8 @@ static void CAM_HwInit(void)
     RCC_enable_PWR();
     PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
 
-    GPIO_Config(GPIOC, 8, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP,
-                GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
-    GPIO_Config(GPIOD, 2, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP,
-                GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+    GPIO_Config(GPIOC, 8, GPIO_default_cfg);
+    GPIO_Config(GPIOD, 2, GPIO_default_cfg);
 
     GPIO_BSRR_reset(GPIOC, 8);
     delay_ms(1);
@@ -51,10 +50,8 @@ static void CAM_HwInit(void)
 
     RCC_enable_GPIO(GPIOH);
     RCC_enable_GPIO(GPIOC);
-    GPIO_Config(GPIOH, 9, GPIO_MODE_AF, GPIO_OTYPE_OD,
-                GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
-    GPIO_Config(GPIOC, 1, GPIO_MODE_AF, GPIO_OTYPE_OD,
-                GPIO_PUPD_UP, GPIO_I2C, GPIO_SPEED_HIGH);
+    GPIO_Config(GPIOH, 9, GPIO_I2C_cfg);
+    GPIO_Config(GPIOC, 1, GPIO_I2C_cfg);
 
     RCC_enable_I2C(I2C1);
     RCC_setI2C_clock_source(I2C1, 0);

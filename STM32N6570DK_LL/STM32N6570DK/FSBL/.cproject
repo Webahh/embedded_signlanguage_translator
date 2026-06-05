@@ -49,6 +49,7 @@
 									<listOptionValue builtIn="false" value="../Src/Drivers/Simple/Inc"/>
 									<listOptionValue builtIn="false" value="../Src/Drivers/CMSIS/Device/ST/STM32N6xx/Include"/>
 									<listOptionValue builtIn="false" value="../Src/Drivers/CMSIS/Include"/>
+									<listOptionValue builtIn="false" value="../Src/Core"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.566776311" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -201,4 +202,5 @@
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="refreshScope"/>
 </cproject>

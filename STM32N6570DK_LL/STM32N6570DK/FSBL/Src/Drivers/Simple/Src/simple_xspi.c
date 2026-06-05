@@ -3,6 +3,7 @@
 #include "simple_gpio.h"
 #include "simple_timer.h"
 #include "stm32n657xx.h"
+#include "config.h"
 
 /* Helper macro: shift VAL into the FIELD position within REG */
 #define XSPI_FIELD(REG, FIELD, VAL) \
@@ -17,14 +18,14 @@ void XSPI1_GPIO_Init(void){
     RCC_enable_GPIO(GPIOO);
     RCC_enable_GPIO(GPIOP);
 
-    GPIO_Config(GPIOO, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF, GPIO_SPEED_VERY_HIGH);
+    GPIO_Config(GPIOO, 0, GPIO_XSPI_cfg);
     for (int p = 2; p <= 4; p++) {
-    	GPIO_Config(GPIOO, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF, GPIO_SPEED_VERY_HIGH);
+    	GPIO_Config(GPIOO, p, GPIO_XSPI_cfg);
     }
 
-    GPIO_Config(GPIOP, 0, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF, GPIO_SPEED_VERY_HIGH);
+    GPIO_Config(GPIOP, 0, GPIO_XSPI_cfg);
     for (int p = 1; p <= 15; p++){
-        GPIO_Config(GPIOP, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF, GPIO_SPEED_VERY_HIGH);
+        GPIO_Config(GPIOP, p, GPIO_XSPI_cfg);
     }
 }
 
@@ -36,7 +37,7 @@ void XSPI1_GPIO_Init(void){
 void XSPI2_GPIO_Init(void){
     RCC_enable_GPIO(GPION);
     for (int p = 0; p <= 11; p++){
-        GPIO_Config(GPION, p, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO_PUPD_UP, XSPI_AF, GPIO_SPEED_VERY_HIGH);
+        GPIO_Config(GPION, p, GPIO_XSPI_cfg);
     }
 }
 

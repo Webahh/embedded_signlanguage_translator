@@ -33,27 +33,18 @@ static void GPIO_setAF(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t af, uint32_
  *
  * @param GPIOX GPIO port instance, e.g. GPIOA, GPIOB, ...
  * @param pinNr Pin number from 0 to 15.
- * @param mode  GPIO mode value for MODER register.
- * @param otyp  Output type value for OTYPER register.
- * @param pupdr Pull-up/pull-down value for PUPDR register.
- * @param af	Alternate Function identifier (I2C, SPI, ...).
- * @param speed Speed value for the alternate Function pins.
+ * @param cfg	GPIO cfg for GPIO Mode, Output Type, Pull-up/pull-down,
+ * 				alternate function identifier and speed value.
  */
-void GPIO_Config(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t mode, uint32_t otyp, uint32_t pupdr, uint32_t af, uint32_t speed){
+void GPIO_Config(GPIO_TypeDef* GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg){
 	RCC_enable_GPIO(GPIOX);
-	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2U * pinNr))) | (mode  << (2U * pinNr));
-	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (otyp  << (pinNr));
-	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2U * pinNr))) | (pupdr << (2U * pinNr));
+	GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2U * pinNr))) | (cfg.mode  << (2U * pinNr));
+	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (cfg.otyp  << (pinNr));
+	GPIOX->PUPDR  = (GPIOX->PUPDR  & ~(3U << (2U * pinNr))) | (cfg.pupdr << (2U * pinNr));
 
-	if(mode == GPIO_MODE_AF){
-		GPIO_setAF(GPIOX, pinNr, af, speed);
+	if(cfg.mode == GPIO_MODE_AF){
+		GPIO_setAF(GPIOX, pinNr, cfg.af, cfg.speed);
 	}
-}
-
-void GPIO_set_speed(GPIO_TypeDef* GPIOX, uint32_t pinNr, uint32_t speed){
-    GPIOX->OSPEEDR =
-        (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
-        (((uint32_t)speed & 3U) << (2U * pinNr));
 }
 
 uint32_t GPIO_get(GPIO_TypeDef* GPIOX, uint32_t pinNr){

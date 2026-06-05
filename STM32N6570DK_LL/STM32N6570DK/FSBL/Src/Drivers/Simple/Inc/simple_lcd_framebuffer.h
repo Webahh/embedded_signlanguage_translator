@@ -27,10 +27,4 @@
 extern volatile uint32_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT];
 extern volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT];
 
-// #define lcd_framebuffer lcd_bg_buffer
-
-//void LCD_Fill(uint32_t color);
-//void MPU_Config_Framebuffer(void);
-//void LCD_DrawPixel(uint32_t x, uint32_t y, uint16_t color);
-
 #endif /* SIMPLE_LCD_FRAMEBUFFER_H */

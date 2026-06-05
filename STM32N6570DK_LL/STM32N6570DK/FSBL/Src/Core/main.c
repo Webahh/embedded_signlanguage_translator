@@ -7,6 +7,7 @@
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
 #include "simple_camera.h"
+#include "config.h"
 
 #define LED2_PIN 10
 
@@ -52,7 +53,7 @@ int main(void){
 
 	delay_init();
 
-	GPIO_Config(GPIOG, LED2_PIN, GPIO_MODE_OUTPUT, GPIO_OTYPE_PP, GPIO_PUPD_NONE, GPIO_AF_NONE, GPIO_SPEED_LOW);
+	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
 //    SCB_EnableDCache();
 
