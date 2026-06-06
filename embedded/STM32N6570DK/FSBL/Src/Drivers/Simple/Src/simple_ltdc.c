@@ -80,7 +80,7 @@ void LCD_Init(void){
 
     LTDC->GCR &= ~(LTDC_GCR_HSPOL | LTDC_GCR_VSPOL);
 
-    LTDC->BCCR = 0xFFFFFFFFUL;
+    LTDC->BCCR = 0x0; // Black Background
 
     LTDC->GCR |= LTDC_GCR_LTDCEN;
 }

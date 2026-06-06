@@ -210,7 +210,7 @@ CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 CAM_Status CAM_NNPipe_Start(CAM_Handle *h)
 {
     DCMIPP_Pipe_Start(CAM_PIPE_NN, h->nn_buf, 0);
-    return CAM_OK;
+    return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }
 
 

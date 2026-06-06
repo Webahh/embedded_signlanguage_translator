@@ -32,13 +32,6 @@ void app_init(){
 
     delay_ms(10);
 
-    /* Fill background buffer with white */
-    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_WHITE);
-
-    /* Blit black & white image centered on screen */
-    LCD_BlitImage(&LCD_Layer1Config, image_bitmap, IMG_WIDTH, IMG_HEIGHT,
-                 (LCD_BG_WIDTH - IMG_WIDTH) / 2, (LCD_BG_HEIGHT - IMG_HEIGHT) / 2);
-
     LCD_ConfigLayer1();
 
     delay_ms(10);

@@ -482,6 +482,22 @@ void RCC_setLTDC_clock_source(uint32_t source){
     (void)RCC->CCIPR4;
 }
 
+void RCC_config_DCMIPP_clock_IC17(void)
+{
+    /* IC17: source = PLL1, divider = 6 -> 1200/6 = 200 MHz */
+    RCC->IC17CFGR = (RCC->IC17CFGR & ~RCC_IC17CFGR_IC17SEL_Msk)
+                   | ((6UL - 1UL) << RCC_IC17CFGR_IC17INT_Pos);
+    (void)RCC->IC17CFGR;
+
+    RCC->DIVENR |= RCC_DIVENR_IC17EN;
+    (void)RCC->DIVENR;
+
+    /* DCMIPP kernel clock = IC17 */
+    RCC->CCIPR1 = (RCC->CCIPR1 & ~RCC_CCIPR1_DCMIPPSEL_Msk)
+                | (0x2UL << RCC_CCIPR1_DCMIPPSEL_Pos);
+    (void)RCC->CCIPR1;
+}
+
 void RCC_enable_DCMIPP(void){
     RCC->APB5ENR |= RCC_APB5ENR_DCMIPPEN;
     (void)RCC->APB5ENR;

@@ -6,6 +6,7 @@ static DCMIPP_TypeDef *dcmipp = DCMIPP;
 
 void DCMIPP_Init(void)
 {
+    RCC_config_DCMIPP_clock_IC17();
     RCC_enable_DCMIPP();
     RCC_reset_DCMIPP();
 
