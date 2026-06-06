@@ -42,6 +42,6 @@ void CSI_DeInit(void);
 void CSI_Config(CSI_Conf *conf);
 void CSI_SetVCConfig(uint32_t vc, uint32_t dt_format);
 uint32_t CSI_StartVC(uint32_t vc);
-void CSI_IRQHandler(void);
+void CSI_DBG_IRQHandler(void);
 
 #endif

@@ -49,7 +49,7 @@ void app_init(){
         	// Error
         	error++;
         }
-        CAM_NNPipe_Start(&h_cam);
+//        CAM_NNPipe_Start(&h_cam);
     }
 
     /* --- Scheduler --- */

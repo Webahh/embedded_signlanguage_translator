@@ -48,6 +48,9 @@ static void CSI_WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
 
 void CSI_Init(void)
 {
+    RCC_config_PLL1_800MHz();
+    RCC_config_CSI_clock_IC18();
+
     RCC_enable_CSI();
     RCC_reset_CSI();
 
@@ -173,7 +176,7 @@ uint32_t CSI_StartVC(uint32_t vc)
     return 0;
 }
 
-void CSI_IRQHandler(void)
+void CSI_DBG_IRQHandler(void)
 {
     if (csi->SR0) {
         csi->FCR0 = csi->SR0;

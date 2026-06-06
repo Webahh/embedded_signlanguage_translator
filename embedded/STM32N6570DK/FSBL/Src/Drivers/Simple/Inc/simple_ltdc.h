@@ -48,7 +48,7 @@ static inline uint32_t LCD_RGB565toARGB(uint16_t rgb565, uint8_t alpha) {
 
 typedef struct LCD_LayerConfig {
     LTDC_Layer_TypeDef *regs;               /* LTDC_Layer1 or LTDC_Layer2 */
-    void                *fb;                /* framebuffer address (void* for any format) */
+    volatile void      *fb;                /* framebuffer address (void* for any format) */
     uint16_t            x;                  /* window X offset (pixels)   */
     uint16_t            y;                  /* window Y offset (pixels)   */
     uint16_t            width;              /* displayed width (pixels)   */

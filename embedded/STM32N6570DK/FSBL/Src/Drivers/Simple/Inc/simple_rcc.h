@@ -47,6 +47,8 @@ void RCC_config_DCMIPP_clock_IC17(void);
 void RCC_reset_DCMIPP(void);
 void RCC_enable_CSI(void);
 void RCC_reset_CSI(void);
+void RCC_config_PLL1_800MHz(void);
+void RCC_config_CSI_clock_IC18(void);
 
 void RCC_enable_PWR(void);
 void RCC_enable_XSPI1(void);

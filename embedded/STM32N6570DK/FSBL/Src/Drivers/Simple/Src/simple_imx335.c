@@ -104,7 +104,7 @@ static int32_t write_table(IMX335_Handle *h, const struct regval *tbl,
     return 0;
 }
 
-// Write then read back each register to confirm the value stuck
+// Read back each register to confirm the value stuck
 // Returns 0 if all match, -1 on write/read error or mismatch
 static int32_t write_table_verify(IMX335_Handle *h, const struct regval *tbl, uint32_t size)
 {
@@ -200,7 +200,6 @@ int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)
     *id = id_byte;
     return 0;
 }
-
 
 int32_t IMX335_VerifyConfig(IMX335_Handle *h)
 {

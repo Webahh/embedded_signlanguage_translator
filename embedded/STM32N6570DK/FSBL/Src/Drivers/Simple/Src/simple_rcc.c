@@ -502,11 +502,46 @@ void RCC_reset_DCMIPP(void){
 }
 
 void RCC_enable_CSI(void){
+    RCC->APB5ENR |= RCC_APB5ENR_CSIEN;
+    (void)RCC->APB5ENR;
+
     RCC->APB5ENSR |= RCC_APB5ENSR_CSIENS;
     (void)RCC->APB5ENSR;
 
     RCC->APB5LPENR |= RCC_APB5LPENR_CSILPEN;
     (void)RCC->APB5LPENR;
+}
+
+void RCC_config_PLL1_800MHz(void)
+{
+    if (!(RCC->SR & RCC_SR_PLL1RDY)) {
+        RCC->PLL1CFGR1 &= ~RCC_PLL1CFGR1_PLL1SEL;      // source = HSI (default)
+        RCC->PLL1CFGR1 = (RCC->PLL1CFGR1 & ~(RCC_PLL1CFGR1_PLL1BYP | RCC_PLL1CFGR1_PLL1DIVM | RCC_PLL1CFGR1_PLL1DIVN))
+                        | (4UL  << RCC_PLL1CFGR1_PLL1DIVM_Pos)
+                        | (75UL << RCC_PLL1CFGR1_PLL1DIVN_Pos);
+        RCC->PLL1CFGR2 &= ~RCC_PLL1CFGR2_PLL1DIVNFRAC;
+
+        RCC->PLL1CFGR3 = (RCC->PLL1CFGR3 & ~(RCC_PLL1CFGR3_PLL1PDIV1 | RCC_PLL1CFGR3_PLL1PDIV2))
+                        | (1UL << RCC_PLL1CFGR3_PLL1PDIV1_Pos)
+                        | (1UL << RCC_PLL1CFGR3_PLL1PDIV2_Pos);
+        RCC->PLL1CFGR3 |= RCC_PLL1CFGR3_PLL1PDIVEN;
+        (void)RCC->PLL1CFGR3;
+
+        /* Enable PLL1 and wait for lock */
+        RCC->CR |= RCC_CR_PLL1ON;
+        while (!(RCC->SR & RCC_SR_PLL1RDY)) { }
+    }
+}
+
+void RCC_config_CSI_clock_IC18(void)
+{
+    /* Configure IC18: source = PLL1, divider = 60 -> 1200/60 = 20 MHz */
+    RCC->IC18CFGR = (RCC->IC18CFGR & ~RCC_IC18CFGR_IC18SEL_Msk)
+                   | ((60UL - 1UL) << RCC_IC18CFGR_IC18INT_Pos);
+    (void)RCC->IC18CFGR;
+
+    RCC->DIVENR |= RCC_DIVENR_IC18EN;
+    (void)RCC->DIVENR;
 }
 
 void RCC_reset_CSI(void){

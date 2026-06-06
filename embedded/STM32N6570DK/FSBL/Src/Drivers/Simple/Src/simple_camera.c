@@ -85,7 +85,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     csi_conf.data_lane_mapping = CSI_DATA_LANES_PHYSICAL;
     csi_conf.phy_bitrate       = CSI_PHY_BT_1600;
     csi_conf.vc                = CSI_VIRTUAL_CHANNEL0;
-    csi_conf.dt_format         = CSI_DT_BPP10;
+    csi_conf.dt_format         = CSI_DT_BPP8;
     csi_conf.data_type         = 0x2B;
     CSI_Config(&csi_conf);
     CSI_SetVCConfig(csi_conf.vc, csi_conf.dt_format);
