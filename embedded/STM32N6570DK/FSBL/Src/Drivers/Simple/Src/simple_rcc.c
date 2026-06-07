@@ -484,9 +484,14 @@ void RCC_setLTDC_clock_source(uint32_t source){
 
 void RCC_config_DCMIPP_clock_IC17(void)
 {
-    /* IC17: source = PLL1, divider = 6 -> 1200/6 = 200 MHz */
-    RCC->IC17CFGR = (RCC->IC17CFGR & ~RCC_IC17CFGR_IC17SEL_Msk)
-                   | ((6UL - 1UL) << RCC_IC17CFGR_IC17INT_Pos);
+    /* Ensure PLL1 is ready before configuring IC17 */
+    RCC_config_PLL1_800MHz();
+
+    /* IC17: source = PLL1 (IC17SEL = 0x0), divider = 6 -> 800/6 = 133 MHz */
+    uint32_t ic17cfgr = RCC->IC17CFGR;
+    ic17cfgr &= ~(RCC_IC17CFGR_IC17SEL_Msk);
+    ic17cfgr |= ((6UL - 1UL) << RCC_IC17CFGR_IC17INT_Pos);
+    RCC->IC17CFGR = ic17cfgr;
     (void)RCC->IC17CFGR;
 
     RCC->DIVENR |= RCC_DIVENR_IC17EN;
@@ -533,8 +538,8 @@ void RCC_config_PLL1_800MHz(void)
     if (!(RCC->SR & RCC_SR_PLL1RDY)) {
         RCC->PLL1CFGR1 &= ~RCC_PLL1CFGR1_PLL1SEL;      // source = HSI (default)
         RCC->PLL1CFGR1 = (RCC->PLL1CFGR1 & ~(RCC_PLL1CFGR1_PLL1BYP | RCC_PLL1CFGR1_PLL1DIVM | RCC_PLL1CFGR1_PLL1DIVN))
-                        | (4UL  << RCC_PLL1CFGR1_PLL1DIVM_Pos)
-                        | (75UL << RCC_PLL1CFGR1_PLL1DIVN_Pos);
+                        | (2UL  << RCC_PLL1CFGR1_PLL1DIVM_Pos)
+                        | (25UL << RCC_PLL1CFGR1_PLL1DIVN_Pos);
         RCC->PLL1CFGR2 &= ~RCC_PLL1CFGR2_PLL1DIVNFRAC;
 
         RCC->PLL1CFGR3 = (RCC->PLL1CFGR3 & ~(RCC_PLL1CFGR3_PLL1PDIV1 | RCC_PLL1CFGR3_PLL1PDIV2))
@@ -551,9 +556,9 @@ void RCC_config_PLL1_800MHz(void)
 
 void RCC_config_CSI_clock_IC18(void)
 {
-    /* Configure IC18: source = PLL1, divider = 60 -> 1200/60 = 20 MHz */
+    /* Configure IC18: source = PLL1, divider = 40 -> 800/40 = 20 MHz */
     RCC->IC18CFGR = (RCC->IC18CFGR & ~RCC_IC18CFGR_IC18SEL_Msk)
-                   | ((60UL - 1UL) << RCC_IC18CFGR_IC18INT_Pos);
+                   | ((40UL - 1UL) << RCC_IC18CFGR_IC18INT_Pos);
     (void)RCC->IC18CFGR;
 
     RCC->DIVENR |= RCC_DIVENR_IC18EN;

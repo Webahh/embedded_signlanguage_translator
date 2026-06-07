@@ -307,36 +307,24 @@ uint32_t DCMIPP_GetStatus(uint32_t pipe)
 
 void DCMIPP_IRQHandler(void)
 {
+    dcmipp->CMFCR = 0xFFFFFFFFU;
+
     uint32_t sr;
 
     sr = dcmipp->P1SR;
     if (sr) {
-        if (sr & DCMIPP_P1SR_FRAMEF) {
-            dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF;
-            DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE1);
-        }
-        if (sr & DCMIPP_P1SR_VSYNCF) {
-            dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF;
-            DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE1);
-        }
-        if (sr & DCMIPP_P1SR_OVRF) {
-            dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;
-        }
+        if (sr & DCMIPP_P1SR_LINEF)  dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
+        if (sr & DCMIPP_P1SR_FRAMEF) dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF;
+        if (sr & DCMIPP_P1SR_VSYNCF) dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF;
+        if (sr & DCMIPP_P1SR_OVRF)   dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;
     }
 
     sr = dcmipp->P2SR;
     if (sr) {
-        if (sr & DCMIPP_P2SR_FRAMEF) {
-            dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF;
-            DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE2);
-        }
-        if (sr & DCMIPP_P2SR_VSYNCF) {
-            dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF;
-            DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE2);
-        }
-        if (sr & DCMIPP_P2SR_OVRF) {
-            dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;
-        }
+        if (sr & DCMIPP_P2SR_LINEF)  dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
+        if (sr & DCMIPP_P2SR_FRAMEF) dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF;
+        if (sr & DCMIPP_P2SR_VSYNCF) dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF;
+        if (sr & DCMIPP_P2SR_OVRF)   dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;
     }
 }
 
