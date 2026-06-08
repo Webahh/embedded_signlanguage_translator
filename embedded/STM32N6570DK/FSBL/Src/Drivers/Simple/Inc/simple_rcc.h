@@ -17,7 +17,14 @@
 #define LTDC_CLOCK_SOURCE_IC16_CK    	2U
 #define LTDC_CLOCK_SOURCE_HSI_DIV_CK 	3U
 
+typedef struct {
+    uint32_t CFGR1;     /* PLLxCFGR1 value */
+    uint32_t CFGR2;     /* PLLxCFGR2 value */
+    uint32_t CFGR3;     /* PLLxCFGR3 value */
+} RCC_PLL_ConfigTypeDef;
+
 void RCC_SystemClock_Config(void);
+void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4]);
 
 uint32_t RCC_GetHSI(void);
 uint32_t RCC_GetSYSCLK(void);
@@ -47,7 +54,6 @@ void RCC_config_DCMIPP_clock_IC17(void);
 void RCC_reset_DCMIPP(void);
 void RCC_enable_CSI(void);
 void RCC_reset_CSI(void);
-void RCC_config_PLL1_800MHz(void);
 void RCC_config_CSI_clock_IC18(void);
 
 void RCC_enable_PWR(void);
