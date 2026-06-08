@@ -77,8 +77,8 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
         if (conf->enable_crop && conf->crop_width && conf->crop_height) {
             dcmipp->P1CRSTR = (conf->crop_x << DCMIPP_P1CRSTR_HSTART_Pos)
                             | (conf->crop_y << DCMIPP_P1CRSTR_VSTART_Pos);
-            dcmipp->P1CRSZR = ((conf->crop_width - 1) << DCMIPP_P1CRSZR_HSIZE_Pos)
-                            | ((conf->crop_height - 1) << DCMIPP_P1CRSZR_VSIZE_Pos)
+            dcmipp->P1CRSZR = (conf->crop_width << DCMIPP_P1CRSZR_HSIZE_Pos)
+                            | (conf->crop_height << DCMIPP_P1CRSZR_VSIZE_Pos)
                             | DCMIPP_P1CRSZR_ENABLE;
         } else {
             dcmipp->P1CRSZR &= ~DCMIPP_P1CRSZR_ENABLE;
@@ -108,7 +108,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
             dcmipp->P1DSCR &= ~DCMIPP_P1DSCR_ENABLE;
         }
 
-        dcmipp->P1GMCR &= ~DCMIPP_P1GMCR_ENABLE;
+        dcmipp->P1GMCR |= DCMIPP_P1GMCR_ENABLE;
 
         if (conf->enable_swap)
             dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
@@ -126,8 +126,8 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
         if (conf->enable_crop && conf->crop_width && conf->crop_height) {
             dcmipp->P2CRSTR = (conf->crop_x << DCMIPP_P2CRSTR_HSTART_Pos)
                             | (conf->crop_y << DCMIPP_P2CRSTR_VSTART_Pos);
-            dcmipp->P2CRSZR = ((conf->crop_width - 1) << DCMIPP_P2CRSZR_HSIZE_Pos)
-                            | ((conf->crop_height - 1) << DCMIPP_P2CRSZR_VSIZE_Pos)
+            dcmipp->P2CRSZR = (conf->crop_width << DCMIPP_P2CRSZR_HSIZE_Pos)
+                            | (conf->crop_height << DCMIPP_P2CRSZR_VSIZE_Pos)
                             | DCMIPP_P2CRSZR_ENABLE;
         } else {
             dcmipp->P2CRSZR &= ~DCMIPP_P2CRSZR_ENABLE;

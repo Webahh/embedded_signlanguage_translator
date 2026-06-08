@@ -111,9 +111,9 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.output_bpp    = 2;
     pipe_conf.enable_crop   = 1;
     pipe_conf.crop_x        = 0;
-    pipe_conf.crop_y        = 0;
+    pipe_conf.crop_y        = (CAM_SENSOR_HEIGHT - (CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH) + 1) / 2;
     pipe_conf.crop_width    = CAM_SENSOR_WIDTH;
-    pipe_conf.crop_height   = CAM_SENSOR_HEIGHT;
+    pipe_conf.crop_height   = CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH;
     pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap   = 0;
     DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf, (uint32_t *)&h->display_pitch);
@@ -133,6 +133,13 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap   = 0;
     DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
+
+    /* ------ Statistics window (Pipe1) ------ */
+    /* Half-resolution window over full sensor, clipped by CROPEN to crop region */
+
+    DCMIPP->P1STSZR = ((CAM_SENSOR_WIDTH / 2) << DCMIPP_P1STSZR_HSIZE_Pos)
+                    | ((CAM_SENSOR_HEIGHT / 2) << DCMIPP_P1STSZR_VSIZE_Pos)
+                    | DCMIPP_P1STSZR_CROPEN;
 
     /* ------ IPPlug (DMA bus arbiter) ------ */
     /* IPC2 => CLIENT2 (NN):  R1=0x4  R2=0xf0000   R3=0x22f0000  */
