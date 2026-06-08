@@ -3,7 +3,7 @@ import time
 
 import cv2 as cv
 
-from core.display import ConfidenceDisplay
+from src.core.display import ConfidenceDisplay
 from src.core.visualizer import visualize
 from src.model.model_input import ModelInput
 from src.core.hand_pose_detector import HandPoseDetector
