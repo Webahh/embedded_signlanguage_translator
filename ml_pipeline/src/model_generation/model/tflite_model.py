@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../../.."))
 
 
 #   Pickle stub: lets class.pkl deserialize without importing the

@@ -6,13 +6,13 @@ import uuid
 import pickle
 import multiprocessing
 
-from src.gesture_generation.gesture import Gesture
-from src.core.hand_pose_detector import HandPoseDetector, Hand, POS_MAX
-from src.augmentation.augmentation_pipeline import AugmentationPipeline
-from src.augmentation.pipeline_functions import pip_func_mirror, pip_func_random_translate, pip_func_random_zoom
+from src.model_generation.gesture_generation.gesture import Gesture
+from src.model_generation.core.hand_pose_detector import HandPoseDetector, Hand, POS_MAX
+from src.model_generation.augmentation.augmentation_pipeline import AugmentationPipeline
+from src.model_generation.augmentation.pipeline_functions import pip_func_mirror, pip_func_random_translate, pip_func_random_zoom
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../../.."))
 
 detector = HandPoseDetector()
 

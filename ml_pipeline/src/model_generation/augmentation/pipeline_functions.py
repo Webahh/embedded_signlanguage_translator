@@ -1,8 +1,8 @@
 import numpy as np
 
 from dataclasses import replace
-from src.gesture_generation.gesture import Gesture
-from src.core.hand_pose_detector import Hand, POS_MAX
+from src.model_generation.gesture_generation.gesture import Gesture
+from src.model_generation.core.hand_pose_detector import Hand, POS_MAX
 
 
 def apply_on_gesture(function, gesture: Gesture) -> Gesture:

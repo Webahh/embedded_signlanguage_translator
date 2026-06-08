@@ -7,9 +7,9 @@ import tensorflow as tf
 import numpy as np
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-FOLDER_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../../model/"))
+FOLDER_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../../../model/"))
 MODEL_DIR = os.path.join(FOLDER_ROOT, "model.keras")
-TRAINING_DATA_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../resources/training_data.pkl"))
+TRAINING_DATA_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../../resources/training_data.pkl"))
 
 
 def representative_dataset():

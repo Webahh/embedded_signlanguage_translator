@@ -1,7 +1,7 @@
 import numpy as np
 
 from dataclasses import dataclass, replace
-from src.core.hand_pose_detector import Hand, LANDMARK_NAMES
+from src.model_generation.core.hand_pose_detector import Hand, LANDMARK_NAMES
 
 
 @dataclass(frozen=True)

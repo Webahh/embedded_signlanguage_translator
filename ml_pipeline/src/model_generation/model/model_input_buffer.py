@@ -3,8 +3,8 @@ import atomics
 import threading
 import numpy as np
 
-from src.model.model_input import ModelInput
-from src.model.model import Model
+from src.model_generation.model.model_input import ModelInput
+from src.model_generation.model.model import Model
 
 
 class AtomicAltar:

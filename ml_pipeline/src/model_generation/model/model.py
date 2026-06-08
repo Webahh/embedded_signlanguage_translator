@@ -8,12 +8,12 @@ from keras.models import Sequential
 from keras.callbacks import EarlyStopping
 from keras.layers import Dense, Dropout, Flatten, Input
 
-from src.core.hand_pose_detector import POS_MAX
-from src.model.model_plotter import plot_history
-from src.model.model_input import load_training_data
+from src.model_generation.core.hand_pose_detector import POS_MAX
+from src.model_generation.model.model_plotter import plot_history
+from src.model_generation.model.model_input import load_training_data
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../../.."))
 
 
 @dataclass(frozen=True)

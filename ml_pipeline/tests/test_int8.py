@@ -9,7 +9,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.model.tflite_model import TFLiteModel
+from src.model_generation.model.tflite_model import TFLiteModel
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,1 @@
+#load all int8 models and run the pipeline

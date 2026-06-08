@@ -4,8 +4,8 @@ import pickle
 import numpy as np
 
 from os import path
-from src.gesture_generation.gesture import Gesture
-from src.core.hand_pose_detector import Hand, LANDMARK_NAMES
+from src.model_generation.gesture_generation.gesture import Gesture
+from src.model_generation.core.hand_pose_detector import Hand, LANDMARK_NAMES
 
 
 def joints(hand: Hand) -> []:

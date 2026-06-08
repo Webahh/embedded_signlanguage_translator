@@ -3,11 +3,11 @@ import time
 
 import cv2 as cv
 
-from src.core.display import ConfidenceDisplay
-from src.core.visualizer import visualize
-from src.model.model_input import ModelInput
-from src.core.hand_pose_detector import HandPoseDetector
-from src.model.model_input_buffer import ModelInputBuffer
+from src.model_generation.core.display import ConfidenceDisplay
+from src.model_generation.core.visualizer import visualize
+from src.model_generation.model.model_input import ModelInput
+from src.model_generation.core.hand_pose_detector import HandPoseDetector
+from src.model_generation.model.model_input_buffer import ModelInputBuffer
 
 # Model backend
 # Set to "keras" to use the full Keras model (model.keras + class.pkl)
@@ -15,9 +15,9 @@ from src.model.model_input_buffer import ModelInputBuffer
 MODEL_BACKEND = os.environ.get("MODEL_BACKEND", "keras")
 
 if MODEL_BACKEND == "tflite":
-    from src.model.tflite_model import TFLiteModel as ModelBackend
+    from src.model_generation.model.tflite_model import TFLiteModel as ModelBackend
 elif MODEL_BACKEND == "keras":
-    from src.model.model import Model as ModelBackend
+    from src.model_generation.model.model import Model as ModelBackend
     import __main__
     __main__.Model = ModelBackend
 else:

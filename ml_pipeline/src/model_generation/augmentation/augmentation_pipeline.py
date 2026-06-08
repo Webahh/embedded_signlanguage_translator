@@ -1,4 +1,4 @@
-from src.gesture_generation.gesture import Gesture
+from src.model_generation.gesture_generation.gesture import Gesture
 
 
 class AugmentationPipeline:

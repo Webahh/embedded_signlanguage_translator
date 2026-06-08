@@ -2,8 +2,8 @@ import os
 import time
 import pickle
 
-from src.core.visualizer import visualize
-from src.gesture_generation.gesture import Gesture
+from src.model_generation.core.visualizer import visualize
+from src.model_generation.gesture_generation.gesture import Gesture
 
 label_filter = "A"
 augment_filter = "rtrans"  # e.g. augment_filter = "mirr"
