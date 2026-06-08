@@ -84,23 +84,31 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
             dcmipp->P1CRSZR &= ~DCMIPP_P1CRSZR_ENABLE;
         }
 
+        dcmipp->P1DECR |= DCMIPP_P1DECR_ENABLE;
+
         if (conf->enable_downsize && conf->output_width && conf->output_height) {
             uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
             uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
             if (in_w > conf->output_width || in_h > conf->output_height) {
-                uint32_t hratio = (((uint64_t)in_w << 13) / conf->output_width) + 1;
-                uint32_t vratio = (((uint64_t)in_h << 13) / conf->output_height) + 1;
+                uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
+                uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
+                uint32_t hdiv = (1024UL * 8192UL - 1UL) / hratio;
+                uint32_t vdiv = (1024UL * 8192UL - 1UL) / vratio;
                 dcmipp->P1DSRTIOR = (hratio << DCMIPP_P1DSRTIOR_HRATIO_Pos)
                                   | (vratio << DCMIPP_P1DSRTIOR_VRATIO_Pos);
-                dcmipp->P1DSSZR = ((conf->output_width - 1) << DCMIPP_P1DSSZR_HSIZE_Pos)
-                                | ((conf->output_height - 1) << DCMIPP_P1DSSZR_VSIZE_Pos);
-                dcmipp->P1DSCR |= DCMIPP_P1DSCR_ENABLE;
+                dcmipp->P1DSSZR = (conf->output_width << DCMIPP_P1DSSZR_HSIZE_Pos)
+                                | (conf->output_height << DCMIPP_P1DSSZR_VSIZE_Pos);
+                dcmipp->P1DSCR = (hdiv << DCMIPP_P1DSCR_HDIV_Pos)
+                               | (vdiv << DCMIPP_P1DSCR_VDIV_Pos)
+                               | DCMIPP_P1DSCR_ENABLE;
             } else {
                 dcmipp->P1DSCR &= ~DCMIPP_P1DSCR_ENABLE;
             }
         } else {
             dcmipp->P1DSCR &= ~DCMIPP_P1DSCR_ENABLE;
         }
+
+        dcmipp->P1GMCR &= ~DCMIPP_P1GMCR_ENABLE;
 
         if (conf->enable_swap)
             dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
@@ -129,19 +137,25 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
             uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
             uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
             if (in_w > conf->output_width || in_h > conf->output_height) {
-                uint32_t hratio = (((uint64_t)in_w << 13) / conf->output_width) + 1;
-                uint32_t vratio = (((uint64_t)in_h << 13) / conf->output_height) + 1;
+                uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
+                uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
+                uint32_t hdiv = (1024UL * 8192UL - 1UL) / hratio;
+                uint32_t vdiv = (1024UL * 8192UL - 1UL) / vratio;
                 dcmipp->P2DSRTIOR = (hratio << DCMIPP_P2DSRTIOR_HRATIO_Pos)
                                   | (vratio << DCMIPP_P2DSRTIOR_VRATIO_Pos);
-                dcmipp->P2DSSZR = ((conf->output_width - 1) << DCMIPP_P2DSSZR_HSIZE_Pos)
-                                | ((conf->output_height - 1) << DCMIPP_P2DSSZR_VSIZE_Pos);
-                dcmipp->P2DSCR |= DCMIPP_P2DSCR_ENABLE;
+                dcmipp->P2DSSZR = (conf->output_width << DCMIPP_P2DSSZR_HSIZE_Pos)
+                                | (conf->output_height << DCMIPP_P2DSSZR_VSIZE_Pos);
+                dcmipp->P2DSCR = (hdiv << DCMIPP_P2DSCR_HDIV_Pos)
+                               | (vdiv << DCMIPP_P2DSCR_VDIV_Pos)
+                               | DCMIPP_P2DSCR_ENABLE;
             } else {
                 dcmipp->P2DSCR &= ~DCMIPP_P2DSCR_ENABLE;
             }
         } else {
             dcmipp->P2DSCR &= ~DCMIPP_P2DSCR_ENABLE;
         }
+
+        dcmipp->P2GMCR &= ~DCMIPP_P2GMCR_ENABLE;
 
         dcmipp->P2PPCR = (dcmipp->P2PPCR & ~DCMIPP_P2PPCR_FORMAT_Msk)
                        | (conf->output_format << DCMIPP_P2PPCR_FORMAT_Pos);

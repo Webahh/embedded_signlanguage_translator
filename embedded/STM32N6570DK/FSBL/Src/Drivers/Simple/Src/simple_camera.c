@@ -85,7 +85,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     csi_conf.data_lane_mapping = CSI_DATA_LANES_PHYSICAL;
     csi_conf.phy_bitrate       = CSI_PHY_BT_1600;
     csi_conf.vc                = CSI_VIRTUAL_CHANNEL0;
-    csi_conf.dt_format         = CSI_DT_BPP8;
+    csi_conf.dt_format         = CSI_DT_BPP10;
     csi_conf.data_type         = 0x2B;
     CSI_Config(&csi_conf);
     CSI_SetVCConfig(csi_conf.vc, csi_conf.dt_format);
@@ -144,24 +144,6 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     ipplug_conf.dpreg_end     = 0x22F;
     DCMIPP_IPPlug_Config(&ipplug_conf);
 
-    /* IPC3 => CLIENT3:        R1=0x4  R2=0x10000   R3=0x18f0140  */
-    ipplug_conf.client_id     = DCMIPP_CLIENT3;
-    ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
-    ipplug_conf.outstanding   = 0x0;
-    ipplug_conf.wlru_ratio    = 0x1;
-    ipplug_conf.dpreg_start   = 0x140;
-    ipplug_conf.dpreg_end     = 0x18F;
-    DCMIPP_IPPlug_Config(&ipplug_conf);
-
-    /* IPC4 => CLIENT4:        R1=0x4  R2=0x10000   R3=0x1bf190  */
-    ipplug_conf.client_id     = DCMIPP_CLIENT4;
-    ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
-    ipplug_conf.outstanding   = 0x0;
-    ipplug_conf.wlru_ratio    = 0x1;
-    ipplug_conf.dpreg_start   = 0x190;
-    ipplug_conf.dpreg_end     = 0x1bf;
-    DCMIPP_IPPlug_Config(&ipplug_conf);
-
     /* IPC5 => CLIENT4:        R1=0x024  R2=0x0   R3=0x27f0230  */
     ipplug_conf.client_id     = CAM_CLIENT_DISPLAY;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
@@ -181,7 +163,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     /* ------ ISP ------ */
 
     DCMIPP_Pipe_EnableISP(CAM_PIPE_DISPLAY, DCMIPP_RAWBAYER_RGGB);
-    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 64, 64, 64);
+    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0x0, 0x0, 0x0);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
     /* ------ Sensor init ------ */
