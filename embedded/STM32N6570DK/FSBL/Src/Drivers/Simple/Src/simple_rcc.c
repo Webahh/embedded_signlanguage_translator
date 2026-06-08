@@ -136,6 +136,32 @@ void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4])
     }
 }
 
+static volatile uint32_t * const IC_CFGR[] = {
+    &RCC->IC1CFGR,  &RCC->IC2CFGR,  &RCC->IC3CFGR,  &RCC->IC4CFGR,
+    &RCC->IC5CFGR,  &RCC->IC6CFGR,  &RCC->IC7CFGR,  &RCC->IC8CFGR,
+    &RCC->IC9CFGR,  &RCC->IC10CFGR, &RCC->IC11CFGR, &RCC->IC12CFGR,
+    &RCC->IC13CFGR, &RCC->IC14CFGR, &RCC->IC15CFGR, &RCC->IC16CFGR,
+    &RCC->IC17CFGR, &RCC->IC18CFGR, &RCC->IC19CFGR, &RCC->IC20CFGR,
+};
+static const uint32_t IC_DIVEN[] = {
+    RCC_DIVENR_IC1EN,  RCC_DIVENR_IC2EN,  RCC_DIVENR_IC3EN,  RCC_DIVENR_IC4EN,
+    RCC_DIVENR_IC5EN,  RCC_DIVENR_IC6EN,  RCC_DIVENR_IC7EN,  RCC_DIVENR_IC8EN,
+    RCC_DIVENR_IC9EN,  RCC_DIVENR_IC10EN, RCC_DIVENR_IC11EN, RCC_DIVENR_IC12EN,
+    RCC_DIVENR_IC13EN, RCC_DIVENR_IC14EN, RCC_DIVENR_IC15EN, RCC_DIVENR_IC16EN,
+    RCC_DIVENR_IC17EN, RCC_DIVENR_IC18EN, RCC_DIVENR_IC19EN, RCC_DIVENR_IC20EN,
+};
+
+void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20])
+{
+    for (uint32_t i = 0U; i < 20U; i++) {
+        if (ic[i].CFGR == 0U) continue;
+
+        *IC_CFGR[i] = ic[i].CFGR;
+        RCC->DIVENR |= IC_DIVEN[i];
+    }
+    (void)RCC->DIVENR;
+}
+
 uint32_t RCC_GetHSI(void){
     return RCC_HSI_VALUE_HZ;
 }
@@ -515,16 +541,6 @@ void RCC_setLTDC_clock_source(uint32_t source){
 
 void RCC_config_DCMIPP_clock_IC17(void)
 {
-    /* IC17: source = PLL1 (IC17SEL = 0x0), divider = 6 -> 800/6 = 133 MHz */
-    uint32_t ic17cfgr = RCC->IC17CFGR;
-    ic17cfgr &= ~(RCC_IC17CFGR_IC17SEL_Msk);
-    ic17cfgr |= ((6UL - 1UL) << RCC_IC17CFGR_IC17INT_Pos);
-    RCC->IC17CFGR = ic17cfgr;
-    (void)RCC->IC17CFGR;
-
-    RCC->DIVENR |= RCC_DIVENR_IC17EN;
-    (void)RCC->DIVENR;
-
     /* DCMIPP kernel clock = IC17 */
     RCC->CCIPR1 = (RCC->CCIPR1 & ~RCC_CCIPR1_DCMIPPSEL_Msk)
                 | (0x2UL << RCC_CCIPR1_DCMIPPSEL_Pos);
@@ -562,17 +578,6 @@ void RCC_enable_CSI(void){
 }
 
 
-
-void RCC_config_CSI_clock_IC18(void)
-{
-    /* Configure IC18: source = PLL1, divider = 40 -> 800/40 = 20 MHz */
-    RCC->IC18CFGR = (RCC->IC18CFGR & ~RCC_IC18CFGR_IC18SEL_Msk)
-                   | ((40UL - 1UL) << RCC_IC18CFGR_IC18INT_Pos);
-    (void)RCC->IC18CFGR;
-
-    RCC->DIVENR |= RCC_DIVENR_IC18EN;
-    (void)RCC->DIVENR;
-}
 
 void RCC_reset_CSI(void){
     RCC->APB5RSTSR |= RCC_APB5RSTSR_CSIRSTS;
@@ -648,34 +653,10 @@ void RCC_config_VDDIO2_1V8(void){
 }
 
 /**
- * @brief Route PLL4 through IC16 to provide the LTDC 25 MHz pixel clock.
- *
- * IC16 takes PLL4 output (50 MHz) and divides by 2 -> 25 MHz.
- *
- * Clock tree:
- *   PLL4 = 50 MHz  (configured globally by RCC_config_PLLs)
- *   IC16 = PLL4 / 2 = 25 MHz
- *
- * @note PLL4 must already be configured and locked before calling this.
+ * @brief Select IC16 as LTDC kernel clock source.
+ * @note PLL4 and IC16 must already be configured before calling this.
  */
 void RCC_config_LTDC_25MHz_clock(void){
-    /*
-     * Configure IC16 as an intermediate divider for the LTDC clock.
-     * IC16 source is selected from PLL4 and divided by 2.
-     */
-    uint32_t ic16sel = RCC_IC16CFGR_IC16SEL_0 | RCC_IC16CFGR_IC16SEL_1;
-    uint32_t ic16int = (2UL - 1UL) << RCC_IC16CFGR_IC16INT_Pos;
-
-    RCC->IC16CFGR = (RCC->IC16CFGR & ~(RCC_IC16CFGR_IC16SEL | RCC_IC16CFGR_IC16INT))
-                   | ic16sel | ic16int;
-    (void)RCC->IC16CFGR;
-
-    RCC->DIVENR |= RCC_DIVENR_IC16EN;
-    (void)RCC->DIVENR;
-
-    /*
-     * Select IC16 output as LTDC kernel clock source.
-     */
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
 }

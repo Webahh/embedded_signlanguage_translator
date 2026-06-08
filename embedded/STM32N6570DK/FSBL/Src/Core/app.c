@@ -28,7 +28,16 @@ void app_init(){
 	        { .CFGR1 = 0x80E100, .CFGR2 = 0x0,          .CFGR3 = 0x4A000005 },
 	        { .CFGR1 = 0x80E100, .CFGR2 = 0x0,          .CFGR3 = 0x76000005 },
 	    };
-	    RCC_config_PLLs(pll_config);
+	RCC_config_PLLs(pll_config);
+	}
+	{
+	    static const RCC_IC_ConfigTypeDef ic_config[20] = {
+	    	[14] = { .CFGR = 0x20000000 },	/* IC15: ?, div 0 */
+	        [15] = { .CFGR = 0x30010000 },  /* IC16: PLL4, div 2 */
+	        [16] = { .CFGR = 0x10020000 },  /* IC17: PLL1, div 6 */
+	        [17] = { .CFGR = 0x00270000 },  /* IC18: PLL1, div 40 */
+	    };
+	    RCC_config_ICs(ic_config);
 	}
 	delay_init();
 

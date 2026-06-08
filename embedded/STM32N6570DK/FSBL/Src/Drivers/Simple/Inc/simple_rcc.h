@@ -23,8 +23,13 @@ typedef struct {
     uint32_t CFGR3;     /* PLLxCFGR3 value */
 } RCC_PLL_ConfigTypeDef;
 
+typedef struct {
+    uint32_t CFGR;      /* ICxCFGR value */
+} RCC_IC_ConfigTypeDef;
+
 void RCC_SystemClock_Config(void);
 void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4]);
+void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20]);
 
 uint32_t RCC_GetHSI(void);
 uint32_t RCC_GetSYSCLK(void);
@@ -54,7 +59,7 @@ void RCC_config_DCMIPP_clock_IC17(void);
 void RCC_reset_DCMIPP(void);
 void RCC_enable_CSI(void);
 void RCC_reset_CSI(void);
-void RCC_config_CSI_clock_IC18(void);
+
 
 void RCC_enable_PWR(void);
 void RCC_enable_XSPI1(void);
