@@ -8,3 +8,4 @@ pillow == 12.2.0
 tensorflow == 2.19.1
 pandas
 seaborn
+ai-edge-litert == 2.1.5
