@@ -68,9 +68,11 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     DCMIPP_Pipe_Conf pipe_conf;
     DCMIPP_IPPlug_Conf ipplug_conf;
 
-    h->display_buf = (uint32_t)lcd_bg_buffer;
-    h->nn_buf       = nn_buf ? nn_buf : CAM_NN_BUF;
-    h->initialized  = 0;
+    h->display_disp_idx = 1;
+    h->display_capt_idx = 0;
+    h->display_buf      = (uint32_t)&lcd_bg_buffer[h->display_capt_idx];
+    h->nn_buf           = nn_buf ? nn_buf : CAM_NN_BUF;
+    h->initialized      = 0;
 
     CAM_HwInit();
 
@@ -102,13 +104,13 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     /* Enable VC — starts data flow after pipe config is complete */
     CSI_StartVC(csi_conf.vc);
 
-    /* ------ Display pipe: 800 x 480 RGB565 ------ */
+    /* ------ Display pipe: 800 x 480 RGB888 ------ */
     /* IMX335 outputs 2592x1944 RAW10; crop full frame then downscale to 800x480 */
 
     pipe_conf.output_width  = CAM_DISPLAY_WIDTH;
     pipe_conf.output_height = CAM_DISPLAY_HEIGHT;
-    pipe_conf.output_format = DCMIPP_PP_FORMAT_RGB565;
-    pipe_conf.output_bpp    = 2;
+    pipe_conf.output_format = DCMIPP_PP_FORMAT_RGB888;
+    pipe_conf.output_bpp    = 3;
     pipe_conf.enable_crop   = 1;
     pipe_conf.crop_x        = 0;
     pipe_conf.crop_y        = (CAM_SENSOR_HEIGHT - (CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH) + 1) / 2;
@@ -187,10 +189,15 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
 
 CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 {
-    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, h->display_buf, 0);
+    h->display_disp_idx = 1;
+    h->display_capt_idx = 0;
+    lcd_bg_buffer_disp_idx = h->display_disp_idx;
+    lcd_bg_buffer_capt_idx = h->display_capt_idx;
 
-    LCD_Layer1Config.pixel_format = LCD_PF_RGB565;
-    LCD_Layer1Config.fb            = lcd_bg_buffer;
+    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, (uint32_t)&lcd_bg_buffer[h->display_capt_idx], 0);
+
+    LCD_Layer1Config.pixel_format = LCD_PF_RGB888;
+    LCD_Layer1Config.fb            = (volatile uint8_t *)&lcd_bg_buffer[h->display_disp_idx];
     LCD_ConfigLayer1();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;

@@ -4,8 +4,10 @@
 #include "simple_timer.h"
 #include "config.h"
 
-volatile uint16_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint8_t lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
 volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT] __attribute__((section(".psram_bss"), aligned(32)));
+volatile int lcd_bg_buffer_disp_idx = 1;
+volatile int lcd_bg_buffer_capt_idx = 0;
 
 static void LCD_ConfigGPIO(void){
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
@@ -182,6 +184,16 @@ void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
         uint16_t c = LCD_ARGBtoRGB565(color);
         for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
             fb[i] = c;
+    } else if (cfg->pixel_format == LCD_PF_RGB888) {
+        volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+        uint8_t r = (color >> 16) & 0xFF;
+        uint8_t g = (color >> 8)  & 0xFF;
+        uint8_t b = (color)       & 0xFF;
+        for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++) {
+            fb[i * 3 + 0] = r;
+            fb[i * 3 + 1] = g;
+            fb[i * 3 + 2] = b;
+        }
     } else {
         volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
         for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
@@ -197,6 +209,19 @@ void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t c
         for (uint32_t y = 0; y < cfg->height; y++)
             for (uint32_t x = 0; x < cfg->width; x++)
                 fb[y * cfg->width + x] = (x < cfg->width / 2) ? c1 : c2;
+    } else if (cfg->pixel_format == LCD_PF_RGB888) {
+        volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+        uint8_t r1 = (color1 >> 16) & 0xFF, g1 = (color1 >> 8) & 0xFF, b1 = (color1) & 0xFF;
+        uint8_t r2 = (color2 >> 16) & 0xFF, g2 = (color2 >> 8) & 0xFF, b2 = (color2) & 0xFF;
+        for (uint32_t y = 0; y < cfg->height; y++)
+            for (uint32_t x = 0; x < cfg->width; x++) {
+                uint32_t idx = (y * cfg->buf_width + x) * 3;
+                if (x < cfg->width / 2) {
+                    fb[idx + 0] = r1; fb[idx + 1] = g1; fb[idx + 2] = b1;
+                } else {
+                    fb[idx + 0] = r2; fb[idx + 1] = g2; fb[idx + 2] = b2;
+                }
+            }
     } else {
         volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
         for (uint32_t y = 0; y < cfg->height; y++)
@@ -205,12 +230,24 @@ void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t c
     }
 }
 
-void LCD_BlitImage(const LCD_LayerConfig *cfg, const uint16_t *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+void LCD_BlitImage(const LCD_LayerConfig *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
     if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        const uint16_t *src = (const uint16_t *)img;
         for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
             for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++)
-                fb[(dst_y + y) * cfg->buf_width + dst_x + x] = img[y * img_w + x];
+                fb[(dst_y + y) * cfg->buf_width + dst_x + x] = src[y * img_w + x];
+    } else if (cfg->pixel_format == LCD_PF_RGB888) {
+        volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+        const uint8_t *src = (const uint8_t *)img;
+        for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
+            for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++) {
+                uint32_t di = ((dst_y + y) * cfg->buf_width + dst_x + x) * 3;
+                uint32_t si = (y * img_w + x) * 3;
+                fb[di + 0] = src[si + 0];
+                fb[di + 1] = src[si + 1];
+                fb[di + 2] = src[si + 2];
+            }
     }
 }
 
@@ -220,5 +257,11 @@ void LCD_ConfigLayer1(void){
 
 void LCD_ConfigLayer2(void){
     LCD_ConfigLayer(&LCD_Layer2Config);
+}
+
+void LCD_UpdateLayerAddress(const LCD_LayerConfig *cfg)
+{
+    cfg->regs->CFBAR = (uint32_t)cfg->fb;
+    LTDC->SRCR = LTDC_SRCR_VBR;
 }
 

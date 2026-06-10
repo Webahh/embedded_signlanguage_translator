@@ -12,14 +12,20 @@
 
 #define LCD_BYTES_PER_PIXEL 4U
 
+#define DISPLAY_DELAY        2
+#define DISPLAY_BUFFER_NB    (DISPLAY_DELAY + 2)
+#define DISPLAY_BPP          3
+
 #define LCD_COLOR_BLACK  0xFF000000U
 #define LCD_COLOR_WHITE  0xFFFFFFFFU
 #define LCD_COLOR_RED    0xFFFF0000U
 #define LCD_COLOR_GREEN  0xFF00FF00U
 #define LCD_COLOR_BLUE   0xFF0000FFU
 
-extern volatile uint16_t lcd_bg_buffer[LCD_BG_WIDTH * LCD_BG_HEIGHT];
+extern volatile uint8_t  lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP];
 extern volatile uint32_t lcd_fg_buffer[LCD_FG_WIDTH * LCD_FG_HEIGHT];
+extern volatile int      lcd_bg_buffer_disp_idx;
+extern volatile int      lcd_bg_buffer_capt_idx;
 
 typedef enum {
     LCD_PF_ARGB8888 = 0b000,
@@ -67,8 +73,9 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b);
 void LCD_ConfigLayer(const LCD_LayerConfig *cfg);
 void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color);
 void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2);
-void LCD_BlitImage(const LCD_LayerConfig *cfg, const uint16_t *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y);
+void LCD_BlitImage(const LCD_LayerConfig *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y);
 void LCD_ConfigLayer1(void);
 void LCD_ConfigLayer2(void);
+void LCD_UpdateLayerAddress(const LCD_LayerConfig *cfg);
 
 #endif

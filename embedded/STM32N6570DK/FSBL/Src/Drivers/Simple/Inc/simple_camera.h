@@ -48,6 +48,8 @@ typedef struct {
     uint32_t      nn_buf;				/**< NN buffer base address          */
     int32_t       display_pitch;   		/**< Display pipe line pitch (bytes) */
     int32_t       nn_pitch;        		/**< NN pipe line pitch (bytes)      */
+    int           display_disp_idx;		/**< Current LTDC display buffer idx */
+    int           display_capt_idx;		/**< Current DCMIPP capture buffer idx*/
     uint8_t       initialized;     		/**< Non-zero after successful Init  */
 } CAM_Handle;
 

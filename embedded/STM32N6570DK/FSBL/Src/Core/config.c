@@ -43,13 +43,13 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 
 LCD_LayerConfig LCD_Layer1Config = {
     .regs            = LTDC_Layer1,
-    .fb              = lcd_bg_buffer,
+    .fb              = (volatile uint8_t *)lcd_bg_buffer[0],
     .x               = 0,
     .y               = 0,
     .width           = LCD_BG_WIDTH,
     .height          = LCD_BG_HEIGHT,
     .buf_width       = LCD_BG_WIDTH,
-    .pixel_format    = LCD_PF_RGB565,
+    .pixel_format    = LCD_PF_RGB888,
     .const_alpha     = 0xFF,
     .per_pixel_alpha = 0,
     .default_color   = 0,

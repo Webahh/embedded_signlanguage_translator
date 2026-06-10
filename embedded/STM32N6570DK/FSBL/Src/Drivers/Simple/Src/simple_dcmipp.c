@@ -84,7 +84,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
             dcmipp->P1CRSZR &= ~DCMIPP_P1CRSZR_ENABLE;
         }
 
-        dcmipp->P1DECR |= DCMIPP_P1DECR_ENABLE;
+//        dcmipp->P1DECR |= DCMIPP_P1DECR_ENABLE;
 
         if (conf->enable_downsize && conf->output_width && conf->output_height) {
             uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
@@ -241,6 +241,7 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
 {
     if (pipe == DCMIPP_PIPE1) {
         dcmipp->P1PPM0AR1 = buf_addr;
+        dcmipp->P1PPM0AR2 = 0;
         if (mode == 0)
             dcmipp->P1FCTCR &= ~DCMIPP_P1FCTCR_CPTMODE;
         else
@@ -327,18 +328,18 @@ void DCMIPP_IRQHandler(void)
 
     sr = dcmipp->P1SR;
     if (sr) {
-        if (sr & DCMIPP_P1SR_LINEF)  dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
-        if (sr & DCMIPP_P1SR_FRAMEF) dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF;
-        if (sr & DCMIPP_P1SR_VSYNCF) dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF;
-        if (sr & DCMIPP_P1SR_OVRF)   dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;
+        if (sr & DCMIPP_P1SR_LINEF)  { dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;  DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE1); }
+        if (sr & DCMIPP_P1SR_FRAMEF) { dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE1); }
+        if (sr & DCMIPP_P1SR_VSYNCF) { dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF; }
+        if (sr & DCMIPP_P1SR_OVRF)   { dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE1); }
     }
 
     sr = dcmipp->P2SR;
     if (sr) {
-        if (sr & DCMIPP_P2SR_LINEF)  dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
-        if (sr & DCMIPP_P2SR_FRAMEF) dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF;
-        if (sr & DCMIPP_P2SR_VSYNCF) dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF;
-        if (sr & DCMIPP_P2SR_OVRF)   dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;
+        if (sr & DCMIPP_P2SR_LINEF)  { dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;  DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE2); }
+        if (sr & DCMIPP_P2SR_FRAMEF) { dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE2); }
+        if (sr & DCMIPP_P2SR_VSYNCF) { dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF; }
+        if (sr & DCMIPP_P2SR_OVRF)   { dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE2); }
     }
 }
 

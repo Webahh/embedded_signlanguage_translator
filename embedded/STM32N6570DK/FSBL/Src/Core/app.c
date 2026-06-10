@@ -5,6 +5,7 @@
  *      Author: Weber
  */
 
+#include <string.h>
 #include "app.h"
 #include "config.h"
 #include "simple_gpio.h"
@@ -14,9 +15,42 @@
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
 #include "simple_camera.h"
+#include "simple_dcmipp.h"
 #include "image_bitmap.h"
 #include "simple_rcc.h"
 #include "tasks.h"
+
+static int is_cache_enabled(void)
+{
+    return (SCB->CCR & SCB_CCR_DC_Msk) != 0;
+}
+
+#define CACHE_OP(__op__) do { \
+    if (is_cache_enabled()) { \
+        __op__; \
+    } \
+} while (0)
+
+void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
+{
+    if (pipe == DCMIPP_PIPE1) {
+        int next_capt = (lcd_bg_buffer_capt_idx + 1) % DISPLAY_BUFFER_NB;
+        int next_disp = (lcd_bg_buffer_disp_idx + 1) % DISPLAY_BUFFER_NB;
+
+        CACHE_OP(SCB_InvalidateDCache_by_Addr(
+            (void *)&lcd_bg_buffer[lcd_bg_buffer_capt_idx],
+            sizeof(lcd_bg_buffer[0])));
+
+        DCMIPP_Pipe_UpdateBufAddr(DCMIPP_PIPE1,
+            (uint32_t)&lcd_bg_buffer[next_capt]);
+
+        LCD_Layer1Config.fb = (volatile uint8_t *)&lcd_bg_buffer[next_disp];
+        LCD_UpdateLayerAddress(&LCD_Layer1Config);
+
+        lcd_bg_buffer_capt_idx = next_capt;
+        lcd_bg_buffer_disp_idx = next_disp;
+    }
+}
 
 void app_init(){
 	Security_Config();
@@ -49,6 +83,9 @@ void app_init(){
     LCD_Init();
 
     delay_ms(10);
+
+    CACHE_OP(SCB_CleanInvalidateDCache_by_Addr(
+        (void *)lcd_bg_buffer, sizeof(lcd_bg_buffer)));
 
     LCD_ConfigLayer1();
 
