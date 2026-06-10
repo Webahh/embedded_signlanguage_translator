@@ -77,8 +77,8 @@ void CSI_Config(CSI_Conf *conf)
     /* 2. Release CSI PHY from reset */
     csi->PRCR |= CSI_PRCR_PEN;
 
-    /* 3. Configure PHY frequency - DLD=0 for RX mode */
-    csi->PFCR = (0U << CSI_PFCR_DLD_Pos)
+    /* 3. Configure PHY frequency - DLD=1 for RX mode (Synopsys convention: 1=RX, 0=TX) */
+    csi->PFCR = CSI_PFCR_DLD
               | (hsfreqrange << CSI_PFCR_HSFR_Pos)
               | (0x28U << CSI_PFCR_CCFR_Pos);
 

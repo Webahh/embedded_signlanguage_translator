@@ -187,6 +187,15 @@ int32_t IMX335_EnableAutoExposure(IMX335_Handle *h)
     return write_reg(h, IMX335_REG_AEC, IMX335_AEC_ENABLE);
 }
 
+int32_t IMX335_SetHMax(IMX335_Handle *h, uint16_t hmax)
+{
+    uint8_t lsb = hmax & 0xFF;
+    uint8_t msb = (hmax >> 8) & 0xFF;
+    if (write_reg(h, IMX335_REG_HMAX + 0, lsb)) return -1;
+    if (write_reg(h, IMX335_REG_HMAX + 1, msb)) return -1;
+    return 0;
+}
+
 int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)
 {
     uint8_t id_byte = 0;

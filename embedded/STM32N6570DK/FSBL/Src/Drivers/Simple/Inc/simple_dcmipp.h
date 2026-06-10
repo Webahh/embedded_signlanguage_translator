@@ -137,6 +137,9 @@ void     DCMIPP_PIPE_FrameEventCallback(uint32_t pipe);
 void     DCMIPP_PIPE_VsyncEventCallback(uint32_t pipe);
 void     DCMIPP_PIPE_ErrorCallback(uint32_t pipe);
 
+/** Reduce spurious line-event state after pipe config */
+void     DCMIPP_ReduceSpurious(void);
+
 /* Helper to get 16-byte aligned pitch */
 static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch) {
     return (pitch + 15) & ~15U;

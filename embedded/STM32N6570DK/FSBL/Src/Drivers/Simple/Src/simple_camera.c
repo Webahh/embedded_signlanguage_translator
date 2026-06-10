@@ -156,7 +156,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     /* IPC5 => CLIENT4:        R1=0x024  R2=0x0   R3=0x27f0230  */
     ipplug_conf.client_id     = CAM_CLIENT_DISPLAY;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
-    ipplug_conf.outstanding   = 0x2;
+    ipplug_conf.outstanding   = 0x0;
     ipplug_conf.wlru_ratio    = 0x0;
     ipplug_conf.dpreg_start   = 0x230;
     ipplug_conf.dpreg_end     = 0x27F;
@@ -175,10 +175,17 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0x0, 0x0, 0x0);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
+    /* ------ Reduce spurious line events (reference workaround) ------ */
+
+    DCMIPP_ReduceSpurious();
+
     /* ------ Sensor init ------ */
 
     if (IMX335_Init(&h->imx335))
         return CAM_ERROR_INIT;
+
+    if (IMX335_SetHMax(&h->imx335, 20000))
+        return CAM_ERROR;
 
     if (IMX335_EnableAutoExposure(&h->imx335))
         return CAM_ERROR;

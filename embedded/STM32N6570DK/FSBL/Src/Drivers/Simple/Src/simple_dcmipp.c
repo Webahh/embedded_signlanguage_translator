@@ -237,6 +237,18 @@ void DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe)
     dcmipp->P1BLCCR |= DCMIPP_P1BLCCR_ENABLE;
 }
 
+void DCMIPP_ReduceSpurious(void)
+{
+    dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
+    dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
+    dcmipp->P1IER |= DCMIPP_P1IER_LINEIE;
+    dcmipp->P2IER |= DCMIPP_P2IER_LINEIE;
+    dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
+    dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
+    dcmipp->P1IER &= ~DCMIPP_P1IER_LINEIE;
+    dcmipp->P2IER &= ~DCMIPP_P2IER_LINEIE;
+}
+
 void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
 {
     if (pipe == DCMIPP_PIPE1) {

@@ -32,6 +32,8 @@
 
 /** Frame-length (VMAX) for framerate control */
 #define IMX335_REG_VMAX         0x3030
+/** Horizontal line length (HMAX) — total PCLK per line */
+#define IMX335_REG_HMAX         0x300C
 /** Shutter (exposure) register */
 #define IMX335_REG_SHUTTER      0x3058
 /** Gain register */
@@ -129,6 +131,16 @@ int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id);
  * @retval 0 on success, -1 on I2C error
  */
 int32_t IMX335_EnableAutoExposure(IMX335_Handle *h);
+
+/**
+ * @brief  Set horizontal line length (HMAX) to add blanking.
+ *         Larger HMAX → more idle time per line → lower data rate,
+ *         helps DCMIPP FIFO drain between lines.
+ * @param  h     Sensor handle
+ * @param  hmax  Total PCLK per line (16-bit). Default = 10811 (0x2A3B).
+ * @retval 0 on success, -1 on I2C error
+ */
+int32_t IMX335_SetHMax(IMX335_Handle *h, uint16_t hmax);
 
 /**
  * @brief  Verify that all written configuration registers read back correctly.
