@@ -69,20 +69,45 @@ void CSI_Config(CSI_Conf *conf)
 {
     uint32_t hsfreqrange, osc_target, phy_idx;
 
+    phy_idx = conf->phy_bitrate;
+    if (phy_idx > 62) phy_idx = 62;
+    hsfreqrange = csi_phy_freqs[phy_idx].hsfreqrange;
+    osc_target = csi_phy_freqs[phy_idx].osc_freq_target;
+
+    /* 2. Release CSI PHY from reset */
+    csi->PRCR |= CSI_PRCR_PEN;
+
+    /* 3. Configure PHY frequency - DLD=0 for RX mode */
+    csi->PFCR = (0U << CSI_PFCR_DLD_Pos)
+              | (hsfreqrange << CSI_PFCR_HSFR_Pos)
+              | (0x28U << CSI_PFCR_CCFR_Pos);
+
+    csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    for (volatile uint32_t d = 0; d < 400000; d++);
+    csi->PTCR0 = 0;
+
+    CSI_WritePHYReg(0x00, 0x08, 0x38);
+    CSI_WritePHYReg(0x00, 0xE4, 0x11);
+    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target >> 8));
+    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target & 0xFF));
+
+    /* 4. Configure lane merger while CSI disabled and sensor not streaming */
     csi->CR &= ~CSI_CR_CSIEN;
 
     csi->LMCFGR = conf->num_lanes
                 | (CSI_DATA_LANE0 << CSI_LMCFGR_DL0MAP_Pos)
                 | (CSI_DATA_LANE1 << CSI_LMCFGR_DL1MAP_Pos);
 
+    /* 5. Configure VC/data type filtering (caller does CSI_SetVCConfig) */
+
+    /* 6. Enable CSI host */
     csi->CR |= CSI_CR_CSIEN;
 
     csi->IER0 = CSI_IER0_CCFIFOFIE
               | CSI_IER0_SYNCERRIE
               | CSI_IER0_SPKTERRIE
               | CSI_IER0_IDERRIE
-              | CSI_IER0_SPKTIE
-              | CSI_IER0_CRCERRIE;
+              | CSI_IER0_SPKTIE;
 
     if (conf->num_lanes == CSI_ONE_DATA_LANE)
     {
@@ -100,36 +125,12 @@ void CSI_Config(CSI_Conf *conf)
                   | CSI_IER1_ECTRLDL1IE;
     }
 
-    phy_idx = conf->phy_bitrate;
-    if (phy_idx > 62) phy_idx = 62;
-    hsfreqrange = csi_phy_freqs[phy_idx].hsfreqrange;
-    osc_target = csi_phy_freqs[phy_idx].osc_freq_target;
-
-    csi->PRCR &= ~CSI_PRCR_PEN;
-    csi->PCR = 0;
-
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    for (volatile uint32_t d = 0; d < 400000; d++);
-    csi->PTCR0 = 0;
-
-    csi->PFCR = (0x28U << CSI_PFCR_CCFR_Pos)
-              | (hsfreqrange << CSI_PFCR_HSFR_Pos);
-
-    CSI_WritePHYReg(0x00, 0x08, 0x38);
-    CSI_WritePHYReg(0x00, 0xE4, 0x11);
-    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target >> 8));
-    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target & 0xFF));
-
-    csi->PFCR = (0x28U << CSI_PFCR_CCFR_Pos)
-              | (hsfreqrange << CSI_PFCR_HSFR_Pos)
-              | CSI_PFCR_DLD;
-
+    /* 7. Enable lanes */
     if (conf->num_lanes == CSI_ONE_DATA_LANE)
         csi->PCR = CSI_PCR_DL0EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
     else
         csi->PCR = CSI_PCR_DL0EN | CSI_PCR_DL1EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
 
-    csi->PRCR |= CSI_PRCR_PEN;
     csi->PMCR = 0;
 }
 

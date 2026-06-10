@@ -324,9 +324,7 @@ void DCMIPP_IRQHandler(void)
 {
     dcmipp->CMFCR = 0xFFFFFFFFU;
 
-    uint32_t sr;
-
-    sr = dcmipp->P1SR;
+    uint32_t sr = dcmipp->P1SR;
     if (sr) {
         if (sr & DCMIPP_P1SR_LINEF)  { dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;  DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE1); }
         if (sr & DCMIPP_P1SR_FRAMEF) { dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE1); }
