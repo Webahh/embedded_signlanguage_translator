@@ -1,22 +1,14 @@
 import cv2 as cv
 import numpy as np
 
+from src.model_pipeline.models.palm_detector import PalmDetector
+from src.model_pipeline.preprocessing.palm_preprocessing import prepare_input
+from src.model_pipeline.runtime.interpreter import load_model
 from src.model_pipeline.core.config import (
     PALM_MODEL_PATH,
     SCORE_THRESHOLD,
+    TEST_IMAGE_PATH
 )
-from src.model_pipeline.models.palm_detector import (
-    PalmDetector,
-)
-from src.model_pipeline.preprocessing.palm_preprocessing import (
-    prepare_input,
-)
-from src.model_pipeline.runtime.interpreter import (
-    load_model,
-)
-
-
-TEST_IMAGE_PATH = "hand_test.jpg"
 
 
 def sigmoid(value: float) -> float:
@@ -26,8 +18,8 @@ def sigmoid(value: float) -> float:
 
 
 def print_tensor_details(
-    title: str,
-    tensors: list[dict],
+        title: str,
+        tensors: list[dict],
 ) -> None:
     print(f"\n{title}")
     print("=" * len(title))
@@ -43,7 +35,7 @@ def print_tensor_details(
 
 
 def analyze_raw_outputs(
-    image: np.ndarray,
+        image: np.ndarray,
 ) -> None:
     interpreter = load_model(
         PALM_MODEL_PATH
@@ -77,7 +69,7 @@ def analyze_raw_outputs(
     )[0]
 
     probabilities = 1.0 / (
-        1.0 + np.exp(-raw_scores)
+            1.0 + np.exp(-raw_scores)
     )
 
     best_index = int(
@@ -117,7 +109,7 @@ def analyze_raw_outputs(
 
 
 def analyze_postprocessing(
-    image: np.ndarray,
+        image: np.ndarray,
 ) -> None:
     detector = PalmDetector(
         PALM_MODEL_PATH

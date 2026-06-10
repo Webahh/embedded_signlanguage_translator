@@ -21,6 +21,11 @@ HAND_LANDMARK_MODEL_PATH = os.path.join(
     "033_hand_landmark_full_quant_pc_uf_handl.tflite"
 )
 
+TEST_IMAGE_PATH = os.path.join(
+    MODEL_ROOT,
+    "../ml_pipeline/src/model_pipeline/utils/hand_test.jpg"
+)
+
 CAMERA_INDEX = 0
 MODEL_SIZE = 192
 

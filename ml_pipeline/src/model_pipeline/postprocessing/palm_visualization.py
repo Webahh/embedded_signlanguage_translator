@@ -2,41 +2,31 @@ import cv2 as cv
 import numpy as np
 
 from src.model_pipeline.core.config import MODEL_SIZE
-from src.model_pipeline.results.model_results import (
-    PalmDetection,
-)
+from src.model_pipeline.results.model_results import PalmDetection
 
 
 def model_to_original_point(
-    x_normalized: float,
-    y_normalized: float,
-    scale: float,
-    pad_left: int,
-    pad_top: int,
+        x_normalized: float,
+        y_normalized: float,
+        scale: float,
+        pad_left: int,
+        pad_top: int,
 ) -> tuple[int, int]:
     model_x = x_normalized * MODEL_SIZE
     model_y = y_normalized * MODEL_SIZE
 
-    original_x = (
-        model_x - pad_left
-    ) / scale
+    original_x = (model_x - pad_left) / scale
+    original_y = (model_y - pad_top) / scale
 
-    original_y = (
-        model_y - pad_top
-    ) / scale
-
-    return (
-        int(round(original_x)),
-        int(round(original_y)),
-    )
+    return int(round(original_x)), int(round(original_y)),
 
 
 def draw_detection(
-    frame: np.ndarray,
-    detection: PalmDetection,
-    scale: float,
-    pad_left: int,
-    pad_top: int,
+        frame: np.ndarray,
+        detection: PalmDetection,
+        scale: float,
+        pad_left: int,
+        pad_top: int,
 ) -> None:
     x1, y1 = model_to_original_point(
         detection.box[0],
@@ -54,14 +44,7 @@ def draw_detection(
         pad_top,
     )
 
-    cv.rectangle(
-        frame,
-        (x1, y1),
-        (x2, y2),
-        (0, 255, 0),
-        2,
-    )
-
+    cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2, )
     cv.putText(
         frame,
         f"{detection.score:.3f}",
@@ -83,14 +66,7 @@ def draw_detection(
             pad_top,
         )
 
-        cv.circle(
-            frame,
-            (x, y),
-            5,
-            (0, 0, 255),
-            -1,
-        )
-
+        cv.circle(frame, (x, y), 5, (0, 0, 255), -1, )
         cv.putText(
             frame,
             str(index),

@@ -4,37 +4,19 @@ from src.model_pipeline.core.config import (
     CAMERA_INDEX,
     PALM_MODEL_PATH,
 )
-from src.model_pipeline.models.palm_detector import (
-    PalmDetector,
-)
-from src.model_pipeline.postprocessing.palm_visualization import (
-    draw_detection,
-)
+from src.model_pipeline.models.palm_detector import PalmDetector
+from src.model_pipeline.postprocessing.palm_visualization import draw_detection
 
 
 def run_live_inference() -> None:
-    detector = PalmDetector(
-        PALM_MODEL_PATH
-    )
+    detector = PalmDetector(PALM_MODEL_PATH)
 
-    camera = cv.VideoCapture(
-        CAMERA_INDEX
-    )
-
-    camera.set(
-        cv.CAP_PROP_FRAME_WIDTH,
-        1280,
-    )
-
-    camera.set(
-        cv.CAP_PROP_FRAME_HEIGHT,
-        720,
-    )
+    camera = cv.VideoCapture(CAMERA_INDEX)
+    camera.set(cv.CAP_PROP_FRAME_WIDTH, 1280, )
+    camera.set(cv.CAP_PROP_FRAME_HEIGHT, 720, )
 
     if not camera.isOpened():
-        raise RuntimeError(
-            "Webcam konnte nicht geöffnet werden."
-        )
+        raise RuntimeError("Opening Camera failed!")
 
     try:
         while True:
