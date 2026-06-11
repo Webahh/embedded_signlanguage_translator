@@ -3,12 +3,12 @@ import numpy as np
 from src.model_pipeline.results.model_results import PalmDetection, ROI
 from src.model_pipeline.postprocessing.palm_visualization import model_to_original_point
 
+
 def pd_box_to_roi(
     detection: PalmDetection,
     scale: float,
     pad_left: int,
     pad_top: int,
-    image_shape: tuple[int, int, int],
 ) -> ROI:
     x1, y1 = model_to_original_point(detection.box[0], detection.box[1], scale, pad_left, pad_top)
     x2, y2 = model_to_original_point(detection.box[2], detection.box[3], scale, pad_left, pad_top)
