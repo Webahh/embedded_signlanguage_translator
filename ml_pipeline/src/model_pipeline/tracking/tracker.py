@@ -5,9 +5,13 @@ from src.model_pipeline.models.palm_detector import PalmDetector
 from src.model_pipeline.models.hand_landmark_detector import HandLandmarkDetector
 from src.model_pipeline.tracking.roi_utils import pd_box_to_roi, landmarks_to_roi
 from src.model_pipeline.core.config import (
+    DEFAULT_HANDEDNESS,
+    FILTER_OVERLAP_IOU,
+    HANDEDNESS_THRESHOLD,
     MAX_HANDS,
-    PRESENCE_THRESHOLD,
     MODEL_SIZE,
+    PRESENCE_THRESHOLD,
+    TRACK_MERGE_IOU,
 )
 from typing import Optional
 
@@ -18,7 +22,10 @@ class _Track:
         self.roi: Optional[ROI] = None
         self.box: Optional[PalmDetection] = None
         self.landmarks: Optional[np.ndarray] = None
-        self.handedness: float = 0.5
+        self.raw_landmarks: Optional[np.ndarray] = None
+        self.handedness: float = DEFAULT_HANDEDNESS
+        self.sign_label: str = ""
+        self.sign_confidence: float = 0.0
 
 
 class MultiHandTracker:
@@ -50,7 +57,19 @@ class MultiHandTracker:
 
     @property
     def last_handedness(self) -> list[str]:
-        return ["R" if t.handedness > 0.5 else "L" for t in self._tracks if t.active and t.landmarks is not None]
+        return ["R" if t.handedness > HANDEDNESS_THRESHOLD else "L" for t in self._tracks if t.active and t.landmarks is not None]
+
+    @property
+    def last_raw_landmarks(self) -> list[np.ndarray]:
+        return [t.raw_landmarks for t in self._tracks if t.active and t.raw_landmarks is not None]
+
+    @property
+    def last_sign_labels(self) -> list[str]:
+        return [t.sign_label for t in self._tracks if t.active and t.landmarks is not None]
+
+    @property
+    def last_sign_confidences(self) -> list[float]:
+        return [t.sign_confidence for t in self._tracks if t.active and t.landmarks is not None]
 
     def step(
         self,
@@ -61,6 +80,7 @@ class MultiHandTracker:
         for track in [t for t in self._tracks if t.active]:
             landmarks, presence, handedness = self._landmark.detect(frame, track.roi)
             if presence >= PRESENCE_THRESHOLD and landmarks is not None:
+                track.raw_landmarks = landmarks.copy()
                 decoded = self._decode_landmarks_to_frame(landmarks, track.roi)
                 track.landmarks = decoded
                 track.handedness = handedness
@@ -70,6 +90,7 @@ class MultiHandTracker:
             else:
                 track.active = False
                 track.landmarks = None
+                track.raw_landmarks = None
                 lost_track = True
 
         active = [t for t in self._tracks if t.active]
@@ -77,7 +98,7 @@ class MultiHandTracker:
             for j in range(i + 1, len(active)):
                 if active[i].box is None or active[j].box is None:
                     continue
-                if PalmDetector._calculate_iou(active[i].box.box, active[j].box.box) > 0.5:
+                if PalmDetector._calculate_iou(active[i].box.box, active[j].box.box) > TRACK_MERGE_IOU:
                     if active[i].box.score >= active[j].box.score:
                         active[j].active = False
                     else:
@@ -128,7 +149,7 @@ class MultiHandTracker:
 def _filter_overlapping(
     detections: list[PalmDetection],
     existing: list[_Track],
-    iou_threshold: float = 0.2,
+    iou_threshold: float = FILTER_OVERLAP_IOU,
 ) -> list[PalmDetection]:
     if not existing:
         return detections

@@ -1,5 +1,16 @@
 import numpy as np
 
+from src.model_pipeline.core.config import (
+    LANDMARK_BBOX_INDICES,
+    LANDMARK_BOX_SCORE,
+    LANDMARK_ROI_SCALE,
+    LANDMARK_ROI_SHIFT_X,
+    LANDMARK_ROI_SHIFT_Y,
+    PALM_ROI_SCALE,
+    PALM_ROI_SHIFT_X,
+    PALM_ROI_SHIFT_Y,
+    PALM_TO_LANDMARK_INDEX_MAP,
+)
 from src.model_pipeline.results.model_results import PalmDetection, ROI
 from src.model_pipeline.postprocessing.palm_visualization import model_to_original_point
 
@@ -30,12 +41,8 @@ def pd_box_to_roi(
     rotation = np.pi * 0.5 - np.arctan2(-(kp2_y - kp0_y), kp2_x - kp0_x)
     rotation = _normalize_angle(rotation)
 
-    shift_x = 0.0
-    shift_y = -0.5
-    roi_scale = 2.6
-
     roi = ROI(cx=cx, cy=cy, w=w, h=h, rotation=rotation)
-    _roi_shift_and_scale(roi, shift_x, shift_y, roi_scale, roi_scale)
+    _roi_shift_and_scale(roi, PALM_ROI_SHIFT_X, PALM_ROI_SHIFT_Y, PALM_ROI_SCALE, PALM_ROI_SCALE)
 
     return roi
 
@@ -57,7 +64,7 @@ def decode_landmark(
 def landmarks_to_roi(
     decoded_landmarks: np.ndarray,
 ) -> tuple[ROI, PalmDetection]:
-    indices = np.array([0, 1, 2, 3, 5, 6, 9, 10, 13, 14, 17, 18])
+    indices = np.array(LANDMARK_BBOX_INDICES)
     selected = decoded_landmarks[indices]
     min_xy = selected.min(axis=0)
     max_xy = selected.max(axis=0)
@@ -71,7 +78,7 @@ def landmarks_to_roi(
     rotation = np.pi * 0.5 - np.arctan2(-(y9 - y0), x9 - x0)
     rotation = _normalize_angle(rotation)
 
-    pd_to_ld_idx = [0, 5, 9, 13, 17, 1, 2]
+    pd_to_ld_idx = np.array(PALM_TO_LANDMARK_INDEX_MAP)
     keypoints = decoded_landmarks[pd_to_ld_idx]
 
     box = np.array([
@@ -81,17 +88,13 @@ def landmarks_to_roi(
 
     palm_box = PalmDetection(
         index=0,
-        score=1.0,
+        score=LANDMARK_BOX_SCORE,
         box=box,
         keypoints=keypoints,
     )
 
-    shift_x = 0.0
-    shift_y = -0.1
-    track_scale = 2.0
-
     roi = ROI(cx=cx, cy=cy, w=w, h=h, rotation=rotation)
-    _roi_shift_and_scale(roi, shift_x, shift_y, track_scale, track_scale)
+    _roi_shift_and_scale(roi, LANDMARK_ROI_SHIFT_X, LANDMARK_ROI_SHIFT_Y, LANDMARK_ROI_SCALE, LANDMARK_ROI_SCALE)
 
     return roi, palm_box
 

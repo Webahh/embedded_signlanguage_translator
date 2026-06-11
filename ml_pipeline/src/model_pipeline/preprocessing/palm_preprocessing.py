@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-from src.model_pipeline.core.config import MODEL_SIZE
+from src.model_pipeline.core.config import IMAGE_NORMALIZE_DIVISOR, MODEL_SIZE
 
 
 def prepare_input(
@@ -30,7 +30,7 @@ def prepare_input(
     )
 
     rgb = cv.cvtColor(padded, cv.COLOR_BGR2RGB)
-    normalized = rgb.astype(np.float32) / 255.0
+    normalized = rgb.astype(np.float32) / IMAGE_NORMALIZE_DIVISOR
     input_tensor = np.expand_dims(normalized, axis=0)
 
     return input_tensor, scale, pad_left, pad_top

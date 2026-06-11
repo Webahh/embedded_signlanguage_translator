@@ -1,6 +1,8 @@
 import cv2 as cv
 
 from src.model_pipeline.core.config import (
+    CAMERA_FRAME_HEIGHT,
+    CAMERA_FRAME_WIDTH,
     CAMERA_INDEX,
     PALM_MODEL_PATH,
 )
@@ -25,12 +27,12 @@ def run_live_inference() -> None:
 
     camera.set(
         cv.CAP_PROP_FRAME_WIDTH,
-        1280,
+        CAMERA_FRAME_WIDTH,
     )
 
     camera.set(
         cv.CAP_PROP_FRAME_HEIGHT,
-        720,
+        CAMERA_FRAME_HEIGHT,
     )
 
     if not camera.isOpened():

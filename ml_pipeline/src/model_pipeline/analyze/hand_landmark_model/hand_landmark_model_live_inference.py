@@ -2,17 +2,20 @@ import cv2 as cv
 import numpy as np
 
 from src.model_pipeline.core.config import (
+    CAMERA_FRAME_HEIGHT,
+    CAMERA_FRAME_WIDTH,
     CAMERA_INDEX,
+    CENTER_ROI_DEFAULT_SCALE,
+    HANDEDNESS_THRESHOLD,
+    HAND_LANDMARK_HEIGHT,
     HAND_LANDMARK_MODEL_PATH,
+    HAND_LANDMARK_WIDTH,
+    NUM_LANDMARKS,
+    PRESENCE_THRESHOLD,
 )
 from src.model_pipeline.runtime.interpreter import (
     load_model,
 )
-
-MODEL_WIDTH = 224
-MODEL_HEIGHT = 224
-
-PRESENCE_THRESHOLD = 0.5
 
 HAND_CONNECTIONS = [
     (0, 1),
@@ -51,8 +54,8 @@ def prepare_input(
     resized = cv.resize(
         image,
         (
-            MODEL_WIDTH,
-            MODEL_HEIGHT,
+            HAND_LANDMARK_WIDTH,
+            HAND_LANDMARK_HEIGHT,
         ),
     )
 
@@ -71,7 +74,7 @@ def prepare_input(
 
 def create_center_roi(
         frame: np.ndarray,
-        scale: float = 0.7,
+        scale: float = CENTER_ROI_DEFAULT_SCALE,
 ) -> tuple[np.ndarray, tuple[int, int, int, int]]:
     frame_height, frame_width = frame.shape[:2]
 
@@ -112,13 +115,13 @@ def roi_landmarks_to_frame_points(
     for landmark in landmarks:
         x = int(
             roi_x
-            + landmark[0] / MODEL_WIDTH
+            + landmark[0] / HAND_LANDMARK_WIDTH
             * roi_width
         )
 
         y = int(
             roi_y
-            + landmark[1] / MODEL_HEIGHT
+            + landmark[1] / HAND_LANDMARK_HEIGHT
             * roi_height
         )
 
@@ -166,7 +169,7 @@ def draw_landmarks(
 def determine_hand(
         handedness_score: float,
 ) -> str:
-    if handedness_score >= 0.5:
+    if handedness_score >= HANDEDNESS_THRESHOLD:
         return "Right"
 
     return "Left"
@@ -192,12 +195,12 @@ def run_live_inference() -> None:
 
     camera.set(
         cv.CAP_PROP_FRAME_WIDTH,
-        1280,
+        CAMERA_FRAME_WIDTH,
     )
 
     camera.set(
         cv.CAP_PROP_FRAME_HEIGHT,
-        720,
+        CAMERA_FRAME_HEIGHT,
     )
 
     if not camera.isOpened():
@@ -253,7 +256,7 @@ def run_live_inference() -> None:
                 output_details[
                     "Identity:0"
                 ]["index"]
-            ).reshape(21, 3)
+            ).reshape(NUM_LANDMARKS, 3)
 
             cv.rectangle(
                 frame,

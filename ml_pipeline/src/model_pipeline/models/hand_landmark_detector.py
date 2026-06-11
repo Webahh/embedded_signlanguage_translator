@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 
+from src.model_pipeline.core.config import DEFAULT_HANDEDNESS, NUM_LANDMARKS
 from src.model_pipeline.results.model_results import ROI
 from src.model_pipeline.runtime.interpreter import load_model
 
@@ -33,7 +34,7 @@ class HandLandmarkDetector:
     ) -> tuple[np.ndarray, float, float]:
         cropped = self._crop_roi(frame, roi)
         if cropped is None:
-            return None, 0.0, 0.5
+            return None, 0.0, DEFAULT_HANDEDNESS
 
         input_tensor = self._prepare_input(cropped)
         self._interpreter.set_tensor(self._input_details["index"], input_tensor)
@@ -52,14 +53,14 @@ class HandLandmarkDetector:
                 )[0, 0]
             )
         except KeyError:
-            handedness = 0.5
+            handedness = DEFAULT_HANDEDNESS
 
         raw_landmarks = self._interpreter.get_tensor(
             self._output_details["Identity:0"]["index"]
-        ).reshape(21, 3)
+        ).reshape(NUM_LANDMARKS, 3)
 
-        landmarks = np.empty((21, 2), dtype=np.float32)
-        for i in range(21):
+        landmarks = np.empty((NUM_LANDMARKS, 2), dtype=np.float32)
+        for i in range(NUM_LANDMARKS):
             landmarks[i, 0] = raw_landmarks[i, 0] / self._input_width
             landmarks[i, 1] = raw_landmarks[i, 1] / self._input_width
 

@@ -7,7 +7,11 @@ from src.model_pipeline.runtime.interpreter import load_model
 from src.model_pipeline.core.config import (
     IOU_THRESHOLD,
     MODEL_SIZE,
+    NUM_PALM_KEYPOINTS,
+    PALM_KEYPOINT_OFFSET,
     SCORE_THRESHOLD,
+    SIGMOID_CLIP_MAX,
+    SIGMOID_CLIP_MIN,
 )
 
 
@@ -44,7 +48,7 @@ class PalmDetector:
 
     @staticmethod
     def _sigmoid(values: np.ndarray) -> np.ndarray:
-        values = np.clip(values, -100.0, 100.0)
+        values = np.clip(values, SIGMOID_CLIP_MIN, SIGMOID_CLIP_MAX)
         return 1.0 / (1.0 + np.exp(-values))
 
     @staticmethod
@@ -63,9 +67,9 @@ class PalmDetector:
             center_y + height / 2.0,
         ], dtype=np.float32)
 
-        keypoints = np.empty((7, 2), dtype=np.float32)
-        for keypoint_index in range(7):
-            offset = 4 + keypoint_index * 2
+        keypoints = np.empty((NUM_PALM_KEYPOINTS, 2), dtype=np.float32)
+        for keypoint_index in range(NUM_PALM_KEYPOINTS):
+            offset = PALM_KEYPOINT_OFFSET + keypoint_index * 2
             keypoints[keypoint_index, 0] = raw[offset] / MODEL_SIZE + anchor_x
             keypoints[keypoint_index, 1] = raw[offset + 1] / MODEL_SIZE + anchor_y
 
