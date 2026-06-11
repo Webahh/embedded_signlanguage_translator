@@ -32,16 +32,15 @@ def run_live_inference() -> None:
                 frame, hand_landmark_detector=hand_landmark,
             )
 
-            prefix = "ROI" if palm_detector.is_tracking else "PD"
             for detection in detections:
                 draw_detection(frame, detection, scale, pad_left, pad_top)
 
-            if palm_detector.last_landmarks is not None:
-                lm = palm_detector.last_landmarks
+            for lm in palm_detector.last_landmarks:
                 points = [(int(lm[i, 0]), int(lm[i, 1])) for i in range(lm.shape[0])]
                 HandLandmarkDetector.draw_landmarks(frame, points)
 
-            status = "TRACKING" if palm_detector.is_tracking else "DETECTING"
+            active = palm_detector.active_count()
+            status = f"TRACKING ({active})" if palm_detector.is_tracking else "DETECTING"
             cv.putText(
                 frame,
                 f"Mode: {status}  Palms: {len(detections)}",
