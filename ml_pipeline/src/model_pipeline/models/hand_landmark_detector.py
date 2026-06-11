@@ -30,10 +30,10 @@ class HandLandmarkDetector:
         self,
         frame: np.ndarray,
         roi: ROI,
-    ) -> tuple[np.ndarray, float]:
+    ) -> tuple[np.ndarray, float, float]:
         cropped = self._crop_roi(frame, roi)
         if cropped is None:
-            return None, 0.0
+            return None, 0.0, 0.5
 
         input_tensor = self._prepare_input(cropped)
         self._interpreter.set_tensor(self._input_details["index"], input_tensor)
@@ -45,6 +45,15 @@ class HandLandmarkDetector:
             )[0, 0]
         )
 
+        try:
+            handedness = float(
+                self._interpreter.get_tensor(
+                    self._output_details["Identity_2:0"]["index"]
+                )[0, 0]
+            )
+        except KeyError:
+            handedness = 0.5
+
         raw_landmarks = self._interpreter.get_tensor(
             self._output_details["Identity:0"]["index"]
         ).reshape(21, 3)
@@ -54,7 +63,7 @@ class HandLandmarkDetector:
             landmarks[i, 0] = raw_landmarks[i, 0] / self._input_width
             landmarks[i, 1] = raw_landmarks[i, 1] / self._input_width
 
-        return landmarks, presence_score
+        return landmarks, presence_score, handedness
 
     def _crop_roi(
         self,

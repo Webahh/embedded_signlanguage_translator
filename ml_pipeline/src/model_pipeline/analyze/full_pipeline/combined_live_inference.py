@@ -28,8 +28,8 @@ def run_live_inference() -> None:
 
             detections, scale, pad_left, pad_top = tracker.step(frame)
 
-            for detection in detections:
-                draw_detection(frame, detection, scale, pad_left, pad_top)
+            for detection, label in zip(detections, tracker.last_handedness):
+                draw_detection(frame, detection, scale, pad_left, pad_top, label=label)
 
             for lm in tracker.last_landmarks:
                 points = [(int(lm[i, 0]), int(lm[i, 1])) for i in range(lm.shape[0])]

@@ -27,6 +27,7 @@ def draw_detection(
         scale: float,
         pad_left: int,
         pad_top: int,
+        label: str = "",
 ) -> None:
     x1, y1 = model_to_original_point(
         detection.box[0],
@@ -45,9 +46,10 @@ def draw_detection(
     )
 
     cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2, )
+    label_text = f"{detection.score:.3f}" if not label else f"{label} {detection.score:.3f}"
     cv.putText(
         frame,
-        f"{detection.score:.3f}",
+        label_text,
         (x1, max(20, y1 - 10)),
         cv.FONT_HERSHEY_SIMPLEX,
         0.6,
