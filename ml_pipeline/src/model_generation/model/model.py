@@ -37,9 +37,11 @@ class TrainingData:
 def generate_training_data(path=os.path.join(PROJECT_ROOT, "resources/gestures")) -> TrainingData:
     training_data = load_training_data(path)
 
-    # Collect unique labels in alphabetical order so that
-    # A=0, B=1, C=2, ... regardless of file-scan order.
-    unique_labels = sorted({label for label, _ in training_data})
+    # Order: NONE=0, then A..Z alphabetically, then SCH=last
+    unique_labels = sorted(
+        {label for label, _ in training_data},
+        key=lambda lbl: (2, lbl) if lbl == "SCH" else (0, "") if lbl == "NONE" else (1, lbl),
+    )
 
     labels = {}
     labels_inv = {}

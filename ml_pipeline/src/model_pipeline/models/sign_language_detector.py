@@ -96,6 +96,7 @@ class SignLanguageDetector:
 
         for landmarks_pixel, handedness in hands:
             lm_01 = self._normalize_to_image(landmarks_pixel, image_width, image_height)
+            lm_01[:, 0] = 1.0 - lm_01[:, 0]
             rel, wrist = self._to_wrist_relative_int16(lm_01)
             if handedness < 0.5:
                 left_rel, left_wrist = rel, wrist
