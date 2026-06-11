@@ -30,11 +30,60 @@ def letterbox(image: np.ndarray, ) -> tuple[np.ndarray, float, int, int]:
     return output, scale, pad_left, pad_top
 
 
-def prepare_input(image: np.ndarray, ) -> tuple[np.ndarray, float, int, int]:
-    image, scale, pad_left, pad_top = letterbox(image)
-    image = cv.cvtColor(image, cv.COLOR_BGR2RGB, )
-    tensor = image.astype(np.float32) / 255.0
+def prepare_input(
+    image: np.ndarray,
+) -> tuple[np.ndarray, float, int, int]:
+    image_height, image_width = image.shape[:2]
 
-    tensor = np.expand_dims(tensor, axis=0, )
+    output_width = MODEL_SIZE
 
-    return tensor, scale, pad_left, pad_top
+    output_height = int(
+        MODEL_SIZE * image_height / image_width
+    )
+
+    if output_height > MODEL_SIZE:
+        output_height = MODEL_SIZE
+
+    resized = cv.resize(
+        image,
+        (
+            output_width,
+            output_height,
+        ),
+    )
+
+    rgb = cv.cvtColor(
+        resized,
+        cv.COLOR_BGR2RGB,
+    )
+
+    canvas = np.zeros(
+        (
+            MODEL_SIZE,
+            MODEL_SIZE,
+            3,
+        ),
+        dtype=np.float32,
+    )
+
+    canvas[
+        0:output_height,
+        0:output_width,
+    ] = rgb.astype(np.float32) / 255.0
+
+    input_tensor = np.expand_dims(
+        canvas,
+        axis=0,
+    )
+
+    scale = output_width / image_width
+
+    pad_left = 0
+    pad_top = 0
+
+    return (
+        input_tensor,
+        scale,
+        pad_left,
+        pad_top,
+    )

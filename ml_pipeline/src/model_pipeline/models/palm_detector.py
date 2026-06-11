@@ -144,3 +144,50 @@ class PalmDetector:
             ]
 
         return selected
+
+    def debug_best_detection(
+            self,
+            image: np.ndarray,
+    ) -> tuple[PalmDetection, float, int, int]:
+        (
+            input_tensor,
+            scale,
+            pad_left,
+            pad_top,
+        ) = prepare_input(image)
+
+        self._interpreter.set_tensor(
+            self._input_details["index"],
+            input_tensor,
+        )
+
+        self._interpreter.invoke()
+
+        raw_scores = self._interpreter.get_tensor(
+            self._output_details[0]["index"]
+        )[0, :, 0]
+
+        raw_boxes = self._interpreter.get_tensor(
+            self._output_details[1]["index"]
+        )[0]
+
+        probabilities = self._sigmoid(
+            raw_scores
+        )
+
+        best_index = int(
+            np.argmax(probabilities)
+        )
+
+        best_detection = self._decode_detection(
+            index=best_index,
+            score=float(probabilities[best_index]),
+            raw=raw_boxes[best_index],
+        )
+
+        return (
+            best_detection,
+            scale,
+            pad_left,
+            pad_top,
+        )
