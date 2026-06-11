@@ -37,20 +37,22 @@ class TrainingData:
 def generate_training_data(path=os.path.join(PROJECT_ROOT, "resources/gestures")) -> TrainingData:
     training_data = load_training_data(path)
 
-    training_labels = []
-    training_inputs = []
+    # Collect unique labels in alphabetical order so that
+    # A=0, B=1, C=2, ... regardless of file-scan order.
+    unique_labels = sorted({label for label, _ in training_data})
+
     labels = {}
     labels_inv = {}
-    label_count = 0
+
+    for label_count, label in enumerate(unique_labels):
+        print(f"Added Label '{label}' with id {label_count}")
+        labels[label] = label_count
+        labels_inv[label_count] = label
+
+    training_labels = []
+    training_inputs = []
 
     for label, inputs in training_data:
-        # Build a dictionary over all labels
-        if label not in labels:
-            print(f"Added Label '{label}' with id {label_count}")
-            labels[label] = label_count
-            labels_inv[label_count] = label
-            label_count += 1
-
         print(f"Adding data to label '{label}' with id {labels[label]}")
 
         # Populate training data
@@ -78,7 +80,7 @@ def generate_training_data(path=os.path.join(PROJECT_ROOT, "resources/gestures")
         training_inputs[[p1, p2]] = training_inputs[[p2, p1]]
 
     return TrainingData(
-        label_count, labels, labels_inv, training_labels, training_inputs
+        len(unique_labels), labels, labels_inv, training_labels, training_inputs
     )
 
 
