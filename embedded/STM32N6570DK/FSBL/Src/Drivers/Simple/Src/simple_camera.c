@@ -1,12 +1,14 @@
 /**
- * @file    simple_camera.c
- * @brief   Top-level camera subsystem.
- *
- *          Call sequence:
- *            CAM_HwInit()   -- one-time board-level power/I2C setup
- *            CAM_Init()     -- DCMIPP pipes + sensor registers
- *            CAM_DisplayPipe_Start() / CAM_NNPipe_Start()
- */
+  ******************************************************************************
+  * @file    simple_camera.c
+  * @author  Groß
+  * @brief   Top-level camera subsystem
+  *
+  *          Call sequence:
+  *            CAM_Init()     -- DCMIPP pipes + sensor registers
+  *            CAM_DisplayPipe_Start() / CAM_NNPipe_Start()
+  ******************************************************************************
+  */
 
 #include <stddef.h>
 #include "simple_camera.h"
@@ -19,17 +21,19 @@
 #include "simple_timer.h"
 #include "config.h"
 
+/* ---------------------------------------------------------------------------
+ * Board-level hardware initialisation
+ * ------------------------------------------------------------------------- */
+
 /**
- * @brief  Board-level hardware initialisation for the camera
- *
- *         Performed once at the start of CAM_Init():
- *           - Enable PWR clock and mark VDDIO4 supply valid (GPIOH I/Os)
- *           - Assert/de-assert camera regulator (PC8) and reset (PD2)
- *           - Configure I2C1 pins (PH9=SCL, PC1=SDA) as AF4 open-drain
- *           - Initialise I2C1 at 400 kHz (TIMINGR = 0x00602E4B)
- *
- * @note   `delay_ms()` must be usable (delay_init() called from main)
- */
+  * @brief  Board-level hardware initialisation for the camera subsystem
+  *         Performed once at the start of CAM_Init():
+  *           - Enable PWR clock and mark VDDIO4 supply valid (GPIOH I/Os)
+  *           - Assert/de-assert camera regulator (PC8) and reset (PD2)
+  *           - Configure I2C1 pins (PH9=SCL, PC1=SDA) as AF4 open-drain
+  *           - Initialise I2C1 at 400 kHz
+  * @note   delay_ms() must be usable (delay_init() called from main)
+  */
 static void CAM_HwInit(void)
 {
     RCC_enable_PWR();
@@ -83,14 +87,14 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
 
     CSI_Init();
 
-    csi_conf.num_lanes        = CSI_TWO_DATA_LANES;
+    csi_conf.num_lanes         = CSI_TWO_DATA_LANES;
     csi_conf.data_lane_mapping = CSI_DATA_LANES_PHYSICAL;
     csi_conf.phy_bitrate       = CSI_PHY_BT_1600;
-    csi_conf.vc                = CSI_VIRTUAL_CHANNEL0;
+    csi_conf.virtual_channel                = CSI_VIRTUAL_CHANNEL0;
     csi_conf.dt_format         = CSI_DT_BPP10;
     csi_conf.data_type         = 0x2B;
     CSI_Config(&csi_conf);
-    CSI_SetVCConfig(csi_conf.vc, csi_conf.dt_format);
+    CSI_SetVirtualChannelConfig(csi_conf.virtual_channel, csi_conf.dt_format);
 
     /* ------ DCMIPP ------ */
 
@@ -101,39 +105,39 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     DCMIPP_CSI_Pipe_Config(CAM_PIPE_DISPLAY, csi_conf.data_type);
     DCMIPP_CSI_Pipe_Config(CAM_PIPE_NN, csi_conf.data_type);
 
-    /* Enable VC — starts data flow after pipe config is complete */
-    CSI_StartVC(csi_conf.vc);
+    /* Enable VC - starts data flow after pipe config is complete */
+    CSI_StartVirtualChannel(csi_conf.virtual_channel);
 
     /* ------ Display pipe: 800 x 480 RGB888 ------ */
     /* IMX335 outputs 2592x1944 RAW10; crop full frame then downscale to 800x480 */
 
-    pipe_conf.output_width  = CAM_DISPLAY_WIDTH;
-    pipe_conf.output_height = CAM_DISPLAY_HEIGHT;
-    pipe_conf.output_format = DCMIPP_PP_FORMAT_RGB888;
-    pipe_conf.output_bpp    = 3;
-    pipe_conf.enable_crop   = 1;
-    pipe_conf.crop_x        = 0;
-    pipe_conf.crop_y        = (CAM_SENSOR_HEIGHT - (CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH) + 1) / 2;
-    pipe_conf.crop_width    = CAM_SENSOR_WIDTH;
-    pipe_conf.crop_height   = CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH;
+    pipe_conf.output_width   = CAM_DISPLAY_WIDTH;
+    pipe_conf.output_height  = CAM_DISPLAY_HEIGHT;
+    pipe_conf.output_format  = DCMIPP_PP_FORMAT_RGB888;
+    pipe_conf.output_bpp     = 3;
+    pipe_conf.enable_crop    = 1;
+    pipe_conf.crop_x         = 0;
+    pipe_conf.crop_y         = (CAM_SENSOR_HEIGHT - (CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH) + 1) / 2;
+    pipe_conf.crop_width     = CAM_SENSOR_WIDTH;
+    pipe_conf.crop_height    = CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH;
     pipe_conf.enable_downsize = 1;
-    pipe_conf.enable_swap   = 0;
+    pipe_conf.enable_swap    = 0;
     DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf, (uint32_t *)&h->display_pitch);
 
     /* ------ NN pipe: 192 x 144 RGB888 (downscaled) ------ */
     /* Crop full sensor frame then downscale to NN input size */
 
-    pipe_conf.output_width  = CAM_NN_WIDTH;
-    pipe_conf.output_height = CAM_NN_HEIGHT;
-    pipe_conf.output_format = DCMIPP_PP_FORMAT_RGB888;
-    pipe_conf.output_bpp    = 3;
-    pipe_conf.enable_crop   = 1;
-    pipe_conf.crop_x        = 0;
-    pipe_conf.crop_y        = 0;
-    pipe_conf.crop_width    = CAM_SENSOR_WIDTH;
-    pipe_conf.crop_height   = CAM_SENSOR_HEIGHT;
+    pipe_conf.output_width   = CAM_NN_WIDTH;
+    pipe_conf.output_height  = CAM_NN_HEIGHT;
+    pipe_conf.output_format  = DCMIPP_PP_FORMAT_RGB888;
+    pipe_conf.output_bpp     = 3;
+    pipe_conf.enable_crop    = 1;
+    pipe_conf.crop_x         = 0;
+    pipe_conf.crop_y         = 0;
+    pipe_conf.crop_width     = CAM_SENSOR_WIDTH;
+    pipe_conf.crop_height    = CAM_SENSOR_HEIGHT;
     pipe_conf.enable_downsize = 1;
-    pipe_conf.enable_swap   = 0;
+    pipe_conf.enable_swap    = 0;
     DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
 
     /* ------ Statistics window (Pipe1) ------ */
@@ -144,7 +148,8 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
                     | DCMIPP_P1STSZR_CROPEN;
 
     /* ------ IPPlug (DMA bus arbiter) ------ */
-    /* IPC2 => CLIENT2 (NN):  R1=0x4  R2=0xf0000   R3=0x22f0000  */
+
+    /* IPC2 => CLIENT2 (NN):  R1=0x4  R2=0xf0000   R3=0x22f0000 */
     ipplug_conf.client_id     = DCMIPP_CLIENT2;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
     ipplug_conf.outstanding   = 0x0;
@@ -153,7 +158,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     ipplug_conf.dpreg_end     = 0x22F;
     DCMIPP_IPPlug_Config(&ipplug_conf);
 
-    /* IPC5 => CLIENT4:        R1=0x024  R2=0x0   R3=0x27f0230  */
+    /* IPC5 => CLIENT4:        R1=0x024  R2=0x0   R3=0x27f0230 */
     ipplug_conf.client_id     = CAM_CLIENT_DISPLAY;
     ipplug_conf.traffic       = DCMIPP_TRAFFIC_128B;
     ipplug_conf.outstanding   = 0x0;
@@ -175,20 +180,22 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0x0, 0x0, 0x0);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
-    /* ------ Reduce spurious line events (reference workaround) ------ */
-
+    /* Reduce spurious line events (reference workaround) */
     DCMIPP_ReduceSpurious();
 
     /* ------ Sensor init ------ */
 
-    if (IMX335_Init(&h->imx335))
+    if (IMX335_Init(&h->imx335)) {
         return CAM_ERROR_INIT;
+    }
 
-    if (IMX335_SetHMax(&h->imx335, 20000))
+    if (IMX335_SetHMax(&h->imx335, 20000)) {
         return CAM_ERROR;
+    }
 
-    if (IMX335_EnableAutoExposure(&h->imx335))
+    if (IMX335_EnableAutoExposure(&h->imx335)) {
         return CAM_ERROR;
+    }
 
     h->initialized = 1;
     return CAM_OK;
@@ -215,5 +222,3 @@ CAM_Status CAM_NNPipe_Start(CAM_Handle *h)
     DCMIPP_Pipe_Start(CAM_PIPE_NN, h->nn_buf, 0);
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }
-
-

@@ -1,9 +1,22 @@
+/**
+  ******************************************************************************
+  * @file    simple_csi.c
+  * @author  Groß
+  * @brief   Register-level CSI-2 host controller driver
+  ******************************************************************************
+  */
+
 #include <stddef.h>
 #include "simple_csi.h"
 #include "simple_rcc.h"
 
 static CSI_TypeDef *csi = CSI;
 
+/**
+  * @brief  CSI PHY frequency range look-up table (indexed by phy_bitrate)
+  *         Each entry maps a bitrate index to its associated HS-FreqRange
+  *         register value and target oscillator frequency (MHz * 10)
+  */
 static const struct {
     uint32_t hsfreqrange;
     uint32_t osc_freq_target;
@@ -26,6 +39,16 @@ static const struct {
     {0x47, 442}, {0x48, 451}, {0x49, 460},
 };
 
+/* ---------------------------------------------------------------------------
+ * Low-level helpers
+ * ------------------------------------------------------------------------- */
+
+/**
+  * @brief  Write a MIPI CSI-2 PHY test code register
+  * @param  reg_msb  Register address MSB
+  * @param  reg_lsb  Register address LSB
+  * @param  val      Value to write
+  */
 static void CSI_WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
 {
     csi->PTCR1 |= CSI_PTCR1_TWM;
@@ -45,6 +68,10 @@ static void CSI_WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
     csi->PTCR0 |= CSI_PTCR0_TCKEN;
     csi->PTCR0 = 0;
 }
+
+/* ---------------------------------------------------------------------------
+ * API
+ * ------------------------------------------------------------------------- */
 
 void CSI_Init(void)
 {
@@ -74,10 +101,10 @@ void CSI_Config(CSI_Conf *conf)
     hsfreqrange = csi_phy_freqs[phy_idx].hsfreqrange;
     osc_target = csi_phy_freqs[phy_idx].osc_freq_target;
 
-    /* 2. Release CSI PHY from reset */
+    /* Release CSI PHY from reset */
     csi->PRCR |= CSI_PRCR_PEN;
 
-    /* 3. Configure PHY frequency - DLD=1 for RX mode (Synopsys convention: 1=RX, 0=TX) */
+    /* Configure PHY frequency - DLD=1 for RX mode (Synopsys: 1=RX, 0=TX) */
     csi->PFCR = CSI_PFCR_DLD
               | (hsfreqrange << CSI_PFCR_HSFR_Pos)
               | (0x28U << CSI_PFCR_CCFR_Pos);
@@ -91,16 +118,16 @@ void CSI_Config(CSI_Conf *conf)
     CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target >> 8));
     CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target & 0xFF));
 
-    /* 4. Configure lane merger while CSI disabled and sensor not streaming */
+    /* Configure lane merger while CSI disabled and sensor not streaming */
     csi->CR &= ~CSI_CR_CSIEN;
 
     csi->LMCFGR = conf->num_lanes
                 | (CSI_DATA_LANE0 << CSI_LMCFGR_DL0MAP_Pos)
                 | (CSI_DATA_LANE1 << CSI_LMCFGR_DL1MAP_Pos);
 
-    /* 5. Configure VC/data type filtering (caller does CSI_SetVCConfig) */
+    /* VC/data type filtering is configured via CSI_SetVCConfig() */
 
-    /* 6. Enable CSI host */
+    /* Enable CSI host */
     csi->CR |= CSI_CR_CSIEN;
 
     csi->IER0 = CSI_IER0_CCFIFOFIE
@@ -125,16 +152,18 @@ void CSI_Config(CSI_Conf *conf)
                   | CSI_IER1_ECTRLDL1IE;
     }
 
-    /* 7. Enable lanes */
-    if (conf->num_lanes == CSI_ONE_DATA_LANE)
+    /* Enable lanes */
+    if (conf->num_lanes == CSI_ONE_DATA_LANE) {
         csi->PCR = CSI_PCR_DL0EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
-    else
+    }
+    else {
         csi->PCR = CSI_PCR_DL0EN | CSI_PCR_DL1EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
+    }
 
     csi->PMCR = 0;
 }
 
-void CSI_SetVCConfig(uint32_t vc, uint32_t dt_format)
+void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format)
 {
     uint32_t cfg = (dt_format << CSI_VC0CFGR1_CDTFT_Pos) | CSI_VC0CFGR1_ALLDT;
 
@@ -148,7 +177,7 @@ void CSI_SetVCConfig(uint32_t vc, uint32_t dt_format)
         csi->VC3CFGR1 = cfg;
 }
 
-uint32_t CSI_StartVC(uint32_t vc)
+uint32_t CSI_StartVirtualChannel(uint32_t vc)
 {
     uint32_t mask;
 

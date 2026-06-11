@@ -1,3 +1,12 @@
+/**
+  ******************************************************************************
+  * @file    simple_dcmipp.c
+  * @author  Groß
+  * @brief   Register-level DCMIPP + CSI-2 driver for STM32N6
+  *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
+  ******************************************************************************
+  */
+
 #include <stddef.h>
 #include "simple_dcmipp.h"
 #include "simple_rcc.h"
@@ -14,13 +23,12 @@ void DCMIPP_Init(void)
     dcmipp->CMFCR = 0xFFFFFFFFU;
 
     dcmipp->CMIER = DCMIPP_CMIER_ATXERRIE
-    			  | DCMIPP_CMIER_P1FRAMEIE
-				  | DCMIPP_CMIER_P1VSYNCIE
-				  | DCMIPP_CMIER_P1OVRIE
-    			  | DCMIPP_CMIER_P2FRAMEIE
-				  | DCMIPP_CMIER_P2VSYNCIE
-				  | DCMIPP_CMIER_P2OVRIE
-				  ;
+                  | DCMIPP_CMIER_P1FRAMEIE
+                  | DCMIPP_CMIER_P1VSYNCIE
+                  | DCMIPP_CMIER_P1OVRIE
+                  | DCMIPP_CMIER_P2FRAMEIE
+                  | DCMIPP_CMIER_P2VSYNCIE
+                  | DCMIPP_CMIER_P2OVRIE;
 
     NVIC_SetPriority(DCMIPP_IRQn, 7);
     NVIC_EnableIRQ(DCMIPP_IRQn);
@@ -67,103 +75,70 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
 {
     uint32_t pitch;
     DCMIPP_Pipe_Conf zero_conf = {0};
+    volatile uint32_t *crstr, *crszr, *dsrtior, *dsszr, *dscr, *gmcr, *ppcr, *ppm0pr, *fctcr;
 
     if (!conf) conf = &zero_conf;
 
-    pitch = conf->output_width * conf->output_bpp;
-    pitch = DCMIPP_AlignPitch(pitch);
+    pitch = DCMIPP_AlignPitch(conf->output_width * conf->output_bpp);
 
     if (pipe == DCMIPP_PIPE1) {
-        if (conf->enable_crop && conf->crop_width && conf->crop_height) {
-            dcmipp->P1CRSTR = (conf->crop_x << DCMIPP_P1CRSTR_HSTART_Pos)
-                            | (conf->crop_y << DCMIPP_P1CRSTR_VSTART_Pos);
-            dcmipp->P1CRSZR = (conf->crop_width << DCMIPP_P1CRSZR_HSIZE_Pos)
-                            | (conf->crop_height << DCMIPP_P1CRSZR_VSIZE_Pos)
-                            | DCMIPP_P1CRSZR_ENABLE;
+        crstr   = &dcmipp->P1CRSTR;   crszr   = &dcmipp->P1CRSZR;
+        dsrtior = &dcmipp->P1DSRTIOR; dsszr   = &dcmipp->P1DSSZR;
+        dscr    = &dcmipp->P1DSCR;    gmcr    = &dcmipp->P1GMCR;
+        ppcr    = &dcmipp->P1PPCR;    ppm0pr  = &dcmipp->P1PPM0PR;
+        fctcr   = &dcmipp->P1FCTCR;
+    } else {
+        crstr   = &dcmipp->P2CRSTR;   crszr   = &dcmipp->P2CRSZR;
+        dsrtior = &dcmipp->P2DSRTIOR; dsszr   = &dcmipp->P2DSSZR;
+        dscr    = &dcmipp->P2DSCR;    gmcr    = &dcmipp->P2GMCR;
+        ppcr    = &dcmipp->P2PPCR;    ppm0pr  = &dcmipp->P2PPM0PR;
+        fctcr   = &dcmipp->P2FCTCR;
+    }
+
+    if (conf->enable_crop && conf->crop_width && conf->crop_height) {
+        *crstr = (conf->crop_x << DCMIPP_P1CRSTR_HSTART_Pos)
+               | (conf->crop_y << DCMIPP_P1CRSTR_VSTART_Pos);
+        *crszr = (conf->crop_width << DCMIPP_P1CRSZR_HSIZE_Pos)
+               | (conf->crop_height << DCMIPP_P1CRSZR_VSIZE_Pos)
+               | DCMIPP_P1CRSZR_ENABLE;
+    } else {
+        *crszr &= ~DCMIPP_P1CRSZR_ENABLE;
+    }
+
+    if (conf->enable_downsize && conf->output_width && conf->output_height) {
+        uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
+        uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
+        if (in_w > conf->output_width || in_h > conf->output_height) {
+            uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
+            uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
+            *dsrtior = (hratio << DCMIPP_P1DSRTIOR_HRATIO_Pos)
+                     | (vratio << DCMIPP_P1DSRTIOR_VRATIO_Pos);
+            *dsszr = (conf->output_width << DCMIPP_P1DSSZR_HSIZE_Pos)
+                   | (conf->output_height << DCMIPP_P1DSSZR_VSIZE_Pos);
+            *dscr = ((1024UL * 8192UL - 1UL) / hratio << DCMIPP_P1DSCR_HDIV_Pos)
+                  | ((1024UL * 8192UL - 1UL) / vratio << DCMIPP_P1DSCR_VDIV_Pos)
+                  | DCMIPP_P1DSCR_ENABLE;
         } else {
-            dcmipp->P1CRSZR &= ~DCMIPP_P1CRSZR_ENABLE;
+            *dscr &= ~DCMIPP_P1DSCR_ENABLE;
         }
+    } else {
+        *dscr &= ~DCMIPP_P1DSCR_ENABLE;
+    }
 
-//        dcmipp->P1DECR |= DCMIPP_P1DECR_ENABLE;
-
-        if (conf->enable_downsize && conf->output_width && conf->output_height) {
-            uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
-            uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
-            if (in_w > conf->output_width || in_h > conf->output_height) {
-                uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
-                uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
-                uint32_t hdiv = (1024UL * 8192UL - 1UL) / hratio;
-                uint32_t vdiv = (1024UL * 8192UL - 1UL) / vratio;
-                dcmipp->P1DSRTIOR = (hratio << DCMIPP_P1DSRTIOR_HRATIO_Pos)
-                                  | (vratio << DCMIPP_P1DSRTIOR_VRATIO_Pos);
-                dcmipp->P1DSSZR = (conf->output_width << DCMIPP_P1DSSZR_HSIZE_Pos)
-                                | (conf->output_height << DCMIPP_P1DSSZR_VSIZE_Pos);
-                dcmipp->P1DSCR = (hdiv << DCMIPP_P1DSCR_HDIV_Pos)
-                               | (vdiv << DCMIPP_P1DSCR_VDIV_Pos)
-                               | DCMIPP_P1DSCR_ENABLE;
-            } else {
-                dcmipp->P1DSCR &= ~DCMIPP_P1DSCR_ENABLE;
-            }
-        } else {
-            dcmipp->P1DSCR &= ~DCMIPP_P1DSCR_ENABLE;
-        }
-
-        dcmipp->P1GMCR |= DCMIPP_P1GMCR_ENABLE;
-
+    if (pipe == DCMIPP_PIPE1) {
+        *gmcr |= DCMIPP_P1GMCR_ENABLE;
         if (conf->enable_swap)
             dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
         else
             dcmipp->CMCR &= ~DCMIPP_CMCR_SWAPRB;
-
-        dcmipp->P1PPCR = (dcmipp->P1PPCR & ~DCMIPP_P1PPCR_FORMAT_Msk)
-                       | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);
-
-        dcmipp->P1PPM0PR = pitch;
-
-        dcmipp->P1FCTCR = (dcmipp->P1FCTCR & ~DCMIPP_P1FCTCR_FRATE_Msk) | 0;
-
-    } else if (pipe == DCMIPP_PIPE2) {
-        if (conf->enable_crop && conf->crop_width && conf->crop_height) {
-            dcmipp->P2CRSTR = (conf->crop_x << DCMIPP_P2CRSTR_HSTART_Pos)
-                            | (conf->crop_y << DCMIPP_P2CRSTR_VSTART_Pos);
-            dcmipp->P2CRSZR = (conf->crop_width << DCMIPP_P2CRSZR_HSIZE_Pos)
-                            | (conf->crop_height << DCMIPP_P2CRSZR_VSIZE_Pos)
-                            | DCMIPP_P2CRSZR_ENABLE;
-        } else {
-            dcmipp->P2CRSZR &= ~DCMIPP_P2CRSZR_ENABLE;
-        }
-
-        if (conf->enable_downsize && conf->output_width && conf->output_height) {
-            uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
-            uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
-            if (in_w > conf->output_width || in_h > conf->output_height) {
-                uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
-                uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
-                uint32_t hdiv = (1024UL * 8192UL - 1UL) / hratio;
-                uint32_t vdiv = (1024UL * 8192UL - 1UL) / vratio;
-                dcmipp->P2DSRTIOR = (hratio << DCMIPP_P2DSRTIOR_HRATIO_Pos)
-                                  | (vratio << DCMIPP_P2DSRTIOR_VRATIO_Pos);
-                dcmipp->P2DSSZR = (conf->output_width << DCMIPP_P2DSSZR_HSIZE_Pos)
-                                | (conf->output_height << DCMIPP_P2DSSZR_VSIZE_Pos);
-                dcmipp->P2DSCR = (hdiv << DCMIPP_P2DSCR_HDIV_Pos)
-                               | (vdiv << DCMIPP_P2DSCR_VDIV_Pos)
-                               | DCMIPP_P2DSCR_ENABLE;
-            } else {
-                dcmipp->P2DSCR &= ~DCMIPP_P2DSCR_ENABLE;
-            }
-        } else {
-            dcmipp->P2DSCR &= ~DCMIPP_P2DSCR_ENABLE;
-        }
-
-        dcmipp->P2GMCR &= ~DCMIPP_P2GMCR_ENABLE;
-
-        dcmipp->P2PPCR = (dcmipp->P2PPCR & ~DCMIPP_P2PPCR_FORMAT_Msk)
-                       | (conf->output_format << DCMIPP_P2PPCR_FORMAT_Pos);
-
-        dcmipp->P2PPM0PR = pitch;
-
-        dcmipp->P2FCTCR = (dcmipp->P2FCTCR & ~DCMIPP_P2FCTCR_FRATE_Msk) | 0;
+    } else {
+        *gmcr &= ~DCMIPP_P2GMCR_ENABLE;
     }
+
+    *ppcr = (*ppcr & ~DCMIPP_P1PPCR_FORMAT_Msk)
+          | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);
+    *ppm0pr = pitch;
+    *fctcr = (*fctcr & ~DCMIPP_P1FCTCR_FRATE_Msk) | 0;
 
     if (out_pitch) *out_pitch = pitch;
 }
@@ -194,12 +169,14 @@ void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_Conf *conf)
         case DCMIPP_CLIENT5: r1 = &dcmipp->IPC5R1; r2 = &dcmipp->IPC5R2; r3 = &dcmipp->IPC5R3; break;
         default:
             dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
-        	return;
+            return;
     }
 
-    *r1 = (conf->traffic & DCMIPP_IPC1R1_TRAFFIC_Msk) | ((conf->outstanding << DCMIPP_IPC1R1_OTR_Pos) & DCMIPP_IPC1R1_OTR_Msk);
+    *r1 = (conf->traffic & DCMIPP_IPC1R1_TRAFFIC_Msk)
+        | ((conf->outstanding << DCMIPP_IPC1R1_OTR_Pos) & DCMIPP_IPC1R1_OTR_Msk);
     *r2 = (conf->wlru_ratio << DCMIPP_IPC1R2_WLRU_Pos) & DCMIPP_IPC1R2_WLRU_Msk;
-    *r3 = ((conf->dpreg_start << DCMIPP_IPC1R3_DPREGSTART_Pos) & DCMIPP_IPC1R3_DPREGSTART_Msk) | ((conf->dpreg_end << DCMIPP_IPC1R3_DPREGEND_Pos) & DCMIPP_IPC1R3_DPREGEND_Msk);
+    *r3 = ((conf->dpreg_start << DCMIPP_IPC1R3_DPREGSTART_Pos) & DCMIPP_IPC1R3_DPREGSTART_Msk)
+        | ((conf->dpreg_end << DCMIPP_IPC1R3_DPREGEND_Pos) & DCMIPP_IPC1R3_DPREGEND_Msk);
 
     dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
 }
@@ -302,7 +279,6 @@ void DCMIPP_EnableInterrupts(uint32_t pipe, uint32_t it_mask)
 {
     if (pipe == DCMIPP_PIPE1)
         dcmipp->P1IER |= it_mask;
-
     else if (pipe == DCMIPP_PIPE2)
         dcmipp->P2IER |= it_mask;
 }
@@ -355,4 +331,4 @@ void DCMIPP_IRQHandler(void)
 
 __attribute__((weak)) void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe) { (void)pipe; }
 __attribute__((weak)) void DCMIPP_PIPE_VsyncEventCallback(uint32_t pipe) { (void)pipe; }
-__attribute__((weak)) void DCMIPP_PIPE_ErrorCallback(uint32_t pipe) { (void)pipe; }
+__attribute__((weak)) void DCMIPP_PIPE_ErrorCallback(uint32_t pipe)     { (void)pipe; }
