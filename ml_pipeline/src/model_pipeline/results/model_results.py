@@ -8,3 +8,12 @@ class PalmDetection:
     score: float
     box: np.ndarray
     keypoints: np.ndarray
+
+
+@dataclass
+class ROI:
+    cx: float
+    cy: float
+    w: float
+    h: float
+    rotation: float

@@ -2,13 +2,16 @@ import numpy as np
 
 from src.model_pipeline.models.palm_anchors import PALM_ANCHORS
 from src.model_pipeline.preprocessing.palm_preprocessing import prepare_input
-from src.model_pipeline.results.model_results import PalmDetection
+from src.model_pipeline.results.model_results import PalmDetection, ROI
+from src.model_pipeline.models.tracking_utils import pd_box_to_roi, decode_landmark, landmarks_to_roi
 from src.model_pipeline.runtime.interpreter import load_model
 from src.model_pipeline.core.config import (
     IOU_THRESHOLD,
     MODEL_SIZE,
     SCORE_THRESHOLD,
+    PRESENCE_THRESHOLD,
 )
+from typing import Optional
 
 
 class PalmDetector:
@@ -17,12 +20,50 @@ class PalmDetector:
         self._input_details = self._interpreter.get_input_details()[0]
         self._output_details = self._interpreter.get_output_details()
 
-    def detect(self, image: np.ndarray, ) -> tuple[
+        self._is_tracking = False
+        self._tracking_roi: Optional[ROI] = None
+        self._tracking_box: Optional[PalmDetection] = None
+        self._last_landmarks: Optional[np.ndarray] = None
+        self._last_scale = 0.0
+        self._last_pad_left = 0
+        self._last_pad_top = 0
+
+    @property
+    def is_tracking(self) -> bool:
+        return self._is_tracking
+
+    @property
+    def last_landmarks(self) -> Optional[np.ndarray]:
+        return self._last_landmarks
+
+    def detect(
+        self,
+        image: np.ndarray,
+        hand_landmark_detector=None,
+    ) -> tuple[
         list[PalmDetection],
         float,
         int,
         int,
     ]:
+        if self._is_tracking and hand_landmark_detector is not None:
+            landmarks, presence = hand_landmark_detector.detect(image, self._tracking_roi)
+            if presence >= PRESENCE_THRESHOLD and landmarks is not None:
+                decoded = self._decode_landmarks_to_frame(landmarks)
+                self._last_landmarks = decoded
+                next_roi, next_box_pixel = landmarks_to_roi(decoded)
+                self._tracking_box = self._pixel_box_to_normalized(next_box_pixel)
+                self._tracking_roi = next_roi
+                return (
+                    [self._tracking_box],
+                    self._last_scale,
+                    self._last_pad_left,
+                    self._last_pad_top,
+                )
+            else:
+                self._is_tracking = False
+                self._last_landmarks = None
+
         (
             input_tensor,
             scale,
@@ -52,11 +93,60 @@ class PalmDetector:
             detections
         )
 
+        if detections and hand_landmark_detector is not None:
+            best = detections[0]
+            roi = pd_box_to_roi(best, scale, pad_left, pad_top, image.shape)
+            self._tracking_roi = roi
+            self._tracking_box = best
+            self._last_scale = scale
+            self._last_pad_left = pad_left
+            self._last_pad_top = pad_top
+            self._is_tracking = True
+
         return (
             detections,
             scale,
             pad_left,
             pad_top,
+        )
+
+    def _decode_landmarks_to_frame(
+        self,
+        landmarks: np.ndarray,
+    ) -> np.ndarray:
+        decoded = np.empty_like(landmarks)
+        for i in range(landmarks.shape[0]):
+            x, y = decode_landmark(landmarks[i, 0], landmarks[i, 1], self._tracking_roi)
+            decoded[i, 0] = x
+            decoded[i, 1] = y
+        return decoded
+
+    def _pixel_box_to_normalized(self, box_pixel: PalmDetection) -> PalmDetection:
+        if self._tracking_box is None:
+            return box_pixel
+
+        orig_box = box_pixel.box
+        orig_kps = box_pixel.keypoints
+
+        new_box = np.empty(4, dtype=np.float32)
+        for i in range(0, 4):
+            coord = orig_box[i]
+            if i % 2 == 0:
+                model_coord = (coord * self._last_scale + self._last_pad_left) / MODEL_SIZE
+            else:
+                model_coord = (coord * self._last_scale + self._last_pad_top) / MODEL_SIZE
+            new_box[i] = model_coord
+
+        new_kps = np.empty_like(orig_kps)
+        for k in range(orig_kps.shape[0]):
+            new_kps[k, 0] = (orig_kps[k, 0] * self._last_scale + self._last_pad_left) / MODEL_SIZE
+            new_kps[k, 1] = (orig_kps[k, 1] * self._last_scale + self._last_pad_top) / MODEL_SIZE
+
+        return PalmDetection(
+            index=box_pixel.index,
+            score=box_pixel.score,
+            box=new_box,
+            keypoints=new_kps,
         )
 
     @staticmethod
