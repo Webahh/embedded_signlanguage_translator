@@ -40,11 +40,11 @@ flowchart TD
     Update2 --> Return2["Return all detected objects"]
     Return2 --> Start
 
-    style Start fill:#eef,stroke:#66a
-    style ReturnTracked fill:#dfd,stroke:#292
-    style ReturnActive fill:#fee,stroke:#a22
-    style Return1 fill:#dfd,stroke:#292
-    style Return2 fill:#dfd,stroke:#292
+    style Start stroke:#66a
+    style ReturnTracked stroke:#292
+    style ReturnActive stroke:#a22
+    style Return1 stroke:#292
+    style Return2 stroke:#292
 ```
 
 ## Walkthrough

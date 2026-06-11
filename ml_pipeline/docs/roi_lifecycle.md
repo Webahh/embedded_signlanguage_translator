@@ -24,10 +24,10 @@ flowchart TD
 
     Loop -->|No| End(["End"])
 
-    style Start fill:#eef,stroke:#66a
-    style InitROI fill:#dfd,stroke:#292
-    style UpdateROI fill:#dfd,stroke:#292
-    style Death fill:#fee,stroke:#a22
+    style Start stroke:#66a
+    style InitROI stroke:#292
+    style UpdateROI stroke:#292
+    style Death stroke:#a22
 ```
 
 ## Birth - Detector Creates the ROI
