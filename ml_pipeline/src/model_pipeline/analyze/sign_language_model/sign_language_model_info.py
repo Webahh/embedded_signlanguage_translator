@@ -216,29 +216,33 @@ def analyze_postprocessing() -> None:
     ], dtype=np.float32)
 
     # Single hand (right only) — simulates tracking one hand
-    sign, conf = detector.predict(
+    confs = detector.predict(
         [(right_landmarks, 0.9)],
         img_w, img_h,
     )
-    print(f"\nSingle hand (right):   {sign} ({conf:.4f})")
+    best = max(confs, key=confs.get) if confs else ""
+    print(f"\nSingle hand (right):   {best} ({confs.get(best, 0):.4f})")
 
     # Single hand (left only)
-    sign, conf = detector.predict(
+    confs = detector.predict(
         [(left_landmarks, 0.3)],
         img_w, img_h,
     )
-    print(f"Single hand (left):    {sign} ({conf:.4f})")
+    best = max(confs, key=confs.get) if confs else ""
+    print(f"Single hand (left):    {best} ({confs.get(best, 0):.4f})")
 
     # Two hands
-    sign, conf = detector.predict(
+    confs = detector.predict(
         [(left_landmarks, 0.3), (right_landmarks, 0.9)],
         img_w, img_h,
     )
-    print(f"Two hands:             {sign} ({conf:.4f})")
+    best = max(confs, key=confs.get) if confs else ""
+    print(f"Two hands:             {best} ({confs.get(best, 0):.4f})")
 
     # No hands (empty prediction)
-    sign, conf = detector.predict([], img_w, img_h)
-    print(f"No hands:              {sign} ({conf:.4f})")
+    confs = detector.predict([], img_w, img_h)
+    best = max(confs, key=confs.get) if confs else ""
+    print(f"No hands:              {best} ({confs.get(best, 0):.4f})")
 
     interpreter = load_model(
         SIGNLANGUAGE_MODEL_PATH

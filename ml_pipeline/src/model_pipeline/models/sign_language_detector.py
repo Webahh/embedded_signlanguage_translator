@@ -85,12 +85,12 @@ class SignLanguageDetector:
         x_quant = (x / self._in_scale + self._in_zp).astype(np.uint8)
         return x_quant.reshape(1, 88, 1)
 
-    def predict(
+    def _infer(
         self,
         hands: list[tuple[np.ndarray, float]],
         image_width: int,
         image_height: int,
-    ) -> tuple[str, float]:
+    ) -> np.ndarray:
         left_rel, left_wrist = self._empty_hand()
         right_rel, right_wrist = self._empty_hand()
 
@@ -112,11 +112,16 @@ class SignLanguageDetector:
         self._interpreter.invoke()
 
         out_quant = self._interpreter.get_tensor(self._output_details["index"])[0]
-        out_float = (out_quant.astype(np.float32) - self._out_zp) * self._out_scale
+        return (out_quant.astype(np.float32) - self._out_zp) * self._out_scale
 
-        best_index = int(np.argmax(out_float))
-        confidence = float(out_float[best_index])
-
-        if best_index in self._labels_inv:
-            return self._labels_inv[best_index], confidence
-        return "", 0.0
+    def predict(
+        self,
+        hands: list[tuple[np.ndarray, float]],
+        image_width: int,
+        image_height: int,
+    ) -> dict[str, float]:
+        out_float = self._infer(hands, image_width, image_height)
+        return {
+            self._labels_inv[i]: float(out_float[i])
+            for i in range(len(out_float))
+        }

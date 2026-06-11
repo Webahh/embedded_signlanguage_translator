@@ -14,7 +14,7 @@ class ConfidenceDisplay:
         except:
             self.font = ImageFont.load_default()
 
-    def draw_confidence_table(self, img, confidences, threshold=0.02):
+    def draw_confidence_table(self, img, confidences, threshold=0.02, x_offset=None, y_offset=None):
         """
         Draws a compact confidence overlay in the top-right corner.
 
@@ -60,9 +60,12 @@ class ConfidenceDisplay:
         footer_height = 18 if threshold > 0 else 0
         panel_height = line_height * len(rows) + padding * 2 + footer_height
 
-        # Top-right corner
-        x0 = img.shape[1] - panel_width - 15
-        y0 = 15
+        # Top-right corner (with optional manual offset)
+        if x_offset is None:
+            x0 = img.shape[1] - panel_width - 15
+        else:
+            x0 = x_offset
+        y0 = y_offset if y_offset is not None else 15
 
         # Background
         overlay = Image.new("RGBA", pil_img.size, (0, 0, 0, 0))
