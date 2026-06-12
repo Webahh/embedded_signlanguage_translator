@@ -57,6 +57,14 @@ class MultiHandTracker:
         return [t.landmarks for t in self._tracks if t.active and t.landmarks is not None]
 
     @property
+    def active_tracks(self):
+        return [t for t in self._tracks if t.active and t.landmarks is not None]
+
+    @property
+    def handedness_scores(self) -> list[float]:
+        return [t.handedness for t in self._tracks if t.active and t.landmarks is not None]
+
+    @property
     def last_handedness(self) -> list[str]:
         return ["R" if t.handedness > HANDEDNESS_THRESHOLD else "L" for t in self._tracks if t.active and t.landmarks is not None]
 
@@ -75,6 +83,8 @@ class MultiHandTracker:
     def step(
         self,
         frame: np.ndarray,
+        score_threshold: float | None = None,
+        iou_threshold: float | None = None,
     ) -> tuple[list[PalmDetection], float, int, int]:
         lost_track = False
 
@@ -109,7 +119,7 @@ class MultiHandTracker:
         if self.active_count >= self._max_hands and not lost_track:
             return [t.box for t in self._tracks if t.active], self._last_scale, self._last_pad_left, self._last_pad_top
 
-        detections, scale, pad_left, pad_top = self._palm.detect(frame)
+        detections, scale, pad_left, pad_top = self._palm.detect(frame, score_threshold, iou_threshold)
         self._last_scale = scale
         self._last_pad_left = pad_left
         self._last_pad_top = pad_top

@@ -21,7 +21,15 @@ class PalmDetector:
         self._input_details = self._interpreter.get_input_details()[0]
         self._output_details = self._interpreter.get_output_details()
 
-    def detect(self, image: np.ndarray) -> tuple[list[PalmDetection], float, int, int]:
+    def detect(
+        self,
+        image: np.ndarray,
+        score_threshold: float | None = None,
+        iou_threshold: float | None = None,
+    ) -> tuple[list[PalmDetection], float, int, int]:
+        score_threshold = score_threshold if score_threshold is not None else SCORE_THRESHOLD
+        iou_threshold = iou_threshold if iou_threshold is not None else IOU_THRESHOLD
+
         input_tensor, scale, pad_left, pad_top = prepare_input(image)
 
         self._interpreter.set_tensor(self._input_details["index"], input_tensor)
@@ -31,7 +39,7 @@ class PalmDetector:
         raw_boxes = self._interpreter.get_tensor(self._output_details[1]["index"])[0]
 
         probabilities = self._sigmoid(raw_scores)
-        valid_indices = np.where(probabilities >= SCORE_THRESHOLD)[0]
+        valid_indices = np.where(probabilities >= score_threshold)[0]
 
         detections = [
             self._decode_detection(
@@ -42,7 +50,7 @@ class PalmDetector:
             for index in valid_indices
         ]
 
-        detections = self._non_max_suppression(detections)
+        detections = self._non_max_suppression(detections, iou_threshold)
 
         return detections, scale, pad_left, pad_top
 
@@ -91,7 +99,7 @@ class PalmDetector:
             return 0.0
         return float(intersection / union)
 
-    def _non_max_suppression(self, detections: list[PalmDetection]) -> list[PalmDetection]:
+    def _non_max_suppression(self, detections: list[PalmDetection], iou_threshold: float = IOU_THRESHOLD) -> list[PalmDetection]:
         remaining = sorted(detections, key=lambda d: d.score, reverse=True)
         selected = []
         while remaining:
@@ -99,7 +107,7 @@ class PalmDetector:
             selected.append(best)
             remaining = [
                 c for c in remaining
-                if self._calculate_iou(best.box, c.box) < IOU_THRESHOLD
+                if self._calculate_iou(best.box, c.box) < iou_threshold
             ]
         return selected
 
