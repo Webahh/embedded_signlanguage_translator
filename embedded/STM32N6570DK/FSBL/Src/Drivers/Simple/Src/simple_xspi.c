@@ -244,7 +244,11 @@ void PSRAM_Init(void){
     RCC_reset_XSPIM();
     delay_ms(1);
 
+    RCC->AHB5ENR |= RCC_AHB5ENR_CACHEAXIEN;
+    (void)RCC->AHB5ENR;
+
     RCC_enable_XSPI1();
+    RCC_enable_XSPI2();
     RCC_enable_XSPIM();
     delay_ms(1);
 
@@ -258,7 +262,7 @@ void PSRAM_Init(void){
 
     delay_ms(1);
 
-    XSPI_BypassPrescaler(XSPI1);
+    //XSPI_BypassPrescaler(XSPI1);
     delay_ms(1);
 
     XSPI1_EnableMemoryMappedMode();

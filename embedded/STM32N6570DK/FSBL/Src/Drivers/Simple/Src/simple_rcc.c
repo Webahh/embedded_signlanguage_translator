@@ -15,6 +15,7 @@
  *
  */
 #include "simple_rcc.h"
+#include "config.h"
 
 static void RCC_WaitHSIReady(void){
     while (!(RCC->SR & RCC_SR_HSIRDY)) {
@@ -160,6 +161,29 @@ void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20])
         RCC->DIVENR |= IC_DIVEN[i];
     }
     (void)RCC->DIVENR;
+}
+
+void RCC_BoardClock_Config(void)
+{
+    RCC_SystemClock_Config();
+
+    RCC_config_PLLs(BOARD_PLL_CONFIG);
+
+    RCC_config_ICs(BOARD_IC_CONFIG);
+
+    /*
+     * RCC_config_ICs() skips zero-valued entries, therefore IC1 must be
+     * enabled explicitly.
+     */
+    RCC->IC1CFGR = 0x00000000;
+    RCC->DIVENR |= RCC_DIVENR_IC1EN;
+    (void)RCC->DIVENR;
+
+    RCC->CFGR2 = 0x00100000;
+    (void)RCC->CFGR2;
+
+    RCC->CFGR1 = 0x33330000;
+    (void)RCC->CFGR1;
 }
 
 uint32_t RCC_GetHSI(void){

@@ -46,7 +46,8 @@ static const struct regval res_2592_1944_regs[] = {
 
     /* ---- PLL / clock tree ---- */
     {0x314c, 0xc6},  /* INCLKSEL1 LSB     -> PLL multiplier (24 MHz in)  */
-    {0x315a, 0x02},  /* INCLKSEL2         -> PLL divider                 */
+	{0x314d, 0x00},
+	{0x315a, 0x02},  /* INCLKSEL2         -> PLL divider                 */
     {0x3168, 0xa0},  /* INCLKSEL3         -> ADC clock divider           */
     {0x316a, 0x7e},  /* INCLKSEL4         -> additional clock divider    */
     {0x31a1, 0x00},  /* XVS_XHS_DRV       -> VSYNC/HSYNC drive strength  */
@@ -225,6 +226,104 @@ static int32_t read_reg(IMX335_Handle *h, uint16_t reg, uint8_t *val)
     return I2C_Mem_Read(h->i2c, h->addr, reg, val, 1) == I2C_OK ? 0 : -1;
 }
 
+int32_t IMX335_ReadReg(IMX335_Handle *h, uint16_t reg, uint8_t *val)
+{
+    if (!h || !val) {
+        return -1;
+    }
+
+    return read_reg(h, reg, val);
+}
+
+typedef struct {
+    uint16_t reg;
+    uint8_t  val;
+    int32_t  ok;
+} IMX335_RegDumpEntry;
+
+volatile IMX335_RegDumpEntry imx335_dump[] = {
+    {0x3000, 0, 0},
+    {0x3002, 0, 0},
+    {0x3004, 0, 0},
+
+    {0x300C, 0, 0},
+    {0x300D, 0, 0},
+    {0x3030, 0, 0},
+    {0x3031, 0, 0},
+    {0x3032, 0, 0},
+    {0x3034, 0, 0},
+    {0x3035, 0, 0},
+    {0x3036, 0, 0},
+    {0x3037, 0, 0},
+
+    {0x304C, 0, 0},
+    {0x304D, 0, 0},
+    {0x304E, 0, 0},
+    {0x304F, 0, 0},
+    {0x3050, 0, 0},
+    {0x3051, 0, 0},
+    {0x3052, 0, 0},
+    {0x3053, 0, 0},
+    {0x3054, 0, 0},
+    {0x3055, 0, 0},
+    {0x3056, 0, 0},
+    {0x3057, 0, 0},
+    {0x3058, 0, 0},
+    {0x3059, 0, 0},
+
+    {0x314C, 0, 0},
+    {0x314D, 0, 0},
+    {0x315A, 0, 0},
+    {0x3168, 0, 0},
+    {0x319D, 0, 0},
+    {0x319E, 0, 0},
+    {0x31A1, 0, 0},
+
+    {0x3288, 0, 0},
+    {0x328A, 0, 0},
+
+    {0x3414, 0, 0},
+    {0x3416, 0, 0},
+    {0x3418, 0, 0},
+    {0x341A, 0, 0},
+    {0x341C, 0, 0},
+    {0x341D, 0, 0},
+
+    {0x3A00, 0, 0},
+    {0x3A01, 0, 0},
+};
+
+#define IMX335_DUMP_COUNT (sizeof(imx335_dump) / sizeof(imx335_dump[0]))
+typedef struct {
+    uint32_t reg;
+    uint32_t val;
+    uint32_t ok;
+} IMX335_RegDump32;
+
+volatile IMX335_RegDump32 imx335_dump32[IMX335_DUMP_COUNT];
+
+
+void IMX335_DumpDebugRegs(IMX335_Handle *h)
+{
+    uint8_t value = 0;
+
+    for (uint32_t i = 0; i < IMX335_DUMP_COUNT; i++) {
+        int32_t ret = read_reg(h, imx335_dump[i].reg, &value);
+
+        imx335_dump[i].ok = ret;
+
+        if (ret == 0) {
+            imx335_dump[i].val = value;
+        } else {
+            imx335_dump[i].val = 0xFF;
+        }
+
+        imx335_dump32[i].reg = imx335_dump[i].reg;
+        imx335_dump32[i].val = imx335_dump[i].val;
+        imx335_dump32[i].ok  = imx335_dump[i].ok;
+    }
+}
+
 /**
   * @brief  Write an array of register/value pairs
   * @param  h    Sensor handle
@@ -351,15 +450,6 @@ int32_t IMX335_SetMirrorFlip(IMX335_Handle *h, uint32_t config)
 int32_t IMX335_EnableAutoExposure(IMX335_Handle *h)
 {
     return write_reg(h, IMX335_REG_AEC, IMX335_AEC_ENABLE);
-}
-
-int32_t IMX335_SetHMax(IMX335_Handle *h, uint16_t hmax)
-{
-    uint8_t lsb = hmax & 0xFF;
-    uint8_t msb = (hmax >> 8) & 0xFF;
-    if (write_reg(h, IMX335_REG_HMAX + 0, lsb)) return -1;
-    if (write_reg(h, IMX335_REG_HMAX + 1, msb)) return -1;
-    return 0;
 }
 
 int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id)

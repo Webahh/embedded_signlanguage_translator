@@ -126,7 +126,12 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
     }
 
     if (pipe == DCMIPP_PIPE1) {
-        *gmcr |= DCMIPP_P1GMCR_ENABLE;
+        /*
+         * Reference config uses enable_gamma_conversion = 0.
+         * Therefore keep Gamma disabled for now.
+         */
+        *gmcr &= ~DCMIPP_P1GMCR_ENABLE;
+
         if (conf->enable_swap)
             dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
         else
@@ -141,6 +146,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
     *fctcr = (*fctcr & ~DCMIPP_P1FCTCR_FRATE_Msk) | 0;
 
     if (out_pitch) *out_pitch = pitch;
+
 }
 
 void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
@@ -308,25 +314,31 @@ uint32_t DCMIPP_GetStatus(uint32_t pipe)
     return 0;
 }
 
-void DCMIPP_IRQHandler(void)
-{
+void DCMIPP_IRQHandler(void){
+    uint32_t cmsr1 = dcmipp->CMSR1;
+    uint32_t cmsr2 = dcmipp->CMSR2;
+
+    uint32_t p1sr = dcmipp->P1SR;
+    uint32_t p2sr = dcmipp->P2SR;
+
+    (void)cmsr1;
+    (void)cmsr2;
+
+    if (p1sr) {
+        if (p1sr & DCMIPP_P1SR_LINEF)  { dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;  }
+        if (p1sr & DCMIPP_P1SR_FRAMEF) { dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE1); }
+        if (p1sr & DCMIPP_P1SR_VSYNCF) { dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF; DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE1); }
+        if (p1sr & DCMIPP_P1SR_OVRF)   { dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE1); }
+    }
+
+    if (p2sr) {
+        if (p2sr & DCMIPP_P2SR_LINEF)  { dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;  }
+        if (p2sr & DCMIPP_P2SR_FRAMEF) { dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE2); }
+        if (p2sr & DCMIPP_P2SR_VSYNCF) { dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF; DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE2); }
+        if (p2sr & DCMIPP_P2SR_OVRF)   { dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE2); }
+    }
+
     dcmipp->CMFCR = 0xFFFFFFFFU;
-
-    uint32_t sr = dcmipp->P1SR;
-    if (sr) {
-        if (sr & DCMIPP_P1SR_LINEF)  { dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;  DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE1); }
-        if (sr & DCMIPP_P1SR_FRAMEF) { dcmipp->P1FCR = DCMIPP_P1FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE1); }
-        if (sr & DCMIPP_P1SR_VSYNCF) { dcmipp->P1FCR = DCMIPP_P1FCR_CVSYNCF; }
-        if (sr & DCMIPP_P1SR_OVRF)   { dcmipp->P1FCR = DCMIPP_P1FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE1); }
-    }
-
-    sr = dcmipp->P2SR;
-    if (sr) {
-        if (sr & DCMIPP_P2SR_LINEF)  { dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;  DCMIPP_PIPE_VsyncEventCallback(DCMIPP_PIPE2); }
-        if (sr & DCMIPP_P2SR_FRAMEF) { dcmipp->P2FCR = DCMIPP_P2FCR_CFRAMEF; DCMIPP_PIPE_FrameEventCallback(DCMIPP_PIPE2); }
-        if (sr & DCMIPP_P2SR_VSYNCF) { dcmipp->P2FCR = DCMIPP_P2FCR_CVSYNCF; }
-        if (sr & DCMIPP_P2SR_OVRF)   { dcmipp->P2FCR = DCMIPP_P2FCR_COVRF;   DCMIPP_PIPE_ErrorCallback(DCMIPP_PIPE2); }
-    }
 }
 
 __attribute__((weak)) void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe) { (void)pipe; }

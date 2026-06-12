@@ -16,9 +16,9 @@
  * ------------------------------------------------------------------------- */
 
 /** Chip-ID register (8-bit, read-only, value = 0x00) */
-#define IMX335_REG_ID           0x3912U
+#define IMX335_REG_ID           0x3912
 /** Expected chip-ID value */
-#define IMX335_CHIP_ID          0x00U
+#define IMX335_CHIP_ID          0x00
 
 /** Sensor I2C address (7-bit) */
 #define IMX335_I2C_ADDR         0x1A
@@ -33,8 +33,7 @@
 
 /** Frame-length (VMAX) for framerate control */
 #define IMX335_REG_VMAX         0x3030
-/** Horizontal line length (HMAX) - total PCLK per line */
-#define IMX335_REG_HMAX         0x300C
+
 /** Shutter (exposure) register */
 #define IMX335_REG_SHUTTER      0x3058
 /** Gain register */
@@ -45,11 +44,17 @@
 /** Horizontal/vertical flip */
 #define IMX335_REG_HREVERSE     0x304E
 #define IMX335_REG_VREVERSE     0x304F
+#define IMX335_REG_AREA3_ST_ADR_1_LSB 0x3074
+#define IMX335_REG_AREA3_ST_ADR_1_MSB 0x3075
 
 /** Auto-exposure control */
 #define IMX335_REG_AEC          0x3A00
 #define IMX335_AEC_ENABLE       0x01
 #define IMX335_AEC_DISABLE      0x00
+
+#define IMX335_WIDTH              2592
+#define IMX335_HEIGHT             1944
+#define IMX335_PCLK               396000000
 
 /* ---------------------------------------------------------------------------
  * Exposure / gain limits (milli-dB gain units)
@@ -134,16 +139,6 @@ int32_t IMX335_ReadID(IMX335_Handle *h, uint32_t *id);
 int32_t IMX335_EnableAutoExposure(IMX335_Handle *h);
 
 /**
-  * @brief  Set horizontal line length (HMAX) to add blanking
-  *         Larger HMAX -> more idle time per line -> lower data rate,
-  *         helps DCMIPP FIFO drain between lines
-  * @param  h     Sensor handle
-  * @param  hmax  Total PCLK per line (16-bit). Default = 10811 (0x2A3B)
-  * @retval 0 on success, -1 on I2C error
-  */
-int32_t IMX335_SetHMax(IMX335_Handle *h, uint16_t hmax);
-
-/**
   * @brief  Verify that all written configuration registers read back correctly
   *         Iterates every register from all init tables, reads it back,
   *         and compares against the written value
@@ -152,5 +147,8 @@ int32_t IMX335_SetHMax(IMX335_Handle *h, uint16_t hmax);
   * @retval -1    at least one register mismatch or I2C error
   */
 int32_t IMX335_VerifyConfig(IMX335_Handle *h);
+
+int32_t IMX335_ReadReg(IMX335_Handle *h, uint16_t reg, uint8_t *val);
+void IMX335_DumpDebugRegs(IMX335_Handle *h);
 
 #endif /* SIMPLE_IMX335_H */

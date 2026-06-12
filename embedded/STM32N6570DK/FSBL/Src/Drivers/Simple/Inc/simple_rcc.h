@@ -10,8 +10,8 @@
 
 #include "stm32n657xx.h"
 
+//Outdated values
 #define RCC_HSI_VALUE_HZ  				64000000UL
-
 #define LTDC_CLOCK_SOURCE_PCLK5      	0U
 #define LTDC_CLOCK_SOURCE_PER_CK     	1U
 #define LTDC_CLOCK_SOURCE_IC16_CK    	2U
@@ -30,6 +30,7 @@ typedef struct {
 void RCC_SystemClock_Config(void);
 void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4]);
 void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20]);
+void RCC_BoardClock_Config(void);
 
 uint32_t RCC_GetHSI(void);
 uint32_t RCC_GetSYSCLK(void);

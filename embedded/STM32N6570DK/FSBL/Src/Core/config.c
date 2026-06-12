@@ -7,8 +7,6 @@
 
 #include "config.h"
 
-const CAM_Handle h_cam;
-
 const GPIO_cfg_TypeDef GPIO_default_cfg = {
 		.mode  	= GPIO_MODE_OUTPUT,
 		.otyp 	= GPIO_OTYPE_PP,
@@ -40,6 +38,27 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.af		= GPIO_AF_XSPI,
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
+
+const RCC_PLL_ConfigTypeDef BOARD_PLL_CONFIG[4] = {
+    { .CFGR1 = 0x201900, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
+    { .CFGR1 = 0x807D00, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
+    { .CFGR1 = 0x80E100, .CFGR2 = 0x0, .CFGR3 = 0x4A000005 },
+    { .CFGR1 = 0x80E100, .CFGR2 = 0x0, .CFGR3 = 0x76000005 },
+};
+
+const RCC_IC_ConfigTypeDef BOARD_IC_CONFIG[20] = {
+    [0]  = { .CFGR = 0x00000000 },  /* IC1:  PLL1 / 1  - CPU */
+    [1]  = { .CFGR = 0x00010000 },  /* IC2:  PLL1 / 2  - SYSB/AXI */
+    [5]  = { .CFGR = 0x10000000 },  /* IC6:  PLL2 / 1 */
+    [10] = { .CFGR = 0x20000000 },  /* IC11: PLL3 / 1 */
+    [15] = { .CFGR = 0x30010000 },  /* IC16: PLL4 / 2  - LTDC */
+    [16] = { .CFGR = 0x10020000 },  /* IC17: PLL2 / 3  - DCMIPP */
+    [17] = { .CFGR = 0x00270000 },  /* IC18: PLL1 / 40 - CSI */
+};
+
+
+
+CAM_Handle h_cam;
 
 LCD_LayerConfig LCD_Layer1Config = {
     .regs            = LTDC_Layer1,

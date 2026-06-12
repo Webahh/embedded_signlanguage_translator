@@ -8,8 +8,23 @@
 #include "simple_timer.h"
 #include "simple_rcc.h"
 
-
 static volatile uint32_t sys_tick_ms = 0; // global millisecond counter
+
+/*
+ * Reference clock setup:
+ * HCLK  = 200 MHz
+ * PCLK1 = 200 MHz
+ * PCLK2 = 200 MHz
+ *
+ * TIM2..TIM7  -> APB1 -> 200 MHz
+ * TIM1/TIM8   -> APB2 -> 200 MHz
+ *
+ * This avoids using RCC_GetTIMClock(), because the current RCC getter
+ * does not yet decode the IC-based clock tree.
+ */
+#define SIMPLE_TIMER_INPUT_CLK_HZ 200000000UL
+#define SIMPLE_TIMER_1MHZ         1000000UL
+
 
 /*
  * Vector table symbol provided by the startup file.
@@ -62,21 +77,16 @@ static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
 /**
  * @brief Configure a timer to generate a 1 kHz update event.
  *
- * The timer input clock is reduced to 1 MHz using the prescaler.
- * With ARR = 999, the timer overflows every 1000 ticks:
+ * With reference clock:
+ * TIM clock = 200 MHz
+ * PSC       = 200 - 1
+ * Counter   = 1 MHz
+ * ARR       = 999
  *
- * 1 MHz / 1000 = 1 kHz
- *
- * Therefore, one update event occurs every 1 ms.
+ * 1 MHz / 1000 = 1 kHz -> 1 ms update event
  */
 static void TIM_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
-    uint32_t tim_clk = RCC_GetTIMClock(TIMX);
-
-    if (tim_clk == 0U) {
-        return;
-    }
-
-    uint32_t prescaler = tim_clk / 1000000UL;
+	uint32_t prescaler = SIMPLE_TIMER_INPUT_CLK_HZ / SIMPLE_TIMER_1MHZ;
 
     if (prescaler == 0U) {
         prescaler = 1U;

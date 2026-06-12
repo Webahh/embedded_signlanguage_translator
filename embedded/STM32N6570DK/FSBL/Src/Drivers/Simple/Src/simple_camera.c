@@ -189,10 +189,6 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
         return CAM_ERROR_INIT;
     }
 
-    if (IMX335_SetHMax(&h->imx335, 20000)) {
-        return CAM_ERROR;
-    }
-
     if (IMX335_EnableAutoExposure(&h->imx335)) {
         return CAM_ERROR;
     }
