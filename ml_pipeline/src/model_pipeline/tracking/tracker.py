@@ -1,5 +1,6 @@
 import numpy as np
 
+from dataclasses import replace
 from src.model_pipeline.results.model_results import PalmDetection, ROI
 from src.model_pipeline.models.palm_detector import PalmDetector
 from src.model_pipeline.models.hand_landmark_detector import HandLandmarkDetector
@@ -85,6 +86,7 @@ class MultiHandTracker:
                 track.landmarks = decoded
                 track.handedness = handedness
                 next_roi, next_box_pixel = landmarks_to_roi(decoded)
+                next_box_pixel = replace(next_box_pixel, score=track.box.score)
                 track.box = self._pixel_box_to_normalized(next_box_pixel)
                 track.roi = next_roi
             else:
