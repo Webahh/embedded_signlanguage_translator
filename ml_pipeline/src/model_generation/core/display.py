@@ -14,29 +14,77 @@ class ConfidenceDisplay:
         except:
             self.font = ImageFont.load_default()
 
-    def draw_confidence_table(self, img, confidences, threshold=0.02, x_offset=None, y_offset=None):
+    # ------------------------------------------------------------------
+    # Size estimation
+    # ------------------------------------------------------------------
+
+    def estimate_table_size(self, confidences, threshold=0.02, with_title=False):
+        """Return (panel_width, panel_height) without drawing."""
+        confidences = {
+            k: v for k, v in confidences.items()
+            if v >= threshold
+        }
+        if not confidences:
+            return 0, 0
+
+        confidences = dict(
+            sorted(confidences.items(), key=lambda x: x[1], reverse=True)
+        )
+
+        # Use a temporary PIL image just for text measurement
+        dummy = Image.new("RGB", (1, 1))
+        draw = ImageDraw.Draw(dummy)
+
+        max_label_width = max(
+            draw.textbbox((0, 0), label, font=self.font)[2]
+            for label in confidences
+        )
+
+        line_height = 24
+        padding = 8
+        bar_width = 90
+        footer_height = 18 if threshold > 0 else 0
+        title_height = 22 if with_title else 0
+
+        panel_width = max_label_width + bar_width + 70
+        panel_height = line_height * len(confidences) + padding * 2 + footer_height + title_height
+
+        return panel_width, panel_height
+
+    # ------------------------------------------------------------------
+    # Drawing
+    # ------------------------------------------------------------------
+
+    def draw_confidence_table(self, img, confidences, threshold=0.02,
+                              x_offset=None, y_offset=None, title=None):
         """
-        Draws a compact confidence overlay in the top-right corner.
+        Draws a compact confidence overlay in the top-right corner
 
         Args:
-            img: OpenCV BGR image
+            img: OpenCV BGR image (modified in-place)
             confidences: dict {label: confidence}
             threshold: minimum confidence to display
+            x_offset: left edge (None = far-right)
+            y_offset: top edge (default 15)
+            title: optional header text (e.g. "R" or "L")
+
+        Returns:
+            (right_edge_x, bottom_y) for positioning adjacent tables
         """
 
         if not confidences:
-            return img
+            return (x_offset if x_offset else img.shape[1] - 15,
+                    15 if y_offset is None else y_offset)
 
-        # Filter weak predictions
         confidences = {
             k: v for k, v in confidences.items()
             if v >= threshold
         }
 
         if not confidences:
-            return img
+            return (x_offset if x_offset else img.shape[1] - 15,
+                    (y_offset or 15) + 10)
 
-        # Sort descending
         confidences = dict(
             sorted(confidences.items(), key=lambda x: x[1], reverse=True)
         )
@@ -58,9 +106,9 @@ class ConfidenceDisplay:
 
         panel_width = max_label_width + bar_width + 70
         footer_height = 18 if threshold > 0 else 0
-        panel_height = line_height * len(rows) + padding * 2 + footer_height
+        title_height = 22 if title else 0
+        panel_height = line_height * len(rows) + padding * 2 + footer_height + title_height
 
-        # Top-right corner (with optional manual offset)
         if x_offset is None:
             x0 = img.shape[1] - panel_width - 15
         else:
@@ -80,9 +128,24 @@ class ConfidenceDisplay:
         pil_img = Image.alpha_composite(pil_img.convert("RGBA"), overlay)
         draw = ImageDraw.Draw(pil_img)
 
+        content_y0 = y0 + padding
+
+        # Title / hand label
+        if title:
+            title_y = y0 + 4
+            title_bbox = draw.textbbox((0, 0), title, font=self.font)
+            title_w = title_bbox[2] - title_bbox[0]
+            draw.text(
+                (x0 + (panel_width - title_w) // 2, title_y),
+                title,
+                font=self.font,
+                fill=(255, 255, 200, 255),
+            )
+            content_y0 = y0 + title_height
+
         # Rows
         for i, (label, conf) in enumerate(rows):
-            y = y0 + padding + i * line_height
+            y = content_y0 + i * line_height
 
             draw.text(
                 (x0 + 8, y),
@@ -137,4 +200,6 @@ class ConfidenceDisplay:
                 fill=(180, 180, 180, 255)
             )
 
-        return cv.cvtColor(np.array(pil_img.convert("RGB")), cv.COLOR_BGR2RGB)
+        img[:] = cv.cvtColor(np.array(pil_img.convert("RGB")), cv.COLOR_BGR2RGB)
+        gap = 8
+        return x0 + panel_width + gap, y0 + panel_height + 5

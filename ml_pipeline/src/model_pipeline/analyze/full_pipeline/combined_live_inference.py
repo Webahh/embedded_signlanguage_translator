@@ -33,10 +33,12 @@ def run_live_inference() -> None:
     if not camera.isOpened():
         raise RuntimeError("Opening Camera failed!")
 
-    window_name = "Combined Hand Tracking"
+    cam_window = "Combined Hand Tracking"
+    dash_window = "Dashboard"
 
-    cv.namedWindow(window_name)
-    dash.setup(window_name)
+    cv.namedWindow(cam_window)
+    cv.namedWindow(dash_window)
+    dash.setup(dash_window)
 
     try:
         while not cfg.quit_requested:
@@ -64,20 +66,36 @@ def run_live_inference() -> None:
                     HandLandmarkDetector.draw_landmarks(frame, points)
 
             if cfg.mode >= ModeState.SIGN and cfg.show_sign:
+                tables = []
                 for track in tracker.active_tracks:
-                    hand = "R" if track.handedness > cfg.handedness_threshold else "L"
+                    hand_label = "R" if track.handedness > cfg.handedness_threshold else "L"
                     confidences = classifier.predict(
                         [(track.landmarks, track.handedness)],
                         frame.shape[1], frame.shape[0],
                     )
-                    frame = display.draw_confidence_table(
-                        frame, confidences,
-                        x_offset=10 if hand == "L" else None,
-                        y_offset=10 if hand == "L" else 10,
-                    )
+                    tables.append((hand_label, confidences))
 
-            dash.draw(frame)
-            cv.imshow(window_name, frame)
+                # Position tables horizontal in the top-right corner
+                gap = 8
+                next_x = None
+                for hand_label, confidences in reversed(tables):
+                    pw, _ = display.estimate_table_size(confidences, with_title=True)
+                    fw = frame.shape[1]
+                    if next_x is None:
+                        x = fw - pw - 15
+                    else:
+                        x = next_x - pw - gap
+                    nx, _ = display.draw_confidence_table(
+                        frame, confidences,
+                        x_offset=x, y_offset=15, title=hand_label,
+                    )
+                    next_x = x
+
+            dash.draw_info(frame)
+            panel = dash.render(frame.shape[0])
+
+            cv.imshow(cam_window, frame)
+            cv.imshow(dash_window, panel)
 
             key = cv.waitKey(1) & 0xFF
             if key == ord("q"):
