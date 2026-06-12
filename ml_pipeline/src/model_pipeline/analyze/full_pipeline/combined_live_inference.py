@@ -33,12 +33,10 @@ def run_live_inference() -> None:
     if not camera.isOpened():
         raise RuntimeError("Opening Camera failed!")
 
-    cam_window = "Combined Hand Tracking"
-    dash_window = "Dashboard"
+    window_name = "Combined Hand Tracking"
 
-    cv.namedWindow(cam_window)
-    cv.namedWindow(dash_window)
-    dash.setup(dash_window)
+    cv.namedWindow(window_name)
+    dash.setup(window_name)
 
     try:
         while not cfg.quit_requested:
@@ -94,8 +92,10 @@ def run_live_inference() -> None:
             dash.draw_info(frame)
             panel = dash.render(frame.shape[0])
 
-            cv.imshow(cam_window, frame)
-            cv.imshow(dash_window, panel)
+            dash._x_offset = frame.shape[1]
+            combined = cv.hconcat([frame, panel])
+
+            cv.imshow(window_name, combined)
 
             key = cv.waitKey(1) & 0xFF
             if key == ord("q"):

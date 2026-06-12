@@ -50,6 +50,7 @@ class Dashboard:
     def __init__(self, config: Config | None = None):
         self.config = config or Config()
         self._dragging: str | None = None
+        self._x_offset: int = 0
 
     # ------------------------------------------------------------------
     # Mouse handling
@@ -59,6 +60,9 @@ class Dashboard:
         cv.setMouseCallback(window_name, self._mouse_callback)
 
     def _mouse_callback(self, event, x, y, flags, param):
+        x -= self._x_offset
+        if x < 0:
+            return
         if event == cv.EVENT_LBUTTONDOWN:
             self._handle_click(x, y)
         elif event == cv.EVENT_LBUTTONUP:
