@@ -10,9 +10,10 @@ The model file is:
 `model_int8.tflite`
 
 The purpose of the model is to classify a static hand gesture
-into one of 24 sign-language letters. The model takes 88
-normalized landmark features as input (both hands combined) and
-outputs a probability distribution over 24 classes.
+into one of 26 sign-language classes (24 letters + 2 special
+symbols). The model takes 88 normalized landmark features as
+input (both hands combined) and outputs a probability
+distribution over 26 classes.
 
 The 24 supported letters are:
 
@@ -22,6 +23,11 @@ A, B, C, D, E, F, G, H, I, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y
 
 Letters J and Z are excluded because they require motion
 (dynamic gestures), which this static model cannot represent.
+
+Two additional non-letter classes were added:
+
+- **NONE** - represents the absence of a hand (empty or no gesture)
+- **SCH** - represents the German sign-language trigraph "SCH"
 
 ## Training Pipeline
 
@@ -38,7 +44,7 @@ Sequential([
     Dropout(0.25),
     Dense(128, activation="relu"),
     Dropout(0.5),
-    Dense(24, activation="softmax"),
+    Dense(26, activation="softmax"),
 ])
 ```
 
@@ -158,21 +164,21 @@ After assembly, the 88 int16 values are:
 
 ```
 [1, 88, 1]
- │   │   └── channels  (always 1 — Keras 1D-input convention)
+ │   │   └── channels  (always 1 - Keras 1D-input convention)
  │   └────── features  (88 values: 44 per hand)
  └────────── batch     (single-frame inference)
 ```
 
-- **Axis 0 — batch** (`1`): The model processes one frame at a
+- **Axis 0 - batch** (`1`): The model processes one frame at a
   time. During training, batches of 128 were used, but the TFLite
   model is always invoked with a batch of 1 at runtime.
 
-- **Axis 1 — features** (`88`): The core data dimension. These 88
+- **Axis 1 - features** (`88`): The core data dimension. These 88
   values encode both hands as described above:
   - Positions `0–43`: left hand (22 joints × 2 coords)
   - Positions `44–87`: right hand (22 joints × 2 coords)
 
-- **Axis 2 — channels** (`1`): A vestige of Keras's shape
+- **Axis 2 - channels** (`1`): A vestige of Keras's shape
   convention. The Keras `Input(shape=(88, 1))` declares the
   input as a 1D sequence of length 88 with 1 channel per
   position. This is the same shape convention used for a
@@ -239,26 +245,26 @@ divided by `POS_MAX = 32767`.
 | Property     | Value                                |
 |--------------|--------------------------------------|
 | Name         | `StatefulPartitionedCall_1:0`        |
-| Shape        | `[1, 24]`                            |
+| Shape        | `[1, 26]`                            |
 | Data type    | `uint8`                              |
 | Quantization | `(0.00390625, 0)`                    |
-| Meaning      | class scores (one per letter)        |
+| Meaning      | class scores (one per class)         |
 
-The 24 output values correspond to the 24 sign language letters.
-The label ordering is **not** alphabetical — it follows the order
-in which labels were added during training (the sequence files
-were processed A–E, then G–I, L–M, O, R–X, then F, K–V, Y):
+The 26 output values correspond to the 26 sign-language classes.
+The label ordering is: NONE first (index 0), then A–Y alphabetically,
+then SCH last (index 25):
 
 | Index | Label | Index | Label | Index | Label |
 |-------|-------|-------|-------|-------|-------|
-| 0     | A     | 8     | L     | 16    | N     |
-| 1     | B     | 9     | M     | 17    | P     |
-| 2     | C     | 10    | O     | 18    | Q     |
-| 3     | D     | 11    | R     | 19    | S     |
-| 4     | E     | 12    | W     | 20    | T     |
-| 5     | G     | 13    | X     | 21    | U     |
-| 6     | H     | 14    | F     | 22    | V     |
-| 7     | I     | 15    | K     | 23    | Y     |
+| 0     | NONE  | 9     | I     | 18    | S     |
+| 1     | A     | 10    | K     | 19    | T     |
+| 2     | B     | 11    | L     | 20    | U     |
+| 3     | C     | 12    | M     | 21    | V     |
+| 4     | D     | 13    | N     | 22    | W     |
+| 5     | E     | 14    | O     | 23    | X     |
+| 6     | F     | 15    | P     | 24    | Y     |
+| 7     | G     | 16    | Q     | 25    | SCH   |
+| 8     | H     | 17    | R     |       |       |
 
 This mapping is stored in `class.pkl` (adjacent to the
 `model_int8.tflite` file) and is loaded at runtime by
@@ -302,63 +308,22 @@ best_index = argmax(out_float)
 return labels_inv[best_index], out_float[best_index]
 ```
 
-## Verified Test Results
-
-Tests were run with the `sign_language_model_info.py` script
-using the quantized TFLite model.
-
-### Zero input (all landmarks set to `[0, 0]` for both hands)
-
-| Metric        | Value        |
-|---------------|--------------|
-| Best index    | 16           |
-| Best letter   | N            |
-| Confidence    | 0.7227       |
-| Top-5         | N, Q, M, L, R |
-
-The model has a bias toward the letter N when given zero input.
-This means that the empty-hand / zero-input case does **not**
-reliably produce a low-confidence rejection. In the live pipeline,
-the hand-presence score should be used to gate inference.
-Alternatively, the model output should be combined with a
-confidence threshold (e.g., ignore predictions below 0.5).
-
-### Single hand (synthetic landmark data)
-
-| Hand           | Predicted | Confidence |
-|----------------|-----------|------------|
-| Right only     | M         | 0.4922     |
-| Left only      | R         | 0.9961     |
-| Both hands     | O         | 0.4961     |
-| No hands       | N         | 0.7227     |
-
-The model produces different predictions depending on which hand
-is active. The left-only case achieves high confidence (`R` at
-0.9961). The right-only and both-hands cases produce moderate
-confidence results, which is expected for synthetic (non-real)
-landmark data.
-
-### Random uniform input
-
-| Metric      | Value  |
-|-------------|--------|
-| Best letter | M      |
-| Confidence  | 0.9961 |
-
-Random noise strongly activates the M class. This confirms that
-meaningful landmark data is required for reliable classification.
-
 ## Limitations
 
 - The model accepts only static gestures. Letters J and Z, which
-  require motion, are not supported.
+  require motion, are not supported
 - Two hands are always expected. A missing hand fills the
   corresponding slot with sentinel values, which can bias the
-  prediction.
+  prediction
+- The **NONE** class (index 0) represents the absence of a hand
+  and should be used to gate inference - a prediction of NONE
+  indicates no valid gesture is present
+- The **SCH** class (index 25) represents the German sign-language
+  trigraph "SCH" (a single handshape, not a sequence)
 - The confidence score is not calibrated. A threshold (e.g.
   `0.5` or higher) should be applied in practice to reject
-  uncertain or invalid predictions.
+  uncertain or invalid predictions
 - The model was trained on MediaPipe landmarks from full-frame
   images. The live pipeline must decode ROI-relative landmarks
   back to image coordinates before normalisation, otherwise the
-  scale of the wrist-relative offsets will be incorrect.
+  scale of the wrist-relative offsets will be incorrect

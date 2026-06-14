@@ -20,18 +20,6 @@ class ROI:
 
 ## Pipeline
 
-```
-  Detection Model ->  detection_to_roi() ->  ROI
-                                              │
-                                        Landmark Model
-                                              │
-                                       decode_landmark()
-                                              │
-                                       landmarks_to_roi()
-                                              │
-                                           new ROI -> next frame
-```
-
 See [ROI Lifecycle](./roi_lifecycle.md) for the full lifecycle of a single ROI from creation to destruction.
 
 ### 1. Detection -> ROI
