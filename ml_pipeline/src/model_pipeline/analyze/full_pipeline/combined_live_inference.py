@@ -77,7 +77,7 @@ def run_live_inference() -> None:
                 gap = 8
                 next_x = None
                 for hand_label, confidences in reversed(tables):
-                    pw, _ = display.estimate_table_size(confidences, with_title=True)
+                    pw, _ = display.estimate_table_size(confidences, threshold=cfg.sign_threshold, with_title=True)
                     fw = frame.shape[1]
                     if next_x is None:
                         x = fw - pw - 15
@@ -86,6 +86,7 @@ def run_live_inference() -> None:
                     nx, _ = display.draw_confidence_table(
                         frame, confidences,
                         x_offset=x, y_offset=15, title=hand_label,
+                        threshold=cfg.sign_threshold,
                     )
                     next_x = x
 
