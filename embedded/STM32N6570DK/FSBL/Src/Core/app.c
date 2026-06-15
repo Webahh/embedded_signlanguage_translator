@@ -26,20 +26,10 @@ static volatile int lcd_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1) {
-<<<<<<< Updated upstream
+    	AE_OnFrameStats();
         lcd_bg_buffer_disp_idx ^= 1;
         LCD_Layer1Config.fb = (volatile uint8_t *)&lcd_bg_buffer[lcd_bg_buffer_disp_idx];
-=======
 
-    	AE_OnFrameStats();
-        int next_capt = (lcd_bg_buffer_capt_idx + 1) % DISPLAY_BUFFER_NB;
-        int next_disp = (lcd_bg_buffer_disp_idx + 1) % DISPLAY_BUFFER_NB;
-
-        DCMIPP_Pipe_UpdateBufAddr(DCMIPP_PIPE1,
-            (uint32_t)&lcd_bg_buffer[next_capt]);
-
-        LCD_Layer1Config.fb = (volatile uint8_t *)&lcd_bg_buffer[next_disp];
->>>>>>> Stashed changes
         LCD_UpdateLayerAddress(&LCD_Layer1Config);
 
     } else if (pipe == DCMIPP_PIPE2) {
@@ -91,12 +81,9 @@ void app_init(){
     SCHEDULER_Init();
 
 	SCHEDULER_AddTask(vLEDTask, "LED", 500);
-<<<<<<< Updated upstream
-//	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
-=======
-	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
+	//SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
 	SCHEDULER_AddTask(vAETask, "AETask" , 30);
->>>>>>> Stashed changes
+
 }
 
 void app_run(){
