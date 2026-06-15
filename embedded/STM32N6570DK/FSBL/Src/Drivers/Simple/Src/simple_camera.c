@@ -90,7 +90,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     csi_conf.num_lanes         = CSI_TWO_DATA_LANES;
     csi_conf.data_lane_mapping = CSI_DATA_LANES_PHYSICAL;
     csi_conf.phy_bitrate       = CSI_PHY_BT_1600;
-    csi_conf.virtual_channel                = CSI_VIRTUAL_CHANNEL0;
+    csi_conf.virtual_channel   = CSI_VIRTUAL_CHANNEL0;
     csi_conf.dt_format         = CSI_DT_BPP10;
     csi_conf.data_type         = 0x2B;
     CSI_Config(&csi_conf);
@@ -122,6 +122,7 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.crop_height    = CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH;
     pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap    = 0;
+    pipe_conf.enable_gamma	 = 1;
     DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf, (uint32_t *)&h->display_pitch);
 
     /* ------ NN pipe: 192 x 144 RGB888 (downscaled) ------ */

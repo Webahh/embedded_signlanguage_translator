@@ -124,6 +124,7 @@ typedef struct DCMIPP_Pipe_Conf {
     uint8_t  enable_crop;        /**< Enable cropping                          */
     uint8_t  enable_swap;        /**< Red-blue swap enable                     */
     uint8_t  enable_downsize;    /**< Enable downscaling                       */
+    uint8_t  enable_gamma;		 /**< Enable gamma							   */
 } DCMIPP_Pipe_Conf;
 
 /** IPPlug client configuration structure */

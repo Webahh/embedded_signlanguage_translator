@@ -126,19 +126,48 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
     }
 
     if (pipe == DCMIPP_PIPE1) {
-        /*
-         * Reference config uses enable_gamma_conversion = 0.
-         * Therefore keep Gamma disabled for now.
-         */
-        *gmcr &= ~DCMIPP_P1GMCR_ENABLE;
+    	dcmipp->P1DECR  = DCMIPP_P1DECR_ENABLE;
+
+        dcmipp->P1BLCCR = DCMIPP_P1BLCCR_ENABLE
+                        |  DCMIPP_P1BLCCR_BLCB
+                        |  DCMIPP_P1BLCCR_BLCG
+                        |  DCMIPP_P1BLCCR_BLCR;
+
+        dcmipp->P1EXCR1 =  DCMIPP_P1EXCR1_ENABLE
+        				|  ((0x93U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
+						|  ((0x1U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
+
+        dcmipp->P1EXCR2 =
+        				   ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
+						|  ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
+						|  ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
+						|  ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
+
+        dcmipp->P1ST1CR =  DCMIPP_P1ST1CR_ENABLE
+        				|  ((0x4U  << DCMIPP_P1ST1CR_SRC_Pos) & DCMIPP_P1ST1CR_SRC_Msk);
+
+        dcmipp->P1ST2CR =  DCMIPP_P1ST2CR_ENABLE
+                		|  ((0x5U  << DCMIPP_P1ST2CR_SRC_Pos) & DCMIPP_P1ST2CR_SRC_Msk);
+
+        dcmipp->P1ST3CR = DCMIPP_P1ST3CR_ENABLE
+                		|  ((0x6U  << DCMIPP_P1ST3CR_SRC_Pos) & DCMIPP_P1ST3CR_SRC_Msk);
 
         if (conf->enable_swap)
-            dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
+        	dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
         else
             dcmipp->CMCR &= ~DCMIPP_CMCR_SWAPRB;
+        if (conf->enable_gamma)
+        	*gmcr |= DCMIPP_P1GMCR_ENABLE;
+        else
+        	*gmcr &= ~DCMIPP_P1GMCR_ENABLE;
     } else {
-        *gmcr &= ~DCMIPP_P2GMCR_ENABLE;
+        if (conf->enable_gamma) {
+            *gmcr |= DCMIPP_P2GMCR_ENABLE;
+        } else {
+            *gmcr &= ~DCMIPP_P2GMCR_ENABLE;
+        }
     }
+
 
     *ppcr = (*ppcr & ~DCMIPP_P1PPCR_FORMAT_Msk)
           | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);

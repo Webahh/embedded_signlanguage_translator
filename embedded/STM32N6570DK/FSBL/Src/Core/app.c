@@ -62,7 +62,6 @@ void app_init(){
         }
 //        CAM_NNPipe_Start(&h_cam);
     }
-
     /* --- Scheduler --- */
     SCHEDULER_Init();
 
