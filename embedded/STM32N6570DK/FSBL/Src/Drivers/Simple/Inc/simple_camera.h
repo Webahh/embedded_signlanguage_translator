@@ -84,7 +84,7 @@ typedef struct {
   * @param  nn_buf NN buffer base address (0 = use default CAM_NN_BUF)
   * @retval CAM_OK on success
   */
-CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf);
+CAM_Status CAM_Init(CAM_Handle *h);
 
 /**
   * @brief  Start the display pipe and sensor streaming

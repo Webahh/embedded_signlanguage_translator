@@ -76,6 +76,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
     uint32_t pitch;
     DCMIPP_Pipe_Conf zero_conf = {0};
     volatile uint32_t *crstr, *crszr, *dsrtior, *dsszr, *dscr, *gmcr, *ppcr, *ppm0pr, *fctcr;
+    volatile uint32_t *decr, *dccr, *blccr, *excr1, *excr2, *st1cr, *st2cr, *st3cr;
 
     if (!conf) conf = &zero_conf;
 
@@ -86,13 +87,21 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
         dsrtior = &dcmipp->P1DSRTIOR; dsszr   = &dcmipp->P1DSSZR;
         dscr    = &dcmipp->P1DSCR;    gmcr    = &dcmipp->P1GMCR;
         ppcr    = &dcmipp->P1PPCR;    ppm0pr  = &dcmipp->P1PPM0PR;
-        fctcr   = &dcmipp->P1FCTCR;
+        fctcr   = &dcmipp->P1FCTCR;   decr    = &dcmipp->P1DECR;
+        dccr    = &dcmipp->P1DECR;
+        blccr   = &dcmipp->P1BLCCR;   excr1   = &dcmipp->P1EXCR1;
+        excr2   = &dcmipp->P1EXCR2;   st1cr   = &dcmipp->P1ST1CR;
+        st2cr   = &dcmipp->P1ST2CR;   st3cr   = &dcmipp->P1ST3CR;
     } else {
         crstr   = &dcmipp->P2CRSTR;   crszr   = &dcmipp->P2CRSZR;
         dsrtior = &dcmipp->P2DSRTIOR; dsszr   = &dcmipp->P2DSSZR;
         dscr    = &dcmipp->P2DSCR;    gmcr    = &dcmipp->P2GMCR;
         ppcr    = &dcmipp->P2PPCR;    ppm0pr  = &dcmipp->P2PPM0PR;
-        fctcr   = &dcmipp->P2FCTCR;
+        fctcr   = &dcmipp->P2FCTCR;   decr    = &dcmipp->P1DECR;
+        dccr    = &dcmipp->P2DCCR;
+        blccr   = &dcmipp->P1BLCCR;   excr1   = &dcmipp->P1EXCR1;
+        excr2   = &dcmipp->P1EXCR2;   st1cr   = &dcmipp->P1ST1CR;
+        st2cr   = &dcmipp->P1ST2CR;   st3cr   = &dcmipp->P1ST3CR;
     }
 
     if (conf->enable_crop && conf->crop_width && conf->crop_height) {
@@ -108,6 +117,10 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
     if (conf->enable_downsize && conf->output_width && conf->output_height) {
         uint32_t in_w = conf->enable_crop ? conf->crop_width : conf->output_width;
         uint32_t in_h = conf->enable_crop ? conf->crop_height : conf->output_height;
+        if (conf->enable_decimate) {
+            in_w >>= conf->decimate_h;
+            in_h >>= conf->decimate_v;
+        }
         if (in_w > conf->output_width || in_h > conf->output_height) {
             uint32_t hratio = ((uint64_t)in_w << 13) / conf->output_width;
             uint32_t vratio = ((uint64_t)in_h << 13) / conf->output_height;
@@ -125,49 +138,47 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
         *dscr &= ~DCMIPP_P1DSCR_ENABLE;
     }
 
-    if (pipe == DCMIPP_PIPE1) {
-    	dcmipp->P1DECR  = DCMIPP_P1DECR_ENABLE;
+    *decr  = DCMIPP_P1DECR_ENABLE;
 
-        dcmipp->P1BLCCR = DCMIPP_P1BLCCR_ENABLE
-                        |  DCMIPP_P1BLCCR_BLCB
-                        |  DCMIPP_P1BLCCR_BLCG
-                        |  DCMIPP_P1BLCCR_BLCR;
+    *blccr = DCMIPP_P1BLCCR_ENABLE
+           | DCMIPP_P1BLCCR_BLCB
+           | DCMIPP_P1BLCCR_BLCG
+           | DCMIPP_P1BLCCR_BLCR;
 
-        dcmipp->P1EXCR1 =  DCMIPP_P1EXCR1_ENABLE
-        				|  ((0x93U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
-						|  ((0x1U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
+    *excr1 = DCMIPP_P1EXCR1_ENABLE
+           | ((0x93U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
+           | ((0x1U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
 
-        dcmipp->P1EXCR2 =
-        				   ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
-						|  ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
-						|  ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
-						|  ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
+    *excr2 = ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
+           | ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
+           | ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
+           | ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
 
-        dcmipp->P1ST1CR =  DCMIPP_P1ST1CR_ENABLE
-        				|  ((0x4U  << DCMIPP_P1ST1CR_SRC_Pos) & DCMIPP_P1ST1CR_SRC_Msk);
+    *st1cr = DCMIPP_P1ST1CR_ENABLE
+           | ((0x4U << DCMIPP_P1ST1CR_SRC_Pos) & DCMIPP_P1ST1CR_SRC_Msk);
 
-        dcmipp->P1ST2CR =  DCMIPP_P1ST2CR_ENABLE
-                		|  ((0x5U  << DCMIPP_P1ST2CR_SRC_Pos) & DCMIPP_P1ST2CR_SRC_Msk);
+    *st2cr = DCMIPP_P1ST2CR_ENABLE
+           | ((0x5U << DCMIPP_P1ST2CR_SRC_Pos) & DCMIPP_P1ST2CR_SRC_Msk);
 
-        dcmipp->P1ST3CR = DCMIPP_P1ST3CR_ENABLE
-                		|  ((0x6U  << DCMIPP_P1ST3CR_SRC_Pos) & DCMIPP_P1ST3CR_SRC_Msk);
+    *st3cr = DCMIPP_P1ST3CR_ENABLE
+           | ((0x6U << DCMIPP_P1ST3CR_SRC_Pos) & DCMIPP_P1ST3CR_SRC_Msk);
 
-        if (conf->enable_swap)
-        	dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
-        else
-            dcmipp->CMCR &= ~DCMIPP_CMCR_SWAPRB;
-        if (conf->enable_gamma)
-        	*gmcr |= DCMIPP_P1GMCR_ENABLE;
-        else
-        	*gmcr &= ~DCMIPP_P1GMCR_ENABLE;
-    } else {
-        if (conf->enable_gamma) {
-            *gmcr |= DCMIPP_P2GMCR_ENABLE;
-        } else {
-            *gmcr &= ~DCMIPP_P2GMCR_ENABLE;
-        }
+    if (conf->enable_swap)
+        dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
+    else
+        dcmipp->CMCR &= ~DCMIPP_CMCR_SWAPRB;
+
+    if (conf->enable_gamma)
+        *gmcr |= DCMIPP_P1GMCR_ENABLE;
+    else
+        *gmcr &= ~DCMIPP_P1GMCR_ENABLE;
+
+    /* --- Decimation (per-pipe: P1DECR for pipe1, P2DCCR for pipe2) --- */
+    if (conf->enable_decimate) {
+        *dccr = DCMIPP_P1DECR_ENABLE
+              | (conf->decimate_h << DCMIPP_P1DECR_HDEC_Pos)
+              | (conf->decimate_v << DCMIPP_P1DECR_VDEC_Pos);
     }
-
 
     *ppcr = (*ppcr & ~DCMIPP_P1PPCR_FORMAT_Msk)
           | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);

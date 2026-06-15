@@ -66,16 +66,16 @@ static void CAM_HwInit(void)
  * API
  * ------------------------------------------------------------------------- */
 
-CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
+CAM_Status CAM_Init(CAM_Handle *h)
 {
     CSI_Conf csi_conf;
-    DCMIPP_Pipe_Conf pipe_conf;
+    DCMIPP_Pipe_Conf pipe_conf = {0};
     DCMIPP_IPPlug_Conf ipplug_conf;
 
     h->display_disp_idx = 1;
     h->display_capt_idx = 0;
     h->display_buf      = (uint32_t)&lcd_bg_buffer[h->display_capt_idx];
-    h->nn_buf           = nn_buf ? nn_buf : CAM_NN_BUF;
+    h->nn_buf           = (uint32_t)&lcd_fg_buffer;
     h->initialized      = 0;
 
     CAM_HwInit();
@@ -137,8 +137,12 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     pipe_conf.crop_y         = 0;
     pipe_conf.crop_width     = CAM_SENSOR_WIDTH;
     pipe_conf.crop_height    = CAM_SENSOR_HEIGHT;
-    pipe_conf.enable_downsize = 1;
-    pipe_conf.enable_swap    = 0;
+    pipe_conf.enable_downsize  = 1;
+    pipe_conf.enable_decimate  = 1;
+    pipe_conf.decimate_h       = 1;
+    pipe_conf.decimate_v       = 1;
+    pipe_conf.enable_swap      = 0;
+    pipe_conf.enable_gamma     = 1;
     DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
 
     /* ------ Statistics window (Pipe1) ------ */
@@ -181,6 +185,10 @@ CAM_Status CAM_Init(CAM_Handle *h, uint32_t nn_buf)
     DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0x0, 0x0, 0x0);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
+    DCMIPP_Pipe_EnableISP(CAM_PIPE_NN, DCMIPP_RAWBAYER_RGGB);
+    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_NN, 0x0, 0x0, 0x0);
+    DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_NN);
+
     /* Reduce spurious line events (reference workaround) */
     DCMIPP_ReduceSpurious();
 
@@ -216,6 +224,12 @@ CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 
 CAM_Status CAM_NNPipe_Start(CAM_Handle *h)
 {
-    DCMIPP_Pipe_Start(CAM_PIPE_NN, h->nn_buf, 0);
+    DCMIPP_Pipe_Start(CAM_PIPE_NN, (uint32_t)&lcd_fg_buffer[0], 0);
+
+    LCD_Layer2Config.fb = lcd_fg_buffer[1];
+    LCD_Layer2Config.pixel_format = LCD_PF_RGB888;
+    LCD_Layer2Config.per_pixel_alpha = 0;
+    LCD_ConfigLayer2();
+
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }

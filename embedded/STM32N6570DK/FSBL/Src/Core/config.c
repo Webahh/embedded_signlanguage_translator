@@ -77,15 +77,15 @@ LCD_LayerConfig LCD_Layer1Config = {
 
 LCD_LayerConfig LCD_Layer2Config = {
     .regs            = LTDC_Layer2,
-    .fb              = lcd_fg_buffer,
+    .fb              = lcd_fg_buffer[0],
     .x               = 10,
     .y               = 10,
     .width           = LCD_FG_WIDTH,
     .height          = LCD_FG_HEIGHT,
     .buf_width       = LCD_FG_WIDTH,
-    .pixel_format    = LCD_PF_ARGB8888,
+    .pixel_format    = LCD_PF_RGB888,
     .const_alpha     = 0xFF,
-    .per_pixel_alpha = 1,
+    .per_pixel_alpha = 0,
     .default_color   = 0x00000000U,
     .blending_order  = 1,
 };
