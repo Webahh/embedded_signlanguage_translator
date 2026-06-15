@@ -12,8 +12,7 @@
 
 #define LCD_BYTES_PER_PIXEL 4U
 
-#define DISPLAY_DELAY        2
-#define DISPLAY_BUFFER_NB    (DISPLAY_DELAY + 2)
+#define DISPLAY_BUFFER_NB    2
 #define DISPLAY_BPP          3
 
 #define NN_DELAY        2
@@ -30,7 +29,6 @@
 extern volatile uint8_t lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP];
 extern volatile uint8_t lcd_fg_buffer[NN_BUFFER_NB][LCD_FG_WIDTH * LCD_FG_HEIGHT * NN_BPP];
 extern volatile int     lcd_bg_buffer_disp_idx;
-extern volatile int     lcd_bg_buffer_capt_idx;
 
 typedef enum {
     LCD_PF_ARGB8888 = 0b000,

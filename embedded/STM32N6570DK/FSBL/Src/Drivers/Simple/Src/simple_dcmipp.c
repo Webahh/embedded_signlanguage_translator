@@ -182,6 +182,8 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
 
     *ppcr = (*ppcr & ~DCMIPP_P1PPCR_FORMAT_Msk)
           | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);
+    if (conf->enable_dbm)
+        *ppcr |= DCMIPP_P1PPCR_DBM;
     *ppm0pr = pitch;
     *fctcr = (*fctcr & ~DCMIPP_P1FCTCR_FRATE_Msk) | 0;
 
@@ -275,8 +277,10 @@ void DCMIPP_ReduceSpurious(void)
 void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
 {
     if (pipe == DCMIPP_PIPE1) {
-        dcmipp->P1PPM0AR1 = buf_addr;
-        dcmipp->P1PPM0AR2 = 0;
+        if (!(dcmipp->P1PPCR & DCMIPP_P1PPCR_DBM)) {
+            dcmipp->P1PPM0AR1 = buf_addr;
+            dcmipp->P1PPM0AR2 = 0;
+        }
         if (mode == 0)
             dcmipp->P1FCTCR &= ~DCMIPP_P1FCTCR_CPTMODE;
         else

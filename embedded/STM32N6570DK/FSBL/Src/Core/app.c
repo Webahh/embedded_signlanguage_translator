@@ -25,17 +25,9 @@ static volatile int lcd_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1) {
-        int next_capt = (lcd_bg_buffer_capt_idx + 1) % DISPLAY_BUFFER_NB;
-        int next_disp = (lcd_bg_buffer_disp_idx + 1) % DISPLAY_BUFFER_NB;
-
-        DCMIPP_Pipe_UpdateBufAddr(DCMIPP_PIPE1,
-            (uint32_t)&lcd_bg_buffer[next_capt]);
-
-        LCD_Layer1Config.fb = (volatile uint8_t *)&lcd_bg_buffer[next_disp];
+        lcd_bg_buffer_disp_idx ^= 1;
+        LCD_Layer1Config.fb = (volatile uint8_t *)&lcd_bg_buffer[lcd_bg_buffer_disp_idx];
         LCD_UpdateLayerAddress(&LCD_Layer1Config);
-
-        lcd_bg_buffer_capt_idx = next_capt;
-        lcd_bg_buffer_disp_idx = next_disp;
 
     } else if (pipe == DCMIPP_PIPE2) {
         int next_capt = (lcd_fg_capt_idx + 1) % NN_BUFFER_NB;
@@ -66,21 +58,21 @@ void app_init(){
 
     delay_ms(10);
 
-//    LCD_ConfigLayer1();
-    LCD_ConfigLayer2();
+    LCD_ConfigLayer1();
+//    LCD_ConfigLayer2();
 
     delay_ms(10);
 
     uint32_t error = 0;
     if (CAM_Init(&h_cam) == CAM_OK) {
-//        if(CAM_DisplayPipe_Start(&h_cam)) {
-//        	// Error
-//        	error++;
-//        }
-        if(CAM_NNPipe_Start(&h_cam)) {
-            // Error
+        if(CAM_DisplayPipe_Start(&h_cam)) {
+        	// Error
         	error++;
         }
+//        if(CAM_NNPipe_Start(&h_cam)) {
+//            // Error
+//        	error++;
+//        }
     }
     /* --- Scheduler --- */
     SCHEDULER_Init();

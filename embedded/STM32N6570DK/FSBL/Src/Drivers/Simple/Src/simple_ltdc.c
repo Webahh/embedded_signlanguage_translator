@@ -6,8 +6,7 @@
 
 volatile uint8_t lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
 volatile uint8_t lcd_fg_buffer[NN_BUFFER_NB][LCD_FG_WIDTH * LCD_FG_HEIGHT * NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile int lcd_bg_buffer_disp_idx = 1;
-volatile int lcd_bg_buffer_capt_idx = 0;
+volatile int lcd_bg_buffer_disp_idx = 0;
 
 static void LCD_ConfigGPIO(void){
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};

@@ -72,9 +72,7 @@ CAM_Status CAM_Init(CAM_Handle *h)
     DCMIPP_Pipe_Conf pipe_conf = {0};
     DCMIPP_IPPlug_Conf ipplug_conf;
 
-    h->display_disp_idx = 1;
-    h->display_capt_idx = 0;
-    h->display_buf      = (uint32_t)&lcd_bg_buffer[h->display_capt_idx];
+    h->display_buf      = (uint32_t)&lcd_bg_buffer[0];
     h->nn_buf           = (uint32_t)&lcd_fg_buffer;
     h->initialized      = 0;
 
@@ -123,7 +121,10 @@ CAM_Status CAM_Init(CAM_Handle *h)
     pipe_conf.enable_downsize = 1;
     pipe_conf.enable_swap    = 0;
     pipe_conf.enable_gamma	 = 1;
+    pipe_conf.enable_dbm     = 1;
     DCMIPP_Pipe_Config(CAM_PIPE_DISPLAY, &pipe_conf, (uint32_t *)&h->display_pitch);
+    DCMIPP->P1PPM0AR1 = (uint32_t)&lcd_bg_buffer[0];
+    DCMIPP->P1PPM0AR2 = (uint32_t)&lcd_bg_buffer[1];
 
     /* ------ NN pipe: 192 x 144 RGB888 (downscaled) ------ */
     /* Crop full sensor frame then downscale to NN input size */
@@ -141,6 +142,7 @@ CAM_Status CAM_Init(CAM_Handle *h)
     pipe_conf.enable_decimate  = 1;
     pipe_conf.decimate_h       = 1;
     pipe_conf.decimate_v       = 1;
+    pipe_conf.enable_dbm      = 0;
     pipe_conf.enable_swap      = 0;
     pipe_conf.enable_gamma     = 1;
     DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
@@ -208,15 +210,11 @@ CAM_Status CAM_Init(CAM_Handle *h)
 
 CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 {
-    h->display_disp_idx = 1;
-    h->display_capt_idx = 0;
-    lcd_bg_buffer_disp_idx = h->display_disp_idx;
-    lcd_bg_buffer_capt_idx = h->display_capt_idx;
+    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, 0, 0);
 
-    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, (uint32_t)&lcd_bg_buffer[h->display_capt_idx], 0);
-
+    lcd_bg_buffer_disp_idx = 1;
     LCD_Layer1Config.pixel_format = LCD_PF_RGB888;
-    LCD_Layer1Config.fb            = (volatile uint8_t *)&lcd_bg_buffer[h->display_disp_idx];
+    LCD_Layer1Config.fb            = (volatile uint8_t *)&lcd_bg_buffer[lcd_bg_buffer_disp_idx];
     LCD_ConfigLayer1();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
