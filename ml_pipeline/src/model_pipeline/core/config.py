@@ -24,7 +24,7 @@ HAND_LANDMARK_MODEL_PATH = os.path.join(
 SIGNLANGUAGE_MODEL_PATH = os.path.abspath(
     os.path.join(
         MODEL_ROOT,
-        "../ml_pipeline/model/model_int8.tflite"
+        "fingeralphabet_model_int8.tflite"
     )
 )
 
