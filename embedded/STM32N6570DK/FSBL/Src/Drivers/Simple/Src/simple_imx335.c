@@ -16,6 +16,9 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
+#define IMX335_VMAX_30FPS             0x1194U
+#define IMX335_1H_PERIOD_USEC_X1000   14800U
+
 /** Register/value pair for table-based writes */
 struct regval {
     uint16_t addr; /**< 16-bit register address */
@@ -128,7 +131,7 @@ static const struct regval res_2592_1944_regs[] = {
     {0x37b0, 0x36},  /* analog tuning 57                                 */
 
     /* ---- AEC enable (Auto Exposure) ---- */
-    {0x3a00, 0x01},  /* AEC            									  */
+    {0x3a00, 0x00},  /* AEC            									  */
 };
 
 /** 2-lane / 10-bit MIPI mode selection */
@@ -212,6 +215,12 @@ static const struct regval mirrorflip_mirror_regs[] = {
 static int32_t write_reg(IMX335_Handle *h, uint16_t reg, uint8_t val)
 {
     return I2C_Mem_Write(h->i2c, h->addr, reg, &val, 1) == I2C_OK ? 0 : -1;
+}
+
+static void write_reg24(IMX335_Handle *h, uint16_t reg, uint32_t value){
+    write_reg(h, reg + 0U, (uint8_t)(value & 0xFFU));
+    write_reg(h, reg + 1U, (uint8_t)((value >> 8) & 0xFFU));
+    write_reg(h, reg + 2U, (uint8_t)((value >> 16) & 0x0FU));
 }
 
 /**
@@ -485,6 +494,65 @@ int32_t IMX335_VerifyConfig(IMX335_Handle *h)
 
     if (write_table_verify(h, framerate_30fps_regs,
                            ARRAY_SIZE(framerate_30fps_regs))) {
+        return -1;
+    }
+
+    return 0;
+}
+
+void IMX335_SetExposureUs(IMX335_Handle *h, uint32_t exposure_us){
+    if (!h) {
+        return;
+    }
+
+    /*
+     * exposure_lines = exposure_us / line_time_us
+     * mit line_time_us als x1000-Fixed-Point.
+     */
+    uint32_t exposure_lines =
+        (exposure_us * 1000U) / IMX335_1H_PERIOD_USEC_X1000;
+
+    if (exposure_lines < 1U) {
+        exposure_lines = 1U;
+    }
+
+    if (exposure_lines > (IMX335_VMAX_30FPS - 2U)) {
+        exposure_lines = IMX335_VMAX_30FPS - 2U;
+    }
+
+    /*
+     * IMX335: SHS1 = VMAX - exposure_lines
+     */
+    uint32_t shs1 = IMX335_VMAX_30FPS - exposure_lines;
+
+    write_reg(h, IMX335_REG_HOLD, 0x01);
+    write_reg24(h, IMX335_REG_SHUTTER, shs1);
+    write_reg(h, IMX335_REG_HOLD, 0x00);
+}
+
+int32_t IMX335_SetGainMdB(IMX335_Handle *h, uint32_t gain_mdb)
+{
+    if (!h) {
+        return -1;
+    }
+
+    gain_mdb = (gain_mdb < IMX335_GAIN_MIN) ? IMX335_GAIN_MIN : gain_mdb;
+    gain_mdb = (gain_mdb > IMX335_GAIN_MAX) ? IMX335_GAIN_MAX : gain_mdb;
+
+    /*
+     * IMX335 gain unit: 0.3 dB = 300 mdB.
+     * Register receives gain / 300.
+     */
+    uint32_t gain_reg = gain_mdb / IMX335_GAIN_UNIT_MDB;
+
+    write_reg(h, IMX335_REG_HOLD, 0x01);
+
+    int32_t ret0 = write_reg(h, IMX335_REG_GAIN + 0U, (uint8_t)(gain_reg & 0xFFU));
+    int32_t ret1 = write_reg(h, IMX335_REG_GAIN + 1U, (uint8_t)((gain_reg >> 8) & 0xFFU));
+
+    write_reg(h, IMX335_REG_HOLD, 0x00);
+
+    if (ret0 || ret1) {
         return -1;
     }
 

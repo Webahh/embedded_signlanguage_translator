@@ -9,6 +9,8 @@
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
+#include "simple_ae.h"
+#include "config.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
@@ -44,4 +46,8 @@ void vBackgroundTask(void) {
     uint8_t b = (uint8_t)(((uint32_t)bg_colors[bg_seg_idx][2] * (1000 - t) + (uint32_t)bg_colors[next_idx][2] * t) / 1000);
 
     LCD_SetBackgroundColor(r, g, b);
+}
+
+void vAETask(void){
+	AE_Process(&h_cam);
 }

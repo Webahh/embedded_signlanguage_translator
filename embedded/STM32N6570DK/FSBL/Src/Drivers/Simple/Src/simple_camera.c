@@ -19,6 +19,7 @@
 #include "simple_gpio.h"
 #include "simple_i2c.h"
 #include "simple_timer.h"
+#include "simple_ae.h"
 #include "config.h"
 
 /* ---------------------------------------------------------------------------
@@ -184,7 +185,7 @@ CAM_Status CAM_Init(CAM_Handle *h)
     /* ------ ISP ------ */
 
     DCMIPP_Pipe_EnableISP(CAM_PIPE_DISPLAY, DCMIPP_RAWBAYER_RGGB);
-    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0x0, 0x0, 0x0);
+    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0xC, 0xC, 0xC);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
     DCMIPP_Pipe_EnableISP(CAM_PIPE_NN, DCMIPP_RAWBAYER_RGGB);
@@ -200,9 +201,8 @@ CAM_Status CAM_Init(CAM_Handle *h)
         return CAM_ERROR_INIT;
     }
 
-    if (IMX335_EnableAutoExposure(&h->imx335)) {
-        return CAM_ERROR;
-    }
+    AE_Init(10000U);
+    IMX335_SetExposureUs(&h_cam.imx335, AE_GetExposureUs());
 
     h->initialized = 1;
     return CAM_OK;

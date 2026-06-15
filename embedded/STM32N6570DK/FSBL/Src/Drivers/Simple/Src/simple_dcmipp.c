@@ -140,19 +140,36 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
 
     *decr  = DCMIPP_P1DECR_ENABLE;
 
+<<<<<<< Updated upstream
     *blccr = DCMIPP_P1BLCCR_ENABLE
            | DCMIPP_P1BLCCR_BLCB
            | DCMIPP_P1BLCCR_BLCG
            | DCMIPP_P1BLCCR_BLCR;
+=======
+    	dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;
+    	dcmipp->P1CCRR1 = 0x7fb0188;
+    	dcmipp->P1CCRR2 = 0x77d;
+    	dcmipp->P1CCGR1 = 0x1e8079a;
+    	dcmipp->P1CCGR2 = 0x77f;
+    	dcmipp->P1CCBR1 = 0x79f07e3;
+    	dcmipp->P1CCBR2 = 0x17e;
+>>>>>>> Stashed changes
 
     *excr1 = DCMIPP_P1EXCR1_ENABLE
            | ((0x93U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
            | ((0x1U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
 
+<<<<<<< Updated upstream
     *excr2 = ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
            | ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
            | ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
            | ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
+=======
+        dcmipp->P1EXCR2 =  ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
+						|  ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
+						|  ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
+						|  ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
+>>>>>>> Stashed changes
 
     *st1cr = DCMIPP_P1ST1CR_ENABLE
            | ((0x4U << DCMIPP_P1ST1CR_SRC_Pos) & DCMIPP_P1ST1CR_SRC_Msk);

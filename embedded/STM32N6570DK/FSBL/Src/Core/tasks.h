@@ -13,6 +13,7 @@
 
 void vLEDTask(void);
 void vBackgroundTask(void);
+void vAETask(void);
 
 
 

@@ -149,6 +149,11 @@ int32_t IMX335_EnableAutoExposure(IMX335_Handle *h);
 int32_t IMX335_VerifyConfig(IMX335_Handle *h);
 
 int32_t IMX335_ReadReg(IMX335_Handle *h, uint16_t reg, uint8_t *val);
+
+void IMX335_SetExposureUs(IMX335_Handle *h, uint32_t exposure_us);
+
 void IMX335_DumpDebugRegs(IMX335_Handle *h);
+
+int32_t IMX335_SetGainMdB(IMX335_Handle *h, uint32_t gain_mdb);
 
 #endif /* SIMPLE_IMX335_H */
