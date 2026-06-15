@@ -1,3 +1,10 @@
+# ROI (Region of Interest) utility functions.
+#
+# Converts between palm detection results, landmark results, and the
+# rotated ROI format used to crop-and-rectify hand regions for the
+# landmark model. Also provides coordinate decoding from ROI space
+# back to image pixel space.
+
 import numpy as np
 
 from src.model_pipeline.core.config import (
@@ -21,6 +28,19 @@ def pd_box_to_roi(
     pad_left: int,
     pad_top: int,
 ) -> ROI:
+    """Convert a palm detection result to a cropped ROI for the landmark model.
+
+    Decodes the normalized box and keypoints back to original pixel space,
+    computes the palm rotation angle from landmarks 0 and 2, and applies
+    the configured shift/scale to produce the final landmark model ROI.
+
+    Args:
+        detection: Palm detection result.
+        scale, pad_left, pad_top: Letterbox params from preprocessing.
+
+    Returns:
+        ROI centered on the palm, rotated, and expanded for landmark detection.
+    """
     x1, y1 = model_to_original_point(detection.box[0], detection.box[1], scale, pad_left, pad_top)
     x2, y2 = model_to_original_point(detection.box[2], detection.box[3], scale, pad_left, pad_top)
 
@@ -38,6 +58,7 @@ def pd_box_to_roi(
         scale, pad_left, pad_top,
     )
 
+    # Compute rotation from the line between palm keypoints 0 and 2
     rotation = np.pi * 0.5 - np.arctan2(-(kp2_y - kp0_y), kp2_x - kp0_x)
     rotation = _normalize_angle(rotation)
 
@@ -52,6 +73,18 @@ def decode_landmark(
     lm_y: float,
     roi: ROI,
 ) -> tuple[float, float]:
+    """Decode a single normalized ROI-space landmark to image pixel coordinates.
+
+    Reverses the ROI cropping: landmark is offset from ROI center, rotated,
+    and scaled by ROI dimensions.
+
+    Args:
+        lm_x, lm_y: Normalized landmark coordinates in [0, 1] relative to ROI.
+        roi: The ROI defining the crop coordinate system.
+
+    Returns:
+        (x, y) pixel coordinates in the original image frame.
+    """
     dx = (lm_x - 0.5) * roi.w
     dy = (lm_y - 0.5) * roi.h
     cos_r = np.cos(roi.rotation)
@@ -64,6 +97,19 @@ def decode_landmark(
 def landmarks_to_roi(
     decoded_landmarks: np.ndarray,
 ) -> tuple[ROI, PalmDetection]:
+    """Derive a new tracking ROI and fake palm detection from decoded landmarks
+
+    Uses a subset of landmark indices (LANDMARK_BBOX_INDICES) to compute
+    the bounding box, and landmarks 0 and 9 to compute orientation.
+    The resulting ROI is shifted/scaled for the next frame's landmark model
+
+    Args:
+        decoded_landmarks: (21, 2) array of landmark positions in image pixels
+
+    Returns:
+        Tuple of (next_frame_ROI, PalmDetection proxy with box and keypoints
+        in pixel space)
+    """
     indices = np.array(LANDMARK_BBOX_INDICES)
     selected = decoded_landmarks[indices]
     min_xy = selected.min(axis=0)
@@ -100,10 +146,17 @@ def landmarks_to_roi(
 
 
 def _normalize_angle(angle: float) -> float:
+    """Normalize an angle to the range [-pi, pi)"""
     return angle - 2 * np.pi * np.floor((angle - (-np.pi)) / (2 * np.pi))
 
 
 def _roi_shift_and_scale(roi: ROI, shift_x: float, shift_y: float, scale_x: float, scale_y: float) -> None:
+    """Apply a shift and scale transform to an ROI in place
+
+    Translates the ROI center by (shift_x, shift_y) relative to its
+    axes, then expands the shorter side to match the longer side and
+    scales by the given factors
+    """
     sx = roi.w * shift_x * np.cos(roi.rotation) - roi.h * shift_y * np.sin(roi.rotation)
     sy = roi.w * shift_x * np.sin(roi.rotation) + roi.h * shift_y * np.cos(roi.rotation)
     roi.cx += sx

@@ -1,3 +1,9 @@
+# Hand landmark detection model wrapper
+#
+# Given a cropped hand ROI (from palm detection), predicts 21 3D landmarks
+# per the MediaPipe hand landmark convention. Also outputs a hand presence
+# score and optional handedness (left/right) prediction
+
 import cv2 as cv
 import numpy as np
 
@@ -6,6 +12,7 @@ from src.model_pipeline.results.model_results import ROI
 from src.model_pipeline.runtime.interpreter import load_model
 
 
+# MediaPipe hand skeleton connections (21 landmarks, 20 edges + 1 wrist-to-pinky)
 HAND_CONNECTIONS = [
     (0, 1), (1, 2), (2, 3), (3, 4),
     (0, 5), (5, 6), (6, 7), (7, 8),
@@ -17,6 +24,13 @@ HAND_CONNECTIONS = [
 
 
 class HandLandmarkDetector:
+    """TFLite wrapper for MediaPipe-style hand landmark detection
+
+    Operates on a cropped and rotated hand ROI (provided by palm detection
+    or previous-frame tracking) and returns normalized landmark coordinates,
+    presence confidence, and handedness score
+    """
+
     def __init__(self, model_path: str) -> None:
         self._interpreter = load_model(model_path)
         self._input_details = self._interpreter.get_input_details()[0]
@@ -32,6 +46,18 @@ class HandLandmarkDetector:
         frame: np.ndarray,
         roi: ROI,
     ) -> tuple[np.ndarray, float, float]:
+        """Run landmark detection on a hand ROI cropped from the frame
+
+        Args:
+            frame: Full BGR video frame
+            roi: Region of interest defining the hand bounding box and rotation
+
+        Returns:
+            Tuple of (landmarks, presence_score, handedness)
+            landmarks is an (NUM_LANDMARKS, 2) array of (x, y) normalized
+            within the ROI
+            Returns (None, 0.0, DEFAULT_HANDEDNESS) on failure
+        """
         cropped = self._crop_roi(frame, roi)
         if cropped is None:
             return None, 0.0, DEFAULT_HANDEDNESS
@@ -53,12 +79,14 @@ class HandLandmarkDetector:
                 )[0, 0]
             )
         except KeyError:
+            # Older model variants may not have a handedness output head
             handedness = DEFAULT_HANDEDNESS
 
         raw_landmarks = self._interpreter.get_tensor(
             self._output_details["Identity:0"]["index"]
         ).reshape(NUM_LANDMARKS, 3)
 
+        # Normalize landmark coordinates from model input space to [0, 1]
         landmarks = np.empty((NUM_LANDMARKS, 2), dtype=np.float32)
         for i in range(NUM_LANDMARKS):
             landmarks[i, 0] = raw_landmarks[i, 0] / self._input_width
@@ -71,6 +99,12 @@ class HandLandmarkDetector:
         frame: np.ndarray,
         roi: ROI,
     ) -> np.ndarray:
+        """Extract and rectify the hand ROI via affine warp
+
+        Computes the affine transform that maps the rotated ROI rectangle
+        onto the model's square input, adding a 10% margin to avoid edge
+        truncation
+        """
         frame_height, frame_width = frame.shape[:2]
 
         cos_r = abs(np.cos(roi.rotation))
@@ -109,6 +143,7 @@ class HandLandmarkDetector:
         return cropped
 
     def _prepare_input(self, image: np.ndarray) -> np.ndarray:
+        """Convert BGR crop to RGB uint8 batched tensor"""
         rgb = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         return np.expand_dims(rgb.astype(np.uint8), axis=0)
 
@@ -117,6 +152,12 @@ class HandLandmarkDetector:
         frame: np.ndarray,
         points: list[tuple[int, int]],
     ) -> None:
+        """Draw hand skeleton connections and landmark indices on the frame
+
+        Args:
+            frame: BGR image to draw on (modified in place)
+            points: List of 21 (x, y) pixel coordinates
+        """
         for start_index, end_index in HAND_CONNECTIONS:
             cv.line(
                 frame,

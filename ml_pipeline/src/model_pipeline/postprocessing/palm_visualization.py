@@ -1,3 +1,8 @@
+# Visualization utilities for palm detection results
+#
+# Provides coordinate mapping from normalized model space back to original
+# image pixel space, and drawing routines for bounding boxes and keypoints
+
 import cv2 as cv
 import numpy as np
 
@@ -12,6 +17,18 @@ def model_to_original_point(
         pad_left: int,
         pad_top: int,
 ) -> tuple[int, int]:
+    """Convert a normalized model-space point back to original image pixels
+
+    Reverses the letterbox transform applied by prepare_input()
+
+    Args:
+        x_normalized, y_normalized: Coordinates in [0, 1] model space
+        scale: Image-to-model scale factor from preprocessing
+        pad_left, pad_top: Letterbox padding from preprocessing
+
+    Returns:
+        (x, y) integer pixel coordinates in the original image
+    """
     model_x = x_normalized * MODEL_SIZE
     model_y = y_normalized * MODEL_SIZE
 
@@ -29,6 +46,14 @@ def draw_detection(
         pad_top: int,
         label: str = "",
 ) -> None:
+    """Draw a palm detection bounding box, keypoints, and confidence label
+
+    Args:
+        frame: BGR image to draw on (modified in place)
+        detection: PalmDetection result with box and keypoints
+        scale, pad_left, pad_top: Letterbox parameters from preprocessing
+        label: Optional text prepended to the confidence score
+    """
     x1, y1 = model_to_original_point(
         detection.box[0],
         detection.box[1],

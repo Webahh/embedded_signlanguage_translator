@@ -1,3 +1,15 @@
+# Precomputed anchor boxes for the palm detection model
+#
+# The anchor grid follows the MediaPipe palm detection schema with two
+# stride levels:
+#   - Fine stride (indices 0-1155):   anchors every 1/48 of the 192x192 grid
+#   - Coarse stride (indices 1156-2019): anchors every 1/24 of the 192x192 grid
+#
+# Each coordinate pair appears 2x (fine) or 6x (coarse) due to overlapping
+# anchor placements at the same spatial location with different aspect ratios.
+# This duplication mirrors the TFLite model's output layout and must remain
+# aligned with the anchor tensor the model was trained with
+
 import numpy as np
 
 PALM_ANCHORS = np.array([
@@ -2016,5 +2028,5 @@ PALM_ANCHORS = np.array([
   [0.958333, 0.958333],
   [0.958333, 0.958333],
   [0.958333, 0.958333],
-  [0.958333, 0.958333]
-], dtype=np.float32)
+  [0.958333, 0.958333],
+])

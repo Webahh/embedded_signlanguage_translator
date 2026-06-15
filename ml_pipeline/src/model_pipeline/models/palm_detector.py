@@ -1,3 +1,9 @@
+# Palm detection model wrapper
+#
+# Detects hand palms in a full image frame using a quantized TFLite model.
+# Returns bounding boxes, palm keypoints, and confidence scores after
+# score thresholding and non-maximum suppression (NMS)
+
 import numpy as np
 
 from src.model_pipeline.models.palm_anchors import PALM_ANCHORS
@@ -16,7 +22,17 @@ from src.model_pipeline.core.config import (
 
 
 class PalmDetector:
-    def __init__(self, model_path: str) -> None:
+    """TFLite wrapper for MediaPipe-style palm detection
+
+    Runs full-image inference, decodes anchor-relative box/keypoint
+    predictions, applies sigmoid activation to scores, filters by
+    confidence threshold, and performs greedy NMS
+    """
+
+    def __init__(
+            self,
+            model_path: str
+    ) -> None:
         self._interpreter = load_model(model_path)
         self._input_details = self._interpreter.get_input_details()[0]
         self._output_details = self._interpreter.get_output_details()
@@ -27,6 +43,18 @@ class PalmDetector:
         score_threshold: float | None = None,
         iou_threshold: float | None = None,
     ) -> tuple[list[PalmDetection], float, int, int]:
+        """Run palm detection on a full image frame
+
+        Args:
+            image: BGR image frame
+            score_threshold: Confidence threshold override (default from config)
+            iou_threshold: NMS IoU threshold override (default from config)
+
+        Returns:
+            Tuple of (detections, scale_factor, pad_left, pad_top) where
+            scale/padding describe the letterbox transform applied to the
+            input image before model inference
+        """
         score_threshold = score_threshold if score_threshold is not None else SCORE_THRESHOLD
         iou_threshold = iou_threshold if iou_threshold is not None else IOU_THRESHOLD
 
@@ -56,11 +84,21 @@ class PalmDetector:
 
     @staticmethod
     def _sigmoid(values: np.ndarray) -> np.ndarray:
+        """Numerically stable sigmoid activation"""
         values = np.clip(values, SIGMOID_CLIP_MIN, SIGMOID_CLIP_MAX)
         return 1.0 / (1.0 + np.exp(-values))
 
     @staticmethod
-    def _decode_detection(index: int, score: float, raw: np.ndarray) -> PalmDetection:
+    def _decode_detection(
+            index: int,
+            score: float,
+            raw: np.ndarray
+    ) -> PalmDetection:
+        """Decode a single anchor-relative prediction into absolute coordinates
+
+        The raw network output is offset from the anchor center and scaled
+        by the model input dimension (MODEL_SIZE)
+        """
         anchor_x, anchor_y = PALM_ANCHORS[index]
 
         center_x = raw[0] / MODEL_SIZE + anchor_x
@@ -84,7 +122,11 @@ class PalmDetector:
         return PalmDetection(index=index, score=score, box=box, keypoints=keypoints)
 
     @staticmethod
-    def _calculate_iou(box_a: np.ndarray, box_b: np.ndarray) -> float:
+    def _calculate_iou(
+            box_a: np.ndarray,
+            box_b: np.ndarray
+    ) -> float:
+        """Intersection-over-union for two bounding boxes in xyxy format"""
         x1 = max(box_a[0], box_b[0])
         y1 = max(box_a[1], box_b[1])
         x2 = min(box_a[2], box_b[2])
@@ -99,7 +141,12 @@ class PalmDetector:
             return 0.0
         return float(intersection / union)
 
-    def _non_max_suppression(self, detections: list[PalmDetection], iou_threshold: float = IOU_THRESHOLD) -> list[PalmDetection]:
+    def _non_max_suppression(
+            self,
+            detections: list[PalmDetection],
+            iou_threshold: float = IOU_THRESHOLD
+    ) -> list[PalmDetection]:
+        """Greedy NMS: sort by score descending, keep highest, suppress overlapping"""
         remaining = sorted(detections, key=lambda d: d.score, reverse=True)
         selected = []
         while remaining:
@@ -115,6 +162,7 @@ class PalmDetector:
         self,
         image: np.ndarray,
     ) -> tuple[PalmDetection, float, int, int]:
+        """Debug helper: return the single highest-scoring detection (no threshold)"""
         input_tensor, scale, pad_left, pad_top = prepare_input(image)
         self._interpreter.set_tensor(self._input_details["index"], input_tensor)
         self._interpreter.invoke()
