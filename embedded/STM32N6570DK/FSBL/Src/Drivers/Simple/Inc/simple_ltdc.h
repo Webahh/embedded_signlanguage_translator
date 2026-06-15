@@ -7,8 +7,8 @@
 #define LCD_BG_WIDTH  800
 #define LCD_BG_HEIGHT 480
 
-#define LCD_FG_WIDTH  192
-#define LCD_FG_HEIGHT 144
+#define LCD_FG_WIDTH  16
+#define LCD_FG_HEIGHT 16
 
 #define LCD_BYTES_PER_PIXEL 4U
 

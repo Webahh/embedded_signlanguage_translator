@@ -62,7 +62,7 @@ CAM_Handle h_cam;
 
 LCD_LayerConfig LCD_Layer1Config = {
     .regs            = LTDC_Layer1,
-    .fb              = (volatile uint8_t *)lcd_bg_buffer[0],
+    .fb              = lcd_bg_buffer[0],
     .x               = 0,
     .y               = 0,
     .width           = LCD_BG_WIDTH,
