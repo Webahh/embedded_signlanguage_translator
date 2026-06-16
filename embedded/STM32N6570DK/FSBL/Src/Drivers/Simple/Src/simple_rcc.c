@@ -27,16 +27,19 @@ static uint32_t RCC_GetAHBPrescalerDiv(uint32_t hpre_bits){
     /*
      * STM32N6 RCC_CFGR2_HPRE is 3 bits wide:
      *
-     * 0xx: /1
-     * 100: /2
-     * 101: /4
-     * 110: /8
-     * 111: /16
+     * 000: /1
+     * 001: /2
+     * 010: /4
+     * 011: /8
+     * 100: /16
+     * 101: /32
+     * 110: /64
+     * 111: /128
      */
 
     static const uint8_t ahb_div_table[8] = {
-        1, 1, 1, 1,
-        2, 4, 8, 16
+        1, 2, 4, 8,
+        16, 32, 64, 128
     };
 
     return ahb_div_table[hpre_bits & 0x7U];
@@ -190,20 +193,46 @@ uint32_t RCC_GetHSI(void){
     return RCC_HSI_VALUE_HZ;
 }
 
+static uint32_t RCC_GetPLLFreq(uint32_t pll_idx) {
+    volatile uint32_t *cfgr1 = PLL_CFGR1[pll_idx];
+    volatile uint32_t *cfgr3 = PLL_CFGR3[pll_idx];
+
+    uint32_t divm = (*cfgr1 >> 20) & 0x3F;
+    uint32_t divn = (*cfgr1 >> 8) & 0xFFF;
+    uint32_t pdiv1 = (*cfgr3 >> 27) & 0x7;
+    uint32_t pdiv2 = (*cfgr3 >> 24) & 0x7;
+
+    if (divm == 0 || (pdiv1 * pdiv2) == 0) {
+        return 0U;
+    }
+
+    uint32_t vco_in = RCC_GetHSI() / divm;
+    return (vco_in * divn) / (pdiv1 * pdiv2);
+}
+
+static uint32_t RCC_GetICFreq(uint32_t ic_idx) {
+    uint32_t cfgr = *IC_CFGR[ic_idx];
+    uint32_t sel = (cfgr >> 28) & 0x3;
+    uint32_t div = ((cfgr >> 16) & 0xFF) + 1;
+
+    uint32_t pll_freq = RCC_GetPLLFreq(sel);
+    if (pll_freq == 0U) return 0U;
+
+    return pll_freq / div;
+}
+
 uint32_t RCC_GetSYSCLK(void){
     uint32_t syssws =
         (RCC->CFGR1 & RCC_CFGR1_SYSSWS) >> RCC_CFGR1_SYSSWS_Pos;
 
     switch (syssws) {
         case 0x0U:
-            /* SYSCLK = HSI */
             return RCC_GetHSI();
 
-        default:
-        	/*
-        	 * for now others are not needed!
-        	 */
+        case 0x3U:
+            return RCC_GetICFreq(0);
 
+        default:
             return 0U;
     }
 }
@@ -214,19 +243,22 @@ uint32_t RCC_GetCPUCLK(void){
 
     switch (cpusws) {
         case 0x0U:
-            /* CPUCLK = HSI */
             return RCC_GetHSI();
 
+        case 0x3U:
+            return RCC_GetICFreq(0);
+
         default:
-        	/*
-        	 * for now others are not needed!
-        	 */
             return 0U;
     }
 }
 
+uint32_t RCC_GetAXICLK(void){
+    return RCC_GetICFreq(1);
+}
+
 uint32_t RCC_GetHCLK(void){
-    uint32_t sysclk = RCC_GetSYSCLK();
+    uint32_t axiclk = RCC_GetAXICLK();
 
     uint32_t hpre_bits =
         (RCC->CFGR2 & RCC_CFGR2_HPRE) >> RCC_CFGR2_HPRE_Pos;
@@ -237,7 +269,7 @@ uint32_t RCC_GetHCLK(void){
         return 0U;
     }
 
-    return sysclk / hpre_div;
+    return axiclk / hpre_div;
 }
 
 uint32_t RCC_GetPCLK1(void){
