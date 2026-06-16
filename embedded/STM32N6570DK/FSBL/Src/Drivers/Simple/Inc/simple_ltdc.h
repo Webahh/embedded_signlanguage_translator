@@ -7,8 +7,8 @@
 #define LCD_BG_WIDTH  800
 #define LCD_BG_HEIGHT 480
 
-#define LCD_FG_WIDTH  16
-#define LCD_FG_HEIGHT 16
+#define LCD_FG_WIDTH  16*6
+#define LCD_FG_HEIGHT 16*2
 
 #define LCD_BYTES_PER_PIXEL 4U
 
@@ -17,7 +17,7 @@
 
 #define NN_DELAY        2
 #define NN_BUFFER_NB    (NN_DELAY + 2)
-#define NN_BPP          3
+#define NN_BPP          2
 
 
 #define LCD_COLOR_BLACK  0xFF000000U

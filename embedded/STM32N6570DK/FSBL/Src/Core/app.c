@@ -63,32 +63,12 @@ void app_init(){
     delay_ms(10);
 
     LCD_ConfigLayer1();
-//    LCD_ConfigLayer2();
+    LCD_ConfigLayer2();
 
     delay_ms(10);
 
-    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_BLACK);
-
-    LCD_DrawString(&LCD_Layer1Config,
-        "ABCDEFGHIJKLM", 30, 30, TEXT_COLOR_RED);
-    LCD_DrawString(&LCD_Layer1Config,
-        "NOPQRSTUVWXYZ", 30, 50, TEXT_COLOR_GREEN);
-    LCD_DrawString(&LCD_Layer1Config,
-        "abcdefghijklm", 30, 70, TEXT_COLOR_BLUE);
-    LCD_DrawString(&LCD_Layer1Config,
-        "nopqrstuvwxyz", 30, 90, TEXT_COLOR_YELLOW);
-    LCD_DrawString(&LCD_Layer1Config,
-        "0123456789", 30, 110, TEXT_COLOR_CYAN);
-    LCD_DrawString(&LCD_Layer1Config,
-        "< > < > Arrow chars", 30, 130, TEXT_COLOR_WHITE);
-    LCD_DrawStringScaled(&LCD_Layer1Config,
-        "Scaled 2x!", 30, 160, TEXT_COLOR_WHITE, 2);
-    LCD_DrawStringScaled(&LCD_Layer1Config,
-        "Scaled 3x!", 30, 200, TEXT_COLOR_MAGENTA, 3);
-    LCD_DrawStringScaled(&LCD_Layer1Config,
-        "Scaled 4x!", 30, 240, TEXT_COLOR_RED, 4);
-    LCD_DrawStringScaled(&LCD_Layer1Config,
-        "Fabian <3", 30, 300, TEXT_COLOR_RED, 4);
+    LCD_FillLayer(&LCD_Layer2Config, LCD_COLOR_BLACK);
+    LCD_DrawString(&LCD_Layer2Config, "100x100", 0, 0, TEXT_COLOR_RED);
 
     delay_ms(10);
 
