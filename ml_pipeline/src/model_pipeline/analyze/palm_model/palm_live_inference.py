@@ -1,5 +1,6 @@
 import cv2 as cv
 
+from src.model_pipeline.core.camera import ThreadedVideoCapture
 from src.model_pipeline.core.config import (
     CAMERA_FRAME_HEIGHT,
     CAMERA_FRAME_WIDTH,
@@ -21,7 +22,7 @@ def run_live_inference() -> None:
         PALM_MODEL_PATH
     )
 
-    camera = cv.VideoCapture(
+    camera = ThreadedVideoCapture(
         CAMERA_INDEX
     )
 
@@ -40,12 +41,14 @@ def run_live_inference() -> None:
             "Opening Camera failed!"
         )
 
+    camera.start()
+
     try:
         while True:
             success, frame = camera.read()
 
-            if not success:
-                break
+            if not success or frame is None:
+                continue
 
             (
                 detections,

@@ -1,6 +1,7 @@
 import cv2 as cv
 
 from src.model_generation.core.display import ConfidenceDisplay
+from src.model_pipeline.core.camera import ThreadedVideoCapture
 from src.model_pipeline.core.config import (
     CAMERA_FRAME_HEIGHT,
     CAMERA_FRAME_WIDTH,
@@ -26,17 +27,19 @@ def run_live_inference() -> None:
     cfg.palm_count = "0"
     cfg.status_text = "DETECTING"
 
-    # camera = cv.VideoCapture(CAMERA_INDEX)
-
     # Use App like IP Webcam (Android) or EpoCam (IOS) to use Mobilephone as camera
     # Open Local network on Phone and connect with Inference device (PC) for best Quality and Latency
-    camera = cv.VideoCapture("https://<phone-ip>:8080/video")
+    camera = ThreadedVideoCapture(0)
+
+    # camera = cv.VideoCapture(CAMERA_INDEX) # For Build in Camera
 
     camera.set(cv.CAP_PROP_FRAME_WIDTH, CAMERA_FRAME_WIDTH)
     camera.set(cv.CAP_PROP_FRAME_HEIGHT, CAMERA_FRAME_HEIGHT)
 
     if not camera.isOpened():
         raise RuntimeError("Opening Camera failed!")
+
+    camera.start()
 
     window_name = "Combined Hand Tracking"
 
@@ -46,8 +49,8 @@ def run_live_inference() -> None:
     try:
         while not cfg.quit_requested:
             success, frame = camera.read()
-            if not success:
-                break
+            if not success or frame is None:
+                continue
 
             detections, scale, pad_left, pad_top = tracker.step(
                 frame,

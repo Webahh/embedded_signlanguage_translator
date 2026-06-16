@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 
+from src.model_pipeline.core.camera import ThreadedVideoCapture
 from src.model_pipeline.core.config import (
     CAMERA_FRAME_HEIGHT,
     CAMERA_FRAME_WIDTH,
@@ -189,7 +190,7 @@ def run_live_inference() -> None:
         for output in interpreter.get_output_details()
     }
 
-    camera = cv.VideoCapture(
+    camera = ThreadedVideoCapture(
         CAMERA_INDEX
     )
 
@@ -208,12 +209,14 @@ def run_live_inference() -> None:
             "Webcam konnte nicht geöffnet werden."
         )
 
+    camera.start()
+
     try:
         while True:
             success, frame = camera.read()
 
-            if not success:
-                break
+            if not success or frame is None:
+                continue
 
             roi, (
                 roi_x,
