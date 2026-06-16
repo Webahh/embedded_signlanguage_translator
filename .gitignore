@@ -47,9 +47,7 @@ ml_pipeline/resources/training_data.pkl
 
 # Trained models
 ml_pipeline/model/*.h5
-ml_pipeline/model/*.keras
 ml_pipeline/model/*.pt
-ml_pipeline/model/*.pth
 /ml_pipeline/.venv
 
 STM32N6570DK_LL/STM32N6570DK_TEST
