@@ -26,7 +26,12 @@ def run_live_inference() -> None:
     cfg.palm_count = "0"
     cfg.status_text = "DETECTING"
 
-    camera = cv.VideoCapture(CAMERA_INDEX)
+    # camera = cv.VideoCapture(CAMERA_INDEX)
+
+    # Use App like IP Webcam (Android) or EpoCam (IOS) to use Mobilephone as camera
+    # Open Local network on Phone and connect with Inference device (PC) for best Quality and Latency
+    camera = cv.VideoCapture("https://<phone-ip>:8080/video")
+
     camera.set(cv.CAP_PROP_FRAME_WIDTH, CAMERA_FRAME_WIDTH)
     camera.set(cv.CAP_PROP_FRAME_HEIGHT, CAMERA_FRAME_HEIGHT)
 
