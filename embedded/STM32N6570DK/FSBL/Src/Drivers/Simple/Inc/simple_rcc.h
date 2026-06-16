@@ -35,6 +35,7 @@ void RCC_BoardClock_Config(void);
 uint32_t RCC_GetHSI(void);
 uint32_t RCC_GetSYSCLK(void);
 uint32_t RCC_GetCPUCLK(void);
+uint32_t RCC_GetAXICLK(void);
 uint32_t RCC_GetHCLK(void);
 uint32_t RCC_GetPCLK1(void);
 uint32_t RCC_GetPCLK2(void);

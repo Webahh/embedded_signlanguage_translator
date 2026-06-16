@@ -188,10 +188,6 @@ CAM_Status CAM_Init(CAM_Handle *h)
     DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_DISPLAY, 0xC, 0xC, 0xC);
     DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_DISPLAY);
 
-    DCMIPP_Pipe_EnableISP(CAM_PIPE_NN, DCMIPP_RAWBAYER_RGGB);
-    DCMIPP_Pipe_SetBlackLevel(CAM_PIPE_NN, 0x0, 0x0, 0x0);
-    DCMIPP_Pipe_EnableBlackLevel(CAM_PIPE_NN);
-
     /* Reduce spurious line events (reference workaround) */
     DCMIPP_ReduceSpurious();
 
