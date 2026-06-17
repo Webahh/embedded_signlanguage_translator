@@ -55,8 +55,8 @@ void app_init(){
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
-    PSRAM_Init();
-    NOR_Init();
+    PSRAM_Init(XSPI_psram_cfg);
+    //NOR_Init(XSPI_nor_cfg);
 
     LCD_Init();
 
