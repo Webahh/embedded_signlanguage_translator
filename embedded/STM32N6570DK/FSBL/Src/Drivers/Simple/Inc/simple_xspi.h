@@ -9,8 +9,8 @@ typedef struct {
 	uint8_t chipselect_high_time;
 	uint8_t prescaler;
 	uint8_t chipselect_boundary;
-	uint8_t maxtran_value;
-	uint8_t refresh_cycles;
+	uint16_t maxtran_value;
+	uint16_t refresh_cycles;
 } XSPI_cfg_TypeDef;
 
 typedef struct {

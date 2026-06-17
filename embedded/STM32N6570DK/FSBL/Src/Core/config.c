@@ -34,7 +34,7 @@ const GPIO_cfg_TypeDef GPIO_I2C_cfg = {
 const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.mode 	= GPIO_MODE_AF,
 		.otyp	= GPIO_OTYPE_PP,
-		.pupdr	= GPIO_PUPD_UP,
+		.pupdr	= GPIO_PUPD_NONE,
 		.af		= GPIO_AF_XSPI,
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
@@ -49,6 +49,7 @@ const RCC_PLL_ConfigTypeDef BOARD_PLL_CONFIG[4] = {
 const RCC_IC_ConfigTypeDef BOARD_IC_CONFIG[20] = {
     [0]  = { .CFGR = 0x00000000 },  /* IC1:  PLL1 / 1  - CPU */
     [1]  = { .CFGR = 0x00010000 },  /* IC2:  PLL1 / 2  - SYSB/AXI */
+	[2]  = { .CFGR = 0x00030000 },  /* IC3:  PLL1 / 4  - XSPI */
     [5]  = { .CFGR = 0x10000000 },  /* IC6:  PLL2 / 1 */
     [10] = { .CFGR = 0x20000000 },  /* IC11: PLL3 / 1 */
     [15] = { .CFGR = 0x30010000 },  /* IC16: PLL4 / 2  - LTDC */

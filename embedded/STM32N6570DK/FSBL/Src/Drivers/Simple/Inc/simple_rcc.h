@@ -72,5 +72,6 @@ void RCC_reset_XSPIM(void);
 void RCC_enable_VDDIO2(void);
 void RCC_config_VDDIO2_1V8(void);
 void RCC_enable_RIFSC(void);
+void RCC_setXSPI1_clock_source(uint32_t source);
 
 #endif // SIMPLE_RCC_H

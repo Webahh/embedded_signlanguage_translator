@@ -721,3 +721,13 @@ void RCC_enable_RIFSC(void){
     RCC->AHB3ENR |= RCC_AHB3ENR_RIFSCEN;
     (void)RCC->AHB3ENR;
 }
+
+void RCC_setXSPI1_clock_source(uint32_t source)
+{
+    source &= 0x3U;   // XSPI1SEL ist 2 Bit breit
+
+    RCC->CCIPR6 &= ~RCC_CCIPR6_XSPI1SEL_Msk;
+    RCC->CCIPR6 |=  (source << RCC_CCIPR6_XSPI1SEL_Pos);
+
+    (void)RCC->CCIPR6;
+}

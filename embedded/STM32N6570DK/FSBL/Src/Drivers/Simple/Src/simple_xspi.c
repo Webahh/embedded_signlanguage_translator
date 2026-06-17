@@ -19,14 +19,14 @@
 #define XSPI_EXT_REG_CONFIG1_VALUE       	0x20
 #define XSPI_EXT_REG_CONFIG2_BASE        	0x40
 #define XSPI_EXT_REG_CONFIG2_LATENCY     	0x03
-#define XSPI_EXT_REG_CONFIG2_VALUE       	(XSPI_EXT_REG_CONFIG2_BASE | XSPI_EXT_REG_CONFIG2_LATENCY)
+#define XSPI_EXT_REG_CONFIG2_VALUE       	0x40
 
 #define XSPI_MEMORY_MAPPED_APMS             1U
 #define XSPI_MEMORY_MAPPED_FMODE            3
 #define XSPI_MEMORY_MAPPED_FIFO_THRESHOLD   7
 #define XSPI1_PSRAM_READ_OPCODE             0x20
 #define XSPI1_PSRAM_WRITE_OPCODE            0xA0
-#define XSPI1_PSRAM_READ_DUMMY_CYCLES       6
+#define XSPI1_PSRAM_READ_DUMMY_CYCLES      	6
 #define XSPI1_PSRAM_WRITE_DUMMY_CYCLES      6
 #define XSPI2_NOR_PSMKR_READY_MASK          0x1U
 #define XSPI2_NOR_POLLING_INTERVAL          0x10U
@@ -38,6 +38,19 @@
 /* Helper macro: shift VAL into the FIELD position within REG */
 #define XSPI_FIELD(REG, FIELD, VAL) \
     (((uint32_t)(VAL) << XSPI_##REG##_##FIELD##_Pos) & XSPI_##REG##_##FIELD##_Msk)
+
+
+static void XSPI_SetPrescaler(XSPI_TypeDef *xspi, uint32_t prescaler)
+{
+    while (xspi->SR & XSPI_SR_BUSY) {
+    }
+
+    xspi->DCR2 &= ~XSPI_DCR2_PRESCALER_Msk;
+    xspi->DCR2 |= XSPI_FIELD(DCR2, PRESCALER, prescaler);
+
+    while (xspi->SR & XSPI_SR_BUSY) {
+    }
+}
 
 /*
  * XSPI1_GPIO_Init – XSPI1 (Port 1) → PSRAM (APS256XX)
@@ -86,12 +99,23 @@ static void XSPI_Init(XSPI_TypeDef *XSPIX , XSPI_cfg_TypeDef cfg){
                    | XSPI_FIELD(DCR1, DEVSIZE, 	 cfg.devsize)
                    | XSPI_FIELD(DCR1, CSHT,    	 cfg.chipselect_high_time);
 
-    xspi_ptr->DCR2 = XSPI_FIELD(DCR2, PRESCALER, cfg.prescaler);
+    xspi_ptr->DCR2 = 0;
+
     xspi_ptr->DCR3 = XSPI_FIELD(DCR3, MAXTRAN, 	 cfg.maxtran_value)
 				   | XSPI_FIELD(DCR3, CSBOUND,	 cfg.chipselect_boundary);
 
     xspi_ptr->DCR4 = cfg.refresh_cycles;
-    xspi_ptr->TCR  = XSPI_TCR_DHQC;
+
+    xspi_ptr->CR = XSPI_FIELD(CR, FTHRES, 7);
+
+    while (xspi_ptr->SR & XSPI_SR_BUSY) { }
+
+    xspi_ptr->DCR2 = XSPI_FIELD(DCR2, PRESCALER, cfg.prescaler);
+
+    while (xspi_ptr->SR & XSPI_SR_BUSY) { }
+
+    xspi_ptr->TCR = 0;
+
 }
 
 static uint32_t XSPI_BuildWCCR_CCR(const XSPI_ccr_cfg_TypeDef cfg){
@@ -104,6 +128,19 @@ static uint32_t XSPI_BuildWCCR_CCR(const XSPI_ccr_cfg_TypeDef cfg){
          | XSPI_FIELD(CCR, DMODE,  cfg.data_mode)
          | XSPI_FIELD(CCR, DDTR,   cfg.data_dtr)
          | XSPI_FIELD(CCR, DQSE,   cfg.data_qse);
+}
+
+static uint32_t XSPI_BuildWCCR_CCR_NoDQS(const XSPI_ccr_cfg_TypeDef cfg)
+{
+    return XSPI_FIELD(CCR, IMODE,  cfg.instruction_mode)
+         | XSPI_FIELD(CCR, IDTR,   cfg.instruction_dtr)
+         | XSPI_FIELD(CCR, ISIZE,  cfg.instruction_size)
+         | XSPI_FIELD(CCR, ADMODE, cfg.address_mode)
+         | XSPI_FIELD(CCR, ADDTR,  cfg.address_dtr)
+         | XSPI_FIELD(CCR, ADSIZE, cfg.address_size)
+         | XSPI_FIELD(CCR, DMODE,  cfg.data_mode)
+         | XSPI_FIELD(CCR, DDTR,   cfg.data_dtr);
+         /* bewusst kein DQSE */
 }
 
 /*
@@ -122,11 +159,10 @@ static void XSPI_WriteReg(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
     }
 
     xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
-
-    xspi->CCR = XSPI_BuildWCCR_CCR(XSPI_write_reg_cfg);
+    xspi->TCR = 0;
+    xspi->CCR = XSPI_BuildWCCR_CCR_NoDQS(XSPI_write_reg_cfg);
 
     xspi->IR  = XSPI_REG_WRITE_OPCODE;
-    xspi->TCR = XSPI_TCR_DHQC;
     xspi->AR  = reg_addr;
     xspi->DLR = XSPI_REG_WRITE_DATA_LENGTH_BYTE;
 
@@ -161,16 +197,19 @@ static void NOR_WriteConfig(void){
  * Configures read (CCR/IR/TCR) and write (WCCR/WIR/WTCR) channel opcodes
  * for octal-DTR protocol, then sets FMODE=3 (memory-mapped).
  */
+
 static void XSPI1_EnableMemoryMappedMode(void){
     XSPI1->WCCR = XSPI_BuildWCCR_CCR(XSPI_memorymapped_cfg);
 
     XSPI1->WIR  = XSPI1_PSRAM_WRITE_OPCODE;
-    XSPI1->WTCR = XSPI_TCR_DHQC | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_WRITE_DUMMY_CYCLES);
+    XSPI1->WTCR = XSPI_TCR_DHQC
+                | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_WRITE_DUMMY_CYCLES);
 
     XSPI1->CCR  = XSPI_BuildWCCR_CCR(XSPI_memorymapped_cfg);
 
     XSPI1->IR   = XSPI1_PSRAM_READ_OPCODE;
-    XSPI1->TCR  = XSPI_TCR_DHQC | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_READ_DUMMY_CYCLES);
+    XSPI1->TCR  = XSPI_TCR_DHQC
+                | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_READ_DUMMY_CYCLES);
 
     /* Enable XSPI1 in memory-mapped mode (FMODE=3), FIFO threshold=7 */
     XSPI1->CR = XSPI_FIELD(CR, FMODE,  XSPI_MEMORY_MAPPED_FMODE)
@@ -193,8 +232,8 @@ static void XSPI2_EnableMemoryMappedMode(void){
 
     XSPI2->CCR = XSPI_BuildWCCR_CCR(XSPI_memorymapped_cfg);
 
-    XSPI2->TCR = XSPI_TCR_DHQC
-               | XSPI_FIELD(TCR, DCYC, XSPI2_NOR_READ_DUMMY_CYCLES);
+    XSPI2->TCR  = XSPI_TCR_DHQC
+                | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_READ_DUMMY_CYCLES);
     XSPI2->IR  = XSPI2_NOR_READ_OPCODE;                        /* read opcode */
 
     /* Write channel: 16-bit instruction, 32-bit address, octal DTR */
@@ -217,6 +256,8 @@ void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
     RCC_config_VDDIO2_1V8();
     delay_ms(5);
 
+    RCC_setXSPI1_clock_source(0);
+
     RCC_enable_XSPI1();
     RCC_enable_XSPIM();
     delay_ms(1);
@@ -237,6 +278,9 @@ void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
 
     PSRAM_WriteConfig();
     delay_ms(1);
+
+    //XSPI_SetPrescaler(XSPI1, 2);
+    //delay_ms(1);
 
     XSPI1_EnableMemoryMappedMode();
     delay_ms(1);
