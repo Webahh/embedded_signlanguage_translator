@@ -82,16 +82,6 @@ void CSI_Init(void)
     NVIC_EnableIRQ(CSI_IRQn);
 }
 
-void CSI_DeInit(void)
-{
-    NVIC_DisableIRQ(CSI_IRQn);
-
-    RCC->APB5RSTSR |= RCC_APB5RSTSR_CSIRSTS;
-    (void)RCC->APB5RSTSR;
-    RCC->APB5RSTCR |= RCC_APB5RSTCR_CSIRSTC;
-    (void)RCC->APB5RSTCR;
-}
-
 void CSI_Config(CSI_Conf *conf)
 {
     uint32_t hsfreqrange, osc_target, phy_idx;

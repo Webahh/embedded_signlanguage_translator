@@ -71,7 +71,6 @@ typedef struct CSI_Conf {
  * ------------------------------------------------------------------------- */
 
 void     CSI_Init(void);
-void     CSI_DeInit(void);
 void     CSI_Config(CSI_Conf *conf);
 void     CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format);
 uint32_t CSI_StartVirtualChannel(uint32_t vc);

@@ -716,3 +716,8 @@ void RCC_config_LTDC_25MHz_clock(void){
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
 }
+
+void RCC_enable_RIFSC(void){
+    RCC->AHB3ENR |= RCC_AHB3ENR_RIFSCEN;
+    (void)RCC->AHB3ENR;
+}

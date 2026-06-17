@@ -1,4 +1,5 @@
 #include "simple_rifsc.h"
+#include "simple_rcc.h"
 #include "stm32n657xx.h"
 
 /**
@@ -80,8 +81,7 @@ static void RISC_SetSlaveSecureAttributes(uint32_t PeriphId, uint32_t SecPriv){
  *       secure and privileged using compartment ID 1.
  */
 void Security_Config(void){
-    RCC->AHB3ENR |= RCC_AHB3ENR_RIFSCEN;
-    (void)RCC->AHB3ENR;
+	RCC_enable_RIFSC();
 
     RIMC_MasterConfig_t RIMC_master = {0};
     RIMC_master.MasterCID = RIF_CID_1;

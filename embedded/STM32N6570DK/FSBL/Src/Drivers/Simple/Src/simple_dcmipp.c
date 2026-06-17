@@ -34,19 +34,6 @@ void DCMIPP_Init(void)
     NVIC_EnableIRQ(DCMIPP_IRQn);
 }
 
-void DCMIPP_DeInit(void)
-{
-    DCMIPP_Pipe_Stop(DCMIPP_PIPE1);
-    DCMIPP_Pipe_Stop(DCMIPP_PIPE2);
-
-    NVIC_DisableIRQ(DCMIPP_IRQn);
-
-    RCC->APB5RSTSR |= RCC_APB5RSTSR_DCMIPPRSTS;
-    (void)RCC->APB5RSTSR;
-    RCC->APB5RSTCR |= RCC_APB5RSTCR_DCMIPPRSTC;
-    (void)RCC->APB5RSTCR;
-}
-
 void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type)
 {
     if (pipe == DCMIPP_PIPE0) {
