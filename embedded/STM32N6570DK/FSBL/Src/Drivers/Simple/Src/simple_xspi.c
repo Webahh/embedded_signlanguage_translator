@@ -26,7 +26,7 @@
 #define XSPI_MEMORY_MAPPED_FIFO_THRESHOLD   7
 #define XSPI1_PSRAM_READ_OPCODE             0x20
 #define XSPI1_PSRAM_WRITE_OPCODE            0xA0
-#define XSPI1_PSRAM_READ_DUMMY_CYCLES      	6
+#define XSPI1_PSRAM_READ_DUMMY_CYCLES       6
 #define XSPI1_PSRAM_WRITE_DUMMY_CYCLES      6
 #define XSPI2_NOR_PSMKR_READY_MASK          0x1U
 #define XSPI2_NOR_POLLING_INTERVAL          0x10U
@@ -40,16 +40,33 @@
     (((uint32_t)(VAL) << XSPI_##REG##_##FIELD##_Pos) & XSPI_##REG##_##FIELD##_Msk)
 
 
-static void XSPI_SetPrescaler(XSPI_TypeDef *xspi, uint32_t prescaler)
-{
+static int XSPI_SetPrescaler_Calibrated(XSPI_TypeDef *xspi, uint32_t prescaler){
+    uint32_t timeout;
+
+    timeout = XSPI_REG_WRITE_TIMEOUT;
     while (xspi->SR & XSPI_SR_BUSY) {
+        if (--timeout == 0U) {
+            return -1;
+        }
     }
+
+
+    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
 
     xspi->DCR2 &= ~XSPI_DCR2_PRESCALER_Msk;
     xspi->DCR2 |= XSPI_FIELD(DCR2, PRESCALER, prescaler);
 
+    timeout = XSPI_REG_WRITE_TIMEOUT;
     while (xspi->SR & XSPI_SR_BUSY) {
+        if (--timeout == 0U) {
+            return -2;
+        }
     }
+
+    /* Nach Calibration Fehlerflags löschen */
+    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+
+    return 0;
 }
 
 /*
@@ -100,6 +117,8 @@ static void XSPI_Init(XSPI_TypeDef *XSPIX , XSPI_cfg_TypeDef cfg){
                    | XSPI_FIELD(DCR1, CSHT,    	 cfg.chipselect_high_time);
 
     xspi_ptr->DCR2 = 0;
+
+    delay_ms(10);
 
     xspi_ptr->DCR3 = XSPI_FIELD(DCR3, MAXTRAN, 	 cfg.maxtran_value)
 				   | XSPI_FIELD(DCR3, CSBOUND,	 cfg.chipselect_boundary);
@@ -202,14 +221,12 @@ static void XSPI1_EnableMemoryMappedMode(void){
     XSPI1->WCCR = XSPI_BuildWCCR_CCR(XSPI_memorymapped_cfg);
 
     XSPI1->WIR  = XSPI1_PSRAM_WRITE_OPCODE;
-    XSPI1->WTCR = XSPI_TCR_DHQC
-                | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_WRITE_DUMMY_CYCLES);
+    XSPI1->WTCR = XSPI_FIELD(WTCR, DCYC, XSPI1_PSRAM_WRITE_DUMMY_CYCLES);
 
     XSPI1->CCR  = XSPI_BuildWCCR_CCR(XSPI_memorymapped_cfg);
 
     XSPI1->IR   = XSPI1_PSRAM_READ_OPCODE;
-    XSPI1->TCR  = XSPI_TCR_DHQC
-                | XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_READ_DUMMY_CYCLES);
+    XSPI1->TCR  = XSPI_FIELD(TCR, DCYC, XSPI1_PSRAM_READ_DUMMY_CYCLES);
 
     /* Enable XSPI1 in memory-mapped mode (FMODE=3), FIFO threshold=7 */
     XSPI1->CR = XSPI_FIELD(CR, FMODE,  XSPI_MEMORY_MAPPED_FMODE)
@@ -279,8 +296,12 @@ void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
     PSRAM_WriteConfig();
     delay_ms(1);
 
-    //XSPI_SetPrescaler(XSPI1, 2);
-    //delay_ms(1);
+    if (XSPI_SetPrescaler_Calibrated(XSPI1, 1) != 0) {
+        while (1) {
+            /* Calibration failed */
+        }
+    }
+    delay_ms(10);
 
     XSPI1_EnableMemoryMappedMode();
     delay_ms(1);

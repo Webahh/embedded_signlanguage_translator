@@ -34,7 +34,7 @@ const GPIO_cfg_TypeDef GPIO_I2C_cfg = {
 const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.mode 	= GPIO_MODE_AF,
 		.otyp	= GPIO_OTYPE_PP,
-		.pupdr	= GPIO_PUPD_NONE,
+		.pupdr	= GPIO_PUPD_UP,
 		.af		= GPIO_AF_XSPI,
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
@@ -60,7 +60,7 @@ const RCC_IC_ConfigTypeDef BOARD_IC_CONFIG[20] = {
 const XSPI_cfg_TypeDef XSPI_psram_cfg = {
 		.memory_type = 6,
 		.devsize = 24,
-		.chipselect_high_time = 1,
+		.chipselect_high_time = 4,
 		.prescaler = 3,
 		.chipselect_boundary = 11,
 		.maxtran_value = 0,
@@ -78,15 +78,15 @@ const XSPI_cfg_TypeDef XSPI_nor_cfg = {
 };
 
 const XSPI_ccr_cfg_TypeDef XSPI_write_reg_cfg = {
-		.instruction_mode 	= 7,
+		.instruction_mode 	= 4,
 		.instruction_dtr  	= 0,
 		.instruction_size	= 0,
-		.address_mode		= 7,
+		.address_mode		= 4,
 		.address_dtr		= 1,
 		.address_size		= 3,
-		.data_mode			= 7,
+		.data_mode			= 4,
 		.data_dtr			= 1,
-		.data_qse			= 1
+		.data_qse			= 0
 };
 
 const XSPI_ccr_cfg_TypeDef XSPI_memorymapped_cfg = {
