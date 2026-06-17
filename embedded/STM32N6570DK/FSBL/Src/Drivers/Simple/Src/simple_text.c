@@ -1,6 +1,21 @@
 #include "simple_text.h"
 #include "font_8x16.h"
 
+/* ---------------------------------------------------------------------------
+ * private methods
+ * --------------------------------------------------------------------------- */
+static void LCD_WritePixel(volatile uint8_t *fb, uint32_t off, uint32_t pixel, int bpp) {
+    if (bpp == 2) {
+        *(volatile uint16_t *)(fb + off) = (uint16_t)pixel;
+    } else if (bpp == 3) {
+        fb[off + 0] = (uint8_t)(pixel);
+        fb[off + 1] = (uint8_t)(pixel >> 8);
+        fb[off + 2] = (uint8_t)(pixel >> 16);
+    } else {
+        *(volatile uint32_t *)(fb + off) = pixel;
+    }
+}
+
 void LCD_DrawChar(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, uint32_t fg_color)
 {
     if (c < FONT_8X16_FIRST_CHAR || c > FONT_8X16_LAST_CHAR)

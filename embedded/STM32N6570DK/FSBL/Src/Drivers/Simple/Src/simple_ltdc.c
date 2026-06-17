@@ -93,6 +93,76 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
 }
 
+/* ---------------------------------------------------------------------------
+ * private methods
+ * --------------------------------------------------------------------------- */
+static uint16_t LCD_ARGBtoRGB565(uint32_t argb) {
+    uint8_t r = (argb >> 16) & 0xFF;
+    uint8_t g = (argb >> 8)  & 0xFF;
+    uint8_t b = (argb)       & 0xFF;
+    return (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+}
+
+static uint32_t LCD_FPF_EncodeFPF0R(const LCD_Layer_FlexiblePixelFormat *f) {
+    return ((uint32_t)(f->red_len	& 0xF)  << LTDC_LxFPF0R_RLEN_Pos) |
+           ((uint32_t)(f->red_pos	& 0x1F) << LTDC_LxFPF0R_RPOS_Pos) |
+           ((uint32_t)(f->alpha_len & 0xF)  << LTDC_LxFPF0R_ALEN_Pos) |
+           ((uint32_t)(f->alpha_pos & 0x1F) << LTDC_LxFPF0R_APOS_Pos);
+}
+
+static int32_t LCD_FPF_EncodeFPF1R(const LCD_Layer_FlexiblePixelFormat *f) {
+    return ((uint32_t)(f->bytes_per_pixel 	& 0x7)  << LTDC_LxFPF1R_PSIZE_Pos) |
+           ((uint32_t)(f->blue_len			& 0xF)  << LTDC_LxFPF1R_BLEN_Pos) |
+           ((uint32_t)(f->blue_pos 			& 0x1F) << LTDC_LxFPF1R_BPOS_Pos) |
+           ((uint32_t)(f->green_len 		& 0xF)  << LTDC_LxFPF1R_GLEN_Pos) |
+           ((uint32_t)(f->green_pos 		& 0x1F) << LTDC_LxFPF1R_GPOS_Pos);
+}
+
+static uint32_t LCD_ARGBtoFlexible(uint32_t argb, const LCD_Layer_FlexiblePixelFormat *f) {
+    uint32_t pixel = 0;
+    if (f->alpha_len) {
+        uint32_t v = ((argb >> 24) & 0xFF) >> (8 - f->alpha_len);
+        pixel |= (v & ((1U << f->alpha_len) - 1U)) << f->alpha_pos;
+    }
+    if (f->red_len) {
+        uint32_t v = ((argb >> 16) & 0xFF) >> (8 - f->red_len);
+        pixel |= (v & ((1U << f->red_len) - 1U)) << f->red_pos;
+    }
+    if (f->green_len) {
+        uint32_t v = ((argb >> 8) & 0xFF) >> (8 - f->green_len);
+        pixel |= (v & ((1U << f->green_len) - 1U)) << f->green_pos;
+    }
+    if (f->blue_len) {
+        uint32_t v = (argb & 0xFF) >> (8 - f->blue_len);
+        pixel |= (v & ((1U << f->blue_len) - 1U)) << f->blue_pos;
+    }
+    return pixel;
+}
+
+int LCD_BytesPerPixel(const LCD_LayerConfig *cfg) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+        return cfg->flexible_fmt->bytes_per_pixel;
+    switch (cfg->pixel_format) {
+        case LCD_PF_RGB565:
+        case LCD_PF_BGR565:
+            return 2;
+        case LCD_PF_RGB888:
+            return 3;
+        default:
+            return 4;
+    }
+}
+
+uint32_t LCD_ColorToPixel(const LCD_LayerConfig *cfg, uint32_t color) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+        return LCD_ARGBtoFlexible(color, cfg->flexible_fmt);
+    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565)
+        return LCD_ARGBtoRGB565(color);
+    if (cfg->pixel_format == LCD_PF_RGB888)
+        return ((color >> 16) & 0xFF) | (((color >> 8) & 0xFF) << 8) | ((color & 0xFF) << 16);
+    return color | 0xFF000000;
+}
+
 static void LCD_ConfigLayer_PixelFormat(const LCD_LayerConfig *cfg){
     /* Flexible pixel format — requires non-NULL flexible_fmt descriptor */
     if (cfg->pixel_format == LCD_PF_Flexible) {
