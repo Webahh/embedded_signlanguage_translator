@@ -12,6 +12,7 @@
 #include "simple_ltdc.h"
 #include "simple_camera.h"
 #include "simple_rcc.h"
+#include "stdlib.h"
 
 extern const GPIO_cfg_TypeDef GPIO_default_cfg;
 extern const GPIO_cfg_TypeDef GPIO_LTDC_cfg;

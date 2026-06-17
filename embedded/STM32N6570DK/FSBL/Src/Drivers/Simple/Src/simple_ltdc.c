@@ -3,6 +3,7 @@
 #include "simple_gpio.h"
 #include "simple_timer.h"
 #include "config.h"
+#include "stdlib.h"
 
 volatile uint8_t lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
 volatile uint8_t lcd_fg_buffer[NN_BUFFER_NB][LCD_FG_WIDTH * LCD_FG_HEIGHT * NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
@@ -93,8 +94,8 @@ void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
 }
 
 /**
- * @ret return bytes of pixel format except for Flexible because it is flexible
- *		unsoported fmt: -1;
+ * @ret return bytes of pixel format
+ *		unsupported fmt: -1;
  */
 static uint32_t LCD_BytesPerPixel(LCD_PixelFormat fmt){
     switch (fmt){
@@ -110,9 +111,32 @@ static uint32_t LCD_BytesPerPixel(LCD_PixelFormat fmt){
     }
 }
 
+static void LCD_ConfigLayer_PixelFormat(const LCD_LayerConfig *cfg){
+    /* Flexible pixel format — requires non-NULL flexible_fmt descriptor */
+    if (cfg->pixel_format == LCD_PF_Flexible) {
+        if (cfg->flexible_fmt != NULL) {
+            cfg->regs->PFCR  = 0b111;
+            cfg->regs->FPF0R = LCD_FPF_EncodeFPF0R(cfg->flexible_fmt);
+            cfg->regs->FPF1R = LCD_FPF_EncodeFPF1R(cfg->flexible_fmt);
+        }
+        return;
+    }
+
+    /* Standard predefined formats */
+    cfg->regs->PFCR  = (uint32_t)cfg->pixel_format;
+    cfg->regs->FPF0R = 0U;
+    cfg->regs->FPF1R = 0U;
+}
+
 void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
     uint32_t hsync = 4U, hbp = 4U, vsync = 4U, vbp = 4U;
     uint32_t bpp = LCD_BytesPerPixel(cfg->pixel_format);
+
+    /* Flexible format: get BPP from the descriptor instead of the enum default */
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL) {
+        bpp = cfg->flexible_fmt->bytes_per_pixel;
+    }
+
     uint32_t buf_pitch = cfg->buf_width * bpp;
     uint32_t disp_pitch = cfg->width * bpp;
 
@@ -144,9 +168,7 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
         ((vsync + vbp + cfg->y) << LTDC_LxWVPCR_WVSTPOS_Pos) |
         ((vsync + vbp + cfg->y + cfg->height - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
 
-    cfg->regs->PFCR  = (uint32_t)cfg->pixel_format;
-    cfg->regs->FPF0R = 0U;
-    cfg->regs->FPF1R = 0U;
+    LCD_ConfigLayer_PixelFormat(cfg);
 
     cfg->regs->CACR = cfg->const_alpha;
     cfg->regs->DCCR = cfg->default_color;
@@ -178,6 +200,27 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
 }
 
 void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL) {
+        uint32_t pixel = LCD_ARGBtoFlexible(color, cfg->flexible_fmt);
+        uint8_t bpp = cfg->flexible_fmt->bytes_per_pixel;
+        if (bpp == 2) {
+            volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+            for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
+                fb[i] = (uint16_t)pixel;
+        } else if (bpp == 3) {
+            volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+            for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++) {
+                fb[i * 3 + 0] = (uint8_t)(pixel);
+                fb[i * 3 + 1] = (uint8_t)(pixel >> 8);
+                fb[i * 3 + 2] = (uint8_t)(pixel >> 16);
+            }
+        } else {
+            volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+            for (uint32_t i = 0; i < (uint32_t)cfg->buf_width * cfg->height; i++)
+                fb[i] = pixel;
+        }
+        return;
+    }
     if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
         uint16_t c = LCD_ARGBtoRGB565(color);
@@ -201,6 +244,33 @@ void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
 }
 
 void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL) {
+        uint32_t p1 = LCD_ARGBtoFlexible(color1, cfg->flexible_fmt);
+        uint32_t p2 = LCD_ARGBtoFlexible(color2, cfg->flexible_fmt);
+        uint8_t bpp = cfg->flexible_fmt->bytes_per_pixel;
+        if (bpp == 2) {
+            volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+            for (uint32_t y = 0; y < cfg->height; y++)
+                for (uint32_t x = 0; x < cfg->width; x++)
+                    fb[y * cfg->width + x] = (uint16_t)((x < cfg->width / 2) ? p1 : p2);
+        } else if (bpp == 3) {
+            volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+            for (uint32_t y = 0; y < cfg->height; y++)
+                for (uint32_t x = 0; x < cfg->width; x++) {
+                    uint32_t pixel = (x < cfg->width / 2) ? p1 : p2;
+                    uint32_t off = (y * cfg->buf_width + x) * 3;
+                    fb[off + 0] = (uint8_t)(pixel);
+                    fb[off + 1] = (uint8_t)(pixel >> 8);
+                    fb[off + 2] = (uint8_t)(pixel >> 16);
+                }
+        } else {
+            volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+            for (uint32_t y = 0; y < cfg->height; y++)
+                for (uint32_t x = 0; x < cfg->width; x++)
+                    fb[y * cfg->width + x] = (x < cfg->width / 2) ? p1 : p2;
+        }
+        return;
+    }
     if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
         uint16_t c1 = LCD_ARGBtoRGB565(color1);
@@ -230,6 +300,34 @@ void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t c
 }
 
 void LCD_BlitImage(const LCD_LayerConfig *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL) {
+        uint8_t bpp = cfg->flexible_fmt->bytes_per_pixel;
+        if (bpp == 2) {
+            volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+            const uint16_t *src = (const uint16_t *)img;
+            for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
+                for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++)
+                    fb[(dst_y + y) * cfg->buf_width + dst_x + x] = src[y * img_w + x];
+        } else if (bpp == 3) {
+            volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+            const uint8_t *src = (const uint8_t *)img;
+            for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
+                for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++) {
+                    uint32_t di = ((dst_y + y) * cfg->buf_width + dst_x + x) * 3;
+                    uint32_t si = (y * img_w + x) * 3;
+                    fb[di + 0] = src[si + 0];
+                    fb[di + 1] = src[si + 1];
+                    fb[di + 2] = src[si + 2];
+                }
+        } else {
+            volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+            const uint32_t *src = (const uint32_t *)img;
+            for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
+                for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++)
+                    fb[(dst_y + y) * cfg->buf_width + dst_x + x] = src[y * img_w + x];
+        }
+        return;
+    }
     if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
         const uint16_t *src = (const uint16_t *)img;

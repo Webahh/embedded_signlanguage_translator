@@ -2,6 +2,7 @@
 #define SIMPLE_TEXT_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "simple_ltdc.h"
 
 #define TEXT_COLOR_WHITE   0x00FFFFFFU

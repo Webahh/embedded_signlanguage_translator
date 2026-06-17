@@ -1,8 +1,10 @@
 #include "simple_text.h"
 #include "font_8x16.h"
 
-static inline int _lcd_bpp(LCD_PixelFormat fmt) {
-    switch (fmt) {
+static inline int _lcd_bpp(const LCD_LayerConfig *cfg) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+        return cfg->flexible_fmt->bytes_per_pixel;
+    switch (cfg->pixel_format) {
         case LCD_PF_RGB565:
         case LCD_PF_BGR565:
             return 2;
@@ -25,8 +27,10 @@ void LCD_DrawChar(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, uint
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = _lcd_bpp(cfg->pixel_format);
+    int bpp = _lcd_bpp(cfg);
 
+    uint32_t fg_flex = (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+                       ? LCD_ARGBtoFlexible(fg_color, cfg->flexible_fmt) : 0;
     uint8_t r = (fg_color >> 16) & 0xFF;
     uint8_t g = (fg_color >> 8) & 0xFF;
     uint8_t b = fg_color & 0xFF;
@@ -44,13 +48,13 @@ void LCD_DrawChar(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, uint
             if (bits & (1 << (7 - col))) {
                 uint32_t off = ((uint32_t)py * buf_width + px) * bpp;
                 if (bpp == 2) {
-                    *(volatile uint16_t *)(fb + off) = rgb565;
+                    *(volatile uint16_t *)(fb + off) = (cfg->flexible_fmt) ? (uint16_t)fg_flex : rgb565;
                 } else if (bpp == 3) {
                     fb[off + 0] = r;
                     fb[off + 1] = g;
                     fb[off + 2] = b;
                 } else {
-                    *(volatile uint32_t *)(fb + off) = color32;
+                    *(volatile uint32_t *)(fb + off) = (cfg->flexible_fmt) ? fg_flex : color32;
                 }
             }
         }
@@ -80,7 +84,11 @@ void LCD_DrawStringBG(const LCD_LayerConfig *cfg, const char *str, int16_t x, in
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = _lcd_bpp(cfg->pixel_format);
+    int bpp = _lcd_bpp(cfg);
+    int is_flex = (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL);
+
+    uint32_t fg_flex = is_flex ? LCD_ARGBtoFlexible(fg_color, cfg->flexible_fmt) : 0;
+    uint32_t bg_flex = is_flex ? LCD_ARGBtoFlexible(bg_color, cfg->flexible_fmt) : 0;
 
     uint8_t fr = (fg_color >> 16) & 0xFF;
     uint8_t fg = (fg_color >> 8) & 0xFF;
@@ -117,7 +125,9 @@ void LCD_DrawStringBG(const LCD_LayerConfig *cfg, const char *str, int16_t x, in
                     if (px < 0 || px >= width) continue;
                     uint32_t off = ((uint32_t)py * buf_width + px) * bpp;
                     if (bpp == 2) {
-                        *(volatile uint16_t *)(fb + off) = (bits & (1 << (7 - col))) ? fg_565 : bg_565;
+                        uint16_t val = is_flex ? ((bits & (1 << (7 - col))) ? (uint16_t)fg_flex : (uint16_t)bg_flex)
+                                               : ((bits & (1 << (7 - col))) ? fg_565 : bg_565);
+                        *(volatile uint16_t *)(fb + off) = val;
                     } else if (bpp == 3) {
                         if (bits & (1 << (7 - col))) {
                             fb[off + 0] = fr;
@@ -129,7 +139,9 @@ void LCD_DrawStringBG(const LCD_LayerConfig *cfg, const char *str, int16_t x, in
                             fb[off + 2] = bb;
                         }
                     } else {
-                        *(volatile uint32_t *)(fb + off) = (bits & (1 << (7 - col))) ? fg_32 : bg_32;
+                        uint32_t val = is_flex ? ((bits & (1 << (7 - col))) ? fg_flex : bg_flex)
+                                               : ((bits & (1 << (7 - col))) ? fg_32 : bg_32);
+                        *(volatile uint32_t *)(fb + off) = val;
                     }
                 }
             }
@@ -154,8 +166,10 @@ void LCD_DrawStringScaled(const LCD_LayerConfig *cfg, const char *str, int16_t x
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = _lcd_bpp(cfg->pixel_format);
+    int bpp = _lcd_bpp(cfg);
+    int is_flex = (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL);
 
+    uint32_t fg_flex = is_flex ? LCD_ARGBtoFlexible(fg_color, cfg->flexible_fmt) : 0;
     uint8_t r = (fg_color >> 16) & 0xFF;
     uint8_t g = (fg_color >> 8) & 0xFF;
     uint8_t b = fg_color & 0xFF;
@@ -187,13 +201,13 @@ void LCD_DrawStringScaled(const LCD_LayerConfig *cfg, const char *str, int16_t x
                             if (px < 0 || px >= width) continue;
                             uint32_t off = ((uint32_t)py * buf_width + px) * bpp;
                             if (bpp == 2) {
-                                *(volatile uint16_t *)(fb + off) = rgb565;
+                                *(volatile uint16_t *)(fb + off) = is_flex ? (uint16_t)fg_flex : rgb565;
                             } else if (bpp == 3) {
                                 fb[off + 0] = r;
                                 fb[off + 1] = g;
                                 fb[off + 2] = b;
                             } else {
-                                *(volatile uint32_t *)(fb + off) = color32;
+                                *(volatile uint32_t *)(fb + off) = is_flex ? fg_flex : color32;
                             }
                         }
                     }

@@ -67,8 +67,8 @@ void app_init(){
 
     delay_ms(10);
 
-    LCD_FillLayer(&LCD_Layer2Config, LCD_COLOR_BLACK);
-    LCD_DrawString(&LCD_Layer2Config, "100x100", 0, 0, TEXT_COLOR_RED);
+    LCD_FillLayer(&LCD_Layer2Config, 0x88000000);
+    LCD_DrawString(&LCD_Layer2Config, "96x32 Pixel", 6, 8, LCD_COLOR_RED);
 
     delay_ms(10);
 

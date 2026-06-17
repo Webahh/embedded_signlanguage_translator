@@ -75,6 +75,8 @@ LCD_LayerConfig LCD_Layer1Config = {
     .blending_order  = 0,
 };
 
+
+static const LCD_Layer_FlexiblePixelFormat LCD_FPF_ARGB4444 = LCD_FPF_ARGB4444_INIT;
 LCD_LayerConfig LCD_Layer2Config = {
     .regs            = LTDC_Layer2,
     .fb              = lcd_fg_buffer[0],
@@ -83,10 +85,11 @@ LCD_LayerConfig LCD_Layer2Config = {
     .width           = LCD_FG_WIDTH,
     .height          = LCD_FG_HEIGHT,
     .buf_width       = LCD_FG_WIDTH,
-    .pixel_format    = LCD_PF_RGB565,
+    .pixel_format    = LCD_PF_Flexible,
+    .flexible_fmt    = &LCD_FPF_ARGB4444,
     .const_alpha     = 0xFF,
-    .per_pixel_alpha = 0,
-    .default_color   = 0x00000000U,
+    .per_pixel_alpha = 1,
+    .default_color   = 0x00,
     .blending_order  = 1,
 };
 
