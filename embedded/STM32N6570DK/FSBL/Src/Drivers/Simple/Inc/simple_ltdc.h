@@ -2,6 +2,7 @@
 #define SIMPLE_LTDC_H
 
 #include <stdint.h>
+#include <stddef.h>
 #include "stm32n657xx.h"
 
 #define LCD_BG_WIDTH  800
@@ -123,6 +124,45 @@ typedef struct LCD_LayerConfig {
     uint32_t					 default_color;     /* color outside window       */
     uint8_t						 blending_order;    /* 0: background | 1: foreground */
 } LCD_LayerConfig;
+
+/* Get the actual bytes-per-pixel for a layer configuration */
+static inline int LCD_BytesPerPixel(const LCD_LayerConfig *cfg) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+        return cfg->flexible_fmt->bytes_per_pixel;
+    switch (cfg->pixel_format) {
+        case LCD_PF_RGB565:
+        case LCD_PF_BGR565:
+            return 2;
+        case LCD_PF_RGB888:
+            return 3;
+        default:
+            return 4;
+    }
+}
+
+/* Convert ARGB8888 colour to the layer's native pixel format */
+static inline uint32_t LCD_ColorToPixel(const LCD_LayerConfig *cfg, uint32_t color) {
+    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
+        return LCD_ARGBtoFlexible(color, cfg->flexible_fmt);
+    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565)
+        return LCD_ARGBtoRGB565(color);
+    if (cfg->pixel_format == LCD_PF_RGB888)
+        return ((color >> 16) & 0xFF) | (((color >> 8) & 0xFF) << 8) | ((color & 0xFF) << 16);
+    return color | 0xFF000000;
+}
+
+/* Write a single pixel of 'bpp' bytes at byte-offset 'off' in the framebuffer */
+static inline void LCD_WritePixel(volatile uint8_t *fb, uint32_t off, uint32_t pixel, int bpp) {
+    if (bpp == 2) {
+        *(volatile uint16_t *)(fb + off) = (uint16_t)pixel;
+    } else if (bpp == 3) {
+        fb[off + 0] = (uint8_t)(pixel);
+        fb[off + 1] = (uint8_t)(pixel >> 8);
+        fb[off + 2] = (uint8_t)(pixel >> 16);
+    } else {
+        *(volatile uint32_t *)(fb + off) = pixel;
+    }
+}
 
 void LCD_Init(void);
 void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b);
