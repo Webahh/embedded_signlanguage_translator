@@ -50,6 +50,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 
 void app_init(){
 	Security_Config();
+	RCC_config_PWR();
 	RCC_BoardClock_Config();
 	delay_init();
 

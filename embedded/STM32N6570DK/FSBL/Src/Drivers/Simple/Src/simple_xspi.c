@@ -269,8 +269,8 @@ static void XSPI2_EnableMemoryMappedMode(void){
  *  3) Configure XSPI1 GPIOs, device registers, PSRAM-specific regs
  */
 void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
-    RCC_enable_VDDIO2();
-    RCC_config_VDDIO2_1V8();
+//    RCC_enable_VDDIO2();
+//    RCC_config_VDDIO2_1V8();
     delay_ms(5);
 
     RCC_setXSPI1_clock_source(0);
@@ -296,7 +296,7 @@ void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
     PSRAM_WriteConfig();
     delay_ms(1);
 
-    if (XSPI_SetPrescaler_Calibrated(XSPI1, 1) != 0) {
+    if (XSPI_SetPrescaler_Calibrated(XSPI1, 0) != 0) {
         while (1) {
             /* Calibration failed */
         }
@@ -313,8 +313,8 @@ void PSRAM_Init(XSPI_cfg_TypeDef init_cfg){
  * and auto-polling memory-mapped mode.
  */
 void NOR_Init(XSPI_cfg_TypeDef init_cfg){
-    RCC_enable_VDDIO2();
-    RCC_config_VDDIO2_1V8();
+//    RCC_enable_VDDIO2();
+//    RCC_config_VDDIO2_1V8();
     delay_ms(5);
 
     RCC_enable_XSPI2();

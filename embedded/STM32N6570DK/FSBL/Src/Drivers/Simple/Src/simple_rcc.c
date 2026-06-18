@@ -647,6 +647,31 @@ void RCC_enable_PWR(void){
     (void)RCC->AHB4ENR;
 }
 
+void RCC_config_PWR(void){
+    RCC_enable_PWR();
+
+    PWR->CR1 = 0x20;
+    (void)PWR->CR1;
+
+    PWR->DBPCR |= PWR_DBPCR_DBP;
+    (void)PWR->DBPCR;
+
+    PWR->VOSCR = 0x20002;
+    (void)PWR->VOSCR;
+
+    PWR->CPUCR = 0x10000;
+    (void)PWR->CPUCR;
+
+    PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
+    (void)PWR->SVMCR1;
+
+    PWR->SVMCR2 |= PWR_SVMCR2_VDDIO5SV;
+    (void)PWR->SVMCR2;
+
+    PWR->SVMCR3 = 0x6101310;
+    (void)PWR->SVMCR3;
+}
+
 void RCC_enable_XSPI1(void){
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI1ENS;
     (void)RCC->AHB5ENSR;
@@ -691,22 +716,22 @@ void RCC_reset_XSPIM(void){
  *
  * VDDIO2 is required for GPIOs/peripherals powered by the second I/O domain.
  */
-void RCC_enable_VDDIO2(void){
-    RCC->AHB4ENSR |= RCC_AHB4ENSR_PWRENS;
-    (void)RCC->AHB4ENSR;
-    PWR->SVMCR3 |= PWR_SVMCR3_VDDIO2SV;
-    (void)PWR->SVMCR3;
-}
+//void RCC_enable_VDDIO2(void){
+//    RCC->AHB4ENSR |= RCC_AHB4ENSR_PWRENS;
+//    (void)RCC->AHB4ENSR;
+//    PWR->SVMCR3 |= PWR_SVMCR3_VDDIO2SV;
+//    (void)PWR->SVMCR3;
+//}
 
 /**
  * @brief Configure VDDIO2 voltage range to 1.8 V.
  *
  * Clears VDDIO2VRSEL to select the 1.8 V range.
  */
-void RCC_config_VDDIO2_1V8(void){
-    PWR->SVMCR3 &= ~PWR_SVMCR3_VDDIO2VRSEL;
-    (void)PWR->SVMCR3;
-}
+//void RCC_config_VDDIO2_1V8(void){
+//    PWR->SVMCR3 &= ~PWR_SVMCR3_VDDIO2VRSEL;
+//    (void)PWR->SVMCR3;
+//}
 
 /**
  * @brief Select IC16 as LTDC kernel clock source.
