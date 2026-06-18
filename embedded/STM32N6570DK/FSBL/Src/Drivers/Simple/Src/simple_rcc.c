@@ -650,16 +650,14 @@ void RCC_enable_PWR(void){
 void RCC_config_PWR(void){
     RCC_enable_PWR();
 
-    PWR->CR1 = 0x20;
-    (void)PWR->CR1;
-
     PWR->DBPCR |= PWR_DBPCR_DBP;
     (void)PWR->DBPCR;
 
-    PWR->VOSCR = 0x20002;
+    PWR->VOSCR = PWR_VOSCR_ACTVOSRDY
+               | PWR_VOSCR_VOSRDY;
     (void)PWR->VOSCR;
 
-    PWR->CPUCR = 0x10000;
+    PWR->CPUCR = PWR_CPUCR_SVOS;
     (void)PWR->CPUCR;
 
     PWR->SVMCR1 |= PWR_SVMCR1_VDDIO4SV;
@@ -668,7 +666,13 @@ void RCC_config_PWR(void){
     PWR->SVMCR2 |= PWR_SVMCR2_VDDIO5SV;
     (void)PWR->SVMCR2;
 
-    PWR->SVMCR3 = 0x6101310;
+    PWR->SVMCR3 = PWR_SVMCR3_VDDIO3VRSEL
+                | PWR_SVMCR3_VDDIO2VRSEL
+                | PWR_SVMCR3_ARDY
+                | PWR_SVMCR3_ASV
+                | PWR_SVMCR3_VDDIO3SV
+                | PWR_SVMCR3_VDDIO2SV
+                | PWR_SVMCR3_AVMEN;
     (void)PWR->SVMCR3;
 }
 
