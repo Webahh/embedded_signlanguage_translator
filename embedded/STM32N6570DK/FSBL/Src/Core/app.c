@@ -22,7 +22,6 @@
 #include "simple_ae.h"
 #include "tasks.h"
 
-static volatile int lcd_fg_capt_idx = 0;
 static volatile int lcd_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
@@ -34,17 +33,9 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
         LCD_UpdateLayerAddress(&LCD_Layer1Config);
 
     } else if (pipe == DCMIPP_PIPE2) {
-        int next_capt = (lcd_fg_capt_idx + 1) % NN_BUFFER_NB;
-        int next_disp = (lcd_fg_disp_idx + 1) % NN_BUFFER_NB;
-
-        DCMIPP_Pipe_UpdateBufAddr(DCMIPP_PIPE2,
-            (uint32_t)&lcd_fg_buffer[next_capt]);
-
-        LCD_Layer2Config.fb = lcd_fg_buffer[next_disp];
+        lcd_fg_disp_idx ^= 1;
+        LCD_Layer2Config.fb = lcd_fg_buffer[lcd_fg_disp_idx];
         LCD_UpdateLayerAddress(&LCD_Layer2Config);
-
-        lcd_fg_capt_idx = next_capt;
-        lcd_fg_disp_idx = next_disp;
     }
 }
 
@@ -57,7 +48,7 @@ void app_init(){
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
     PSRAM_Init(XSPI_psram_cfg);
-    //NOR_Init(XSPI_nor_cfg);
+    NOR_Init(XSPI_nor_cfg);
 
     LCD_Init();
 
@@ -68,19 +59,14 @@ void app_init(){
 
     delay_ms(10);
 
-    LCD_FillLayer(&LCD_Layer2Config, 0x44000000);
-    LCD_DrawString(&LCD_Layer2Config, "96x32 Pixel", 6, 8, LCD_COLOR_RED);
-
-    delay_ms(10);
-
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
     	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
     		error++;
     	}
-//    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
-//    		error++;
-//    	}
+    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
+    		error++;
+    	}
     }
 
     /* --- Scheduler --- */

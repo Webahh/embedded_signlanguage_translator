@@ -279,7 +279,9 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
         dcmipp->P1FCTCR |= DCMIPP_P1FCTCR_CPTREQ;
 
     } else if (pipe == DCMIPP_PIPE2) {
-        dcmipp->P2PPM0AR1 = buf_addr;
+        if (!(dcmipp->P2PPCR & DCMIPP_P2PPCR_DBM)) {
+            dcmipp->P2PPM0AR1 = buf_addr;
+        }
         if (mode == 0)
             dcmipp->P2FCTCR &= ~DCMIPP_P2FCTCR_CPTMODE;
         else

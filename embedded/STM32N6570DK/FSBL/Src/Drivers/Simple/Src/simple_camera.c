@@ -143,10 +143,12 @@ CAM_Status CAM_Init(CAM_Handle *h)
     pipe_conf.enable_decimate  = 1;
     pipe_conf.decimate_h       = 1;
     pipe_conf.decimate_v       = 1;
-    pipe_conf.enable_dbm      = 0;
+    pipe_conf.enable_dbm      = 1;
     pipe_conf.enable_swap      = 0;
     pipe_conf.enable_gamma     = 1;
     DCMIPP_Pipe_Config(CAM_PIPE_NN, &pipe_conf, (uint32_t *)&h->nn_pitch);
+    DCMIPP->P2PPM0AR1 = (uint32_t)&lcd_fg_buffer[0];
+    DCMIPP->P2PPM0AR2 = (uint32_t)&lcd_fg_buffer[1];
 
     /* ------ Statistics window (Pipe1) ------ */
     /* Half-resolution window over full sensor, clipped by CROPEN to crop region */
@@ -210,7 +212,7 @@ CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 
     lcd_bg_buffer_disp_idx = 1;
     LCD_Layer1Config.pixel_format = LCD_PF_RGB888;
-    LCD_Layer1Config.fb            = (volatile uint8_t *)&lcd_bg_buffer[lcd_bg_buffer_disp_idx];
+    LCD_Layer1Config.fb            = &lcd_bg_buffer[lcd_bg_buffer_disp_idx];
     LCD_ConfigLayer1();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;

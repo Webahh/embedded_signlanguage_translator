@@ -139,17 +139,34 @@ static uint32_t LCD_ARGBtoFlexible(uint32_t argb, const LCD_Layer_FlexiblePixelF
     return pixel;
 }
 
+/**
+ * @ret ret > 0 -> Succesful
+ * 	ret < 0 Unknown PF or PF_Flexible does not have a flexable reference
+ */
 int LCD_BytesPerPixel(const LCD_LayerConfig *cfg) {
-    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
-        return cfg->flexible_fmt->bytes_per_pixel;
     switch (cfg->pixel_format) {
+
+    	case LCD_PF_ARGB8888:
+    	case LCD_PF_ABGR8888:
+    	case LCD_PF_BGRA8888:
+    	case LCD_PF_RGBA8888:
+    		return 4;
+
+        case LCD_PF_RGB888:
+            return 3;
+
         case LCD_PF_RGB565:
         case LCD_PF_BGR565:
             return 2;
-        case LCD_PF_RGB888:
-            return 3;
+
+        case LCD_PF_Flexible: {
+        	if(cfg->flexible_fmt != NULL) {
+        		return cfg->flexible_fmt->bytes_per_pixel;
+        	}
+        	return -1;
+        }
         default:
-            return 4;
+            return -1;
     }
 }
 
