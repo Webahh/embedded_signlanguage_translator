@@ -49,7 +49,7 @@ static const struct {
   * @param  reg_lsb  Register address LSB
   * @param  val      Value to write
   */
-static void CSI_WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
+static void _WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
 {
     csi->PTCR1 |= CSI_PTCR1_TWM;
     csi->PTCR0 |= CSI_PTCR0_TCKEN;
@@ -82,7 +82,7 @@ void CSI_Init(void)
     NVIC_EnableIRQ(CSI_IRQn);
 }
 
-void CSI_Config(CSI_Conf *conf)
+void CSI_Config(CSI_cfg_TypeDef *conf)
 {
     uint32_t hsfreqrange, osc_target, phy_idx;
 
@@ -103,10 +103,10 @@ void CSI_Config(CSI_Conf *conf)
     for (volatile uint32_t d = 0; d < 400000; d++);
     csi->PTCR0 = 0;
 
-    CSI_WritePHYReg(0x00, 0x08, 0x38);
-    CSI_WritePHYReg(0x00, 0xE4, 0x11);
-    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target >> 8));
-    CSI_WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target & 0xFF));
+    _WritePHYReg(0x00, 0x08, 0x38);
+    _WritePHYReg(0x00, 0xE4, 0x11);
+    _WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target >> 8));
+    _WritePHYReg(0x00, 0xE3, (uint8_t)(osc_target & 0xFF));
 
     /* Configure lane merger while CSI disabled and sensor not streaming */
     csi->CR &= ~CSI_CR_CSIEN;
