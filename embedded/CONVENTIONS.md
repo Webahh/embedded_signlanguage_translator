@@ -13,9 +13,20 @@
 
 ### Includes
 
-- **Standard library:** `<stdint.h>`, `<stdlib.h>`, `<stddef.h>`
-- **MCU header:** `#include "stm32n657xx.h"`
-- **Own project first:** `"simple_gpio.h"` over `"stm32n657xx.h"`
+```c
+#include <stdint.h> 
+#include <stdlib.h>
+#include <stddef.h>
+
+#include "stm32n657xx.h"
+#include "stm32n657xx.h"
+
+#include "simple_gpio.h"
+```
+
+- **1. Standard library:**
+- **2. MCU header:**
+- **3. Own project first:**
 
 ### Defines / Macros
 
@@ -24,6 +35,7 @@
 ```
 
 - `UPPER_SNAKE_CASE`, prefixed by module: `LCD_BG_WIDTH`, `GPIO_MODE_OUTPUT`, `CAM_OK`
+- Public defines used in other Modules
 
 ### Typedefs
 
@@ -83,6 +95,16 @@ extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 1. Standard library: `#include <string.h>`
 2. Own header first: `#include "module.h"`
 3. Project drivers: `#include "simple_gpio.h"`
+
+
+### Defines / Macros
+
+```c
+#define PREFIX_NAME   value
+```
+
+- `UPPER_SNAKE_CASE`, prefixed by module: `LCD_BG_WIDTH`, `GPIO_MODE_OUTPUT`, `CAM_OK`
+- Private defines used in own Module
 
 ### Static / File-scope
 
