@@ -29,7 +29,8 @@ void vLEDTask(void) {
 }
 
 void vBackgroundTask(void) {
-    uint32_t now     = SCHEDULER_GetTick();
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
     uint32_t elapsed = now - bg_blend_start;
 
     if (elapsed >= 1000) {

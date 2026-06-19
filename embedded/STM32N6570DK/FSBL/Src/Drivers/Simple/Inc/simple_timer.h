@@ -27,7 +27,5 @@ void TIM_ResetCounter(TIM_TypeDef* TIMX);
 int TIM_GetCounter(TIM_TypeDef* TIMX);
 void delay_init();
 void delay_ms(int ms);
-void tick_init(void);
-uint32_t get_tick_ms(void);
 
 #endif /* SIMPLE_TIMER_H */

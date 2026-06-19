@@ -22,6 +22,7 @@
 #include "simple_ae.h"
 #include "tasks.h"
 
+extern uint32_t g_pfnVectors[];
 static volatile int lcd_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
@@ -40,6 +41,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 }
 
 void app_init(){
+	SCB->VTOR = (uint32_t)g_pfnVectors;
 	Security_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
@@ -70,15 +72,16 @@ void app_init(){
     }
 
     /* --- Scheduler --- */
-    SCHEDULER_Init();
+    SCHEDULER_System_init();
 
-	SCHEDULER_AddTask(vLEDTask, "LED", 500);
-	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
-	SCHEDULER_AddTask(vAETask, "AETask" , 30);
+	uint8_t task_idx;
+	SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, &task_idx);
+	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
+	SCHEDULER_Task_add(vAETask, "AETask", 30, 1, &task_idx);
 }
 
 void app_run(){
-	SCHEDULER_Run();
+	SCHEDULER_Tasks_run();
 }
 
 
