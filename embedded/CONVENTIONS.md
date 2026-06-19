@@ -119,7 +119,7 @@ static const uint8_t    _lookup[3] = { 10, 20, 30 };
 ### Functions
 
 ```c
-return_t Module_Action(param_t param){
+MODULE_return_TypeDef Module_Action(param_t param){
     [...]
     // body (tab-indented)
 }
