@@ -1,4 +1,4 @@
-# Code Conventions — STM32N6570DK FSBL
+# Code Conventions - STM32N6570DK FSBL
 
 ## HEADER (`.h`)
 
@@ -54,20 +54,28 @@
  *
  * Elaborate explanation of method
  *
- * @param a | description [...]
- * @param b | description [...]
+ * @param [in]  a | description [...]
+ * @param [out] b | description [...]
  *
- * @ret Return description
+ * @retval Return description
  *
  * @note Essential things to note about the method
  */
 ReturnType func(param a, [...], param b);
 ```
 
-- Minimum documentation must contain `@brief`, `@parameter`
-- `@return` for non-void methods
+- Minimum documentation must contain `@brief` and `@param [in]` / `@param [out]`
 - `@note` and elaborate explanation are optional
 - No anonymous parameter types
+- `@return` for non-void methods
+- The return type of all module functions (except `void`) is the module's
+  status `_TypeDef` enum (e.g. `SCHEDULER_Status_TypeDef`)
+  Values are returned via pointer parameters - never via the return value
+- Function names follow the pattern `Module_SubPascalCase_action`:
+  `RCC_Timer_enable()`, `SCHEDULER_Task_add()`, `GPIO_Pin_set()`.
+  Top-level module in `UPPER_CASE`, any submodule / sub-part in
+  `PascalCase`, and the action in `lowercase`.  Interrupt Service Routines
+  (e.g. `TIM7_IRQHandler`) are exempted.
 
 ### Extern Variables
 
@@ -83,8 +91,8 @@ extern CAM_handle_TypeDef    CAM_handle_cfg;
 extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 ```
 
-- **Config data** = `extern const` — defined in `.c` with `{ .member = val }`
-- **Runtime state** = `extern` (no `const`) — defined in `.c` without `const`, modified in place
+- **Config data** = `extern const` - defined in `.c` with `{ .member = val }`
+- **Runtime state** = `extern` (no `const`) - defined in `.c` without `const`, modified in place
 
 ---
 
@@ -127,6 +135,14 @@ MODULE_return_TypeDef Module_Action(param_t param){
 
 - Opening brace on same line
 - One blank line between methods
+- The return type of all module functions (except `void`) is the module's
+  status `_TypeDef` enum (e.g. `SCHEDULER_Status_TypeDef`)
+  Values are returned via pointer parameters - never via the return value
+- Function names follow the pattern `Module_SubPascalCase_action`:
+  `RCC_Timer_enable()`, `SCHEDULER_Task_add()`, `GPIO_Pin_set()`.
+  Top-level module in `UPPER_CASE`, any submodule / sub-part in
+  `PascalCase`, and the action in `lowercase`.  Interrupt Service Routines
+  (e.g. `TIM7_IRQHandler`) are exempted.
 
 ### Config Initializers
 
@@ -152,10 +168,10 @@ const GPIO_cfg_TypeDef GPIO_LTDC_cfg = {
 
 ```c
 // -------------------------------------------------------------------------
-// SECTION NAME
+// Private / API
 // -------------------------------------------------------------------------
 ```
 
 ### Indentation
 
-- **Tabs** (no spaces) — align struct members and designated init values with tabs.
+- **Tabs** (no spaces) - align struct members and designated init values with tabs.
