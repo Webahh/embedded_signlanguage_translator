@@ -140,6 +140,22 @@ int TIM_GetCounter(TIM_TypeDef* TIMX){
 	return TIMX->CNT;
 }
 
+uint32_t TIM_GetFlag(TIM_TypeDef* TIMX, uint32_t flag){
+	return TIMX->SR & flag;
+}
+
+void TIM_ClearFlag(TIM_TypeDef* TIMX, uint32_t flag){
+	TIMX->SR &= ~flag;
+}
+
+void TIM_EnableIT(TIM_TypeDef* TIMX){
+	TIMX->DIER |= TIM_DIER_UIE;
+}
+
+void TIM_DisableIT(TIM_TypeDef* TIMX){
+	TIMX->DIER &= ~TIM_DIER_UIE;
+}
+
 /**
  * @brief Initialize TIM6 as millisecond delay timer.
  *
@@ -166,14 +182,14 @@ void delay_ms(int ms){
         return;
     }
 
-    TIM6->SR &= ~TIM_SR_UIF;
+    TIM_ClearFlag(TIM6, TIM_SR_UIF);
     TIM_ResetCounter(TIM6);
     TIM_Start(TIM6);
 
     for(int i = 0; i < ms; i++){
-        while((TIM6->SR & TIM_SR_UIF) == 0U){
+        while(TIM_GetFlag(TIM6, TIM_SR_UIF) == 0U){
         }
-        TIM6->SR &= ~TIM_SR_UIF;
+        TIM_ClearFlag(TIM6, TIM_SR_UIF);
     }
 
     TIM_Stop(TIM6);

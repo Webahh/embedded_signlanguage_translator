@@ -13,17 +13,21 @@
  * @date    May 24, 2026
  */
 
+#include <stdint.h>
+
 #include "simple_scheduler.h"
-#include "simple_rcc.h"
+
 #include "stm32n657xx.h"
 
-/* Stringify helper for inline assembly */
+#include "simple_timer.h"
+
+// Stringify helper for inline assembly
 #define STR_HELPER(x) #x
 #define STR(x)        STR_HELPER(x)
 
-/* --------------------------------------------------------------------------
- * Private data
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Private data
+// -------------------------------------------------------------------------
 
 static SCHEDULER_TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t			_sys_tick_ms = 0;
@@ -32,17 +36,16 @@ static int							_current_task = 0;
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE]
 							__attribute__((aligned(8)));
 
-/* Forward declarations (called from assembly) */
+// Forward declarations (called from assembly)
 void SCHEDULER_Task_exit(void);
 static int SCHEDULER_SelectNextTask(void);
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
 
-/* --------------------------------------------------------------------------
- * Stack initialisation
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Stack initialisation
+// -------------------------------------------------------------------------
 
-static void SCHEDULER_InitTaskStack(int i)
-{
+static void SCHEDULER_InitTaskStack(int i){
     uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i]
         + sizeof(_task_stacks[i])) & ~7U);
 
@@ -52,22 +55,22 @@ static void SCHEDULER_InitTaskStack(int i)
         sp[j] = 0;
     }
 
-    /* sp[0..15]  reserved FP area */
-    /* sp[16..23] r4-r11 */
-    /* sp[24..31] hardware exception frame */
+    // sp[0..15]  reserved FP area
+    // sp[16..23] r4-r11
+    // sp[24..31] hardware exception frame
 
-    sp[29] = (uint32_t)SCHEDULER_Task_exit; /* LR */
-    sp[30] = (uint32_t)_tasks[i].function;  /* PC */
-    sp[31] = 0x01000000UL;                  /* xPSR */
+    sp[29] = (uint32_t)SCHEDULER_Task_exit; // LR
+    sp[30] = (uint32_t)_tasks[i].function;  // PC
+    sp[31] = 0x01000000UL;                  // xPSR
 
     _tasks[i].saved_sp         = (uint32_t)&sp[16];
     _tasks[i].saved_exc_return = 0xFFFFFFFDUL;
     _tasks[i].needs_init       = 0;
 }
 
-/* --------------------------------------------------------------------------
- * Idle task
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Idle task
+// -------------------------------------------------------------------------
 
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
@@ -75,9 +78,9 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	}
 }
 
-/* --------------------------------------------------------------------------
- * Task exit handler
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Task exit handler
+// -------------------------------------------------------------------------
 
 void SCHEDULER_Task_exit(void){
 	__disable_irq();
@@ -92,9 +95,9 @@ void SCHEDULER_Task_exit(void){
 	}
 }
 
-/* --------------------------------------------------------------------------
- * Schedule - pick the highest-priority ready task
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Schedule - pick the highest-priority ready task
+// -------------------------------------------------------------------------
 
 static int SCHEDULER_SelectNextTask(void){
 	int     best      = -1;
@@ -115,9 +118,9 @@ static int SCHEDULER_SelectNextTask(void){
 	return best;
 }
 
-/* --------------------------------------------------------------------------
- * Helper - called from PendSV assembly to re-init a finished task
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// Helper - called from PendSV assembly to re-init a finished task
+// -------------------------------------------------------------------------
 
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	SCHEDULER_InitTaskStack(task_idx);
@@ -125,9 +128,9 @@ void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	((SCHEDULER_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
-/* --------------------------------------------------------------------------
- * PendSV handler - preemptive context switch
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// PendSV handler - preemptive context switch
+// -------------------------------------------------------------------------
 
 __attribute__((naked)) void PendSV_Handler(void){
 	__asm volatile (
@@ -199,12 +202,11 @@ __attribute__((naked)) void PendSV_Handler(void){
 	);
 }
 
-/* --------------------------------------------------------------------------
- * SVC handler - start first task
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// SVC handler - start first task
+// -------------------------------------------------------------------------
 
-__attribute__((naked)) void SVC_Handler(void)
-{
+__attribute__((naked)) void SVC_Handler(void){
     __asm volatile (
         "ldr    r0, =_current_task                  \n"
         "ldr    r1, [r0]                            \n"
@@ -228,13 +230,13 @@ __attribute__((naked)) void SVC_Handler(void)
     );
 }
 
-/* --------------------------------------------------------------------------
- * TIM7 ISR - tick source
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// TIM7 ISR - tick source
+// -------------------------------------------------------------------------
 
 void TIM7_IRQHandler(void){
-	if (TIM7->SR & TIM_SR_UIF) {
-		TIM7->SR &= ~TIM_SR_UIF;
+	if (TIM_GetFlag(TIM7, TIM_SR_UIF)) {
+		TIM_ClearFlag(TIM7, TIM_SR_UIF);
 
 		_sys_tick_ms++;
 
@@ -252,9 +254,9 @@ void TIM7_IRQHandler(void){
 	}
 }
 
-/* --------------------------------------------------------------------------
- * SCHEDULER - API
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// SCHEDULER - API
+// -------------------------------------------------------------------------
 
 SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	SCHEDULER_TaskFunction_TypeDef pvTaskCode,
@@ -309,15 +311,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 }
 
 void SCHEDULER_System_init(void){
-	RCC_enable_TIM(TIM7);
-
-	TIM7->CR1   = 0;
-	TIM7->PSC   = 200 - 1;
-	TIM7->ARR   = 999;
-	TIM7->CNT   = 0;
-	TIM7->DIER |= TIM_DIER_UIE;
-	TIM7->EGR   = TIM_EGR_UG;
-	TIM7->SR   &= ~TIM_SR_UIF;
+	TIM_Config(TIM7, 200, 999, 0);
+	TIM_EnableIT(TIM7);
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
@@ -329,12 +324,11 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 	return SCHEDULER_OK;
 }
 
-/* --------------------------------------------------------------------------
- * SCHEDULER_Tasks_run - start the preemptive scheduler
- * -------------------------------------------------------------------------- */
+// -------------------------------------------------------------------------
+// SCHEDULER_Tasks_run - start the preemptive scheduler
+// -------------------------------------------------------------------------
 
-void SCHEDULER_Tasks_run(void)
-{
+void SCHEDULER_Tasks_run(void){
     __disable_irq();
 
     _tasks[SCHEDULER_IDLE_TASK_INDEX].function       = SCHEDULER_IdleTask;
@@ -357,7 +351,7 @@ void SCHEDULER_Tasks_run(void)
 
     NVIC_ClearPendingIRQ(TIM7_IRQn);
     NVIC_EnableIRQ(TIM7_IRQn);
-    TIM7->CR1 |= TIM_CR1_CEN;
+    TIM_Start(TIM7);
 
     __enable_irq();
 
