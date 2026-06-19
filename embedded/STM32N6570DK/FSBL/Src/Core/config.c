@@ -39,14 +39,14 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
 
-const RCC_PLL_cfg_TypeDef RCC_PLL_cfg[4] = {
+const RCC_PLL_ConfigTypeDef BOARD_PLL_CONFIG[4] = {
     { .CFGR1 = 0x201900, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
     { .CFGR1 = 0x807D00, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
     { .CFGR1 = 0x80E100, .CFGR2 = 0x0, .CFGR3 = 0x4A000005 },
     { .CFGR1 = 0x80E100, .CFGR2 = 0x0, .CFGR3 = 0x76000005 },
 };
 
-const RCC_IC_cfg_TypeDef RCC_IC_cfg[20] = {
+const RCC_IC_ConfigTypeDef BOARD_IC_CONFIG[20] = {
     [0]  = { .CFGR = 0x00000000 },  /* IC1:  PLL1 / 1  - CPU */
     [1]  = { .CFGR = 0x00010000 },  /* IC2:  PLL1 / 2  - SYSB/AXI */
 	[2]  = { .CFGR = 0x00030000 },  /* IC3:  PLL1 / 4  - XSPI */
@@ -77,7 +77,7 @@ const XSPI_cfg_TypeDef XSPI_nor_cfg = {
 		.refresh_cycles = 0
 };
 
-const XSPI_CCR_cfg_TypeDef XSPI_write_reg_cfg = {
+const XSPI_ccr_cfg_TypeDef XSPI_write_reg_cfg = {
 		.instruction_mode 	= 4,
 		.instruction_dtr  	= 0,
 		.instruction_size	= 0,
@@ -89,7 +89,7 @@ const XSPI_CCR_cfg_TypeDef XSPI_write_reg_cfg = {
 		.data_qse			= 0
 };
 
-const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg = {
+const XSPI_ccr_cfg_TypeDef XSPI_memorymapped_cfg = {
 		.instruction_mode 	= 4,
 		.instruction_dtr  	= 0,
 		.instruction_size	= 0,
@@ -100,69 +100,6 @@ const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg = {
 		.data_dtr			= 1,
 		.data_qse			= 1
 };
-
-const CSI_cfg_TypeDef CSI_cfg = {
-		.num_lanes 			= CSI_TWO_DATA_LANES,
-		.data_lane_mapping  = CSI_DATA_LANES_PHYSICAL,
-		.phy_bitrate		= CSI_PHY_BT_1600,
-		.virtual_channel	= CSI_VIRTUAL_CHANNEL0,
-		.dt_format			= CSI_DT_BPP10,
-		.data_type			= 0x2B
-};
-
-const DCMIPP_Pipe_cfg_TypeDef DCMIPP_display_pipe_cfg = {
-		.output_width		= CAM_DISPLAY_WIDTH,
-		.output_height		= CAM_DISPLAY_HEIGHT,
-		.output_format		= DCMIPP_PP_FORMAT_RGB888,
-		.output_bpp			= 3,
-		.enable_crop		= 1,
-		.crop_x				= 0,
-		.crop_y				= (CAM_SENSOR_HEIGHT - (CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH) + 1) / 2,
-		.crop_width			= CAM_SENSOR_WIDTH,
-		.crop_height		= CAM_DISPLAY_HEIGHT * CAM_SENSOR_WIDTH / CAM_DISPLAY_WIDTH,
-		.enable_downsize 	= 1,
-		.enable_swap		= 0,
-		.enable_gamma		= 1,
-		.enable_dbm			= 1
-};
-
-const DCMIPP_Pipe_cfg_TypeDef DCMIPP_nn_pipe_cfg = {
-		.output_width		= CAM_NN_WIDTH,
-		.output_height		= CAM_NN_HEIGHT,
-		.output_format		= DCMIPP_PP_FORMAT_RGB888,
-		.output_bpp			= 3,
-		.enable_crop		= 1,
-		.crop_x				= 0,
-		.crop_y				= 0,
-		.crop_width			= CAM_SENSOR_WIDTH,
-		.crop_height		= CAM_SENSOR_HEIGHT,
-		.enable_downsize 	= 1,
-		.enable_decimate	= 1,
-	    .decimate_h      	= 1,
-	    .decimate_v       	= 1,
-		.enable_swap		= 0,
-		.enable_gamma		= 1,
-		.enable_dbm			= 1
-};
-
-const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client2_cfg = {
-		.client_id			= DCMIPP_CLIENT2,
-		.traffic			= DCMIPP_TRAFFIC_128B,
-		.outstanding		= 0x0,
-		.wlru_ratio			= 0xF,
-		.dpreg_start		= 0x0,
-		.dpreg_end			= 0x22F
-};
-
-const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg = {
-		.client_id			= CAM_CLIENT_DISPLAY,
-		.traffic			= DCMIPP_TRAFFIC_128B,
-		.outstanding		= 0x0,
-		.wlru_ratio			= 0x0,
-		.dpreg_start		= 0x230,
-		.dpreg_end			= 0x27F
-};
-
 
 CAM_Handle h_cam;
 

@@ -73,7 +73,7 @@ void app_init(){
     SCHEDULER_Init();
 
 	SCHEDULER_AddTask(vLEDTask, "LED", 500);
-	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
+	//SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
 	SCHEDULER_AddTask(vAETask, "AETask" , 30);
 }
 

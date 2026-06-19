@@ -126,7 +126,7 @@ static volatile uint32_t * const PLL_CFGR3[] = {
     &RCC->PLL1CFGR3, &RCC->PLL2CFGR3, &RCC->PLL3CFGR3, &RCC->PLL4CFGR3,
 };
 
-void RCC_config_PLLs(const RCC_PLL_cfg_TypeDef pll[4])
+void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4])
 {
     for (uint32_t i = 0U; i < 4U; i++) {
         if (RCC->SR & PLL_RDY[i]) continue;
@@ -155,7 +155,7 @@ static const uint32_t IC_DIVEN[] = {
     RCC_DIVENR_IC17EN, RCC_DIVENR_IC18EN, RCC_DIVENR_IC19EN, RCC_DIVENR_IC20EN,
 };
 
-void RCC_config_ICs(const RCC_IC_cfg_TypeDef ic[20])
+void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20])
 {
     for (uint32_t i = 0U; i < 20U; i++) {
         if (ic[i].CFGR == 0U) continue;
@@ -170,9 +170,9 @@ void RCC_BoardClock_Config(void)
 {
     RCC_SystemClock_Config();
 
-    RCC_config_PLLs(RCC_PLL_cfg);
+    RCC_config_PLLs(BOARD_PLL_CONFIG);
 
-    RCC_config_ICs(RCC_IC_cfg);
+    RCC_config_ICs(BOARD_IC_CONFIG);
 
     /*
      * RCC_config_ICs() skips zero-valued entries, therefore IC1 must be

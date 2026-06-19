@@ -10,8 +10,6 @@
 
 #include "stm32n657xx.h"
 
-#define I2C_SENSOR_BUS_TIMING 	0x01B11628
-
 /** I2C transfer status codes */
 typedef enum {
     I2C_OK      = 0, /**< Transaction completed successfully */

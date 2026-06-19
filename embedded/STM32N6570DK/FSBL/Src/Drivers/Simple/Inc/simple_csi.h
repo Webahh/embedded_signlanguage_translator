@@ -57,21 +57,21 @@
  * ------------------------------------------------------------------------- */
 
 /** CSI host configuration structure */
-typedef struct {
+typedef struct CSI_Conf {
     uint32_t num_lanes;          /**< Number of data lanes (CSI_ONE_DATA_LANE / CSI_TWO_DATA_LANES) */
     uint32_t data_lane_mapping;  /**< Physical or inverted lane mapping                             */
     uint32_t phy_bitrate;        /**< PHY bitrate index (CSI_PHY_BT_*)                              */
     uint32_t virtual_channel;    /**< Virtual channel (CSI_VIRTUAL_CHANNEL*)                        */
     uint32_t dt_format;          /**< Data type bit-width (CSI_DT_BPP*)                             */
     uint32_t data_type;          /**< MIPI CSI-2 data type ID (e.g. 0x2B for RAW10)                 */
-} CSI_cfg_TypeDef;
+} CSI_Conf;
 
 /* ---------------------------------------------------------------------------
  * API
  * ------------------------------------------------------------------------- */
 
 void     CSI_Init(void);
-void     CSI_Config(CSI_cfg_TypeDef *conf);
+void     CSI_Config(CSI_Conf *conf);
 void     CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format);
 uint32_t CSI_StartVirtualChannel(uint32_t vc);
 void     CSI_DBG_IRQHandler(void);

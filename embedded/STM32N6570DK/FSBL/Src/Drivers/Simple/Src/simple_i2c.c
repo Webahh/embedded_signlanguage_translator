@@ -13,7 +13,6 @@
 /** Maximum poll iterations before returning I2C_TIMEOUT */
 #define I2C_TIMEOUT_MAX 1000U
 
-
 /** Shift a 7-bit address left by 1 for the SADD field */
 #define I2C_7BIT_ADDR(addr7) (((uint32_t)(addr7) & 0x7FU) << 1)
 

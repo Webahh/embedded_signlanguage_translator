@@ -23,7 +23,7 @@ typedef struct {
 	uint8_t data_mode;
 	uint8_t data_dtr;
 	uint8_t data_qse;
-} XSPI_CCR_cfg_TypeDef;
+} XSPI_ccr_cfg_TypeDef;
 
 void PSRAM_Init(XSPI_cfg_TypeDef init_cfg);
 void NOR_Init(XSPI_cfg_TypeDef init_cfg);
