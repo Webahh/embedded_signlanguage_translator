@@ -109,7 +109,7 @@ static void XSPI_Init(XSPI_TypeDef *XSPIX , XSPI_cfg_TypeDef cfg){
 /*
  * Helper to build CCR & WCCR
  */
-static uint32_t XSPI_BuildWCCR_CCR(const XSPI_ccr_cfg_TypeDef cfg){
+static uint32_t XSPI_BuildWCCR_CCR(const XSPI_CCR_cfg_TypeDef cfg){
     return XSPI_FIELD(CCR, IMODE,  cfg.instruction_mode)
          | XSPI_FIELD(CCR, IDTR,   cfg.instruction_dtr)
          | XSPI_FIELD(CCR, ISIZE,  cfg.instruction_size)

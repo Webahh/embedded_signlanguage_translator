@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include "simple_dcmipp.h"
 #include "simple_rcc.h"
+#include "simple_ltdc.h"
 
 static DCMIPP_TypeDef *dcmipp = DCMIPP;
 
@@ -58,10 +59,10 @@ void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type)
     dcmipp->CMCR |= DCMIPP_CMCR_INSEL;
 }
 
-void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pitch)
+void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch)
 {
     uint32_t pitch;
-    DCMIPP_Pipe_Conf zero_conf = {0};
+    DCMIPP_Pipe_cfg_TypeDef zero_conf = {0};
     volatile uint32_t *crstr, *crszr, *dsrtior, *dsszr, *dscr, *gmcr, *ppcr, *ppm0pr, *fctcr;
     volatile uint32_t *decr, *dccr, *blccr, *excr1, *excr2, *st1cr, *st2cr, *st3cr;
 
@@ -179,6 +180,14 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pit
 
     if (out_pitch) *out_pitch = pitch;
 
+    if (pipe == DCMIPP_PIPE1){
+        DCMIPP->P1PPM0AR1 = (uint32_t)&lcd_bg_buffer[0];
+        DCMIPP->P1PPM0AR2 = (uint32_t)&lcd_bg_buffer[1];
+    } else if (pipe == DCMIPP_PIPE2){
+        DCMIPP->P2PPM0AR1 = (uint32_t)&lcd_fg_buffer[0];
+        DCMIPP->P2PPM0AR2 = (uint32_t)&lcd_fg_buffer[1];
+    }
+
 }
 
 void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
@@ -191,7 +200,7 @@ void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
     }
 }
 
-void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_Conf *conf)
+void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf)
 {
     if (!conf) return;
 
