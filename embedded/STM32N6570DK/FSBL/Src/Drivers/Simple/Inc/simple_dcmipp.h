@@ -112,7 +112,7 @@
  * ------------------------------------------------------------------------- */
 
 /** Pipe configuration structure */
-typedef struct DCMIPP_Pipe_Conf {
+typedef struct {
     uint32_t output_width;       /**< Output frame width (pixels)              */
     uint32_t output_height;      /**< Output frame height (pixels)             */
     uint32_t output_format;      /**< Pixel format (DCMIPP_PP_FORMAT_*)        */
@@ -129,17 +129,17 @@ typedef struct DCMIPP_Pipe_Conf {
     uint8_t  decimate_v;         /**< Vertical decimation:   0=1x, 1=1/2, 2=1/4, 3=1/8 */
     uint8_t  enable_dbm;         /**< Enable DCMIPP hardware double-buffer mode */
     uint8_t  enable_gamma;		 /**< Enable gamma							   */
-} DCMIPP_Pipe_Conf;
+} DCMIPP_Pipe_cfg_TypeDef;
 
 /** IPPlug client configuration structure */
-typedef struct DCMIPP_IPPlug_Conf {
+typedef struct {
     uint32_t client_id;          /**< Client identifier (DCMIPP_CLIENT*)       */
     uint32_t traffic;            /**< Burst size (DCMIPP_TRAFFIC_*)            */
     uint32_t outstanding;        /**< Outstanding transactions (0-15)          */
     uint16_t dpreg_start;        /**< AHB address region start (1-KB units)    */
     uint16_t dpreg_end;          /**< AHB address region end (1-KB units)      */
     uint8_t  wlru_ratio;         /**< WLRU ratio (0-15: 1/16 to 16/16 of BW)  */
-} DCMIPP_IPPlug_Conf;
+} DCMIPP_IPPlug_cfg_TypeDef;
 
 /* ---------------------------------------------------------------------------
  * API
@@ -148,9 +148,9 @@ typedef struct DCMIPP_IPPlug_Conf {
 void     DCMIPP_Init(void);
 void     DCMIPP_DeInit(void);
 void     DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type);
-void     DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_Conf *conf, uint32_t *out_pitch);
+void     DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch);
 void     DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode);
-void     DCMIPP_IPPlug_Config(DCMIPP_IPPlug_Conf *conf);
+void     DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf);
 void     DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode);
 void     DCMIPP_Pipe_Stop(uint32_t pipe);
 void     DCMIPP_Pipe_Suspend(uint32_t pipe);

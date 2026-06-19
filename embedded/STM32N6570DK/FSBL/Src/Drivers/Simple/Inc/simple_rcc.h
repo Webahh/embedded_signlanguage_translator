@@ -21,15 +21,15 @@ typedef struct {
     uint32_t CFGR1;     /* PLLxCFGR1 value */
     uint32_t CFGR2;     /* PLLxCFGR2 value */
     uint32_t CFGR3;     /* PLLxCFGR3 value */
-} RCC_PLL_ConfigTypeDef;
+} RCC_PLL_cfg_TypeDef;
 
 typedef struct {
     uint32_t CFGR;      /* ICxCFGR value */
-} RCC_IC_ConfigTypeDef;
+} RCC_IC_cfg_TypeDef;
 
 void RCC_SystemClock_Config(void);
-void RCC_config_PLLs(const RCC_PLL_ConfigTypeDef pll[4]);
-void RCC_config_ICs(const RCC_IC_ConfigTypeDef ic[20]);
+void RCC_config_PLLs(const RCC_PLL_cfg_TypeDef pll[4]);
+void RCC_config_ICs(const RCC_IC_cfg_TypeDef ic[20]);
 void RCC_BoardClock_Config(void);
 
 uint32_t RCC_GetHSI(void);
