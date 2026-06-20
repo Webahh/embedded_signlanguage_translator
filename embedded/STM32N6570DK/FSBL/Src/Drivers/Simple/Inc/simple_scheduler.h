@@ -5,6 +5,36 @@
  * The scheduler preempts tasks via PendSV every 1 ms and dispatches the
  * highest-priority ready task.  Lower priority values = higher priority.
  *
+ * Task functions must have an infinite loop.  The scheduler never calls
+ * them repeatedly; it merely marks them ready every period_ms and the
+ * PendSV context-switch preempts whichever task is currently running.
+ * A task that omits the while(1) will fall through to SCHEDULER_Task_exit
+ * and be re-initialised on its next period.
+ *
+ * Example task – infinite loop, preempted at 1 ms granularity:
+ *
+ * @code{.c}
+ * void vLEDTask(void){
+ *     while (1) {
+ *         GPIO_Pin_set(LED2, 1);
+ *         // ... return here after 500 ms when the scheduler
+ *         // marks us ready again; the loop body runs once
+ *         // per period and does NOT block
+ *     }
+ * }
+ *
+ * void app_init(void){
+ *     SCHEDULER_System_init();
+ *     uint8_t idx;
+ *     SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, &idx);
+ *     // ...
+ * }
+ *
+ * void app_run(void){
+ *     SCHEDULER_Tasks_run();  // never returns
+ * }
+ * @endcode
+ *
  * @author  Groß
  * @date    May 24, 2026
  */
@@ -23,24 +53,6 @@
 #define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
-
-typedef struct {
-	SCHEDULER_TaskFunction_TypeDef	function;			//  0
-	uint32_t						period_ms;			//  4
-	uint32_t						last_run_ms;		//  8
-	uint8_t							priority;			// 12
-	uint8_t							ready;				// 13
-	uint8_t							active;				// 14
-	uint8_t							needs_init;			// 15
-	uint32_t						saved_sp;			// 16
-	uint32_t						saved_exc_return;	// 20
-} SCHEDULER_TaskHandle_TypeDef;							// 24 bytes
-
-// TCB = Task Control Block
-#define TCB_SIZE		24
-#define TCB_SAVED_SP	16
-#define TCB_EXC_RETURN	20
-#define TCB_NEEDS_INIT	15
 
 typedef enum {
 	SCHEDULER_OK				=  0,

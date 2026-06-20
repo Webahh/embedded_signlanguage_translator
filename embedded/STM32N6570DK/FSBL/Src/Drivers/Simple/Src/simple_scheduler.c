@@ -21,17 +21,39 @@
 #include "simple_scheduler.h"
 #include "simple_timer.h"
 
+// -------------------------------------------------------------------------
+// Private defines/datatypes
+// -------------------------------------------------------------------------
+
+typedef struct {
+	SCHEDULER_TaskFunction_TypeDef	function;			//  0
+	uint32_t						period_ms;			//  4
+	uint32_t						last_run_ms;		//  8
+	uint8_t							priority;			// 12
+	uint8_t							ready;				// 13
+	uint8_t							active;				// 14
+	uint8_t							needs_init;			// 15
+	uint32_t						saved_sp;			// 16
+	uint32_t						saved_exc_return;	// 20
+} _TaskHandle_TypeDef;							// 24 bytes
+
+// TCB = Task Control Block
+#define _TCB_SIZE		24
+#define _TCB_SAVED_SP	16
+#define _TCB_EXC_RETURN	20
+#define _TCB_NEEDS_INIT	15
+
 // Stringify helper for inline assembly
-#define STR_HELPER(x) #x
-#define STR(x)        STR_HELPER(x)
+#define _STR_HELPER(x) #x
+#define _STR(x)        _STR_HELPER(x)
 
 // -------------------------------------------------------------------------
 // Private data
 // -------------------------------------------------------------------------
 
-static SCHEDULER_TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
-static volatile uint32_t			_sys_tick_ms = 0;
-static int							_current_task = 0;
+static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
+static volatile uint32_t	_sys_tick_ms = 0;
+static int					_current_task = 0;
 
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE]
 							__attribute__((aligned(8)));
@@ -142,8 +164,8 @@ void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	// Re-initialise the finished task's stack as if it were freshly added
 	SCHEDULER_InitTaskStack(task_idx);
 	// Mark it ready so it will be scheduled again on its next period
-	((SCHEDULER_TaskHandle_TypeDef*)tcb_addr)->ready      = 1;
-	((SCHEDULER_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
+	((_TaskHandle_TypeDef*)tcb_addr)->ready      = 1;
+	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -171,11 +193,11 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"ldr	r3, [r2]\n"                 // r3 = current index
 		"ldr	r4, =_tasks\n"              // r4 = base of _tasks array
 
-		"mov	r5, #" STR(TCB_SIZE) "\n"   // r5 = sizeof(TCB)
+		"mov	r5, #" _STR(_TCB_SIZE) "\n"   // r5 = sizeof(TCB)
 		"mul	r3, r3, r5\n"               // r3 = index * sizeof(TCB)
 		"add	r4, r4, r3\n"               // r4 = &_tasks[current]
-		"str	r0, [r4, #" STR(TCB_SAVED_SP) "]\n"     // save PSP
-		"str	lr, [r4, #" STR(TCB_EXC_RETURN) "]\n"  // save EXC_RETURN
+		"str	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"     // save PSP
+		"str	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"  // save EXC_RETURN
 
 		// -- Select next task to run --
 		"push	{lr}\n"                     // preserve EXC_RETURN on main stack
@@ -188,12 +210,12 @@ __attribute__((naked)) void PendSV_Handler(void){
 
 		// Locate the next task's TCB
 		"ldr	r4, =_tasks\n"
-		"mov	r5, #" STR(TCB_SIZE) "\n"
+		"mov	r5, #" _STR(_TCB_SIZE) "\n"
 		"mul	r0, r0, r5\n"
 		"add	r4, r4, r0\n"               // r4 = &_tasks[next]
 
 		// -- Re-init the task's stack if it previously exited --
-		"ldrb	r1, [r4, #" STR(TCB_NEEDS_INIT) "]\n"
+		"ldrb	r1, [r4, #" _STR(_TCB_NEEDS_INIT) "]\n"
 		"cmp	r1, #0\n"
 		"beq	1f\n"                       // skip if not flagged
 
@@ -202,7 +224,7 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"mov	r0, r4\n"                   // r0 = TCB address
 		"ldr	r1, =_tasks\n"
 		"sub	r0, r0, r1\n"               // r0 = byte offset into _tasks[]
-		"mov	r1, #" STR(TCB_SIZE) "\n"
+		"mov	r1, #" _STR(_TCB_SIZE) "\n"
 		"udiv	r0, r0, r1\n"               // r0 = task index
 		"mov	r1, r4\n"                   // r1 = TCB address
 		"bl		SCHEDULER_ReinitTask\n"
@@ -212,14 +234,14 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"ldr	r4, =_tasks\n"
 		"ldr	r2, =_current_task\n"
 		"ldr	r3, [r2]\n"
-		"mov	r5, #" STR(TCB_SIZE) "\n"
+		"mov	r5, #" _STR(_TCB_SIZE) "\n"
 		"mul	r3, r3, r5\n"
 		"add	r4, r4, r3\n"
 
 		// -- Restore next task context --
 		"1:\n"
-		"ldr	r0, [r4, #" STR(TCB_SAVED_SP) "]\n"     // r0 = saved PSP
-		"ldr	lr, [r4, #" STR(TCB_EXC_RETURN) "]\n"  // lr = saved EXC_RETURN
+		"ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"     // r0 = saved PSP
+		"ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"  // lr = saved EXC_RETURN
 
 		// Restore FPU callee-saved regs if the task uses the FPU
 		"tst	lr, #0x10\n"
@@ -247,12 +269,12 @@ __attribute__((naked)) void SVC_Handler(void){
         "ldr    r1, [r0]                            \n"  // r1 = _current_task index
 
         "ldr    r2, =_tasks                         \n"
-        "mov    r3, #" STR(TCB_SIZE) "             \n"
+        "mov    r3, #" _STR(_TCB_SIZE) "             \n"
         "mul    r1, r1, r3                          \n"
         "add    r2, r2, r1                          \n"  // r2 = &_tasks[current]
 
         // Restore callee-saved registers and set PSP
-        "ldr    r0, [r2, #" STR(TCB_SAVED_SP) "]    \n"  // r0 = saved PSP
+        "ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"  // r0 = saved PSP
         "ldmia  r0!, {r4-r11}                       \n"  // pop r4-r11
         "msr    psp, r0                             \n"  // PSP past callee-saved
         "isb                                        \n"
@@ -309,8 +331,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	uint8_t* taskIndex){
 
 	// Validate
-	if (taskIndex == 0)  { return SCHEDULER_ERR_NOT_FOUND; 	 }	// output pointer
-	if (pvTaskCode == 0) { return SCHEDULER_ERR_TASK_INVALID; }	// TaskFunction
+	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND; 	 }	// output pointer
+	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }	// TaskFunction
 
 	// Find the first free slot
 	int slot = -1;
