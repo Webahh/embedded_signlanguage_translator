@@ -259,8 +259,9 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"ldr	r2, =_current_task\n"
 		"ldr	r3, [r2]\n"
 		"ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-		"mul	r3, r3, r2\n"               // task index * stack bytes
-		"add	r0, r0, r3\n"
+		"mul	r3, r3, r2\n"               						// task index * stack bytes
+		"add	r0, r0, r3\n"										// r0 = stack base
+		"add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"   // guard zone
 		"msr	psplim, r0\n"
 		"isb\n"
 
@@ -297,11 +298,12 @@ __attribute__((naked)) void SVC_Handler(void){
         "mul    r0, r3, r1                          \n"
         "add    r2, r2, r0                          \n"  // r2 = &_tasks[current]
 
-        // Set PSPLIM to the bottom of this task's stack
+        // Set PSPLIM to the bottom of this task's stack + guard zone
         "ldr    r1, =_task_stacks                   \n"
         "ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-        "mul    r0, r3, r0                         \n"  // index * stack bytes
-        "add    r0, r1, r0                          \n"
+        "mul    r0, r3, r0                         \n"  			// index * stack bytes
+		"add    r0, r1, r0                          \n"  			// r0 = stack base
+		"add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"	// + guard
         "msr    psplim, r0                          \n"
         "isb                                        \n"
 
@@ -462,6 +464,9 @@ void UsageFault_Handler(void){
         // never returning to thread mode on the broken PSP.
         __set_PSPLIM(0);
 
+        // Clear any stale PendSV that may have been pended for the dead task
+        SCB->ICSR = SCB_ICSR_PENDSVCLR_Msk;
+
         __asm volatile (
             // Locate the next task's TCB
             "ldr	r2, =_current_task\n"
@@ -471,13 +476,14 @@ void UsageFault_Handler(void){
             "mul	r3, r3, r5\n"
             "add	r4, r4, r3\n"               // r4 = &_tasks[next]
 
-            // Set PSPLIM for the next task
+            // Set PSPLIM for the next task (stackbase + guard)
             "ldr	r0, =_task_stacks\n"
             "ldr	r2, =_current_task\n"
             "ldr	r3, [r2]\n"
             "ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
             "mul	r3, r3, r2\n"
-            "add	r0, r0, r3\n"
+			"add	r0, r0, r3\n"               						// r0 = stack base
+		    "add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"	// + guard
             "msr	psplim, r0\n"
             "isb\n"
 

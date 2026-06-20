@@ -55,9 +55,13 @@
 
 // Stack limit – PSPLIM is set to the bottom of each task's stack on every
 // context switch.  The hardware raises a Stack Usage Fault instantly when
-// SP < PSPLIM (ARMv8.1-M).  Each stack is 256 words = 1024 bytes.
-#define SCHEDULER_STACK_SIZE_WORDS	256
-#define SCHEDULER_STACK_SIZE_BYTES	1024
+// SP < PSPLIM (ARMv8.1-M).  Each stack is 256 words = 1024 bytes, with a
+// guard zone below PSPLIM so the CPU has room to push the exception frame
+// during fault entry without tripping over itself.
+#define SCHEDULER_STACK_SIZE_WORDS		256
+#define SCHEDULER_STACK_SIZE_BYTES		1024
+#define SCHEDULER_STACK_GUARD_BYTES		128
+
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
 
