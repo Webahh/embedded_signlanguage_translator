@@ -33,14 +33,15 @@ typedef struct {
 	uint8_t							ready;				// 13
 	uint8_t							active;				// 14
 	uint8_t							needs_init;			// 15
-	uint32_t						saved_sp;			// 16
-	uint32_t						saved_exc_return;	// 20
-} _TaskHandle_TypeDef;							// 24 bytes
+	uint8_t							stack_overflow;		// 16
+	uint32_t						saved_sp;			// 20 (aligned)
+	uint32_t						saved_exc_return;	// 24
+} _TaskHandle_TypeDef;							// 28 bytes
 
 // TCB = Task Control Block
-#define _TCB_SIZE		24
-#define _TCB_SAVED_SP	16
-#define _TCB_EXC_RETURN	20
+#define _TCB_SIZE		28
+#define _TCB_SAVED_SP	20
+#define _TCB_EXC_RETURN	24
 #define _TCB_NEEDS_INIT	15
 
 // Stringify helper for inline assembly
@@ -58,10 +59,15 @@ static int					_current_task = 0;
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE]
 							__attribute__((aligned(8)));
 
+// Compile-time check: PSPLIM byte offset must match the array row stride
+_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,
+	"SCHEDULER_STACK_SIZE_BYTES mismatch – update when stack size changes");
+
 // Forward declarations (called from assembly)
 void SCHEDULER_Task_exit(void);
 static int SCHEDULER_SelectNextTask(void);
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
+void UsageFault_Handler(void);
 
 // -------------------------------------------------------------------------
 // Stack initialisation
@@ -134,26 +140,33 @@ void SCHEDULER_Task_exit(void){
 // Schedule - pick the highest-priority ready task
 // -------------------------------------------------------------------------
 
-static int SCHEDULER_SelectNextTask(void){
-	// Scan all user tasks for the highest-priority ready task (Schedule Algorithm)
-	// (lower priority value = higher priority)
-	int     best      = -1;
-	uint8_t best_prio = 0xFF;
+static int SCHEDULER_SelectNextTask(void)
+{
+    int best = -1;
+    uint8_t best_prio = 0xFF;
 
-	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-		if (_tasks[i].active && _tasks[i].ready) {
-			if (_tasks[i].priority < best_prio) {
-				best_prio = _tasks[i].priority;
-				best      = i;
-			}
-		}
-	}
+    int start = _current_task + 1;
+    if (start >= SCHEDULER_IDLE_TASK_INDEX) {
+        start = 0;
+    }
 
-	// If no user task is ready, fall back to the idle task
-	if (best < 0) {
-		best = SCHEDULER_IDLE_TASK_INDEX;
-	}
-	return best;
+    for (int n = 0; n < SCHEDULER_IDLE_TASK_INDEX; n++) {
+        int i = start + n;
+        if (i >= SCHEDULER_IDLE_TASK_INDEX)
+            i -= SCHEDULER_IDLE_TASK_INDEX;
+
+        if (_tasks[i].active && _tasks[i].ready) {
+            if (_tasks[i].priority < best_prio) {
+                best_prio = _tasks[i].priority;
+                best = i;
+            }
+        }
+    }
+
+    if (best < 0)
+        best = SCHEDULER_IDLE_TASK_INDEX;
+
+    return best;
 }
 
 // -------------------------------------------------------------------------
@@ -238,8 +251,19 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"mul	r3, r3, r5\n"
 		"add	r4, r4, r3\n"
 
-		// -- Restore next task context --
+		// -- Set stack limit for the next task (ARMv8.1-M PSPLIM) --
+		// If SP ever falls below the bottom of the stack, the hardware
+		// raises a Stack Usage Fault immediately (no polling).
 		"1:\n"
+		"ldr	r0, =_task_stacks\n"
+		"ldr	r2, =_current_task\n"
+		"ldr	r3, [r2]\n"
+		"ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
+		"mul	r3, r3, r2\n"               // task index * stack bytes
+		"add	r0, r0, r3\n"
+		"msr	psplim, r0\n"
+		"isb\n"
+
 		"ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"     // r0 = saved PSP
 		"ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"  // lr = saved EXC_RETURN
 
@@ -266,12 +290,20 @@ __attribute__((naked)) void SVC_Handler(void){
     __asm volatile (
         // Locate the first scheduled task's TCB
         "ldr    r0, =_current_task                  \n"
-        "ldr    r1, [r0]                            \n"  // r1 = _current_task index
+        "ldr    r3, [r0]                            \n"  // r3 = _current_task index (saved)
 
         "ldr    r2, =_tasks                         \n"
-        "mov    r3, #" _STR(_TCB_SIZE) "             \n"
-        "mul    r1, r1, r3                          \n"
-        "add    r2, r2, r1                          \n"  // r2 = &_tasks[current]
+        "mov    r1, #" _STR(_TCB_SIZE) "             \n"
+        "mul    r0, r3, r1                          \n"
+        "add    r2, r2, r0                          \n"  // r2 = &_tasks[current]
+
+        // Set PSPLIM to the bottom of this task's stack
+        "ldr    r1, =_task_stacks                   \n"
+        "ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
+        "mul    r0, r3, r0                         \n"  // index * stack bytes
+        "add    r0, r1, r0                          \n"
+        "msr    psplim, r0                          \n"
+        "isb                                        \n"
 
         // Restore callee-saved registers and set PSP
         "ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"  // r0 = saved PSP
@@ -286,7 +318,7 @@ __attribute__((naked)) void SVC_Handler(void){
 
         // EXC_RETURN = 0xFFFFFFFD: return to thread mode, use PSP
         "ldr    lr, =0xFFFFFFFD                     \n"
-        "bx     lr                                  \n"  // exception return -> first task
+        "bx     lr                                  \n"
     );
 }
 
@@ -354,6 +386,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].ready		  = 1;
 	_tasks[slot].active		  = 1;
 	_tasks[slot].needs_init   = 0;
+	_tasks[slot].stack_overflow = 0;
 
 	// Set up the initial stack frame for this task
 	SCHEDULER_InitTaskStack(slot);
@@ -402,6 +435,80 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 }
 
 // -------------------------------------------------------------------------
+// UsageFault_Handler - stack overflow detection via PSPLIM
+// -------------------------------------------------------------------------
+
+void UsageFault_Handler(void){
+    __disable_irq();
+
+    uint32_t cfsr = SCB->CFSR;
+
+    if (cfsr & SCB_CFSR_STKOF_Msk) {
+        // Mark the overflown task as dead – everything runs on the
+        // safe MSP so far, never touching the corrupted PSP.
+        _tasks[_current_task].stack_overflow = 1;
+        _tasks[_current_task].active         = 0;
+        _tasks[_current_task].ready          = 0;
+        _tasks[_current_task].needs_init     = 0;
+
+        // Clear the fault flag so it doesn't re-trigger
+        SCB->CFSR = SCB_CFSR_STKOF_Msk;
+
+        // Pick the next runnable task
+        int next = SCHEDULER_SelectNextTask();
+        _current_task = next;
+
+        // Now switch directly to the next task in assembly,
+        // never returning to thread mode on the broken PSP.
+        __set_PSPLIM(0);
+
+        __asm volatile (
+            // Locate the next task's TCB
+            "ldr	r2, =_current_task\n"
+            "ldr	r3, [r2]\n"
+            "ldr	r4, =_tasks\n"
+            "mov	r5, #" _STR(_TCB_SIZE) "\n"
+            "mul	r3, r3, r5\n"
+            "add	r4, r4, r3\n"               // r4 = &_tasks[next]
+
+            // Set PSPLIM for the next task
+            "ldr	r0, =_task_stacks\n"
+            "ldr	r2, =_current_task\n"
+            "ldr	r3, [r2]\n"
+            "ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
+            "mul	r3, r3, r2\n"
+            "add	r0, r0, r3\n"
+            "msr	psplim, r0\n"
+            "isb\n"
+
+            // Restore next task's context
+            "ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"
+            "ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"
+
+            "tst	lr, #0x10\n"
+            "it		eq\n"
+            "vldmiaeq r0!, {s16-s31}\n"
+
+            "ldmia	r0!, {r4-r11}\n"
+            "msr	psp, r0\n"
+
+            // Re-enable interrupts (__disable_irq at the top set PRIMASK)
+            "cpsie	i\n"
+
+            // Exception-return directly to the next task
+            "bx		lr\n"
+        );
+
+        __builtin_unreachable();
+    }
+
+    // Non-STKOF UsageFault (e.g. undefined instruction) – halt
+    while (1) {
+        __WFI();
+    }
+}
+
+// -------------------------------------------------------------------------
 // SCHEDULER_Tasks_run - start the preemptive scheduler
 // -------------------------------------------------------------------------
 
@@ -438,6 +545,10 @@ void SCHEDULER_Tasks_run(void){
     NVIC_ClearPendingIRQ(TIM7_IRQn);
     NVIC_EnableIRQ(TIM7_IRQn);
     TIM_Start(TIM7);
+
+    // Enable the Usage Fault so that PSPLIM violations (stack overflow)
+    // are caught as a Stack Usage Fault (UFSR.STKOF) instead of hanging.
+    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
 
     __enable_irq();
 

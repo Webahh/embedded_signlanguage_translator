@@ -11,7 +11,8 @@
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
 
-void vTestTask(void);
+void vRecursionTestTask(void);
+void vSystemTimeTask(void);
 void vLEDTask(void);
 void vBackgroundTask(void);
 void vAETask(void);

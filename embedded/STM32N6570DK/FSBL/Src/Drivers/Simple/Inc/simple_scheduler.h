@@ -34,7 +34,7 @@
  *        TIM7 ISR only when its period elapses.  A while(1) task never
  *        returns, so its ready flag stays set; PendSV may still preempt
  *        it when a higher-priority task becomes ready, resuming it on
- *        the next tick.
+ *        the next tick
  *
  * @author  Groß
  * @date    May 24, 2026
@@ -48,10 +48,16 @@
 #include "stm32n657xx.h"
 
 #define SCHEDULER_MAX_TASKS			10
-#define SCHEDULER_DEFAULT_STACK_SIZE	256	// words per task stack
+#define SCHEDULER_DEFAULT_STACK_SIZE	SCHEDULER_STACK_SIZE_WORDS	// words per task stack
 
 // Idle task occupies the last slot
 #define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
+
+// Stack limit – PSPLIM is set to the bottom of each task's stack on every
+// context switch.  The hardware raises a Stack Usage Fault instantly when
+// SP < PSPLIM (ARMv8.1-M).  Each stack is 256 words = 1024 bytes.
+#define SCHEDULER_STACK_SIZE_WORDS	256
+#define SCHEDULER_STACK_SIZE_BYTES	1024
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
 
