@@ -57,27 +57,29 @@ void app_init(){
     delay_ms(10);
 
     LCD_ConfigLayer1();
-    LCD_ConfigLayer2();
+//    LCD_ConfigLayer2();
 
-    delay_ms(10);
+    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_WHITE);
 
-    uint32_t error = 0;
-    if(CAM_Init(&h_cam) == CAM_OK) {
-    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
-    	}
-    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
-    	}
-    }
+//    uint32_t error = 0;
+//    if(CAM_Init(&h_cam) == CAM_OK) {
+//    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
+//    		error++;
+//    	}
+//    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
+//    		error++;
+//    	}
+//    }
 
     /* --- Scheduler --- */
     SCHEDULER_System_init();
 
 	uint8_t task_idx;
-	SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, &task_idx);
-	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
-	SCHEDULER_Task_add(vAETask, "AETask", 30, 1, &task_idx);
+
+	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 1, &task_idx);
+	SCHEDULER_Task_add(vTestTask, "Test", 10, 4, &task_idx);
+	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 2, &task_idx);
+	SCHEDULER_Task_add(vAETask, "AETask", 10, 3, &task_idx);
 }
 
 void app_run(){
