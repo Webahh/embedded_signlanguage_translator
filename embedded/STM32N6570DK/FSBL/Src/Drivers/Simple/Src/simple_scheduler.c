@@ -163,8 +163,8 @@ static int SCHEDULER_SelectNextTask(void){
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	// Re-initialise the finished task's stack as if it were freshly added
 	SCHEDULER_InitTaskStack(task_idx);
-	// Mark it ready so it will be scheduled again on its next period
-	((_TaskHandle_TypeDef*)tcb_addr)->ready      = 1;
+	// PendSV already cleared ready; the ISR will re-mark it when the
+	// period elapses – no need to set it here
 	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 

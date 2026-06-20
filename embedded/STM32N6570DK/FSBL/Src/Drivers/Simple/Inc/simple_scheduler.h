@@ -5,35 +5,36 @@
  * The scheduler preempts tasks via PendSV every 1 ms and dispatches the
  * highest-priority ready task.  Lower priority values = higher priority.
  *
- * Task functions must have an infinite loop.  The scheduler never calls
- * them repeatedly; it merely marks them ready every period_ms and the
- * PendSV context-switch preempts whichever task is currently running.
- * A task that omits the while(1) will fall through to SCHEDULER_Task_exit
- * and be re-initialised on its next period.
+ * Each task runs to completion once per period.  When a task function
+ * returns, the scheduler parks it and re-initialises its stack frame.
+ * On the next period tick the task is marked ready and PendSV selects it
+ * again, starting from the function entry.  Static or global variables
+ * preserve state across invocations.
  *
- * Example task – infinite loop, preempted at 1 ms granularity:
+ * Example – blink an LED every 500 ms:
  *
  * @code{.c}
  * void vLEDTask(void){
- *     while (1) {
- *         GPIO_Pin_set(LED2, 1);
- *         // ... return here after 500 ms when the scheduler
- *         // marks us ready again; the loop body runs once
- *         // per period and does NOT block
- *     }
+ *     GPIO_BSRR_toggle(GPIOG, LED2_PIN);
  * }
  *
  * void app_init(void){
  *     SCHEDULER_System_init();
  *     uint8_t idx;
  *     SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, &idx);
- *     // ...
  * }
  *
  * void app_run(void){
  *     SCHEDULER_Tasks_run();  // never returns
  * }
  * @endcode
+ *
+ * @note  A task that returns (run-to-completion) has its ready flag
+ *        cleared by SCHEDULER_Task_exit and is re-marked ready by the
+ *        TIM7 ISR only when its period elapses.  A while(1) task never
+ *        returns, so its ready flag stays set; PendSV may still preempt
+ *        it when a higher-priority task becomes ready, resuming it on
+ *        the next tick.
  *
  * @author  Groß
  * @date    May 24, 2026
