@@ -16,13 +16,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "simple_scheduler.h"
+
 #include "stm32n657xx.h"
 
-#include "simple_scheduler.h"
 #include "simple_timer.h"
 
 // -------------------------------------------------------------------------
-// Private defines/datatypes
+// Private defines / datatypes
 // -------------------------------------------------------------------------
 
 typedef struct {
@@ -62,14 +63,11 @@ static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
 static int					_current_task = 0;
 
-static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE]
-							__attribute__((aligned(8)));
+static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE] __attribute__((aligned(8)));
 
-// Compile-time check: PSPLIM byte offset must match the array row stride
-_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,
-	"SCHEDULER_STACK_SIZE_BYTES mismatch – update when stack size changes");
+_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES, "SCHEDULER_STACK_SIZE_BYTES mismatch");
 
-volatile SchedulerFaultDump g_sched_fault;
+volatile Scheduler_Fault_Dump_TypeDef g_sched_fault;
 
 // Forward declarations (called from assembly)
 void SCHEDULER_Task_exit(void);
@@ -88,36 +86,29 @@ void NMI_Handler(void);
 // Stack initialisation
 // -------------------------------------------------------------------------
 
-// Return type is the exception because of use in Assembly
 static void SCHEDULER_InitTaskStack(int i){
-    uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stacks[i] & ~7U);
+	uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stacks[i] & ~7U);
 
-    for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
-        stack_base[j] = 0xA5A5A5A5;
-    }
+	for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+		stack_base[j] = 0xA5A5A5A5;
+	}
 
-    // Align to 8 bytes, get end address of the stack area
-    uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i]
-        + sizeof(_task_stacks[i])) & ~7U);
+	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i]
+		+ sizeof(_task_stacks[i])) & ~7U);
 
-    // Reserve 32 words: 16 for FP regs + 8 callee-saved + 8 exception frame
-    uint32_t *sp = stack_end - 32;
+	uint32_t *sp = stack_end - 32;
 
-    // sp[0..15]  S16-S31  (FPU callee-saved, restored when FPU active)
-    // sp[16..23] R4-R11   (core callee-saved)
-    // sp[24..31] hardware exception frame (R0-R3, R12, LR, PC, xPSR)
+	// sp[0..15]  S16-S31  (FPU callee-saved)
+	// sp[16..23] R4-R11   (core callee-saved)
+	// sp[24..31] exception frame: R0-R3, R12, LR, PC, xPSR
 
-    // Exception frame layout (words 24-31, pushed by CPU on exception entry)
-    sp[29] = (uint32_t)SCHEDULER_Task_exit; // LR  – return address on task exit
-    sp[30] = (uint32_t)_tasks[i].function;  // PC  – first instruction to execute
-    sp[31] = 0x01000000UL;                  // xPSR – thumb bit must be set
+	sp[29] = (uint32_t)SCHEDULER_Task_exit; // LR on task return
+	sp[30] = (uint32_t)_tasks[i].function;  // PC
+	sp[31] = 0x01000000UL;                  // xPSR (thumb bit)
 
-    // saved_sp points past the callee-saved block (r4-r11),
-    // so PendSV restores r4-r11 then PSP points at the exception frame
-    _tasks[i].saved_sp         = (uint32_t)&sp[16];
-    // EXC_RETURN = 0xFFFFFFFD: return to thread mode, use PSP, FPU not active
-    _tasks[i].saved_exc_return = 0xFFFFFFFDUL;
-    _tasks[i].needs_init       = 0;
+	_tasks[i].saved_sp         = (uint32_t)&sp[16];
+	_tasks[i].saved_exc_return = 0xFFFFFFFDUL;
+	_tasks[i].needs_init       = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -125,17 +116,17 @@ static void SCHEDULER_InitTaskStack(int i){
 // -------------------------------------------------------------------------
 
 static uint32_t SCHEDULER_GetStackHighWatermark(int task){
-    uint32_t *stack = _task_stacks[task];
-    uint32_t start = SCHEDULER_STACK_GUARD_BYTES / sizeof(uint32_t);
-    uint32_t free = 0;
-    for (uint32_t j = start; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
-        if (stack[j] == 0xA5A5A5A5) {
-            free++;
-        } else {
-            break;
-        }
-    }
-    return free * sizeof(uint32_t);
+	uint32_t *stack = _task_stacks[task];
+	uint32_t start = SCHEDULER_STACK_GUARD_BYTES / sizeof(uint32_t);
+	uint32_t free = 0;
+	for (uint32_t j = start; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+		if (stack[j] == 0xA5A5A5A5) {
+			free++;
+		} else {
+			break;
+		}
+	}
+	return free * sizeof(uint32_t);
 }
 
 // -------------------------------------------------------------------------
@@ -166,41 +157,38 @@ void SCHEDULER_Task_exit(void){
 }
 
 // -------------------------------------------------------------------------
-// Schedule - pick the highest-priority ready task
+// Scheduling policy
 // -------------------------------------------------------------------------
 
-static int SCHEDULER_SelectNextTask(void)
-{
-    int best = -1;
-    uint8_t best_prio = 0xFF;
+static int SCHEDULER_SelectNextTask(void){
+	int best = -1;
+	uint8_t best_prio = 0xFF;
 
-    int start = _current_task + 1;
-    if (start >= SCHEDULER_IDLE_TASK_INDEX) {
-        start = 0;
-    }
+	int start = _current_task + 1;
+	if (start >= SCHEDULER_IDLE_TASK_INDEX) {
+		start = 0;
+	}
 
-    for (int n = 0; n < SCHEDULER_IDLE_TASK_INDEX; n++) {
-        int i = start + n;
-        if (i >= SCHEDULER_IDLE_TASK_INDEX)
-            i -= SCHEDULER_IDLE_TASK_INDEX;
+	for (int n = 0; n < SCHEDULER_IDLE_TASK_INDEX; n++) {
+		int i = start + n;
+		if (i >= SCHEDULER_IDLE_TASK_INDEX) {
+			i -= SCHEDULER_IDLE_TASK_INDEX;
+		}
 
-        if (_tasks[i].active && _tasks[i].ready) {
-            if (_tasks[i].priority < best_prio) {
-                best_prio = _tasks[i].priority;
-                best = i;
-            }
-        }
-    }
+		if (_tasks[i].active && _tasks[i].ready) {
+			if (_tasks[i].priority < best_prio) {
+				best_prio = _tasks[i].priority;
+				best = i;
+			}
+		}
+	}
 
-    if (best < 0)
-        best = SCHEDULER_IDLE_TASK_INDEX;
+	if (best < 0) {
+		best = SCHEDULER_IDLE_TASK_INDEX;
+	}
 
-    return best;
+	return best;
 }
-
-// -------------------------------------------------------------------------
-// Helper - called from PendSV assembly to re-init a finished task
-// -------------------------------------------------------------------------
 
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	SCHEDULER_InitTaskStack(task_idx);
@@ -208,7 +196,48 @@ void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 }
 
 // -------------------------------------------------------------------------
-// PendSV handler - preemptive context switch
+// Context switch – SVC (first-task bootstrap)
+// -------------------------------------------------------------------------
+
+__attribute__((naked)) void SVC_Handler(void){
+	__asm volatile (
+		"ldr    r0, =_current_task                  \n"
+		"ldr    r3, [r0]                            \n"
+
+		"ldr    r2, =_tasks                         \n"
+		"mov    r1, #" _STR(_TCB_SIZE) "             \n"
+		"mul    r0, r3, r1                          \n"
+		"add    r2, r2, r0                          \n"
+
+		"ldr    r1, =_task_stacks                   \n"
+		"ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
+		"mul    r0, r3, r0                          \n"
+		"add    r0, r1, r0                          \n"
+		"add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
+		"msr    psplim, r0                          \n"
+		"isb                                        \n"
+
+		"ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"
+		"ldmia  r0!, {r4-r11}                       \n"
+		"msr    psp, r0                             \n"
+		"isb                                        \n"
+
+		"movs   r0, #2                              \n"
+		"msr    control, r0                         \n"
+		"isb                                        \n"
+
+		// Start TIM7 now that PSP and CONTROL are valid
+		"push {r0, lr}                              \n"
+		"bl SCHEDULER_StartTick                     \n"
+		"pop {r0, lr}                               \n"
+
+		"ldr    lr, =0xFFFFFFFD                     \n"
+		"bx     lr                                  \n"
+	);
+}
+
+// -------------------------------------------------------------------------
+// Context switch – PendSV (preemptive)
 // -------------------------------------------------------------------------
 
 __attribute__((naked)) void PendSV_Handler(void){
@@ -292,60 +321,14 @@ __attribute__((naked)) void PendSV_Handler(void){
 }
 
 // -------------------------------------------------------------------------
-// SVC handler - start first task
-// -------------------------------------------------------------------------
-
-__attribute__((naked)) void SVC_Handler(void){
-    __asm volatile (
-        "ldr    r0, =_current_task                  \n"
-        "ldr    r3, [r0]                            \n"
-
-        "ldr    r2, =_tasks                         \n"
-        "mov    r1, #" _STR(_TCB_SIZE) "             \n"
-        "mul    r0, r3, r1                          \n"
-        "add    r2, r2, r0                          \n"
-
-        "ldr    r1, =_task_stacks                   \n"
-        "ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-        "mul    r0, r3, r0                          \n"
-        "add    r0, r1, r0                          \n"
-        "add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
-        "msr    psplim, r0                          \n"
-        "isb                                        \n"
-
-        "ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"
-        "ldmia  r0!, {r4-r11}                       \n"
-        "msr    psp, r0                             \n"
-        "isb                                        \n"
-
-        "movs   r0, #2                              \n"
-        "msr    control, r0                         \n"
-        "isb                                        \n"
-
-        // Start TIM7 now that PSP and CONTROL are valid.
-        // Still in handler mode (MSP), so push/pop use the main stack.
-        "push {r0, lr}                              \n"
-        "bl SCHEDULER_StartTick                     \n"
-        "pop {r0, lr}                               \n"
-
-        "ldr    lr, =0xFFFFFFFD                     \n"
-        "bx     lr                                  \n"
-    );
-}
-
-// -------------------------------------------------------------------------
-// Start the scheduler tick (called from SVC_Handler after PSP is valid)
+// Tick source
 // -------------------------------------------------------------------------
 
 void SCHEDULER_StartTick(void){
-    NVIC_ClearPendingIRQ(TIM7_IRQn);
-    NVIC_EnableIRQ(TIM7_IRQn);
-    TIM_Start(TIM7);
+	NVIC_ClearPendingIRQ(TIM7_IRQn);
+	NVIC_EnableIRQ(TIM7_IRQn);
+	TIM_Start(TIM7);
 }
-
-// -------------------------------------------------------------------------
-// TIM7 ISR - tick source
-// -------------------------------------------------------------------------
 
 void TIM7_IRQHandler(void){
 	if (TIM_GetFlag(TIM7, TIM_SR_UIF)) {
@@ -368,7 +351,7 @@ void TIM7_IRQHandler(void){
 }
 
 // -------------------------------------------------------------------------
-// SCHEDULER - API
+// Public API
 // -------------------------------------------------------------------------
 
 SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
@@ -378,7 +361,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	uint8_t priority,
 	uint8_t* taskIndex){
 
-	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND; 	 }
+	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND;  }
 	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }
 
 	int slot = -1;
@@ -389,17 +372,17 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 		}
 	}
 
-	if (slot < 0) { return SCHEDULER_ERR_FULL;	}
+	if (slot < 0) { return SCHEDULER_ERR_FULL; }
 
-	_tasks[slot].function	  = pvTaskCode;
-	_tasks[slot].period_ms	  = period_ms;
-	_tasks[slot].last_run_ms  = _sys_tick_ms;
-	_tasks[slot].priority	  = priority;
-	_tasks[slot].ready		  = 1;
-	_tasks[slot].active		  = 1;
-	_tasks[slot].needs_init   = 0;
+	_tasks[slot].function	    = pvTaskCode;
+	_tasks[slot].period_ms	    = period_ms;
+	_tasks[slot].last_run_ms    = _sys_tick_ms;
+	_tasks[slot].priority	    = priority;
+	_tasks[slot].ready		    = 1;
+	_tasks[slot].active		    = 1;
+	_tasks[slot].needs_init     = 0;
 	_tasks[slot].stack_overflow = 0;
-	_tasks[slot].pcName       = pcName;
+	_tasks[slot].pcName         = pcName;
 
 	SCHEDULER_InitTaskStack(slot);
 
@@ -436,183 +419,198 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 	return SCHEDULER_OK;
 }
 
-// -------------------------------------------------------------------------
-// Public debug API
-// -------------------------------------------------------------------------
-
-int SCHEDULER_GetCurrentTask(void){
-    return _current_task;
-}
-
-volatile const SchedulerFaultDump* SCHEDULER_GetLastFault(void){
-    return &g_sched_fault;
-}
-
-uint32_t SCHEDULER_GetTaskStackFree(uint8_t task){
-    if (task >= SCHEDULER_MAX_TASKS) return 0;
-    return SCHEDULER_GetStackHighWatermark(task);
-}
-
-const char* SCHEDULER_GetTaskName(uint8_t task){
-    if (task >= SCHEDULER_MAX_TASKS) return 0;
-    return _tasks[task].pcName;
-}
-
-// -------------------------------------------------------------------------
-// Fault handler C core - captures all fault state then halts
-// -------------------------------------------------------------------------
-
-void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason){
-    __disable_irq();
-
-    g_sched_fault.magic   = SCHED_MAGIC;
-    g_sched_fault.reason  = reason;
-    g_sched_fault.task    = (uint32_t)_current_task;
-    g_sched_fault.tick    = _sys_tick_ms;
-
-    g_sched_fault.cfsr    = SCB->CFSR;
-    g_sched_fault.hfsr    = SCB->HFSR;
-    g_sched_fault.dfsr    = SCB->DFSR;
-    g_sched_fault.afsr    = SCB->AFSR;
-    g_sched_fault.mmfar   = SCB->MMFAR;
-    g_sched_fault.bfar    = SCB->BFAR;
-    g_sched_fault.icsr    = SCB->ICSR;
-    g_sched_fault.shcsr   = SCB->SHCSR;
-
-    g_sched_fault.msp     = __get_MSP();
-    g_sched_fault.psp     = __get_PSP();
-    g_sched_fault.psplim  = __get_PSPLIM();
-    g_sched_fault.control = __get_CONTROL();
-    g_sched_fault.exc_return = exc_return;
-
-    if (reason == 4 && (SCB->CFSR & SCB_CFSR_STKOF_Msk)) {
-        _tasks[_current_task].stack_overflow = 1;
-    }
-
-    if (frame) {
-        g_sched_fault.r0  = frame[0];
-        g_sched_fault.r1  = frame[1];
-        g_sched_fault.r2  = frame[2];
-        g_sched_fault.r3  = frame[3];
-        g_sched_fault.r12 = frame[4];
-        g_sched_fault.lr  = frame[5];
-        g_sched_fault.pc  = frame[6];
-        g_sched_fault.xpsr = frame[7];
-    }
-
-    __BKPT(0);
-
-    while (1) { __WFI(); }
-}
-
-// -------------------------------------------------------------------------
-// Fault handlers - extract EXC_RETURN and stacked frame, tail-call C core
-// -------------------------------------------------------------------------
-
-__attribute__((naked)) void NMI_Handler(void){
-    __asm volatile (
-        "mov r0, lr\n"
-        "tst r0, #4\n"
-        "ite eq\n"
-        "mrseq r1, msp\n"
-        "mrsne r1, psp\n"
-        "mov r2, #5\n"
-        "b SCHEDULER_FaultHandler_C\n"
-    );
-}
-
-__attribute__((naked)) void HardFault_Handler(void){
-    __asm volatile (
-        "mov r0, lr\n"
-        "tst r0, #4\n"
-        "ite eq\n"
-        "mrseq r1, msp\n"
-        "mrsne r1, psp\n"
-        "mov r2, #1\n"
-        "b SCHEDULER_FaultHandler_C\n"
-    );
-}
-
-__attribute__((naked)) void MemManage_Handler(void){
-    __asm volatile (
-        "mov r0, lr\n"
-        "tst r0, #4\n"
-        "ite eq\n"
-        "mrseq r1, msp\n"
-        "mrsne r1, psp\n"
-        "mov r2, #2\n"
-        "b SCHEDULER_FaultHandler_C\n"
-    );
-}
-
-__attribute__((naked)) void BusFault_Handler(void){
-    __asm volatile (
-        "mov r0, lr\n"
-        "tst r0, #4\n"
-        "ite eq\n"
-        "mrseq r1, msp\n"
-        "mrsne r1, psp\n"
-        "mov r2, #3\n"
-        "b SCHEDULER_FaultHandler_C\n"
-    );
-}
-
-// -------------------------------------------------------------------------
-// UsageFault_Handler - captures fault state and halts
-// (no auto-recovery – debugging only)
-// -------------------------------------------------------------------------
-
-__attribute__((naked)) void UsageFault_Handler(void){
-    __asm volatile (
-        "mov r0, lr\n"
-        "tst r0, #4\n"
-        "ite eq\n"
-        "mrseq r1, msp\n"
-        "mrsne r1, psp\n"
-        "mov r2, #4\n"
-        "b SCHEDULER_FaultHandler_C\n"
-    );
-}
-
-// -------------------------------------------------------------------------
-// SCHEDULER_Tasks_run - start the preemptive scheduler
-// -------------------------------------------------------------------------
-
 void SCHEDULER_Tasks_run(void){
-    __disable_irq();
+	__disable_irq();
 
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].function       = SCHEDULER_IdleTask;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].ready          = 1;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].active         = 1;
-    _tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].function       = SCHEDULER_IdleTask;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].ready          = 1;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].active         = 1;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
 
-    SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
+	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
 
-    NVIC_SetPriority(PendSV_IRQn, 0xFF);
-    NVIC_SetPriority(SVCall_IRQn, 0x00);
-    NVIC_SetPriority(TIM7_IRQn, 0x80);
+	NVIC_SetPriority(PendSV_IRQn, 0xFF);
+	NVIC_SetPriority(SVCall_IRQn, 0x00);
+	NVIC_SetPriority(TIM7_IRQn, 0x80);
 
-    FPU->FPCCR &= ~FPU_FPCCR_LSPEN_Msk;
+	FPU->FPCCR &= ~FPU_FPCCR_LSPEN_Msk;
 
-    _current_task = SCHEDULER_SelectNextTask();
+	_current_task = SCHEDULER_SelectNextTask();
 
-    // Enable ALL fault handlers so no crash goes undiagnosed
-    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk
-                | SCB_SHCSR_BUSFAULTENA_Msk
-                | SCB_SHCSR_MEMFAULTENA_Msk;
+	// Enable ALL fault handlers so no crash goes undiagnosed
+	SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk
+				| SCB_SHCSR_BUSFAULTENA_Msk
+				| SCB_SHCSR_MEMFAULTENA_Msk;
 
-    // TIM7 is NOT started here. It is started in SCHEDULER_StartTick(),
-    // called from SVC_Handler only after PSP and CONTROL are valid.
-    // This prevents PendSV from ever firing before PSP is initialized.
+	// TIM7 is NOT started here – it starts in SCHEDULER_StartTick()
+	// called from SVC_Handler after PSP and CONTROL are valid.
+	// This prevents PendSV from ever firing before PSP is initialized.
 
-    __enable_irq();
+	__enable_irq();
 
-    __asm volatile ("SVC #0" : : : "memory");
+	__asm volatile ("SVC #0" : : : "memory");
 
-    while (1) {
-        __WFI();
-    }
+	while (1) {
+		__WFI();
+	}
+}
+
+// -------------------------------------------------------------------------
+// Debug API
+// -------------------------------------------------------------------------
+
+SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex){
+	if (taskIndex == 0) { return SCHEDULER_ERR_NOT_FOUND; }
+	*taskIndex = _current_task;
+	return SCHEDULER_OK;
+}
+
+SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(
+	volatile const Scheduler_Fault_Dump_TypeDef** dump){
+
+	if (dump == 0) { return SCHEDULER_ERR_NOT_FOUND; }
+	*dump = &g_sched_fault;
+	return SCHEDULER_OK;
+}
+
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskStackFree(uint8_t task,
+	uint32_t* free){
+
+	if (task >= SCHEDULER_MAX_TASKS) { return SCHEDULER_ERR_NOT_FOUND; }
+	if (free == 0)                   { return SCHEDULER_ERR_NOT_FOUND; }
+	*free = SCHEDULER_GetStackHighWatermark(task);
+	return SCHEDULER_OK;
+}
+
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task,
+	const char** name){
+
+	if (task >= SCHEDULER_MAX_TASKS) { return SCHEDULER_ERR_NOT_FOUND; }
+	if (name == 0)                   { return SCHEDULER_ERR_NOT_FOUND; }
+	*name = _tasks[task].pcName;
+	return SCHEDULER_OK;
+}
+
+// -------------------------------------------------------------------------
+// Fault handler – C core (captures state, then halts)
+// -------------------------------------------------------------------------
+
+void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
+	uint32_t reason){
+
+	__disable_irq();
+
+	g_sched_fault.magic   = SCHED_MAGIC;
+	g_sched_fault.reason  = reason;
+	g_sched_fault.task    = (uint32_t)_current_task;
+	g_sched_fault.tick    = _sys_tick_ms;
+
+	g_sched_fault.cfsr    = SCB->CFSR;
+	g_sched_fault.hfsr    = SCB->HFSR;
+	g_sched_fault.dfsr    = SCB->DFSR;
+	g_sched_fault.afsr    = SCB->AFSR;
+	g_sched_fault.mmfar   = SCB->MMFAR;
+	g_sched_fault.bfar    = SCB->BFAR;
+	g_sched_fault.icsr    = SCB->ICSR;
+	g_sched_fault.shcsr   = SCB->SHCSR;
+
+	g_sched_fault.msp     = __get_MSP();
+	g_sched_fault.psp     = __get_PSP();
+	g_sched_fault.psplim  = __get_PSPLIM();
+	g_sched_fault.control = __get_CONTROL();
+	g_sched_fault.exc_return = exc_return;
+
+	if (reason == 4 && (SCB->CFSR & SCB_CFSR_STKOF_Msk)) {
+		_tasks[_current_task].stack_overflow = 1;
+	}
+
+	if (frame) {
+		g_sched_fault.r0  = frame[0];
+		g_sched_fault.r1  = frame[1];
+		g_sched_fault.r2  = frame[2];
+		g_sched_fault.r3  = frame[3];
+		g_sched_fault.r12 = frame[4];
+		g_sched_fault.lr  = frame[5];
+		g_sched_fault.pc  = frame[6];
+		g_sched_fault.xpsr = frame[7];
+	}
+
+	__BKPT(0);
+
+	while (1) { __WFI(); }
+}
+
+// -------------------------------------------------------------------------
+// Fault handlers – assembly stubs (tail-call C core)
+// -------------------------------------------------------------------------
+
+// NMI: external / RCC clock loss / power failure
+__attribute__((naked)) void NMI_Handler(void){
+	__asm volatile (
+		"mov r0, lr\n"
+		"tst r0, #4\n"
+		"ite eq\n"
+		"mrseq r1, msp\n"
+		"mrsne r1, psp\n"
+		"mov r2, #5\n"
+		"b SCHEDULER_FaultHandler_C\n"
+	);
+}
+
+// HardFault: escalation from BusFault/MemManage at same priority,
+//            or synchronous BusFault on unprivileged instruction fetch
+__attribute__((naked)) void HardFault_Handler(void){
+	__asm volatile (
+		"mov r0, lr\n"
+		"tst r0, #4\n"
+		"ite eq\n"
+		"mrseq r1, msp\n"
+		"mrsne r1, psp\n"
+		"mov r2, #1\n"
+		"b SCHEDULER_FaultHandler_C\n"
+	);
+}
+
+// MemManage: MPU violation (code / data access to prohibited region)
+__attribute__((naked)) void MemManage_Handler(void){
+	__asm volatile (
+		"mov r0, lr\n"
+		"tst r0, #4\n"
+		"ite eq\n"
+		"mrseq r1, msp\n"
+		"mrsne r1, psp\n"
+		"mov r2, #2\n"
+		"b SCHEDULER_FaultHandler_C\n"
+	);
+}
+
+// BusFault: memory transaction error (precise / imprecise data or
+//           instruction fetch), including stack-push to invalid address
+__attribute__((naked)) void BusFault_Handler(void){
+	__asm volatile (
+		"mov r0, lr\n"
+		"tst r0, #4\n"
+		"ite eq\n"
+		"mrseq r1, msp\n"
+		"mrsne r1, psp\n"
+		"mov r2, #3\n"
+		"b SCHEDULER_FaultHandler_C\n"
+	);
+}
+
+// UsageFault: stack overflow (PSPLIM), undefined instruction, unaligned,
+//             divide-by-zero – captured here; no auto-recovery
+__attribute__((naked)) void UsageFault_Handler(void){
+	__asm volatile (
+		"mov r0, lr\n"
+		"tst r0, #4\n"
+		"ite eq\n"
+		"mrseq r1, msp\n"
+		"mrsne r1, psp\n"
+		"mov r2, #4\n"
+		"b SCHEDULER_FaultHandler_C\n"
+	);
 }

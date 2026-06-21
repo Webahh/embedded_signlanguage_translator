@@ -48,16 +48,11 @@
 #include "stm32n657xx.h"
 
 #define SCHEDULER_MAX_TASKS			10
-#define SCHEDULER_DEFAULT_STACK_SIZE	SCHEDULER_STACK_SIZE_WORDS	// words per task stack
+#define SCHEDULER_DEFAULT_STACK_SIZE	SCHEDULER_STACK_SIZE_WORDS
 
 // Idle task occupies the last slot
 #define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
 
-// Stack limit – PSPLIM is set to the bottom of each task's stack on every
-// context switch.  The hardware raises a Stack Usage Fault instantly when
-// SP < PSPLIM (ARMv8.1-M).  Each stack is 256 words = 1024 bytes, with a
-// guard zone below PSPLIM so the CPU has room to push the exception frame
-// during fault entry without tripping over itself.
 #define SCHEDULER_STACK_SIZE_WORDS		256
 #define SCHEDULER_STACK_SIZE_BYTES		1024
 #define SCHEDULER_STACK_GUARD_BYTES		128
@@ -73,27 +68,63 @@ typedef enum {
 } SCHEDULER_Status_TypeDef;
 
 typedef struct {
-    uint32_t magic;
-    uint32_t reason;
-    uint32_t task;
-    uint32_t tick;
+	uint32_t	magic;
+	uint32_t	reason;
+	uint32_t	task;
+	uint32_t	tick;
 
-    uint32_t cfsr, hfsr, dfsr, afsr;
-    uint32_t mmfar, bfar;
-    uint32_t icsr, shcsr;
+	uint32_t	cfsr, hfsr, dfsr, afsr;
+	uint32_t	mmfar, bfar;
+	uint32_t	icsr, shcsr;
 
-    uint32_t msp, psp, psplim, control, exc_return;
-    uint32_t r0, r1, r2, r3, r12, lr, pc, xpsr;
-} SchedulerFaultDump;
+	uint32_t	msp, psp, psplim, control, exc_return;
+	uint32_t	r0, r1, r2, r3, r12, lr, pc, xpsr;
+} Scheduler_Fault_Dump_TypeDef;
 
-#define SCHED_MAGIC 0x53434844u
+#define SCHED_MAGIC		0x53434844u
 
-extern volatile SchedulerFaultDump g_sched_fault;
+// ── Mutable runtime state ──
+extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
 
-int SCHEDULER_GetCurrentTask(void);
-volatile const SchedulerFaultDump* SCHEDULER_GetLastFault(void);
-uint32_t SCHEDULER_GetTaskStackFree(uint8_t task);
-const char* SCHEDULER_GetTaskName(uint8_t task);
+/**
+ * @brief  Get the index of the currently running task
+ *
+ * @param [out] taskIndex | Pointer to store the task index
+ *
+ * @retval SCHEDULER_OK on success
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
+
+/**
+ * @brief  Get the last fault dump
+ *
+ * @param [out] dump | Pointer to store the fault-dump address
+ *
+ * @retval SCHEDULER_OK on success
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(volatile const Scheduler_Fault_Dump_TypeDef** dump);
+
+/**
+ * @brief  Get the free stack space for a task
+ *
+ * @param [in]  task | Task index
+ * @param [out] free | Pointer to store free stack bytes
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskStackFree(uint8_t task, uint32_t* free);
+
+/**
+ * @brief  Get the name of a task
+ *
+ * @param [in]  task | Task index
+ * @param [out] name | Pointer to store the task name pointer
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
 
 /**
  * @brief  Register a periodic task with the scheduler
