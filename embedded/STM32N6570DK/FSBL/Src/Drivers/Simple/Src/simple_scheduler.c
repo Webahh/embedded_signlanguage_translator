@@ -36,10 +36,11 @@ typedef struct {
 	uint8_t							stack_overflow;		// 16
 	uint32_t						saved_sp;			// 20 (aligned)
 	uint32_t						saved_exc_return;	// 24
-} _TaskHandle_TypeDef;							// 28 bytes
+	const char*						pcName;				// 28
+} _TaskHandle_TypeDef;							// 32 bytes
 
 // TCB = Task Control Block
-#define _TCB_SIZE		28
+#define _TCB_SIZE		32
 #define _TCB_SAVED_SP	20
 #define _TCB_EXC_RETURN	24
 #define _TCB_NEEDS_INIT	15
@@ -47,6 +48,11 @@ typedef struct {
 // Stringify helper for inline assembly
 #define _STR_HELPER(x) #x
 #define _STR(x)        _STR_HELPER(x)
+
+_Static_assert(offsetof(_TaskHandle_TypeDef, saved_sp) == _TCB_SAVED_SP, "TCB saved_sp offset mismatch with assembly");
+_Static_assert(offsetof(_TaskHandle_TypeDef, saved_exc_return) == _TCB_EXC_RETURN, "TCB saved_exc_return offset mismatch with assembly");
+_Static_assert(offsetof(_TaskHandle_TypeDef, needs_init) == _TCB_NEEDS_INIT, "TCB needs_init offset mismatch with assembly");
+_Static_assert(sizeof(_TaskHandle_TypeDef) == _TCB_SIZE, "TCB size mismatch with assembly");
 
 // -------------------------------------------------------------------------
 // Private data
@@ -63,11 +69,20 @@ static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE]
 _Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,
 	"SCHEDULER_STACK_SIZE_BYTES mismatch – update when stack size changes");
 
+volatile SchedulerFaultDump g_sched_fault;
+
 // Forward declarations (called from assembly)
 void SCHEDULER_Task_exit(void);
 static int SCHEDULER_SelectNextTask(void);
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
+void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason);
+void SCHEDULER_StartTick(void);
+
 void UsageFault_Handler(void);
+void HardFault_Handler(void);
+void MemManage_Handler(void);
+void BusFault_Handler(void);
+void NMI_Handler(void);
 
 // -------------------------------------------------------------------------
 // Stack initialisation
@@ -75,16 +90,18 @@ void UsageFault_Handler(void);
 
 // Return type is the exception because of use in Assembly
 static void SCHEDULER_InitTaskStack(int i){
+    uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stacks[i] & ~7U);
+
+    for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+        stack_base[j] = 0xA5A5A5A5;
+    }
+
     // Align to 8 bytes, get end address of the stack area
     uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i]
         + sizeof(_task_stacks[i])) & ~7U);
 
     // Reserve 32 words: 16 for FP regs + 8 callee-saved + 8 exception frame
     uint32_t *sp = stack_end - 32;
-
-    for (int j = 0; j < 32; j++) {
-        sp[j] = 0;
-    }
 
     // sp[0..15]  S16-S31  (FPU callee-saved, restored when FPU active)
     // sp[16..23] R4-R11   (core callee-saved)
@@ -104,11 +121,28 @@ static void SCHEDULER_InitTaskStack(int i){
 }
 
 // -------------------------------------------------------------------------
+// Stack high-water mark
+// -------------------------------------------------------------------------
+
+static uint32_t SCHEDULER_GetStackHighWatermark(int task){
+    uint32_t *stack = _task_stacks[task];
+    uint32_t start = SCHEDULER_STACK_GUARD_BYTES / sizeof(uint32_t);
+    uint32_t free = 0;
+    for (uint32_t j = start; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+        if (stack[j] == 0xA5A5A5A5) {
+            free++;
+        } else {
+            break;
+        }
+    }
+    return free * sizeof(uint32_t);
+}
+
+// -------------------------------------------------------------------------
 // Idle task
 // -------------------------------------------------------------------------
 
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
-	// Waiting for interrupt
 	while (1) {
 		__WFI();
 	}
@@ -119,18 +153,13 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 // -------------------------------------------------------------------------
 
 void SCHEDULER_Task_exit(void){
-	// Disable interrupts while modifying shared state
 	__disable_irq();
-	// Mark the task as finished - PendSV will re-init it when rescheduled
 	_tasks[_current_task].ready      = 0;
 	_tasks[_current_task].needs_init = 1;
 
-	// Trigger a context switch so PendSV picks the next ready task
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	__enable_irq();
 
-	// Park this core - PendSV will re-init our stack frame before
-	// Exit to interrupt
 	while (1) {
 		__WFI();
 	}
@@ -174,10 +203,7 @@ static int SCHEDULER_SelectNextTask(void)
 // -------------------------------------------------------------------------
 
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
-	// Re-initialise the finished task's stack as if it were freshly added
 	SCHEDULER_InitTaskStack(task_idx);
-	// PendSV already cleared ready; the ISR will re-mark it when the
-	// period elapses – no need to set it here
 	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
@@ -186,64 +212,52 @@ void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 // -------------------------------------------------------------------------
 
 __attribute__((naked)) void PendSV_Handler(void){
-	// Preemptive context switch – saves the current task's context,
-	// selects the next ready task, and restores its context
-	// Uses PSP as the task stack pointer
 	__asm volatile (
-		// -- Save current task context --
-		"cpsid	i\n"                        // disable IRQs during switch
+		"cpsid	i\n"
 
-		"mrs	r0, psp\n"                  // r0 = current task's PSP
-		"stmdb	r0!, {r4-r11}\n"            // push callee-saved regs r4-r11
+		"mrs	r0, psp\n"
+		"stmdb	r0!, {r4-r11}\n"
 
-		// If the interrupted code used the FPU, preserve S16-S31 as well
-		"tst	lr, #0x10\n"                // check FPCA bit in EXC_RETURN
+		"tst	lr, #0x10\n"
 		"it		eq\n"
 		"vstmdbeq r0!, {s16-s31}\n"
 
-		// Locate the current task's TCB
-		"ldr	r2, =_current_task\n"       // r2 = &_current_task
-		"ldr	r3, [r2]\n"                 // r3 = current index
-		"ldr	r4, =_tasks\n"              // r4 = base of _tasks array
-
-		"mov	r5, #" _STR(_TCB_SIZE) "\n"   // r5 = sizeof(TCB)
-		"mul	r3, r3, r5\n"               // r3 = index * sizeof(TCB)
-		"add	r4, r4, r3\n"               // r4 = &_tasks[current]
-		"str	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"     // save PSP
-		"str	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"  // save EXC_RETURN
-
-		// -- Select next task to run --
-		"push	{lr}\n"                     // preserve EXC_RETURN on main stack
-		"bl		SCHEDULER_SelectNextTask\n" // returns next index in r0
-		"pop	{lr}\n"                     // restore EXC_RETURN
-
-		// Update current task index
 		"ldr	r2, =_current_task\n"
-		"str	r0, [r2]\n"                 // _current_task = next index
+		"ldr	r3, [r2]\n"
+		"ldr	r4, =_tasks\n"
 
-		// Locate the next task's TCB
+		"mov	r5, #" _STR(_TCB_SIZE) "\n"
+		"mul	r3, r3, r5\n"
+		"add	r4, r4, r3\n"
+		"str	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"
+		"str	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"
+
+		"push	{r1, lr}\n"
+		"bl		SCHEDULER_SelectNextTask\n"
+		"pop	{r1, lr}\n"
+
+		"ldr	r2, =_current_task\n"
+		"str	r0, [r2]\n"
+
 		"ldr	r4, =_tasks\n"
 		"mov	r5, #" _STR(_TCB_SIZE) "\n"
 		"mul	r0, r0, r5\n"
-		"add	r4, r4, r0\n"               // r4 = &_tasks[next]
+		"add	r4, r4, r0\n"
 
-		// -- Re-init the task's stack if it previously exited --
 		"ldrb	r1, [r4, #" _STR(_TCB_NEEDS_INIT) "]\n"
 		"cmp	r1, #0\n"
-		"beq	1f\n"                       // skip if not flagged
+		"beq	1f\n"
 
-		// needs_init is set: rebuild the exception frame
-		"push	{lr}\n"
-		"mov	r0, r4\n"                   // r0 = TCB address
+		"push	{r1, lr}\n"
+		"mov	r0, r4\n"
 		"ldr	r1, =_tasks\n"
-		"sub	r0, r0, r1\n"               // r0 = byte offset into _tasks[]
+		"sub	r0, r0, r1\n"
 		"mov	r1, #" _STR(_TCB_SIZE) "\n"
-		"udiv	r0, r0, r1\n"               // r0 = task index
-		"mov	r1, r4\n"                   // r1 = TCB address
+		"udiv	r0, r0, r1\n"
+		"mov	r1, r4\n"
 		"bl		SCHEDULER_ReinitTask\n"
-		"pop	{lr}\n"
+		"pop	{r1, lr}\n"
 
-		// Reload next task's TCB base (ReinitTask may have changed saved_sp)
 		"ldr	r4, =_tasks\n"
 		"ldr	r2, =_current_task\n"
 		"ldr	r3, [r2]\n"
@@ -251,33 +265,29 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"mul	r3, r3, r5\n"
 		"add	r4, r4, r3\n"
 
-		// -- Set stack limit for the next task (ARMv8.1-M PSPLIM) --
-		// If SP ever falls below the bottom of the stack, the hardware
-		// raises a Stack Usage Fault immediately (no polling).
 		"1:\n"
 		"ldr	r0, =_task_stacks\n"
 		"ldr	r2, =_current_task\n"
 		"ldr	r3, [r2]\n"
 		"ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-		"mul	r3, r3, r2\n"               						// task index * stack bytes
-		"add	r0, r0, r3\n"										// r0 = stack base
-		"add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"   // guard zone
+		"mul	r3, r3, r2\n"
+		"add	r0, r0, r3\n"
+		"add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
 		"msr	psplim, r0\n"
 		"isb\n"
 
-		"ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"     // r0 = saved PSP
-		"ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"  // lr = saved EXC_RETURN
+		"ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"
+		"ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"
 
-		// Restore FPU callee-saved regs if the task uses the FPU
 		"tst	lr, #0x10\n"
 		"it		eq\n"
 		"vldmiaeq r0!, {s16-s31}\n"
 
-		"ldmia	r0!, {r4-r11}\n"            // restore r4-r11
-		"msr	psp, r0\n"                  // PSP = updated stack pointer
+		"ldmia	r0!, {r4-r11}\n"
+		"msr	psp, r0\n"
 
-		"cpsie	i\n"                        // re-enable IRQs
-		"bx		lr\n"                       // return to the restored task
+		"cpsie	i\n"
+		"bx		lr\n"
 	);
 }
 
@@ -286,42 +296,51 @@ __attribute__((naked)) void PendSV_Handler(void){
 // -------------------------------------------------------------------------
 
 __attribute__((naked)) void SVC_Handler(void){
-    // First-task startup: invoked by "SVC #0" in SCHEDULER_Tasks_run
-    // Loads the initial task's context and switches to thread mode using PSP
     __asm volatile (
-        // Locate the first scheduled task's TCB
         "ldr    r0, =_current_task                  \n"
-        "ldr    r3, [r0]                            \n"  // r3 = _current_task index (saved)
+        "ldr    r3, [r0]                            \n"
 
         "ldr    r2, =_tasks                         \n"
         "mov    r1, #" _STR(_TCB_SIZE) "             \n"
         "mul    r0, r3, r1                          \n"
-        "add    r2, r2, r0                          \n"  // r2 = &_tasks[current]
+        "add    r2, r2, r0                          \n"
 
-        // Set PSPLIM to the bottom of this task's stack + guard zone
         "ldr    r1, =_task_stacks                   \n"
         "ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-        "mul    r0, r3, r0                         \n"  			// index * stack bytes
-		"add    r0, r1, r0                          \n"  			// r0 = stack base
-		"add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"	// + guard
+        "mul    r0, r3, r0                          \n"
+        "add    r0, r1, r0                          \n"
+        "add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
         "msr    psplim, r0                          \n"
         "isb                                        \n"
 
-        // Restore callee-saved registers and set PSP
-        "ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"  // r0 = saved PSP
-        "ldmia  r0!, {r4-r11}                       \n"  // pop r4-r11
-        "msr    psp, r0                             \n"  // PSP past callee-saved
+        "ldr    r0, [r2, #" _STR(_TCB_SAVED_SP) "]    \n"
+        "ldmia  r0!, {r4-r11}                       \n"
+        "msr    psp, r0                             \n"
         "isb                                        \n"
 
-        // Switch to thread mode + PSP (bit 1 = 1) + no FP active (bit 2 = 0)
-        "movs   r0, #2                              \n"  // CONTROL = 2
+        "movs   r0, #2                              \n"
         "msr    control, r0                         \n"
         "isb                                        \n"
 
-        // EXC_RETURN = 0xFFFFFFFD: return to thread mode, use PSP
+        // Start TIM7 now that PSP and CONTROL are valid.
+        // Still in handler mode (MSP), so push/pop use the main stack.
+        "push {r0, lr}                              \n"
+        "bl SCHEDULER_StartTick                     \n"
+        "pop {r0, lr}                               \n"
+
         "ldr    lr, =0xFFFFFFFD                     \n"
         "bx     lr                                  \n"
     );
+}
+
+// -------------------------------------------------------------------------
+// Start the scheduler tick (called from SVC_Handler after PSP is valid)
+// -------------------------------------------------------------------------
+
+void SCHEDULER_StartTick(void){
+    NVIC_ClearPendingIRQ(TIM7_IRQn);
+    NVIC_EnableIRQ(TIM7_IRQn);
+    TIM_Start(TIM7);
 }
 
 // -------------------------------------------------------------------------
@@ -329,14 +348,11 @@ __attribute__((naked)) void SVC_Handler(void){
 // -------------------------------------------------------------------------
 
 void TIM7_IRQHandler(void){
-	// 1 ms periodic tick – check and clear the update flag
 	if (TIM_GetFlag(TIM7, TIM_SR_UIF)) {
 		TIM_ClearFlag(TIM7, TIM_SR_UIF);
 
-		// Advance the system tick counter
 		_sys_tick_ms++;
 
-		// Mark any task whose period has elapsed as ready
 		for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
 			if (_tasks[i].active && _tasks[i].function != 0) {
 				if ((_sys_tick_ms - _tasks[i].last_run_ms)
@@ -347,8 +363,6 @@ void TIM7_IRQHandler(void){
 			}
 		}
 
-		// Pend PendSV – the actual context switch runs as the lowest-priority
-		// exception, so it only fires after we return from this ISR
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	}
 }
@@ -364,11 +378,9 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	uint8_t priority,
 	uint8_t* taskIndex){
 
-	// Validate
-	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND; 	 }	// output pointer
-	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }	// TaskFunction
+	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND; 	 }
+	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }
 
-	// Find the first free slot
 	int slot = -1;
 	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
 		if (!_tasks[i].active) {
@@ -377,10 +389,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 		}
 	}
 
-	// Validate
-	if (slot < 0) { return SCHEDULER_ERR_FULL;	}	// slot
+	if (slot < 0) { return SCHEDULER_ERR_FULL;	}
 
-	// Populate the TCB
 	_tasks[slot].function	  = pvTaskCode;
 	_tasks[slot].period_ms	  = period_ms;
 	_tasks[slot].last_run_ms  = _sys_tick_ms;
@@ -389,41 +399,31 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].active		  = 1;
 	_tasks[slot].needs_init   = 0;
 	_tasks[slot].stack_overflow = 0;
+	_tasks[slot].pcName       = pcName;
 
-	// Set up the initial stack frame for this task
 	SCHEDULER_InitTaskStack(slot);
 
-	// TODO: USART out for debug purposes
-	(void)pcName;
-
-	// Set return values
 	*taskIndex = (uint8_t)slot;
 
 	return SCHEDULER_OK;
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
-	// Validate that the slot is within the user-task range (not the idle slot)
 	if (taskIndex < 0 || taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
 
-	// Mark the slot as inactive - the scheduler will ignore it
 	_tasks[taskIndex].active     = 0;
 	_tasks[taskIndex].function   = 0;
 	_tasks[taskIndex].ready      = 0;
 	_tasks[taskIndex].needs_init = 0;
+	_tasks[taskIndex].pcName     = 0;
 
 	return SCHEDULER_OK;
 }
 
 void SCHEDULER_System_init(void){
-	// Configure TIM7 as a 1 ms tick source:
-	//   HCLK = 200 MHz -> PSC = 200 -> 1 MHz counter -> ARR = 999 -> 1 kHz
-	// This call does NOT enable the NVIC – that happens later in Tasks_run()
-	// after interrupt priorities have been configured.
 	TIM_Config(TIM7, 200, 999, 0);
-	// Enable the update interrupt (UIE bit in DIER)
 	TIM_EnableIT(TIM7);
 }
 
@@ -437,81 +437,141 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 }
 
 // -------------------------------------------------------------------------
-// UsageFault_Handler - stack overflow detection via PSPLIM
+// Public debug API
 // -------------------------------------------------------------------------
 
-void UsageFault_Handler(void){
+int SCHEDULER_GetCurrentTask(void){
+    return _current_task;
+}
+
+volatile const SchedulerFaultDump* SCHEDULER_GetLastFault(void){
+    return &g_sched_fault;
+}
+
+uint32_t SCHEDULER_GetTaskStackFree(uint8_t task){
+    if (task >= SCHEDULER_MAX_TASKS) return 0;
+    return SCHEDULER_GetStackHighWatermark(task);
+}
+
+const char* SCHEDULER_GetTaskName(uint8_t task){
+    if (task >= SCHEDULER_MAX_TASKS) return 0;
+    return _tasks[task].pcName;
+}
+
+// -------------------------------------------------------------------------
+// Fault handler C core - captures all fault state then halts
+// -------------------------------------------------------------------------
+
+void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason){
     __disable_irq();
 
-    uint32_t cfsr = SCB->CFSR;
+    g_sched_fault.magic   = SCHED_MAGIC;
+    g_sched_fault.reason  = reason;
+    g_sched_fault.task    = (uint32_t)_current_task;
+    g_sched_fault.tick    = _sys_tick_ms;
 
-    if (cfsr & SCB_CFSR_STKOF_Msk) {
-        // Mark the overflown task as dead – everything runs on the
-        // safe MSP so far, never touching the corrupted PSP.
+    g_sched_fault.cfsr    = SCB->CFSR;
+    g_sched_fault.hfsr    = SCB->HFSR;
+    g_sched_fault.dfsr    = SCB->DFSR;
+    g_sched_fault.afsr    = SCB->AFSR;
+    g_sched_fault.mmfar   = SCB->MMFAR;
+    g_sched_fault.bfar    = SCB->BFAR;
+    g_sched_fault.icsr    = SCB->ICSR;
+    g_sched_fault.shcsr   = SCB->SHCSR;
+
+    g_sched_fault.msp     = __get_MSP();
+    g_sched_fault.psp     = __get_PSP();
+    g_sched_fault.psplim  = __get_PSPLIM();
+    g_sched_fault.control = __get_CONTROL();
+    g_sched_fault.exc_return = exc_return;
+
+    if (reason == 4 && (SCB->CFSR & SCB_CFSR_STKOF_Msk)) {
         _tasks[_current_task].stack_overflow = 1;
-        _tasks[_current_task].active         = 0;
-        _tasks[_current_task].ready          = 0;
-        _tasks[_current_task].needs_init     = 0;
-
-        // Clear the fault flag so it doesn't re-trigger
-        SCB->CFSR = SCB_CFSR_STKOF_Msk;
-
-        // Pick the next runnable task
-        int next = SCHEDULER_SelectNextTask();
-        _current_task = next;
-
-        // Now switch directly to the next task in assembly,
-        // never returning to thread mode on the broken PSP.
-        __set_PSPLIM(0);
-
-        // Clear any stale PendSV that may have been pended for the dead task
-        SCB->ICSR = SCB_ICSR_PENDSVCLR_Msk;
-
-        __asm volatile (
-            // Locate the next task's TCB
-            "ldr	r2, =_current_task\n"
-            "ldr	r3, [r2]\n"
-            "ldr	r4, =_tasks\n"
-            "mov	r5, #" _STR(_TCB_SIZE) "\n"
-            "mul	r3, r3, r5\n"
-            "add	r4, r4, r3\n"               // r4 = &_tasks[next]
-
-            // Set PSPLIM for the next task (stackbase + guard)
-            "ldr	r0, =_task_stacks\n"
-            "ldr	r2, =_current_task\n"
-            "ldr	r3, [r2]\n"
-            "ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-            "mul	r3, r3, r2\n"
-			"add	r0, r0, r3\n"               						// r0 = stack base
-		    "add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"	// + guard
-            "msr	psplim, r0\n"
-            "isb\n"
-
-            // Restore next task's context
-            "ldr	r0, [r4, #" _STR(_TCB_SAVED_SP) "]\n"
-            "ldr	lr, [r4, #" _STR(_TCB_EXC_RETURN) "]\n"
-
-            "tst	lr, #0x10\n"
-            "it		eq\n"
-            "vldmiaeq r0!, {s16-s31}\n"
-
-            "ldmia	r0!, {r4-r11}\n"
-            "msr	psp, r0\n"
-
-            // Re-enable interrupts (__disable_irq at the top set PRIMASK)
-            "cpsie	i\n"
-
-            // Exception-return directly to the next task
-            "bx		lr\n"
-        );
-
-        __builtin_unreachable();
     }
 
-    // Non-STKOF UsageFault (e.g. undefined instruction) – halt
-    while (1) {
-        __WFI();
+    if (frame) {
+        g_sched_fault.r0  = frame[0];
+        g_sched_fault.r1  = frame[1];
+        g_sched_fault.r2  = frame[2];
+        g_sched_fault.r3  = frame[3];
+        g_sched_fault.r12 = frame[4];
+        g_sched_fault.lr  = frame[5];
+        g_sched_fault.pc  = frame[6];
+        g_sched_fault.xpsr = frame[7];
     }
+
+    __BKPT(0);
+
+    while (1) { __WFI(); }
+}
+
+// -------------------------------------------------------------------------
+// Fault handlers - extract EXC_RETURN and stacked frame, tail-call C core
+// -------------------------------------------------------------------------
+
+__attribute__((naked)) void NMI_Handler(void){
+    __asm volatile (
+        "mov r0, lr\n"
+        "tst r0, #4\n"
+        "ite eq\n"
+        "mrseq r1, msp\n"
+        "mrsne r1, psp\n"
+        "mov r2, #5\n"
+        "b SCHEDULER_FaultHandler_C\n"
+    );
+}
+
+__attribute__((naked)) void HardFault_Handler(void){
+    __asm volatile (
+        "mov r0, lr\n"
+        "tst r0, #4\n"
+        "ite eq\n"
+        "mrseq r1, msp\n"
+        "mrsne r1, psp\n"
+        "mov r2, #1\n"
+        "b SCHEDULER_FaultHandler_C\n"
+    );
+}
+
+__attribute__((naked)) void MemManage_Handler(void){
+    __asm volatile (
+        "mov r0, lr\n"
+        "tst r0, #4\n"
+        "ite eq\n"
+        "mrseq r1, msp\n"
+        "mrsne r1, psp\n"
+        "mov r2, #2\n"
+        "b SCHEDULER_FaultHandler_C\n"
+    );
+}
+
+__attribute__((naked)) void BusFault_Handler(void){
+    __asm volatile (
+        "mov r0, lr\n"
+        "tst r0, #4\n"
+        "ite eq\n"
+        "mrseq r1, msp\n"
+        "mrsne r1, psp\n"
+        "mov r2, #3\n"
+        "b SCHEDULER_FaultHandler_C\n"
+    );
+}
+
+// -------------------------------------------------------------------------
+// UsageFault_Handler - captures fault state and halts
+// (no auto-recovery – debugging only)
+// -------------------------------------------------------------------------
+
+__attribute__((naked)) void UsageFault_Handler(void){
+    __asm volatile (
+        "mov r0, lr\n"
+        "tst r0, #4\n"
+        "ite eq\n"
+        "mrseq r1, msp\n"
+        "mrsne r1, psp\n"
+        "mov r2, #4\n"
+        "b SCHEDULER_FaultHandler_C\n"
+    );
 }
 
 // -------------------------------------------------------------------------
@@ -519,10 +579,8 @@ void UsageFault_Handler(void){
 // -------------------------------------------------------------------------
 
 void SCHEDULER_Tasks_run(void){
-    // Disable IRQs during scheduler initialisation
     __disable_irq();
 
-    // Set up the idle task in the last TCB slot
     _tasks[SCHEDULER_IDLE_TASK_INDEX].function       = SCHEDULER_IdleTask;
     _tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
     _tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
@@ -533,36 +591,27 @@ void SCHEDULER_Tasks_run(void){
 
     SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
 
-    // Configure exception priorities:
-    //   PendSV = lowest (0xFF) – context switch only when nothing else pending
-    //   SVC    = highest (0x00) – first-task startup must not be delayed
-    //   TIM7   = mid     (0x80) – tick must preempt user tasks but not SVC
     NVIC_SetPriority(PendSV_IRQn, 0xFF);
     NVIC_SetPriority(SVCall_IRQn, 0x00);
     NVIC_SetPriority(TIM7_IRQn, 0x80);
 
-    // Disable lazy FPU stacking – we handle S16-S31 explicitly in PendSV
     FPU->FPCCR &= ~FPU_FPCCR_LSPEN_Msk;
 
-    // Select the first task to run
     _current_task = SCHEDULER_SelectNextTask();
 
-    // Enable the TIM7 tick interrupt now that priorities are configured
-    NVIC_ClearPendingIRQ(TIM7_IRQn);
-    NVIC_EnableIRQ(TIM7_IRQn);
-    TIM_Start(TIM7);
+    // Enable ALL fault handlers so no crash goes undiagnosed
+    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk
+                | SCB_SHCSR_BUSFAULTENA_Msk
+                | SCB_SHCSR_MEMFAULTENA_Msk;
 
-    // Enable the Usage Fault so that PSPLIM violations (stack overflow)
-    // are caught as a Stack Usage Fault (UFSR.STKOF) instead of hanging.
-    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
+    // TIM7 is NOT started here. It is started in SCHEDULER_StartTick(),
+    // called from SVC_Handler only after PSP and CONTROL are valid.
+    // This prevents PendSV from ever firing before PSP is initialized.
 
     __enable_irq();
 
-    // SVC #0 triggers SVC_Handler, which loads the first task's context
-    // and performs the exception return into it – we never return here
     __asm volatile ("SVC #0" : : : "memory");
 
-    // SVC never returns – this is a safety catch
     while (1) {
         __WFI();
     }

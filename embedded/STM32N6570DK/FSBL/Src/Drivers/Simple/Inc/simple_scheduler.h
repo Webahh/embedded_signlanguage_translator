@@ -72,11 +72,34 @@ typedef enum {
 	SCHEDULER_ERR_TASK_INVALID	= -3
 } SCHEDULER_Status_TypeDef;
 
+typedef struct {
+    uint32_t magic;
+    uint32_t reason;
+    uint32_t task;
+    uint32_t tick;
+
+    uint32_t cfsr, hfsr, dfsr, afsr;
+    uint32_t mmfar, bfar;
+    uint32_t icsr, shcsr;
+
+    uint32_t msp, psp, psplim, control, exc_return;
+    uint32_t r0, r1, r2, r3, r12, lr, pc, xpsr;
+} SchedulerFaultDump;
+
+#define SCHED_MAGIC 0x53434844u
+
+extern volatile SchedulerFaultDump g_sched_fault;
+
+int SCHEDULER_GetCurrentTask(void);
+volatile const SchedulerFaultDump* SCHEDULER_GetLastFault(void);
+uint32_t SCHEDULER_GetTaskStackFree(uint8_t task);
+const char* SCHEDULER_GetTaskName(uint8_t task);
+
 /**
  * @brief  Register a periodic task with the scheduler
  *
  * @param [in]  pvTaskCode | Pointer to the task function
- * @param [in]  pcName     | Human-readable task name (currently unused)
+ * @param [in]  pcName     | Human-readable task name
  * @param [in]  period_ms  | Task period in milliseconds
  * @param [in]  priority   | Scheduling priority (0 = highest, 255 = lowest)
  * @param [out] taskIndex  | Assigned task slot index
