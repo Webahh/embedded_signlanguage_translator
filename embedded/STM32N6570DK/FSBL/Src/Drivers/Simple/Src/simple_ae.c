@@ -9,7 +9,7 @@
 #include "simple_imx335.h"
 #include "stm32n657xx.h"
 
-#define AE_TARGET_LUMA         		   80U
+#define AE_TARGET_LUMA         		   160U
 
 #define AE_FINE_TOLERANCE              5U
 #define AE_COARSE_TOLERANCE            10U

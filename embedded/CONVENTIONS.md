@@ -112,7 +112,7 @@ extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 ```
 
 - `UPPER_SNAKE_CASE`, prefixed by module: `LCD_BG_WIDTH`, `GPIO_MODE_OUTPUT`, `CAM_OK`
-- Private defines used in own Module
+- Private defines used in own Module start with `_` and omit the module prefix: `_TIMEOUT`, `_FIFO_THRESHOLD`
 
 ### Static / File-scope
 

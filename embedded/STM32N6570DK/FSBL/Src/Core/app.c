@@ -49,8 +49,8 @@ void app_init(){
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
-    PSRAM_Init(XSPI_psram_cfg);
-    NOR_Init(XSPI_nor_cfg);
+    XSPI_PSRAM_init(XSPI_psram_cfg);
+    XSPI_NOR_init(XSPI_nor_cfg);
 
     LCD_Init();
 
@@ -80,7 +80,7 @@ void app_init(){
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
-	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
+//	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
 }
 
 void app_run(){
