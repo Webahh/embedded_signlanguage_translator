@@ -63,15 +63,15 @@ void app_init(){
 
     LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_WHITE);
 
-//    uint32_t error = 0;
-//    if(CAM_Init(&h_cam) == CAM_OK) {
-//    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
-//    		error++;
-//    	}
+    uint32_t error = 0;
+    if(CAM_Init(&h_cam) == CAM_OK) {
+    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
+    		error++;
+    	}
 //    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
 //    		error++;
 //    	}
-//    }
+    }
 
     /* --- Scheduler --- */
     SCHEDULER_System_init();
