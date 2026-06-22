@@ -327,12 +327,14 @@ __attribute__((naked)) void PendSV_Handler(void){
 void SCHEDULER_StartTick(void){
 	NVIC_ClearPendingIRQ(TIM7_IRQn);
 	NVIC_EnableIRQ(TIM7_IRQn);
-	TIM_Start(TIM7);
+	TIMER_Start(TIM7);
 }
 
 void TIM7_IRQHandler(void){
-	if (TIM_GetFlag(TIM7, TIM_SR_UIF)) {
-		TIM_ClearFlag(TIM7, TIM_SR_UIF);
+	uint32_t tim_flag;
+	TIMER_GetFlag(TIM7, TIM_SR_UIF, &tim_flag);
+	if (tim_flag) {
+		TIMER_ClearFlag(TIM7, TIM_SR_UIF);
 
 		_sys_tick_ms++;
 
@@ -406,8 +408,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 }
 
 void SCHEDULER_System_init(void){
-	TIM_Config(TIM7, 200, 999, 0);
-	TIM_EnableIT(TIM7);
+	TIMER_Config(TIM7, 200, 999, 0);
+	TIMER_EnableIT(TIM7);
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){

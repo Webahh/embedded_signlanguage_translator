@@ -110,7 +110,7 @@ void CSI_Config(CSI_cfg_TypeDef *conf)
               | (0x28U << CSI_PFCR_CCFR_Pos);
 
     csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    delay_ms(TIMEOUT_10_MS);
+    TIMER_Delay_ms(TIMER_TIMEOUT_10_MS);
     csi->PTCR0 = 0;
 
 

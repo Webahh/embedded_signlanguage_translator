@@ -33,7 +33,7 @@
   *           - Assert/de-assert camera regulator (PC8) and reset (PD2)
   *           - Configure I2C1 pins (PH9=SCL, PC1=SDA) as AF4 open-drain
   *           - Initialise I2C1 at 400 kHz
-  * @note   delay_ms() must be usable (delay_init() called from main)
+  * @note   TIMER_Delay_ms() must be usable (TIMER_Delay_init() called from main)
   */
 static void _HwInit(void)
 {
@@ -41,13 +41,13 @@ static void _HwInit(void)
     GPIO_Config(GPIOD, 2, GPIO_default_cfg);
 
     GPIO_BSRR_reset(GPIOC, 8);
-    delay_ms(TIMEOUT_100_MS);
+    TIMER_Delay_ms(TIMER_TIMEOUT_100_MS);
     GPIO_BSRR_reset(GPIOD, 2);
-    delay_ms(TIMEOUT_100_MS);
+    TIMER_Delay_ms(TIMER_TIMEOUT_100_MS);
     GPIO_BSRR_set(GPIOC, 8);
-    delay_ms(TIMEOUT_100_MS);
+    TIMER_Delay_ms(TIMER_TIMEOUT_100_MS);
     GPIO_BSRR_set(GPIOD, 2);
-    delay_ms(TIMEOUT_100_MS);
+    TIMER_Delay_ms(TIMER_TIMEOUT_100_MS);
 
     RCC_enable_GPIO(GPIOH);
     RCC_enable_GPIO(GPIOC);

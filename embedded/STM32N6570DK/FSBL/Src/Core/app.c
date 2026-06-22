@@ -45,7 +45,7 @@ void app_init(){
 	Security_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
-	delay_init();
+	TIMER_Delay_init();
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
@@ -54,7 +54,7 @@ void app_init(){
 
     LCD_Init();
 
-    delay_ms(10);
+    TIMER_Delay_ms(10);
 
     LCD_ConfigLayer1();
     LCD_ConfigLayer2();

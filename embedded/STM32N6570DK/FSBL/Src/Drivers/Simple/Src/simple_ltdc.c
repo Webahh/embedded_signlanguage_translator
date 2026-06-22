@@ -40,9 +40,9 @@ static void LCD_ConfigGPIO(void){
 
 static void LCD_PowerOn(void){
     GPIO_BSRR_reset(GPIOE, 1);
-    delay_ms(10);
+    TIMER_Delay_ms(10);
     GPIO_BSRR_set(GPIOE, 1);
-    delay_ms(10);
+    TIMER_Delay_ms(10);
 
     GPIO_BSRR_set(GPIOQ, 3);
     GPIO_BSRR_set(GPIOQ, 6);

@@ -246,30 +246,30 @@ XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg){
 
     RCC_enable_XSPI1();
     RCC_enable_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     RCC_reset_XSPI1();
     RCC_reset_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     RCC_enable_XSPI1();
     RCC_enable_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_PSRAM_gpio_init();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_device_init(XSPI1, init_cfg);
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_PSRAM_config_write();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_prescaler_set(XSPI1, 0);
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_PSRAM_memoryMapped_enable();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     return XSPI_OK;
 }
@@ -288,31 +288,31 @@ XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg){
  * @note Not yet fully supported – placeholder implementation.
  */
 XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg){
-    delay_ms(5);
+    TIMER_Delay_ms(5);
 
     RCC_enable_XSPI2();
     RCC_enable_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     RCC_reset_XSPI2();
     RCC_reset_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     RCC_enable_XSPI2();
     RCC_enable_XSPIM();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_NOR_gpio_init();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_device_init(XSPI2, init_cfg);
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_NOR_config_write();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     XSPI_NOR_memoryMapped_enable();
-    delay_ms(1);
+    TIMER_Delay_ms(1);
 
     return XSPI_OK;
 }
