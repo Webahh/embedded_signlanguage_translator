@@ -51,7 +51,7 @@ void vSystemTimeTask(void) {
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	LCD_DrawStringBG(&LCD_Layer1Config, str, 100, 100, LCD_COLOR_GREEN, LCD_COLOR_WHITE);
+	TEXT_StringBg_draw(&LCD_Layer1Config, str, 100, 100, LCD_COLOR_GREEN, LCD_COLOR_WHITE);
 }
 
 void vLEDTask(void) {

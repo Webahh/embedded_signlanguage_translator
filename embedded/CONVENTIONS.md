@@ -164,6 +164,7 @@ const GPIO_cfg_TypeDef GPIO_LTDC_cfg = {
 
 - `//` for single-line / inline
 - `/* */` or `/** */` for block / Doxygen
+- Use `//` inline comments within complex methods to explain non-obvious steps, loop structure, or tricky logic
 - Two sections **Private** and **API** functions:
 
 ```c
