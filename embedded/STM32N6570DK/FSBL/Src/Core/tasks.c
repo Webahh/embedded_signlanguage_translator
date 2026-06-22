@@ -5,12 +5,16 @@
  *      Author: Weber
  */
 
+#include <stdio.h>
+
 #include "tasks.h"
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
 #include "simple_ae.h"
 #include "config.h"
+#include "simple_timer.h"
+#include "simple_text.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
@@ -24,12 +28,39 @@ static const uint8_t bg_colors[BG_NUM_COLORS][3] = {
 static uint8_t  bg_seg_idx    = 0;
 static uint32_t bg_blend_start = 0;
 
+__attribute__((noinline, optimize("O0"))) // No optimizations for better testing
+static int recursion(int n)
+{
+    volatile uint32_t marker = 0xDEADBEEF;
+    volatile uint32_t padding[8];
+
+    padding[0] = marker;
+
+    if (n == 0)
+        return padding[0];
+
+    return recursion(n - 1) + 1;
+}
+
+void vRecursionTestTask(void) {
+	recursion(20);
+}
+
+void vSystemTimeTask(void) {
+    uint32_t now;
+    SCHEDULER_Tick_get(&now); // MAX:     4294967296
+	char str[11]; // + '\0'
+	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
+	LCD_DrawStringBG(&LCD_Layer1Config, str, 100, 100, LCD_COLOR_GREEN, LCD_COLOR_WHITE);
+}
+
 void vLEDTask(void) {
 	GPIO_BSRR_toggle(GPIOG, LED2_PIN);
 }
 
 void vBackgroundTask(void) {
-    uint32_t now     = SCHEDULER_GetTick();
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
     uint32_t elapsed = now - bg_blend_start;
 
     if (elapsed >= 1000) {

@@ -24,10 +24,12 @@ void TIM_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq);
 void TIM_Start(TIM_TypeDef* TIMX);
 void TIM_Stop(TIM_TypeDef* TIMX);
 void TIM_ResetCounter(TIM_TypeDef* TIMX);
-int TIM_GetCounter(TIM_TypeDef* TIMX);
+int  TIM_GetCounter(TIM_TypeDef* TIMX);
+uint32_t TIM_GetFlag(TIM_TypeDef* TIMX, uint32_t flag);
+void TIM_ClearFlag(TIM_TypeDef* TIMX, uint32_t flag);
+void TIM_EnableIT(TIM_TypeDef* TIMX);
+void TIM_DisableIT(TIM_TypeDef* TIMX);
 void delay_init();
 void delay_ms(int ms);
-void tick_init(void);
-uint32_t get_tick_ms(void);
 
 #endif /* SIMPLE_TIMER_H */

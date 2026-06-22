@@ -8,8 +8,6 @@
 #include "simple_timer.h"
 #include "simple_rcc.h"
 
-static volatile uint32_t sys_tick_ms = 0; // global millisecond counter
-
 /*
  * Reference clock setup:
  * HCLK  = 200 MHz
@@ -25,12 +23,6 @@ static volatile uint32_t sys_tick_ms = 0; // global millisecond counter
 #define SIMPLE_TIMER_INPUT_CLK_HZ 200000000UL
 #define SIMPLE_TIMER_1MHZ         1000000UL
 
-
-/*
- * Vector table symbol provided by the startup file.
- * Used to explicitly set SCB->VTOR to the application vector table.
- */
-extern uint32_t g_pfnVectors[];
 
 /* ------------- Simple_Timer Helper ------------- */
 
@@ -148,6 +140,22 @@ int TIM_GetCounter(TIM_TypeDef* TIMX){
 	return TIMX->CNT;
 }
 
+uint32_t TIM_GetFlag(TIM_TypeDef* TIMX, uint32_t flag){
+	return TIMX->SR & flag;
+}
+
+void TIM_ClearFlag(TIM_TypeDef* TIMX, uint32_t flag){
+	TIMX->SR &= ~flag;
+}
+
+void TIM_EnableIT(TIM_TypeDef* TIMX){
+	TIMX->DIER |= TIM_DIER_UIE;
+}
+
+void TIM_DisableIT(TIM_TypeDef* TIMX){
+	TIMX->DIER &= ~TIM_DIER_UIE;
+}
+
 /**
  * @brief Initialize TIM6 as millisecond delay timer.
  *
@@ -174,51 +182,18 @@ void delay_ms(int ms){
         return;
     }
 
-    TIM6->SR &= ~TIM_SR_UIF;
+    TIM_ClearFlag(TIM6, TIM_SR_UIF);
     TIM_ResetCounter(TIM6);
     TIM_Start(TIM6);
 
     for(int i = 0; i < ms; i++){
-        while((TIM6->SR & TIM_SR_UIF) == 0U){
+        while(TIM_GetFlag(TIM6, TIM_SR_UIF) == 0U){
         }
-        TIM6->SR &= ~TIM_SR_UIF;
+        TIM_ClearFlag(TIM6, TIM_SR_UIF);
     }
 
     TIM_Stop(TIM6);
 }
 
-/**
- * @brief Initialize the global millisecond tick.
- *
- * TIM7 is configured to generate an interrupt every 1 ms.
- * The TIM7 interrupt handler increments sys_tick_ms.
- */
-void tick_init(void){
-    /*
-     * Make sure the vector table base address points to the application
-     * vector table that contains TIM7_IRQHandler.
-     */
-    SCB->VTOR = (uint32_t)g_pfnVectors;
 
-    TIM_Config_1kHz(TIM7, 1);
-
-    TIM_Start(TIM7);
-}
-
-
-/**
- * @brief TIM7 interrupt handler for the global millisecond tick.
- *
- * Called every 1 ms after tick_init().
- */
-void TIM7_IRQHandler(void){
-    if(TIM7->SR & TIM_SR_UIF){
-        TIM7->SR &= ~TIM_SR_UIF;
-        sys_tick_ms++;
-    }
-}
-
-uint32_t get_tick_ms(void){
-    return sys_tick_ms;
-}
 

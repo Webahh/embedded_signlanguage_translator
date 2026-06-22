@@ -22,6 +22,7 @@
 #include "simple_ae.h"
 #include "tasks.h"
 
+extern uint32_t g_pfnVectors[];
 static volatile int lcd_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
@@ -40,6 +41,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 }
 
 void app_init(){
+	SCB->VTOR = (uint32_t)g_pfnVectors;
 	Security_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
@@ -55,30 +57,34 @@ void app_init(){
     delay_ms(10);
 
     LCD_ConfigLayer1();
-    LCD_ConfigLayer2();
+//    LCD_ConfigLayer2();
 
-    delay_ms(10);
+    LCD_FillLayer(&LCD_Layer1Config, LCD_COLOR_WHITE);
 
-    uint32_t error = 0;
-    if(CAM_Init(&h_cam) == CAM_OK) {
-    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
-    	}
-    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
-    	}
-    }
+//    uint32_t error = 0;
+//    if(CAM_Init(&h_cam) == CAM_OK) {
+//    	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
+//    		error++;
+//    	}
+//    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
+//    		error++;
+//    	}
+//    }
 
     /* --- Scheduler --- */
-    SCHEDULER_Init();
+    SCHEDULER_System_init();
 
-	SCHEDULER_AddTask(vLEDTask, "LED", 500);
-	SCHEDULER_AddTask(vBackgroundTask, "BgColor", 20);
-	SCHEDULER_AddTask(vAETask, "AETask" , 30);
+	uint8_t task_idx;
+
+	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
+	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
+	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
+	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
+	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
 }
 
 void app_run(){
-	SCHEDULER_Run();
+	SCHEDULER_Tasks_run();
 }
 
 
