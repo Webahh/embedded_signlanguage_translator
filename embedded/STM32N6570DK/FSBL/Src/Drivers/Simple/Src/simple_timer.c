@@ -20,8 +20,8 @@
  * This avoids using RCC_GetTIMClock(), because the current RCC getter
  * does not yet decode the IC-based clock tree.
  */
-#define SIMPLE_TIMER_INPUT_CLK_HZ 200000000UL
-#define SIMPLE_TIMER_1MHZ         1000000UL
+#define _TIMER_INPUT_CLK_HZ 200000000UL
+#define _TIMER_1MHZ         1000000UL
 
 
 /* ------------- Simple_Timer Helper ------------- */
@@ -78,7 +78,7 @@ static void TIM_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
  * 1 MHz / 1000 = 1 kHz -> 1 ms update event
  */
 static void TIM_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
-	uint32_t prescaler = SIMPLE_TIMER_INPUT_CLK_HZ / SIMPLE_TIMER_1MHZ;
+	uint32_t prescaler = _TIMER_INPUT_CLK_HZ / _TIMER_1MHZ;
 
     if (prescaler == 0U) {
         prescaler = 1U;
