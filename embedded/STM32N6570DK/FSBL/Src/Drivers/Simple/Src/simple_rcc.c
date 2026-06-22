@@ -383,6 +383,37 @@ uint32_t RCC_GetI2CClock(I2C_TypeDef *I2CX){
     return 0U;
 }
 
+uint32_t RCC_GetUSARTClock(USART_TypeDef *USARTX)
+{
+    if (USARTX == USART1)
+    {
+        uint32_t source;
+
+        source =
+            (RCC->CCIPR13 & RCC_CCIPR13_USART1SEL_Msk)
+            >> RCC_CCIPR13_USART1SEL_Pos;
+
+        switch (source)
+        {
+            /*
+             * USART1SEL = 0:
+             * USART1 kernel clock is PCLK2.
+             */
+            case 0U:
+                return RCC_GetPCLK2();
+
+            /*
+             * Other possible USART1 clock sources are currently
+             * intentionally unsupported by this driver.
+             */
+            default:
+                return 0U;
+        }
+    }
+
+    return 0U;
+}
+
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
 	if (GPIOX == GPIOA){
 		RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN;
@@ -760,3 +791,20 @@ void RCC_setXSPI1_clock_source(uint32_t source)
 
     (void)RCC->CCIPR6;
 }
+
+void RCC_enable_USART(USART_TypeDef* USARTX)
+{
+	// Only USART1 needed for now. Therefore, no configuration for other USARTs!
+    if (USARTX == USART1){
+
+        RCC->CCIPR13 =
+            (RCC->CCIPR13 & ~RCC_CCIPR13_USART1SEL_Msk)
+            | (0U << RCC_CCIPR13_USART1SEL_Pos);
+
+        (void)RCC->CCIPR13;
+        RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+        (void)RCC->APB2ENR;
+    }
+}
+
+

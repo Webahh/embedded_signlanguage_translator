@@ -43,6 +43,7 @@ uint32_t RCC_GetPCLK4(void);
 uint32_t RCC_GetPCLK5(void);
 uint32_t RCC_GetTIMClock(TIM_TypeDef *TIMX);
 uint32_t RCC_GetI2CClock(I2C_TypeDef *I2CX);
+uint32_t RCC_GetUSARTClock(USART_TypeDef *USARTX);
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX);
 void RCC_enable_I2C(I2C_TypeDef* I2CX);
@@ -74,5 +75,6 @@ void RCC_enable_VDDIO2(void);
 void RCC_config_VDDIO2_1V8(void);
 void RCC_enable_RIFSC(void);
 void RCC_setXSPI1_clock_source(uint32_t source);
+void RCC_enable_USART(USART_TypeDef* USARTX);
 
 #endif // SIMPLE_RCC_H

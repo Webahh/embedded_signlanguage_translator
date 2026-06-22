@@ -45,7 +45,9 @@ void app_init(){
 	Security_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
+	debug_init(dbg_cfg);
 	delay_init();
+	DEBUG_PRINTF("Lets debug!\r\n");
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
@@ -80,7 +82,7 @@ void app_init(){
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
-	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
+	//SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
 }
 
 void app_run(){

@@ -13,7 +13,7 @@
 /**
  * @brief Configure alternate function settings for one GPIO pin.
  *
- * This helper sets the output speed and selkects the alternate function
+ * This helper sets the output speed and selects the alternate function
  * number in the correct AFR register.
  *
  * AFR[0] is used for pins 0..7.

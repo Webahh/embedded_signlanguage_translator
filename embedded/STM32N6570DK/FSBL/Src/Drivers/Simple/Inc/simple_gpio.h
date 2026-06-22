@@ -29,8 +29,9 @@
 
 #define GPIO_AF_NONE			-1
 #define GPIO_AF_I2C				4
-#define GPIO_AF_LTDC			14
+#define GPIO_AF_USART			7
 #define GPIO_AF_XSPI			9
+#define GPIO_AF_LTDC			14
 
 typedef struct {
 	uint32_t mode;
