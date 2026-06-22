@@ -42,7 +42,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
-	Security_Config();
+	RIFSC_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
 	TIMER_Delay_init();
