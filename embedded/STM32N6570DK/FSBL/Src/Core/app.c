@@ -17,6 +17,7 @@
 #include "simple_rifsc.h"
 #include "simple_camera.h"
 #include "simple_dcmipp.h"
+#include "simple_ai.h"
 #include "image_bitmap.h"
 #include "simple_rcc.h"
 #include "simple_ae.h"
@@ -39,6 +40,9 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
         LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
     }
 }
+
+volatile uint32_t ai_init_before = 0;
+volatile uint32_t ai_init_after = 0;
 
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
@@ -73,6 +77,43 @@ void app_init(){
 //    		error++;
 //    	}
     }
+
+    volatile uint8_t *ai_input;
+    volatile uint8_t *ai_output;
+    volatile uint32_t ai_input_size;
+    volatile uint32_t ai_output_size;
+
+    AI_Status_TypeDef status = AI_Init();
+
+    if (status != AI_STATUS_OK) {
+        while (1) {
+        }
+    }
+
+    ai_input = AI_GetInputBuffer();
+    ai_output = AI_GetOutputBuffer();
+
+    ai_input_size = AI_GetInputSize();
+    ai_output_size = AI_GetOutputSize();
+
+    uint8_t *input = AI_GetInputBuffer();
+
+    if (input == NULL) {
+        while (1) {
+        }
+    }
+
+    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
+        input[i] = (uint8_t)i;
+    }
+
+    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
+        if (input[i] != (uint8_t)i) {
+            while (1) {
+            }
+        }
+    }
+
 
     /* --- Scheduler --- */
     SCHEDULER_System_init();
