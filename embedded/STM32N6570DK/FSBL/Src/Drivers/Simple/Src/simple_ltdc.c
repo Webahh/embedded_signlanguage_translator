@@ -1,15 +1,20 @@
+#include <stdint.h>
+#include <stddef.h>
+
 #include "simple_ltdc.h"
 #include "simple_rcc.h"
 #include "simple_gpio.h"
 #include "simple_timer.h"
 #include "config.h"
-#include "stdlib.h"
 
-volatile uint8_t lcd_bg_buffer[DISPLAY_BUFFER_NB][LCD_BG_WIDTH * LCD_BG_HEIGHT * DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile uint8_t lcd_fg_buffer[NN_BUFFER_NB][LCD_FG_WIDTH * LCD_FG_HEIGHT * NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile int lcd_bg_buffer_disp_idx = 0;
+volatile uint8_t ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint8_t ltdc_fg_buffer[LTDC_NN_BUFFER_NB][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile int ltdc_bg_buffer_disp_idx = 0;
 
-static void LCD_ConfigGPIO(void){
+/**
+ * @brief Configure LTDC GPIO pins
+ */
+static void LTDC_ConfigGPIO(void){
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
     for (int i = 0; i < 6; i++)
         GPIO_Config(GPIOA, pa_pins[i], GPIO_LTDC_cfg);
@@ -38,7 +43,10 @@ static void LCD_ConfigGPIO(void){
     GPIO_Config(GPIOG, 13, GPIO_default_cfg);
 }
 
-static void LCD_PowerOn(void){
+/**
+ * @brief Power on the display panel
+ */
+static void LTDC_PowerOn(void){
     GPIO_BSRR_reset(GPIOE, 1);
     TIMER_Delay_ms(10);
     GPIO_BSRR_set(GPIOE, 1);
@@ -49,7 +57,10 @@ static void LCD_PowerOn(void){
     GPIO_BSRR_set(GPIOG, 13);
 }
 
-static void LCD_ConfigTiming(void){
+/**
+ * @brief Configure LTDC display timings
+ */
+static void LTDC_ConfigTiming(void){
     uint32_t hsync = 4U, hbp = 4U, hfp = 4U, width = 800U;
     uint32_t vsync = 4U, vbp = 4U, vfp = 4U, height = 480U;
 
@@ -66,59 +77,85 @@ static void LCD_ConfigTiming(void){
                  ((vsync + vbp + height + vfp - 1U) << LTDC_TWCR_TOTALH_Pos);
 }
 
-void LCD_Init(void){
+// ---- API ----
+
+void LTDC_Init(void){
     RCC_enable_LTDC_memory();
     RCC_config_LTDC_25MHz_clock();
 
-    LCD_ConfigGPIO();
-    LCD_PowerOn();
+    LTDC_ConfigGPIO();
+    LTDC_PowerOn();
 
     RCC_enable_LTDC();
     RCC_reset_LTDC();
 
     LTDC->GCR &= ~LTDC_GCR_LTDCEN;
 
-    LCD_ConfigTiming();
+    LTDC_ConfigTiming();
 
     LTDC->GCR &= ~(LTDC_GCR_HSPOL | LTDC_GCR_VSPOL);
 
-    LTDC->BCCR = 0x0; // Black Background
+    LTDC->BCCR = 0x0;
 
     LTDC->GCR |= LTDC_GCR_LTDCEN;
 }
 
-void LCD_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
+void LTDC_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
     while (!(LTDC->CDSR & LTDC_CDSR_VDES));
     while (LTDC->CDSR & LTDC_CDSR_VDES);
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
 }
 
-/* ---------------------------------------------------------------------------
- * private methods
- * --------------------------------------------------------------------------- */
-static uint16_t LCD_ARGBtoRGB565(uint32_t argb) {
+// ---- Private helpers ----
+
+/**
+ * @brief Convert ARGB8888 to RGB565
+ *
+ * @param [in] argb ARGB8888 colour value
+ * @return RGB565 pixel value
+ */
+static uint16_t LTDC_ARGBtoRGB565(uint32_t argb) {
     uint8_t r = (argb >> 16) & 0xFF;
     uint8_t g = (argb >> 8)  & 0xFF;
     uint8_t b = (argb)       & 0xFF;
     return (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
 }
 
-static uint32_t LCD_FPF_EncodeFPF0R(const LCD_Layer_FlexiblePixelFormat *f) {
-    return ((uint32_t)(f->red_len	& 0xF)  << LTDC_LxFPF0R_RLEN_Pos) |
-           ((uint32_t)(f->red_pos	& 0x1F) << LTDC_LxFPF0R_RPOS_Pos) |
+/**
+ * @brief Encode FPF0R register from flexible pixel format descriptor
+ *
+ * @param [in] f Flexible pixel format descriptor
+ * @return FPF0R register value
+ */
+static uint32_t LTDC_FPF_EncodeFPF0R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
+    return ((uint32_t)(f->red_len  & 0xF)  << LTDC_LxFPF0R_RLEN_Pos) |
+           ((uint32_t)(f->red_pos  & 0x1F) << LTDC_LxFPF0R_RPOS_Pos) |
            ((uint32_t)(f->alpha_len & 0xF)  << LTDC_LxFPF0R_ALEN_Pos) |
            ((uint32_t)(f->alpha_pos & 0x1F) << LTDC_LxFPF0R_APOS_Pos);
 }
 
-static int32_t LCD_FPF_EncodeFPF1R(const LCD_Layer_FlexiblePixelFormat *f) {
-    return ((uint32_t)(f->bytes_per_pixel 	& 0x7)  << LTDC_LxFPF1R_PSIZE_Pos) |
-           ((uint32_t)(f->blue_len			& 0xF)  << LTDC_LxFPF1R_BLEN_Pos) |
-           ((uint32_t)(f->blue_pos 			& 0x1F) << LTDC_LxFPF1R_BPOS_Pos) |
-           ((uint32_t)(f->green_len 		& 0xF)  << LTDC_LxFPF1R_GLEN_Pos) |
-           ((uint32_t)(f->green_pos 		& 0x1F) << LTDC_LxFPF1R_GPOS_Pos);
+/**
+ * @brief Encode FPF1R register from flexible pixel format descriptor
+ *
+ * @param [in] f Flexible pixel format descriptor
+ * @return FPF1R register value
+ */
+static int32_t LTDC_FPF_EncodeFPF1R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
+    return ((uint32_t)(f->bytes_per_pixel & 0x7)  << LTDC_LxFPF1R_PSIZE_Pos) |
+           ((uint32_t)(f->blue_len        & 0xF)  << LTDC_LxFPF1R_BLEN_Pos) |
+           ((uint32_t)(f->blue_pos        & 0x1F) << LTDC_LxFPF1R_BPOS_Pos) |
+           ((uint32_t)(f->green_len       & 0xF)  << LTDC_LxFPF1R_GLEN_Pos) |
+           ((uint32_t)(f->green_pos       & 0x1F) << LTDC_LxFPF1R_GPOS_Pos);
 }
 
-static uint32_t LCD_ARGBtoFlexible(uint32_t argb, const LCD_Layer_FlexiblePixelFormat *f) {
+/**
+ * @brief Convert ARGB8888 to flexible-format pixel value
+ *
+ * @param [in] argb ARGB8888 colour value
+ * @param [in] f    Flexible pixel format descriptor
+ * @return Pixel value encoded in the layer's flexible format
+ */
+static uint32_t LTDC_ARGBtoFlexible(uint32_t argb, const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
     uint32_t pixel = 0;
     if (f->alpha_len) {
         uint32_t v = ((argb >> 24) & 0xFF) >> (8 - f->alpha_len);
@@ -139,70 +176,80 @@ static uint32_t LCD_ARGBtoFlexible(uint32_t argb, const LCD_Layer_FlexiblePixelF
     return pixel;
 }
 
-/**
- * @ret ret > 0 -> Succesful
- * 	ret < 0 Unknown PF or PF_Flexible does not have a flexable reference
- */
-int LCD_BytesPerPixel(const LCD_LayerConfig *cfg) {
+LTDC_Status_TypeDef LTDC_BytesPerPixel(const LTDC_LayerConfig_TypeDef *cfg, int *bpp) {
     switch (cfg->pixel_format) {
+        case LTDC_PF_ARGB8888:
+        case LTDC_PF_ABGR8888:
+        case LTDC_PF_BGRA8888:
+        case LTDC_PF_RGBA8888:
+            *bpp = 4;
+            return LTDC_OK;
 
-    	case LCD_PF_ARGB8888:
-    	case LCD_PF_ABGR8888:
-    	case LCD_PF_BGRA8888:
-    	case LCD_PF_RGBA8888:
-    		return 4;
+        case LTDC_PF_RGB888:
+            *bpp = 3;
+            return LTDC_OK;
 
-        case LCD_PF_RGB888:
-            return 3;
+        case LTDC_PF_RGB565:
+        case LTDC_PF_BGR565:
+            *bpp = 2;
+            return LTDC_OK;
 
-        case LCD_PF_RGB565:
-        case LCD_PF_BGR565:
-            return 2;
-
-        case LCD_PF_Flexible: {
-        	if(cfg->flexible_fmt != NULL) {
-        		return cfg->flexible_fmt->bytes_per_pixel;
-        	}
-        	return -1;
+        case LTDC_PF_Flexible: {
+            if (cfg->flexible_fmt != NULL) {
+                *bpp = cfg->flexible_fmt->bytes_per_pixel;
+                return LTDC_OK;
+            }
+            return LTDC_ERROR;
         }
         default:
-            return -1;
+            return LTDC_ERROR;
     }
 }
 
-uint32_t LCD_ColorToPixel(const LCD_LayerConfig *cfg, uint32_t color) {
-    if (cfg->pixel_format == LCD_PF_Flexible && cfg->flexible_fmt != NULL)
-        return LCD_ARGBtoFlexible(color, cfg->flexible_fmt);
-    if (cfg->pixel_format == LCD_PF_RGB565 || cfg->pixel_format == LCD_PF_BGR565)
-        return LCD_ARGBtoRGB565(color);
-    if (cfg->pixel_format == LCD_PF_RGB888)
-        return ((color >> 16) & 0xFF) | (((color >> 8) & 0xFF) << 8) | ((color & 0xFF) << 16);
-    return color | 0xFF000000;
+LTDC_Status_TypeDef LTDC_ColorToPixel(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color, uint32_t *pixel) {
+    if (cfg->pixel_format == LTDC_PF_Flexible && cfg->flexible_fmt != NULL) {
+        *pixel = LTDC_ARGBtoFlexible(color, cfg->flexible_fmt);
+        return LTDC_OK;
+    }
+    if (cfg->pixel_format == LTDC_PF_RGB565 || cfg->pixel_format == LTDC_PF_BGR565) {
+        *pixel = LTDC_ARGBtoRGB565(color);
+        return LTDC_OK;
+    }
+    if (cfg->pixel_format == LTDC_PF_RGB888) {
+        *pixel = ((color >> 16) & 0xFF) | (((color >> 8) & 0xFF) << 8) | ((color & 0xFF) << 16);
+        return LTDC_OK;
+    }
+    *pixel = color | 0xFF000000;
+    return LTDC_OK;
 }
 
-static void LCD_ConfigLayer_PixelFormat(const LCD_LayerConfig *cfg){
-    /* Flexible pixel format — requires non-NULL flexible_fmt descriptor */
-    if (cfg->pixel_format == LCD_PF_Flexible) {
+/**
+ * @brief Configure the pixel format for a single LTDC layer
+ *
+ * @param [in] cfg Layer configuration
+ */
+static void LTDC_ConfigLayer_PixelFormat(const LTDC_LayerConfig_TypeDef *cfg){
+    if (cfg->pixel_format == LTDC_PF_Flexible) {
         if (cfg->flexible_fmt != NULL) {
             cfg->regs->PFCR  = 0b111;
-            cfg->regs->FPF0R = LCD_FPF_EncodeFPF0R(cfg->flexible_fmt);
-            cfg->regs->FPF1R = LCD_FPF_EncodeFPF1R(cfg->flexible_fmt);
+            cfg->regs->FPF0R = LTDC_FPF_EncodeFPF0R(cfg->flexible_fmt);
+            cfg->regs->FPF1R = LTDC_FPF_EncodeFPF1R(cfg->flexible_fmt);
         }
         return;
     }
 
-    /* Standard predefined formats */
     cfg->regs->PFCR  = (uint32_t)cfg->pixel_format;
     cfg->regs->FPF0R = 0U;
     cfg->regs->FPF1R = 0U;
 }
 
-void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
+void LTDC_ConfigLayer(const LTDC_LayerConfig_TypeDef *cfg){
     uint32_t hsync = 4U, hbp = 4U, vsync = 4U, vbp = 4U;
-    uint32_t bpp = LCD_BytesPerPixel(cfg);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
 
-    uint32_t buf_pitch = cfg->buf_width * bpp;
-    uint32_t disp_pitch = cfg->width * bpp;
+    uint32_t buf_pitch = cfg->buf_width * (uint32_t)bpp;
+    uint32_t disp_pitch = cfg->width * (uint32_t)bpp;
 
     cfg->regs->CR = 0U;
 
@@ -232,12 +279,11 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
         ((vsync + vbp + cfg->y) << LTDC_LxWVPCR_WVSTPOS_Pos) |
         ((vsync + vbp + cfg->y + cfg->height - 1U) << LTDC_LxWVPCR_WVSPPOS_Pos);
 
-    LCD_ConfigLayer_PixelFormat(cfg);
+    LTDC_ConfigLayer_PixelFormat(cfg);
 
     cfg->regs->CACR = cfg->const_alpha;
     cfg->regs->DCCR = cfg->default_color;
 
-    // BFCR
     if (cfg->per_pixel_alpha){
         cfg->regs->BFCR |=
            (6U << LTDC_LxBFCR_BF1_Pos) |
@@ -263,9 +309,11 @@ void LCD_ConfigLayer(const LCD_LayerConfig *cfg){
     while (LTDC->SRCR & LTDC_SRCR_IMR);
 }
 
-void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
-    uint32_t pixel = LCD_ColorToPixel(cfg, color);
-    int bpp = LCD_BytesPerPixel(cfg);
+void LTDC_FillLayer(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
+    uint32_t pixel;
+    LTDC_ColorToPixel(cfg, color, &pixel);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
     uint32_t n = (uint32_t)cfg->buf_width * cfg->height;
 
     if (bpp == 2) {
@@ -286,10 +334,13 @@ void LCD_FillLayer(const LCD_LayerConfig *cfg, uint32_t color){
     }
 }
 
-void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t color2) {
-    uint32_t p1 = LCD_ColorToPixel(cfg, color1);
-    uint32_t p2 = LCD_ColorToPixel(cfg, color2);
-    int bpp = LCD_BytesPerPixel(cfg);
+void LTDC_FillLayer2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2) {
+    uint32_t p1;
+    LTDC_ColorToPixel(cfg, color1, &p1);
+    uint32_t p2;
+    LTDC_ColorToPixel(cfg, color2, &p2);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
     uint32_t half = cfg->width / 2;
 
     if (bpp == 2) {
@@ -315,8 +366,9 @@ void LCD_FillLayer2Sides(const LCD_LayerConfig *cfg, uint32_t color1, uint32_t c
     }
 }
 
-void LCD_BlitImage(const LCD_LayerConfig *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
-    int bpp = LCD_BytesPerPixel(cfg);
+void LTDC_BlitImage(const LTDC_LayerConfig_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
 
     if (bpp == 2) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
@@ -344,17 +396,15 @@ void LCD_BlitImage(const LCD_LayerConfig *cfg, const void *img, uint16_t img_w, 
     }
 }
 
-void LCD_ConfigLayer1(void){
-    LCD_ConfigLayer(&LCD_Layer1Config);
+void LTDC_ConfigLayer1(void){
+    LTDC_ConfigLayer(&LTDC_Layer1Config);
 }
 
-void LCD_ConfigLayer2(void){
-    LCD_ConfigLayer(&LCD_Layer2Config);
+void LTDC_ConfigLayer2(void){
+    LTDC_ConfigLayer(&LTDC_Layer2Config);
 }
 
-void LCD_UpdateLayerAddress(const LCD_LayerConfig *cfg)
-{
+void LTDC_UpdateLayerAddress(const LTDC_LayerConfig_TypeDef *cfg){
     cfg->regs->CFBAR = (uint32_t)cfg->fb;
     LTDC->SRCR = LTDC_SRCR_VBR;
 }
-

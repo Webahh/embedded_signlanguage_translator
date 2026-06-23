@@ -70,8 +70,8 @@ CAM_Status CAM_Init(CAM_Handle *h)
     DCMIPP_Pipe_cfg_TypeDef pipe_cfg;
     DCMIPP_IPPlug_cfg_TypeDef ipplug_cfg;
 
-    h->display_buf      = (uint32_t)&lcd_bg_buffer[0];
-    h->nn_buf           = (uint32_t)&lcd_fg_buffer;
+    h->display_buf      = (uint32_t)&ltdc_bg_buffer[0];
+    h->nn_buf           = (uint32_t)&ltdc_fg_buffer;
     h->initialized      = 0;
 
     _HwInit();
@@ -140,22 +140,22 @@ CAM_Status CAM_DisplayPipe_Start(CAM_Handle *h)
 {
     DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, 0, 0);
 
-    lcd_bg_buffer_disp_idx				= 1;
-    LCD_Layer1Config.pixel_format 		= LCD_PF_RGB888;
-    LCD_Layer1Config.fb            		= &lcd_bg_buffer[lcd_bg_buffer_disp_idx];
-    LCD_ConfigLayer1();
+    ltdc_bg_buffer_disp_idx				= 1;
+    LTDC_Layer1Config.pixel_format 		= LTDC_PF_RGB888;
+    LTDC_Layer1Config.fb            		= &ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
+    LTDC_ConfigLayer1();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }
 
 CAM_Status CAM_NNPipe_Start(CAM_Handle *h)
 {
-    DCMIPP_Pipe_Start(CAM_PIPE_NN, (uint32_t)&lcd_fg_buffer[0], 0);
+    DCMIPP_Pipe_Start(CAM_PIPE_NN, (uint32_t)&ltdc_fg_buffer[0], 0);
 
-    LCD_Layer2Config.fb 				= lcd_fg_buffer[1];
-    LCD_Layer2Config.pixel_format 		= LCD_PF_RGB888;
-    LCD_Layer2Config.per_pixel_alpha 	= 0;
-    LCD_ConfigLayer2();
+    LTDC_Layer2Config.fb 				= ltdc_fg_buffer[1];
+    LTDC_Layer2Config.pixel_format 		= LTDC_PF_RGB888;
+    LTDC_Layer2Config.per_pixel_alpha 	= 0;
+    LTDC_ConfigLayer2();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }

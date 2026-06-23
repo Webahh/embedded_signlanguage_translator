@@ -33,7 +33,7 @@ static void TEXT_Pixel_write(volatile uint8_t *fb, uint32_t off, uint32_t pixel,
 // API
 // -------------------------------------------------------------------------
 
-void TEXT_Char_draw(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, uint32_t fg_color){
+void TEXT_Char_draw(const LTDC_LayerConfig_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color){
     // Bounds-check character against font table
     if (c < FONT_8X16_FIRST_CHAR || c > FONT_8X16_LAST_CHAR) return;
 
@@ -44,8 +44,10 @@ void TEXT_Char_draw(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, ui
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = LCD_BytesPerPixel(cfg);
-    uint32_t pixel = LCD_ColorToPixel(cfg, fg_color);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
+    uint32_t pixel;
+    LTDC_ColorToPixel(cfg, fg_color, &pixel);
 
     // Rasterise glyph bitmap row by row, column by column
     for (uint8_t row = 0; row < FONT_8X16_HEIGHT; row++) {
@@ -65,7 +67,7 @@ void TEXT_Char_draw(const LCD_LayerConfig *cfg, char c, int16_t x, int16_t y, ui
     }
 }
 
-void TEXT_String_draw(const LCD_LayerConfig *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color){
+void TEXT_String_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color){
     int16_t cx = x;
 
     while (*str) {
@@ -82,15 +84,18 @@ void TEXT_String_draw(const LCD_LayerConfig *cfg, const char *str, int16_t x, in
     }
 }
 
-void TEXT_StringBg_draw(const LCD_LayerConfig *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color){
+void TEXT_StringBg_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color){
     volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
     uint16_t buf_width = cfg->buf_width;
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = LCD_BytesPerPixel(cfg);
-    uint32_t fg = LCD_ColorToPixel(cfg, fg_color);
-    uint32_t bg = LCD_ColorToPixel(cfg, bg_color);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
+    uint32_t fg;
+    LTDC_ColorToPixel(cfg, fg_color, &fg);
+    uint32_t bg;
+    LTDC_ColorToPixel(cfg, bg_color, &bg);
 
     int16_t cx = x;
     while (*str) {
@@ -126,7 +131,7 @@ void TEXT_StringBg_draw(const LCD_LayerConfig *cfg, const char *str, int16_t x, 
     }
 }
 
-void TEXT_StringScaled_draw(const LCD_LayerConfig *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale){
+void TEXT_StringScaled_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale){
     // Scale 0 or 1 falls back to unscaled rendering
     if (scale == 0 || scale == 1) {
         TEXT_String_draw(cfg, str, x, y, fg_color);
@@ -138,8 +143,10 @@ void TEXT_StringScaled_draw(const LCD_LayerConfig *cfg, const char *str, int16_t
     uint16_t height = cfg->height;
     uint16_t width = cfg->width;
 
-    int bpp = LCD_BytesPerPixel(cfg);
-    uint32_t pixel = LCD_ColorToPixel(cfg, fg_color);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
+    uint32_t pixel;
+    LTDC_ColorToPixel(cfg, fg_color, &pixel);
 
     int16_t cx = x;
     while (*str) {

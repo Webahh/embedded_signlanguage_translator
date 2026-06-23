@@ -51,7 +51,7 @@ void vSystemTimeTask(void) {
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	TEXT_StringBg_draw(&LCD_Layer2Config, str, 10, 10, LCD_COLOR_GREEN, LCD_COLOR_WHITE);
+	TEXT_StringBg_draw(&LTDC_Layer2Config, str, 10, 10, LTDC_COLOR_GREEN, LTDC_COLOR_WHITE);
 }
 
 void vLEDTask(void) {
@@ -76,7 +76,7 @@ void vBackgroundTask(void) {
     uint8_t g = (uint8_t)(((uint32_t)bg_colors[bg_seg_idx][1] * (1000 - t) + (uint32_t)bg_colors[next_idx][1] * t) / 1000);
     uint8_t b = (uint8_t)(((uint32_t)bg_colors[bg_seg_idx][2] * (1000 - t) + (uint32_t)bg_colors[next_idx][2] * t) / 1000);
 
-    LCD_SetBackgroundColor(r, g, b);
+    LTDC_SetBackgroundColor(r, g, b);
 }
 
 void vAETask(void){
