@@ -189,7 +189,7 @@ static const struct _regval mirrorflip_mirror_regs[] = {
  * @retval IMX335_ERROR on I2C error
  */
 static IMX335_Status_TypeDef _write_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t val){
-    return I2C_Mem_Write(h->i2c, h->addr, reg, &val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
+    return I2C_Mem_write(h->i2c, h->addr, reg, &val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
 }
 
 /**
@@ -213,7 +213,7 @@ static void _write_reg24(IMX335_Handle_TypeDef *h, uint16_t reg, uint32_t value)
  * @retval IMX335_ERROR on I2C error
  */
 static IMX335_Status_TypeDef _read_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t *val){
-    return I2C_Mem_Read(h->i2c, h->addr, reg, val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
+    return I2C_Mem_read(h->i2c, h->addr, reg, val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
 }
 
 /**
@@ -399,7 +399,7 @@ IMX335_Status_TypeDef IMX335_ReadID(IMX335_Handle_TypeDef *h, uint32_t *id){
         return IMX335_ERROR;
     }
 
-    if (I2C_Mem_Read(h->i2c, h->addr, IMX335_REG_ID, &id_byte, 1) != I2C_OK) {
+    if (I2C_Mem_read(h->i2c, h->addr, IMX335_REG_ID, &id_byte, 1) != I2C_OK) {
         return IMX335_ERROR;
     }
 
