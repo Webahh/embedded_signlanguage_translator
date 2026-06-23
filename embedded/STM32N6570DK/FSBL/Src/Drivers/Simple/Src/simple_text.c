@@ -8,6 +8,14 @@
 // Private
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Sets specific Pixel in Framebuffer
+ *
+ * @param [in] fb		| Framebuffer of Layer to write to
+ * @param [in] off		| Offset within framebuffer
+ * @param [in] pixel	| Pixel color to write
+ * @param [in] bbp		| Bytes Per Pixel to write
+ */
 static void TEXT_Pixel_write(volatile uint8_t *fb, uint32_t off, uint32_t pixel, int bpp){
     // Dispatch by bytes-per-pixel for 16, 24, or 32-bit framebuffer
     if (bpp == 2) {
