@@ -7,6 +7,9 @@
 
 #include "config.h"
 
+//=========================================
+// GPIO
+//=========================================
 const GPIO_cfg_TypeDef GPIO_default_cfg = {
 		.mode  	= GPIO_MODE_OUTPUT,
 		.otyp 	= GPIO_OTYPE_PP,
@@ -39,6 +42,9 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
 
+//=========================================
+// RCC
+//=========================================
 const RCC_PLL_cfg_TypeDef RCC_PLL_cfg[4] = {
     { .CFGR1 = 0x201900, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
     { .CFGR1 = 0x807D00, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
@@ -57,50 +63,58 @@ const RCC_IC_cfg_TypeDef RCC_IC_cfg[20] = {
     [17] = { .CFGR = 0x00270000 },  /* IC18: PLL1 / 40 - CSI */
 };
 
+
+//=========================================
+// XSPI
+//=========================================
 const XSPI_cfg_TypeDef XSPI_psram_cfg = {
-		.memory_type = 6,
-		.devsize = 24,
-		.chipselect_high_time = 4,
-		.prescaler = 3,
-		.chipselect_boundary = 11,
-		.maxtran_value = 0,
-		.refresh_cycles = 129
+    .memory_type           = 6,
+    .devsize               = 24,
+    .chipselect_high_time  = 4,
+    .prescaler             = 3,
+    .chipselect_boundary   = 11,
+    .maxtran_value         = 0,
+    .refresh_cycles        = 129
 };
 
 const XSPI_cfg_TypeDef XSPI_nor_cfg = {
-		.memory_type = 1,
-		.devsize = 24,
-		.chipselect_high_time = 1,
-		.prescaler = 0,
-		.chipselect_boundary = 0,
-		.maxtran_value = 0,
-		.refresh_cycles = 0
+    .memory_type           = 1,
+    .devsize               = 24,
+    .chipselect_high_time  = 1,
+    .prescaler             = 0,
+    .chipselect_boundary   = 0,
+    .maxtran_value         = 0,
+    .refresh_cycles        = 0
 };
 
 const XSPI_CCR_cfg_TypeDef XSPI_write_reg_cfg = {
-		.instruction_mode 	= 4,
-		.instruction_dtr  	= 0,
-		.instruction_size	= 0,
-		.address_mode		= 4,
-		.address_dtr		= 1,
-		.address_size		= 3,
-		.data_mode			= 4,
-		.data_dtr			= 1,
-		.data_qse			= 0
+    .instruction_mode  = 4,
+    .instruction_dtr   = 0,
+    .instruction_size  = 0,
+    .address_mode      = 4,
+    .address_dtr       = 1,
+    .address_size      = 3,
+    .data_mode         = 4,
+    .data_dtr          = 1,
+    .data_qse          = 0
 };
 
 const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg = {
-		.instruction_mode 	= 4,
-		.instruction_dtr  	= 0,
-		.instruction_size	= 0,
-		.address_mode		= 4,
-		.address_dtr		= 1,
-		.address_size		= 3,
-		.data_mode			= 5,
-		.data_dtr			= 1,
-		.data_qse			= 1
+    .instruction_mode  = 4,
+    .instruction_dtr   = 0,
+    .instruction_size  = 0,
+    .address_mode      = 4,
+    .address_dtr       = 1,
+    .address_size      = 3,
+    .data_mode         = 5,
+    .data_dtr          = 1,
+    .data_qse          = 1
 };
 
+
+//=========================================
+// CSI
+//=========================================
 const CSI_cfg_TypeDef CSI_cfg = {
 		.num_lanes 			= CSI_TWO_DATA_LANES,
 		.data_lane_mapping  = CSI_DATA_LANES_PHYSICAL,
@@ -110,6 +124,9 @@ const CSI_cfg_TypeDef CSI_cfg = {
 		.data_type			= 0x2B
 };
 
+//=========================================
+// DCMIPP
+//=========================================
 const DCMIPP_Pipe_cfg_TypeDef DCMIPP_display_pipe_cfg = {
 		.output_width		= CAM_DISPLAY_WIDTH,
 		.output_height		= CAM_DISPLAY_HEIGHT,
@@ -165,6 +182,10 @@ const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg = {
 
 CAM_Handle h_cam;
 
+
+//=========================================
+// LCD Layer
+//=========================================
 LCD_LayerConfig LCD_Layer1Config = {
     .regs            = LTDC_Layer1,
     .fb              = lcd_bg_buffer[0],

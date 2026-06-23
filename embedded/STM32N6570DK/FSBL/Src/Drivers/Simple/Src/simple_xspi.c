@@ -1,9 +1,8 @@
 #include <stdint.h>
 
-#include "simple_xspi.h"
-
 #include "stm32n657xx.h"
 
+#include "simple_xspi.h"
 #include "simple_rcc.h"
 #include "simple_gpio.h"
 #include "simple_timer.h"
@@ -42,6 +41,12 @@
 // Private
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Set XSPI prescaler with busy-wait timeout guards
+ *
+ * @param [in] xspi      XSPI peripheral instance
+ * @param [in] prescaler Prescaler divider value
+ */
 static void XSPI_prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
     uint32_t timeout = _TIMEOUT;
 
@@ -64,10 +69,12 @@ static void XSPI_prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
     xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
 }
 
-/*
- * XSPI1 (Port 1) → PSRAM (APS256XX)
- * Pins: GPIOO{0,2,3,4} = CLK, IO3, DQS0, NCS1
- *       GPIOP{0..15}   = IO0-IO15
+/**
+ * @brief Configure XSPI1 GPIO pins for PSRAM (APS256XX)
+ *
+ * XSPI1 pin mapping:
+ *   GPIOO{0,2,3,4} = CLK, IO3, DQS0, NCS1
+ *   GPIOP{0..15}   = IO0-IO15
  */
 static void XSPI_PSRAM_gpio_init(void){
     RCC_enable_GPIO(GPIOO);
@@ -84,10 +91,12 @@ static void XSPI_PSRAM_gpio_init(void){
     }
 }
 
-/*
- * XSPI2 (Port 2) → NOR Flash (MX66UW1G45G)
- * All pins on GPION{0..11} with AF9:
- *   PN0=DQS0, PN1=NCS1, PN2-5=IO0-3, PN6=CLK, PN7=NCLK, PN8-11=IO4-7
+/**
+ * @brief Configure XSPI2 GPIO pins for NOR Flash (MX66UW1G45G)
+ *
+ * XSPI2 pin mapping (all GPION, AF9):
+ *   PN0=DQS0, PN1=NCS1, PN2-5=IO0-3, PN6=CLK,
+ *   PN7=NCLK, PN8-11=IO4-7
  */
 static void XSPI_NOR_gpio_init(void){
     RCC_enable_GPIO(GPION);
@@ -96,6 +105,12 @@ static void XSPI_NOR_gpio_init(void){
     }
 }
 
+/**
+ * @brief Program XSPI device configuration registers
+ *
+ * @param [in] xspi XSPI peripheral instance
+ * @param [in] cfg  Device configuration parameters
+ */
 static void XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
     xspi->DCR1 = _FIELD(DCR1, MTYP,     cfg.memory_type)
                | _FIELD(DCR1, DEVSIZE,  cfg.devsize)
@@ -109,6 +124,12 @@ static void XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
     xspi->TCR = 0;
 }
 
+/**
+ * @brief Build a CCR register value from a configuration struct
+ *
+ * @param [in]  cfg    CCR configuration parameters
+ * @param [out] result Built CCR register value
+ */
 static void XSPI_ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
     *result = _FIELD(CCR, IMODE,  cfg.instruction_mode)
             | _FIELD(CCR, IDTR,   cfg.instruction_dtr)
@@ -121,9 +142,17 @@ static void XSPI_ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
             | _FIELD(CCR, DQSE,   cfg.data_qse);
 }
 
-/*
- * Indirect register write for any XSPI instance.
+/**
+ * @brief Indirect register write to an XSPI device
+ *
  * Sends 1 byte via octal DTR protocol: 8-bit cmd + 32-bit addr + 8-bit data
+ *
+ * @param [in] xspi     XSPI peripheral instance
+ * @param [in] reg_addr Target register address
+ * @param [in] value    Value to write
+ *
+ * @retval XSPI_OK      Write successful
+ * @retval XSPI_TIMEOUT Busy or transfer wait timed out
  */
 static XSPI_Status_TypeDef XSPI_register_write(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
     uint32_t timeout;
@@ -161,22 +190,29 @@ static XSPI_Status_TypeDef XSPI_register_write(XSPI_TypeDef *xspi, uint8_t reg_a
     return XSPI_OK;
 }
 
+/**
+ * @brief Write PSRAM mode register configuration on XSPI1
+ */
 static void XSPI_PSRAM_config_write(void){
     XSPI_register_write(XSPI1, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
     XSPI_register_write(XSPI1, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
     XSPI_register_write(XSPI1, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
 }
 
+/**
+ * @brief Write NOR configuration to registers on XSPI2
+ */
 static void XSPI_NOR_config_write(void){
     XSPI_register_write(XSPI2, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
     XSPI_register_write(XSPI2, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
     XSPI_register_write(XSPI2, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
 }
 
-/*
- * Enable memory-mapped reads/writes on XSPI1 (PSRAM).
- * Configures read (CCR/IR/TCR) and write (WCCR/WIR/WTCR) channel opcodes
- * for octal-DTR protocol, then sets FMODE=3 (memory-mapped).
+/**
+ * @brief Enable memory-mapped mode on XSPI1 (PSRAM)
+ *
+ * Configures read (CCR/IR/TCR) and write (WCCR/WIR/WTCR) channel
+ * opcodes for octal-DTR protocol, then sets FMODE=3 (memory-mapped).
  */
 static void XSPI_PSRAM_memoryMapped_enable(void){
     uint32_t ccr_val;
@@ -198,8 +234,9 @@ static void XSPI_PSRAM_memoryMapped_enable(void){
               | XSPI_CR_EN;
 }
 
-/*
- * Enable memory-mapped mode for NOR Flash on XSPI2.
+/**
+ * @brief Enable memory-mapped mode on XSPI2 (NOR Flash)
+ *
  * Sets up automatic polling (PSMKR/PIR), read channel (CCR/IR/TCR),
  * write channel (WCCR/WIR), then switches to memory-mapped mode.
  */

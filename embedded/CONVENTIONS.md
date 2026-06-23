@@ -123,6 +123,7 @@ static const uint8_t    _lookup[3] = { 10, 20, 30 };
 
 - `snake_case` for variable names
 - Static variables have the prefix `_`
+- Documentation style identical to HEADER without Special return type type
 
 ### Functions
 
