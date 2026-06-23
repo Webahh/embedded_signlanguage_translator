@@ -11,10 +11,10 @@
 #include "simple_camera.h"
 #include <stdint.h>
 
-void AE_process(CAM_Handle* h);
+void AE_process(CAM_Handle_TypeDef* h);
 void AE_Init(uint32_t start_exposure_us);
 void AE_OnFrameStats(void);
-void AE_Process(CAM_Handle *h);
+void AE_Process(CAM_Handle_TypeDef *h);
 
 uint32_t AE_GetExposureUs(void);
 uint32_t AE_GetBrightness(void);

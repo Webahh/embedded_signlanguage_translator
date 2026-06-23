@@ -170,7 +170,7 @@ void AE_OnFrameStats(void){
     ae_pending = 1U;
 }
 
-void AE_Process(CAM_Handle *h){
+void AE_Process(CAM_Handle_TypeDef *h){
     if (!h) {
         return;
     }

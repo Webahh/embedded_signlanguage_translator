@@ -180,7 +180,7 @@ const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg = {
 		.dpreg_end			= 0x27F
 };
 
-CAM_Handle h_cam;
+CAM_Handle_TypeDef h_cam;
 
 
 //=========================================

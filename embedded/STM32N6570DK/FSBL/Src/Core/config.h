@@ -36,7 +36,7 @@ extern const DCMIPP_Pipe_cfg_TypeDef DCMIPP_nn_pipe_cfg;
 extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client2_cfg;
 extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg;
 
-extern CAM_Handle h_cam;
+extern CAM_Handle_TypeDef h_cam;
 extern LTDC_LayerConfig_TypeDef LTDC_Layer1Config;
 extern LTDC_LayerConfig_TypeDef LTDC_Layer2Config;
 
