@@ -123,8 +123,10 @@ CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
         return CAM_ERROR_INIT;
     }
 
+    uint32_t ae_exposure;
     AE_Init(10000);
-    IMX335_SetExposureUs(&h->imx335, AE_GetExposureUs());
+    AE_GetExposureUs(&ae_exposure);
+    IMX335_SetExposureUs(&h->imx335, ae_exposure);
 
     h->initialized = 1;
     return CAM_OK;
