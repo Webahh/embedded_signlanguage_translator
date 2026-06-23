@@ -114,7 +114,7 @@ static void SCHEDULER_InitTaskStack(int i){
  */
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
-		__WFI();
+		__NOP();
 	}
 }
 
@@ -134,7 +134,7 @@ void SCHEDULER_Task_exit(void){
 	__enable_irq();
 
 	while (1) {
-		__WFI();
+		__NOP();
 	}
 }
 
@@ -469,7 +469,7 @@ void SCHEDULER_Tasks_run(void){
 	__asm volatile ("SVC #0" : : : "memory");
 
 	while (1) {
-		__WFI();
+		__NOP();
 	}
 }
 
@@ -553,7 +553,7 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 
 	__BKPT(0);
 
-	while (1) { __WFI(); }
+	while (1) { __NOP(); }
 }
 
 // -------------------------------------------------------------------------

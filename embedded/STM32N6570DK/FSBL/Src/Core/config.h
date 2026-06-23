@@ -20,11 +20,15 @@
 #include "simple_xspi.h"
 #include "simple_dcmipp.h"
 #include "simple_csi.h"
+#include "simple_debug_log.h"
 
 extern const GPIO_cfg_TypeDef GPIO_default_cfg;
 extern const GPIO_cfg_TypeDef GPIO_LTDC_cfg;
 extern const GPIO_cfg_TypeDef GPIO_I2C_cfg;
 extern const GPIO_cfg_TypeDef GPIO_XSPI_cfg;
+extern const GPIO_cfg_TypeDef GPIO_USART_debug_cfg;
+
+extern const Debug_log_cfg_TypeDef dbg_cfg;
 
 extern const RCC_PLL_cfg_TypeDef RCC_PLL_cfg[4];
 extern const RCC_IC_cfg_TypeDef RCC_IC_cfg[20];

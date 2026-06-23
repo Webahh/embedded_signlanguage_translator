@@ -42,9 +42,21 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
 
-//=========================================
-// RCC
-//=========================================
+const GPIO_cfg_TypeDef GPIO_USART_debug_cfg = {
+		.mode 	= GPIO_MODE_AF,
+		.otyp	= GPIO_OTYPE_PP,
+		.pupdr	= GPIO_PUPD_UP,
+		.af		= GPIO_AF_USART,
+		.speed	= GPIO_SPEED_VERY_HIGH
+};
+
+const Debug_log_cfg_TypeDef dbg_cfg = {
+    .usart = USART1,
+	.gpio_cfg = GPIO_USART_debug_cfg,
+    .baudrate = 9600,
+    .enabled = 1
+};
+
 const RCC_PLL_cfg_TypeDef RCC_PLL_cfg[4] = {
     { .CFGR1 = 0x201900, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
     { .CFGR1 = 0x807D00, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },

@@ -45,7 +45,9 @@ void app_init(){
 	RIFSC_Config();
 	RCC_config_PWR();
 	RCC_BoardClock_Config();
-	TIMER_Delay_init();
+	debug_init(dbg_cfg);
+	delay_init();
+	DEBUG_PRINTF("Lets debug!\r\n");
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
