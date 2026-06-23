@@ -21,9 +21,9 @@
 
 /**
  * @brief  Wait for an ISR flag to be set or cleared
- * @param [in] I2CX  I2C instance
- * @param [in] flag  ISR bit to test (e.g. I2C_ISR_TXIS)
- * @param [in] set   1 = wait until flag is set, 0 = wait until flag is cleared
+ * @param [in] I2CX  | I2C instance
+ * @param [in] flag  | ISR bit to test (e.g. I2C_ISR_TXIS)
+ * @param [in] set   | 1 = wait until flag is set, 0 = wait until flag is cleared
  * @retval I2C_OK      Flag reached expected state
  * @retval I2C_NACK    Slave NACK detected
  * @retval I2C_ERROR   Arbitration lost, bus error, or overrun
@@ -71,7 +71,7 @@ static I2C_Status_TypeDef I2C_WaitFlag(I2C_TypeDef *I2CX, uint32_t flag, uint8_t
 
 /**
  * @brief  Wait until the I2C bus is not busy (BUSY flag cleared)
- * @param [in] I2CX I2C instance
+ * @param [in] I2CX | I2C instance
  * @retval I2C_OK      Bus became free
  * @retval I2C_TIMEOUT Bus stayed busy
  */
