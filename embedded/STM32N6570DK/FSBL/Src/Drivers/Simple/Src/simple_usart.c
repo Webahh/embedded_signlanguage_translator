@@ -24,7 +24,7 @@ void USART_Config(USART_TypeDef* USARTX, int baudrate, int use_irq, GPIO_cfg_Typ
 
 	RCC_enable_USART(USARTX);
 	_ConfigGPIO(USARTX, cfg);
-	periph_clk = RCC_GetUSARTClock(USARTX);
+	RCC_Clock_USART_get(USARTX, &periph_clk);
 
 	USARTX->CR1 = 0;
 	USARTX->CR2 = 0;

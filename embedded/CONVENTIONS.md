@@ -2,6 +2,27 @@
 
 ## HEADER (`.h`)
 
+### File Header Block
+
+```c
+/**
+ * @file    module.h
+ * @author  Name
+ * @date    2026-06-23
+ * @brief   One-line module description
+ *
+ * Usage
+ * -----
+ * 1. Module_Init()          – initialise hardware
+ * 2. Module_Config(...)     – apply configuration
+ * 3. Module_Start()         – begin operation
+ */
+```
+
+- `@author`, `@date`, and `@brief` are mandatory.
+- The **Usage** section is mandatory and must list the functions that must be
+  called before others, in the required order
+
 ### Guard
 
 ```c
@@ -112,7 +133,7 @@ extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 ```
 
 - `UPPER_SNAKE_CASE`, prefixed by module: `LCD_BG_WIDTH`, `GPIO_MODE_OUTPUT`, `CAM_OK`
-- Private defines used in own Module
+- Private defines used in own Module start with `_` and omit the module prefix: `_TIMEOUT`, `_FIFO_THRESHOLD`
 
 ### Static / File-scope
 
@@ -123,6 +144,7 @@ static const uint8_t    _lookup[3] = { 10, 20, 30 };
 
 - `snake_case` for variable names
 - Static variables have the prefix `_`
+- Documentation style identical to HEADER without Special return type type
 
 ### Functions
 
@@ -164,6 +186,7 @@ const GPIO_cfg_TypeDef GPIO_LTDC_cfg = {
 
 - `//` for single-line / inline
 - `/* */` or `/** */` for block / Doxygen
+- Use `//` inline comments within complex methods to explain non-obvious steps, loop structure, or tricky logic
 - Two sections **Private** and **API** functions:
 
 ```c

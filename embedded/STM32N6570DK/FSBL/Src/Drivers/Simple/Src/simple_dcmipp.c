@@ -1,21 +1,25 @@
 /**
-  ******************************************************************************
-  * @file    simple_dcmipp.c
-  * @author  Groß
-  * @brief   Register-level DCMIPP + CSI-2 driver for STM32N6
-  *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
-  ******************************************************************************
-  */
+ * @file    simple_dcmipp.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level DCMIPP + CSI-2 driver header for STM32N6
+ *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
+ */
 
+#include <stdint.h>
 #include <stddef.h>
+
 #include "simple_dcmipp.h"
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
 
+// ---- Private ----
+
 static DCMIPP_TypeDef *_dcmipp = DCMIPP;
 
-void DCMIPP_Init(void)
-{
+// ---- API ----
+
+void DCMIPP_Init(void){
     RCC_config_DCMIPP_clock_IC17();
     RCC_enable_DCMIPP();
     RCC_reset_DCMIPP();
@@ -35,8 +39,7 @@ void DCMIPP_Init(void)
     NVIC_EnableIRQ(DCMIPP_IRQn);
 }
 
-void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type)
-{
+void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type){
     if (pipe == DCMIPP_PIPE0) {
         _dcmipp->P0FSCR = (data_type << DCMIPP_P0FSCR_DTIDA_Pos)
                        | (0UL << 16)
@@ -58,8 +61,7 @@ void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type)
     _dcmipp->CMCR |= DCMIPP_CMCR_INSEL;
 }
 
-void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch)
-{
+void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch){
     uint32_t pitch;
     DCMIPP_Pipe_cfg_TypeDef zero_conf = {0};
     volatile uint32_t *crstr, *crszr, *dsrtior, *dsszr, *dscr, *gmcr, *ppcr, *ppm0pr, *fctcr;
@@ -127,7 +129,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     *decr  = DCMIPP_P1DECR_ENABLE;
 
-    _dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;  // Rework to RGB COLOR Conversion static function!
+    _dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;
     _dcmipp->P1CCRR1 = 0x7fb0188;
     _dcmipp->P1CCRR2 = 0x77d;
     _dcmipp->P1CCGR1 = 0x1e8079a;
@@ -163,7 +165,6 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
     else
         *gmcr &= ~DCMIPP_P1GMCR_ENABLE;
 
-    /* --- Decimation (per-pipe: P1DECR for pipe1, P2DCCR for pipe2) --- */
     if (conf->enable_decimate) {
         *dccr = DCMIPP_P1DECR_ENABLE
               | (conf->decimate_h << DCMIPP_P1DECR_HDEC_Pos)
@@ -179,18 +180,16 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     if (out_pitch) *out_pitch = pitch;
 
-    if (pipe == DCMIPP_PIPE1){
-        DCMIPP->P1PPM0AR1 = (uint32_t)&lcd_bg_buffer[0];
-        DCMIPP->P1PPM0AR2 = (uint32_t)&lcd_bg_buffer[1];
-    } else if (pipe == DCMIPP_PIPE2){
-        DCMIPP->P2PPM0AR1 = (uint32_t)&lcd_fg_buffer[0];
-        DCMIPP->P2PPM0AR2 = (uint32_t)&lcd_fg_buffer[1];
+    if (pipe == DCMIPP_PIPE1) {
+        DCMIPP->P1PPM0AR1 = (uint32_t)&ltdc_bg_buffer[0];
+        DCMIPP->P1PPM0AR2 = (uint32_t)&ltdc_bg_buffer[1];
+    } else if (pipe == DCMIPP_PIPE2) {
+        DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_fg_buffer[0];
+        DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_fg_buffer[1];
     }
-
 }
 
-void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
-{
+void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode){
     (void)pipe;
     if (mode == DCMIPP_PIPE_SHARE_SAME) {
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEDIFF;
@@ -199,8 +198,7 @@ void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
     }
 }
 
-void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf)
-{
+void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf){
     if (!conf) return;
 
     _dcmipp->IPGR2 |= DCMIPP_IPGR2_PSTART;
@@ -227,16 +225,14 @@ void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf)
     _dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
 }
 
-void DCMIPP_Pipe_UpdateBufAddr(uint32_t pipe, uint32_t buf_addr)
-{
+void DCMIPP_Pipe_UpdateBufAddr(uint32_t pipe, uint32_t buf_addr){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1PPM0AR1 = buf_addr;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2PPM0AR1 = buf_addr;
 }
 
-void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type)
-{
+void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type){
     (void)pipe;
     _dcmipp->P1DMCR = bayer_type
                    | (2U << DCMIPP_P1DMCR_PEAK_Pos)
@@ -246,22 +242,19 @@ void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type)
                    | DCMIPP_P1DMCR_ENABLE;
 }
 
-void DCMIPP_Pipe_SetBlackLevel(uint32_t pipe, uint32_t blk_r, uint32_t blk_g, uint32_t blk_b)
-{
+void DCMIPP_Pipe_SetBlackLevel(uint32_t pipe, uint32_t blk_r, uint32_t blk_g, uint32_t blk_b){
     (void)pipe;
     _dcmipp->P1BLCCR = (blk_r << DCMIPP_P1BLCCR_BLCR_Pos)
                     | (blk_g << DCMIPP_P1BLCCR_BLCG_Pos)
                     | (blk_b << DCMIPP_P1BLCCR_BLCB_Pos);
 }
 
-void DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe)
-{
+void DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe){
     (void)pipe;
     _dcmipp->P1BLCCR |= DCMIPP_P1BLCCR_ENABLE;
 }
 
-void DCMIPP_ReduceSpurious(void)
-{
+void DCMIPP_ReduceSpurious(void){
     _dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
     _dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
     _dcmipp->P1IER |= DCMIPP_P1IER_LINEIE;
@@ -272,8 +265,7 @@ void DCMIPP_ReduceSpurious(void)
     _dcmipp->P2IER &= ~DCMIPP_P2IER_LINEIE;
 }
 
-void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
-{
+void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode){
     if (pipe == DCMIPP_PIPE1) {
         if (!(_dcmipp->P1PPCR & DCMIPP_P1PPCR_DBM)) {
             _dcmipp->P1PPM0AR1 = buf_addr;
@@ -299,8 +291,7 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
     }
 }
 
-void DCMIPP_Pipe_Stop(uint32_t pipe)
-{
+void DCMIPP_Pipe_Stop(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
@@ -309,53 +300,53 @@ void DCMIPP_Pipe_Stop(uint32_t pipe)
     _dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
 }
 
-void DCMIPP_Pipe_Suspend(uint32_t pipe)
-{
+void DCMIPP_Pipe_Suspend(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FSCR &= ~DCMIPP_P2FSCR_PIPEN;
 }
 
-void DCMIPP_Pipe_Resume(uint32_t pipe)
-{
+void DCMIPP_Pipe_Resume(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR |= DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FSCR |= DCMIPP_P2FSCR_PIPEN;
 }
 
-void DCMIPP_EnableInterrupts(uint32_t pipe, uint32_t it_mask)
-{
+void DCMIPP_EnableInterrupts(uint32_t pipe, uint32_t it_mask){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1IER |= it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2IER |= it_mask;
 }
 
-void DCMIPP_DisableInterrupts(uint32_t pipe, uint32_t it_mask)
-{
+void DCMIPP_DisableInterrupts(uint32_t pipe, uint32_t it_mask){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1IER &= ~it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2IER &= ~it_mask;
 }
 
-void DCMIPP_ClearInterrupt(uint32_t pipe, uint32_t it_mask)
-{
+void DCMIPP_ClearInterrupt(uint32_t pipe, uint32_t it_mask){
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FCR = it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FCR = it_mask;
 }
 
-uint32_t DCMIPP_GetStatus(uint32_t pipe)
-{
-    if (pipe == DCMIPP_PIPE1)
-        return _dcmipp->P1SR;
-    else if (pipe == DCMIPP_PIPE2)
-        return _dcmipp->P2SR;
-    return 0;
+DCMIPP_Status_TypeDef DCMIPP_GetStatus(uint32_t pipe, uint32_t *status){
+    if (status == NULL)
+        return DCMIPP_ERROR;
+
+    if (pipe == DCMIPP_PIPE1) {
+        *status = _dcmipp->P1SR;
+    } else if (pipe == DCMIPP_PIPE2) {
+        *status = _dcmipp->P2SR;
+    } else {
+        return DCMIPP_ERROR;
+    }
+    return DCMIPP_OK;
 }
 
 void DCMIPP_IRQHandler(void){

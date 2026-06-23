@@ -1,8 +1,12 @@
-/*
- * tasks.h
+/**
+ * @file    tasks.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   Application task declarations
  *
- *  Created on: 05.06.2026
- *      Author: Weber
+ * Usage
+ * -----
+ * Task functions registered with SCHEDULER_Task_add()
  */
 
 #ifndef TASKS_H

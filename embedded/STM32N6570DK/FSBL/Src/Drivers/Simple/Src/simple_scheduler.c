@@ -1,16 +1,8 @@
-/*
- * simple_scheduler.c
- *
- * Priority preemptive scheduler on TIM7 (1 ms tick).  The TIM7 ISR marks
- * tasks ready and pends PendSV.  The PendSV handler performs a full context
- * switch (auto + callee-saved registers, including FPU if active).  SVC is
- * used to start the first task.  Idle task runs when no user task is ready.
- * Tick-count wrap-around is handled implicitly by unsigned 32-bit subtraction
- * - periods up to 2^31 ms (~ 24.9 days) are safe.
- * Lower priority values = higher priority.
- *
- * @author  Groß
- * @date    May 24, 2026
+/**
+ * @file    simple_scheduler.h
+ * @author  Gross
+ * @date    05.06.2026
+ * @brief   Priority preemptive scheduler driver source
  */
 
 #include <stdint.h>
@@ -19,7 +11,6 @@
 #include "simple_scheduler.h"
 
 #include "stm32n657xx.h"
-
 #include "simple_timer.h"
 
 // -------------------------------------------------------------------------
@@ -86,6 +77,11 @@ void NMI_Handler(void);
 // Stack initialisation
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Initializes Task by filling with default values
+ *
+ * @param i | task index
+ */
 static void SCHEDULER_InitTaskStack(int i){
 	uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stacks[i] & ~7U);
 
@@ -93,9 +89,7 @@ static void SCHEDULER_InitTaskStack(int i){
 		stack_base[j] = 0xA5A5A5A5;
 	}
 
-	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i]
-		+ sizeof(_task_stacks[i])) & ~7U);
-
+	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i] + sizeof(_task_stacks[i])) & ~7U);
 	uint32_t *sp = stack_end - 32;
 
 	// sp[0..15]  S16-S31  (FPU callee-saved)
@@ -112,27 +106,12 @@ static void SCHEDULER_InitTaskStack(int i){
 }
 
 // -------------------------------------------------------------------------
-// Stack high-water mark
-// -------------------------------------------------------------------------
-
-static uint32_t SCHEDULER_GetStackHighWatermark(int task){
-	uint32_t *stack = _task_stacks[task];
-	uint32_t start = SCHEDULER_STACK_GUARD_BYTES / sizeof(uint32_t);
-	uint32_t free = 0;
-	for (uint32_t j = start; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
-		if (stack[j] == 0xA5A5A5A5) {
-			free++;
-		} else {
-			break;
-		}
-	}
-	return free * sizeof(uint32_t);
-}
-
-// -------------------------------------------------------------------------
 // Idle task
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Idle task - waits for the next interrupt
+ */
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
 		__NOP();
@@ -143,6 +122,9 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 // Task exit handler
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Clean up and park the current task after it returns
+ */
 void SCHEDULER_Task_exit(void){
 	__disable_irq();
 	_tasks[_current_task].ready      = 0;
@@ -160,6 +142,16 @@ void SCHEDULER_Task_exit(void){
 // Scheduling policy
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Selects next task with round robin and priority scheduling
+ *
+ * Chooses the highest-priority task that is both active and ready.
+ * Tasks are scanned starting from the task immediately after the
+ * currently running task and wrap around the task table, providing
+ * round-robin fairness among tasks with the same priority.
+ *
+ * @return index of next Task to run
+ */
 static int SCHEDULER_SelectNextTask(void){
 	int best = -1;
 	uint8_t best_prio = 0xFF;
@@ -190,15 +182,24 @@ static int SCHEDULER_SelectNextTask(void){
 	return best;
 }
 
+/**
+ * @brief Reinizializes Task
+ *
+ * @param [in] task_idx | Task index
+ * @param [in] tcb_addr | TaskCodeBlock adress
+ */
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	SCHEDULER_InitTaskStack(task_idx);
 	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
 // -------------------------------------------------------------------------
-// Context switch – SVC (first-task bootstrap)
+// Context switch - SVC (first-task bootstrap)
 // -------------------------------------------------------------------------
 
+/**
+ * @brief SVC handler - bootstrap the first task and start the tick timer
+ */
 __attribute__((naked)) void SVC_Handler(void){
 	__asm volatile (
 		"ldr    r0, =_current_task                  \n"
@@ -237,9 +238,12 @@ __attribute__((naked)) void SVC_Handler(void){
 }
 
 // -------------------------------------------------------------------------
-// Context switch – PendSV (preemptive)
+// Context switch - PendSV (preemptive)
 // -------------------------------------------------------------------------
 
+/**
+ * @brief PendSV handler - preemptive context switch
+ */
 __attribute__((naked)) void PendSV_Handler(void){
 	__asm volatile (
 		"cpsid	i\n"
@@ -324,15 +328,26 @@ __attribute__((naked)) void PendSV_Handler(void){
 // Tick source
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Start the TIM7 tick timer and enable its interrupt
+ */
 void SCHEDULER_StartTick(void){
 	NVIC_ClearPendingIRQ(TIM7_IRQn);
 	NVIC_EnableIRQ(TIM7_IRQn);
-	TIM_Start(TIM7);
+	TIMER_Start(TIM7);
 }
 
+/**
+ * @brief TIM7 interrupt handler - scheduler tick
+ *
+ * Increments the system tick counter and marks tasks ready when
+ * their period has elapsed, then pends PendSV for context switch.
+ */
 void TIM7_IRQHandler(void){
-	if (TIM_GetFlag(TIM7, TIM_SR_UIF)) {
-		TIM_ClearFlag(TIM7, TIM_SR_UIF);
+	uint32_t tim_flag;
+	TIMER_GetFlag(TIM7, TIM_SR_UIF, &tim_flag);
+	if (tim_flag) {
+		TIMER_ClearFlag(TIM7, TIM_SR_UIF);
 
 		_sys_tick_ms++;
 
@@ -406,8 +421,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 }
 
 void SCHEDULER_System_init(void){
-	TIM_Config(TIM7, 200, 999, 0);
-	TIM_EnableIT(TIM7);
+	TIMER_Config(TIM7, 200, 999, 0);
+	TIMER_EnableIT(TIM7);
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
@@ -445,7 +460,7 @@ void SCHEDULER_Tasks_run(void){
 				| SCB_SHCSR_BUSFAULTENA_Msk
 				| SCB_SHCSR_MEMFAULTENA_Msk;
 
-	// TIM7 is NOT started here – it starts in SCHEDULER_StartTick()
+	// TIM7 is NOT started here - it starts in SCHEDULER_StartTick()
 	// called from SVC_Handler after PSP and CONTROL are valid.
 	// This prevents PendSV from ever firing before PSP is initialized.
 
@@ -476,15 +491,6 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(
 	return SCHEDULER_OK;
 }
 
-SCHEDULER_Status_TypeDef SCHEDULER_GetTaskStackFree(uint8_t task,
-	uint32_t* free){
-
-	if (task >= SCHEDULER_MAX_TASKS) { return SCHEDULER_ERR_NOT_FOUND; }
-	if (free == 0)                   { return SCHEDULER_ERR_NOT_FOUND; }
-	*free = SCHEDULER_GetStackHighWatermark(task);
-	return SCHEDULER_OK;
-}
-
 SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task,
 	const char** name){
 
@@ -495,9 +501,16 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task,
 }
 
 // -------------------------------------------------------------------------
-// Fault handler – C core (captures state, then halts)
+// Fault handler - C core (captures state, then halts)
 // -------------------------------------------------------------------------
 
+/**
+ * @brief Central fault handler - capture diagnostic state and halt
+ *
+ * @param [in] exc_return EXC_RETURN value from the fault context
+ * @param [in] frame      Stack frame pointer (may be NULL)
+ * @param [in] reason     Fault reason identifier
+ */
 void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 	uint32_t reason){
 
@@ -544,10 +557,12 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 }
 
 // -------------------------------------------------------------------------
-// Fault handlers – assembly stubs (tail-call C core)
+// Fault handlers - assembly stubs (tail-call C core)
 // -------------------------------------------------------------------------
 
-// NMI: external / RCC clock loss / power failure
+/**
+ * @brief NMI handler - external / RCC clock loss / power failure
+ */
 __attribute__((naked)) void NMI_Handler(void){
 	__asm volatile (
 		"mov r0, lr\n"
@@ -560,8 +575,10 @@ __attribute__((naked)) void NMI_Handler(void){
 	);
 }
 
-// HardFault: escalation from BusFault/MemManage at same priority,
-//            or synchronous BusFault on unprivileged instruction fetch
+/**
+ * @brief HardFault handler - escalation from BusFault/MemManage or
+ *        synchronous BusFault on unprivileged instruction fetch
+ */
 __attribute__((naked)) void HardFault_Handler(void){
 	__asm volatile (
 		"mov r0, lr\n"
@@ -574,7 +591,9 @@ __attribute__((naked)) void HardFault_Handler(void){
 	);
 }
 
-// MemManage: MPU violation (code / data access to prohibited region)
+/**
+ * @brief MemManage handler - MPU violation
+ */
 __attribute__((naked)) void MemManage_Handler(void){
 	__asm volatile (
 		"mov r0, lr\n"
@@ -587,8 +606,10 @@ __attribute__((naked)) void MemManage_Handler(void){
 	);
 }
 
-// BusFault: memory transaction error (precise / imprecise data or
-//           instruction fetch), including stack-push to invalid address
+/**
+ * @brief BusFault handler - memory transaction error (precise / imprecise
+ *        data or instruction fetch), including stack-push to invalid address
+ */
 __attribute__((naked)) void BusFault_Handler(void){
 	__asm volatile (
 		"mov r0, lr\n"
@@ -601,8 +622,10 @@ __attribute__((naked)) void BusFault_Handler(void){
 	);
 }
 
-// UsageFault: stack overflow (PSPLIM), undefined instruction, unaligned,
-//             divide-by-zero – captured here; no auto-recovery
+/**
+ * @brief UsageFault handler – stack overflow, undefined instruction,
+ *        unaligned access, divide-by-zero
+ */
 __attribute__((naked)) void UsageFault_Handler(void){
 	__asm volatile (
 		"mov r0, lr\n"

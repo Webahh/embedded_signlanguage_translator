@@ -1,8 +1,12 @@
-/*
- * config.h
+/**
+ * @file    config.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   Global configuration data and extern declarations
  *
- *  Created on: 05.06.2026
- *      Author: Weber
+ * Usage
+ * -----
+ * Include to access board-level config data and extern declarations
  */
 
 #ifndef CONFIG_H
@@ -40,8 +44,8 @@ extern const DCMIPP_Pipe_cfg_TypeDef DCMIPP_nn_pipe_cfg;
 extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client2_cfg;
 extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg;
 
-extern CAM_Handle h_cam;
-extern LCD_LayerConfig LCD_Layer1Config;
-extern LCD_LayerConfig LCD_Layer2Config;
+extern CAM_Handle_TypeDef h_cam;
+extern LTDC_LayerConfig_TypeDef LTDC_Layer1Config;
+extern LTDC_LayerConfig_TypeDef LTDC_Layer2Config;
 
 #endif /* CONFIG_H_ */

@@ -1,15 +1,17 @@
-/*
- * simple_scheduler.h
+/**
+ * @file    simple_scheduler.h
+ * @author  Gross
+ * @date    05.06.2026
+ * @brief   Priority preemptive scheduler driver header
  *
- * Priority preemptive scheduler.  The tick source is TIM7 (1 ms period).
- * The scheduler preempts tasks via PendSV every 1 ms and dispatches the
- * highest-priority ready task.  Lower priority values = higher priority.
+ *          Tick source: TIM7 (1 ms period).  Tasks preempt via PendSV.
+ *          Lower priority values = higher priority.
  *
- * Each task runs to completion once per period.  When a task function
- * returns, the scheduler parks it and re-initialises its stack frame.
- * On the next period tick the task is marked ready and PendSV selects it
- * again, starting from the function entry.  Static or global variables
- * preserve state across invocations.
+ * Usage
+ * -----
+ * 1. SCHEDULER_System_init()   – initialise scheduler data
+ * 2. SCHEDULER_Task_add()      – register tasks
+ * 3. SCHEDULER_Tasks_run()     – start scheduling (never returns)
  *
  * Example – blink an LED every 500 ms:
  *
@@ -57,6 +59,9 @@
 #define SCHEDULER_STACK_SIZE_BYTES		1024
 #define SCHEDULER_STACK_GUARD_BYTES		128
 
+// For debugging on Fault
+#define SCHED_MAGIC						0x53434448u
+
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
 
@@ -80,8 +85,6 @@ typedef struct {
 	uint32_t	msp, psp, psplim, control, exc_return;
 	uint32_t	r0, r1, r2, r3, r12, lr, pc, xpsr;
 } Scheduler_Fault_Dump_TypeDef;
-
-#define SCHED_MAGIC		0x53434844u
 
 // ── Mutable runtime state ──
 extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
