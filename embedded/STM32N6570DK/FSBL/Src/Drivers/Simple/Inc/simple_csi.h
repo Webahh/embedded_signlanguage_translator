@@ -9,20 +9,19 @@
 #ifndef SIMPLE_CSI_H
 #define SIMPLE_CSI_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include "stm32n657xx.h"
 
-/* ---------------------------------------------------------------------------
- * Virtual channels
- * ------------------------------------------------------------------------- */
+// ---- Virtual channels ----
 
 #define CSI_VIRTUAL_CHANNEL0            0U
 #define CSI_VIRTUAL_CHANNEL1            1U
 #define CSI_VIRTUAL_CHANNEL2            2U
 #define CSI_VIRTUAL_CHANNEL3            3U
 
-/* ---------------------------------------------------------------------------
- * Data type bit-width encoding (CSI_DT_BPP* -> CDTFT field)
- * ------------------------------------------------------------------------- */
+// ---- Data type bit-width encoding (CSI_DT_BPP* -> CDTFT field) ----
 
 #define CSI_DT_BPP6                     0U
 #define CSI_DT_BPP7                     1U
@@ -32,16 +31,12 @@
 #define CSI_DT_BPP14                    5U
 #define CSI_DT_BPP16                    6U
 
-/* ---------------------------------------------------------------------------
- * PHY bitrate indices (CSI_PHY_BT_* -> phy_bitrate field)
- * ------------------------------------------------------------------------- */
+// ---- PHY bitrate indices (CSI_PHY_BT_* -> phy_bitrate field) ----
 
 #define CSI_PHY_BT_800                  28U
 #define CSI_PHY_BT_1600                 44U
 
-/* ---------------------------------------------------------------------------
- * Lane configuration
- * ------------------------------------------------------------------------- */
+// ---- Lane configuration ----
 
 #define CSI_ONE_DATA_LANE               (1UL << CSI_LMCFGR_LANENB_Pos)
 #define CSI_TWO_DATA_LANES              (2UL << CSI_LMCFGR_LANENB_Pos)
@@ -52,9 +47,7 @@
 #define CSI_DATA_LANE0                  1UL
 #define CSI_DATA_LANE1                  2UL
 
-/* ---------------------------------------------------------------------------
- * CSI configuration structure
- * ------------------------------------------------------------------------- */
+// ---- Types ----
 
 /** CSI host configuration structure */
 typedef struct {
@@ -66,14 +59,38 @@ typedef struct {
     uint32_t data_type;          /**< MIPI CSI-2 data type ID (e.g. 0x2B for RAW10)                 */
 } CSI_cfg_TypeDef;
 
-/* ---------------------------------------------------------------------------
- * API
- * ------------------------------------------------------------------------- */
+/** CSI operation status codes */
+typedef enum {
+    CSI_OK    = 0,
+    CSI_ERROR = 1,
+} CSI_Status_TypeDef;
 
-void     CSI_Init(void);
-void     CSI_Config(CSI_cfg_TypeDef *conf);
-void     CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format);
-uint32_t CSI_StartVirtualChannel(uint32_t vc);
-void     CSI_DBG_IRQHandler(void);
+// ---- API ----
+
+void CSI_Init(void);
+
+/**
+ * @brief  Configure CSI-2 host controller and PHY
+ * @param [in] conf | CSI configuration parameters
+ */
+void CSI_Config(CSI_cfg_TypeDef *conf);
+
+/**
+ * @brief  Configure data-type filtering for a virtual channel
+ * @param [in] vc        | Virtual channel index (CSI_VIRTUAL_CHANNEL*)
+ * @param [in] dt_format | Data type bit-width (CSI_DT_BPP*)
+ */
+void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format);
+
+/**
+ * @brief  Start a virtual channel and wait for ready
+ * @param [in] vc | Virtual channel index (CSI_VIRTUAL_CHANNEL*)
+ * @retval CSI_OK    Channel started and ready
+ * @retval CSI_ERROR Timeout waiting for ready
+ */
+CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc);
+
+/** Debug interrupt handler - clears all status flags */
+void CSI_DBG_IRQHandler(void);
 
 #endif /* SIMPLE_CSI_H */

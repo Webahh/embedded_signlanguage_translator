@@ -6,27 +6,33 @@
   ******************************************************************************
   */
 
+#include <stdint.h>
 #include <stddef.h>
+
 #include "simple_csi.h"
 #include "simple_rcc.h"
 #include "simple_timer.h"
 
-#define REG_MSB_ADDR		0x00
-#define REG_LSB_ADDR_1		0x08
-#define REG_LSB_ADDR_2		0xE4
-#define REG_LSB_ADDR_3		0xE3
-#define REG_VALUE_1			0x38
-#define REG_VALUE_2			0x11
-#define REG_VALUE_3_1		0x08
-#define REG_VALUE_3_2		0xFF
+// ---- Private defines ----
 
-static CSI_TypeDef *csi = CSI;
+#define _REG_MSB_ADDR      0x00
+#define _REG_LSB_ADDR_1    0x08
+#define _REG_LSB_ADDR_2    0xE4
+#define _REG_LSB_ADDR_3    0xE3
+#define _REG_VALUE_1       0x38
+#define _REG_VALUE_2       0x11
+#define _REG_VALUE_3_1     0x08
+#define _REG_VALUE_3_2     0xFF
+
+// ---- Private data ----
+
+static CSI_TypeDef *_csi = CSI;
 
 /**
-  * @brief  CSI PHY frequency range look-up table (indexed by phy_bitrate)
-  *         Each entry maps a bitrate index to its associated HS-FreqRange
-  *         register value and target oscillator frequency (MHz * 10)
-  */
+ * @brief  CSI PHY frequency range look-up table (indexed by phy_bitrate)
+ *         Each entry maps a bitrate index to its associated HS-FreqRange
+ *         register value and target oscillator frequency (MHz * 10)
+ */
 static const struct {
     uint32_t hsfreqrange;
     uint32_t osc_freq_target;
@@ -49,42 +55,36 @@ static const struct {
     {0x47, 442}, {0x48, 451}, {0x49, 460},
 };
 
-/* ---------------------------------------------------------------------------
- * Low-level helpers
- * ------------------------------------------------------------------------- */
+// ---- Private helpers ----
 
 /**
-  * @brief  Write a MIPI CSI-2 PHY code register
-  * @param  reg_msb  Register address MSB
-  * @param  reg_lsb  Register address LSB
-  * @param  val      Value to write
-  */
-static void _WritePHYReg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
-{
-    csi->PTCR1 |= CSI_PTCR1_TWM;
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    csi->PTCR1 |= CSI_PTCR1_TWM;
-    csi->PTCR0 = 0;
-    csi->PTCR1 = 0;
-    csi->PTCR1 |= reg_msb;
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    csi->PTCR0 = 0;
-    csi->PTCR1 |= CSI_PTCR1_TWM;
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    csi->PTCR1 |= CSI_PTCR1_TWM | reg_lsb;
-    csi->PTCR0 = 0;
-    csi->PTCR1 = 0;
-    csi->PTCR1 |= val;
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
-    csi->PTCR0 = 0;
+ * @brief  Write a MIPI CSI-2 PHY code register
+ * @param [in] reg_msb | Register address MSB
+ * @param [in] reg_lsb | Register address LSB
+ * @param [in] val     | Value to write
+ */
+static void CSI_write_phy_reg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val){
+    _csi->PTCR1 |= CSI_PTCR1_TWM;
+    _csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    _csi->PTCR1 |= CSI_PTCR1_TWM;
+    _csi->PTCR0 = 0;
+    _csi->PTCR1 = 0;
+    _csi->PTCR1 |= reg_msb;
+    _csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    _csi->PTCR0 = 0;
+    _csi->PTCR1 |= CSI_PTCR1_TWM;
+    _csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    _csi->PTCR1 |= CSI_PTCR1_TWM | reg_lsb;
+    _csi->PTCR0 = 0;
+    _csi->PTCR1 = 0;
+    _csi->PTCR1 |= val;
+    _csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    _csi->PTCR0 = 0;
 }
 
-/* ---------------------------------------------------------------------------
- * API
- * ------------------------------------------------------------------------- */
+// ---- API ----
 
-void CSI_Init(void)
-{
+void CSI_Init(void){
     RCC_enable_CSI();
     RCC_reset_CSI();
 
@@ -92,8 +92,7 @@ void CSI_Init(void)
     NVIC_EnableIRQ(CSI_IRQn);
 }
 
-void CSI_Config(CSI_cfg_TypeDef *conf)
-{
+void CSI_Config(CSI_cfg_TypeDef *conf){
     uint32_t hsfreqrange, osc_target, phy_idx;
 
     phy_idx = conf->phy_bitrate;
@@ -102,111 +101,105 @@ void CSI_Config(CSI_cfg_TypeDef *conf)
     osc_target = _csi_phy_freqs[phy_idx].osc_freq_target;
 
     /* Release CSI PHY from reset */
-    csi->PRCR |= CSI_PRCR_PEN;
+    _csi->PRCR |= CSI_PRCR_PEN;
 
     /* Configure PHY frequency - DLD=1 for RX mode (Synopsys: 1=RX, 0=TX) */
-    csi->PFCR = CSI_PFCR_DLD
-              | (hsfreqrange << CSI_PFCR_HSFR_Pos)
-              | (0x28U << CSI_PFCR_CCFR_Pos);
+    _csi->PFCR = CSI_PFCR_DLD
+               | (hsfreqrange << CSI_PFCR_HSFR_Pos)
+               | (0x28U << CSI_PFCR_CCFR_Pos);
 
-    csi->PTCR0 |= CSI_PTCR0_TCKEN;
+    _csi->PTCR0 |= CSI_PTCR0_TCKEN;
     TIMER_Delay_ms(TIMER_TIMEOUT_10_MS);
-    csi->PTCR0 = 0;
+    _csi->PTCR0 = 0;
 
-
-    _WritePHYReg(REG_MSB_ADDR, REG_LSB_ADDR_1, REG_VALUE_1);
-    _WritePHYReg(REG_MSB_ADDR, REG_LSB_ADDR_2, REG_VALUE_1);
-    _WritePHYReg(REG_MSB_ADDR, REG_LSB_ADDR_3, (uint8_t)(osc_target >> REG_VALUE_3_1));
-    _WritePHYReg(REG_MSB_ADDR, REG_LSB_ADDR_3, (uint8_t)(osc_target &  REG_VALUE_3_2));
+    CSI_write_phy_reg(_REG_MSB_ADDR, _REG_LSB_ADDR_1, _REG_VALUE_1);
+    CSI_write_phy_reg(_REG_MSB_ADDR, _REG_LSB_ADDR_2, _REG_VALUE_1);
+    CSI_write_phy_reg(_REG_MSB_ADDR, _REG_LSB_ADDR_3, (uint8_t)(osc_target >> _REG_VALUE_3_1));
+    CSI_write_phy_reg(_REG_MSB_ADDR, _REG_LSB_ADDR_3, (uint8_t)(osc_target &  _REG_VALUE_3_2));
 
     /* Configure lane merger while CSI disabled and sensor not streaming */
-    csi->CR &= ~CSI_CR_CSIEN;
+    _csi->CR &= ~CSI_CR_CSIEN;
 
-    csi->LMCFGR = conf->num_lanes
-                | (CSI_DATA_LANE0 << CSI_LMCFGR_DL0MAP_Pos)
-                | (CSI_DATA_LANE1 << CSI_LMCFGR_DL1MAP_Pos);
+    _csi->LMCFGR = conf->num_lanes
+                 | (CSI_DATA_LANE0 << CSI_LMCFGR_DL0MAP_Pos)
+                 | (CSI_DATA_LANE1 << CSI_LMCFGR_DL1MAP_Pos);
 
     /* VC/data type filtering is configured via CSI_SetVCConfig() */
 
     /* Enable CSI host */
-    csi->CR |= CSI_CR_CSIEN;
+    _csi->CR |= CSI_CR_CSIEN;
 
-    csi->IER0 = CSI_IER0_CCFIFOFIE
-              | CSI_IER0_SYNCERRIE
-              | CSI_IER0_SPKTERRIE
-              | CSI_IER0_IDERRIE
-              | CSI_IER0_SPKTIE;
+    _csi->IER0 = CSI_IER0_CCFIFOFIE
+               | CSI_IER0_SYNCERRIE
+               | CSI_IER0_SPKTERRIE
+               | CSI_IER0_IDERRIE
+               | CSI_IER0_SPKTIE;
 
-    if (conf->num_lanes == CSI_ONE_DATA_LANE){
-        csi->IER1 = CSI_IER1_ESOTDL0IE | CSI_IER1_ESOTSYNCDL0IE
-                  | CSI_IER1_EESCDL0IE | CSI_IER1_ESYNCESCDL0IE
-                  | CSI_IER1_ECTRLDL0IE;
-    }
-    else {
-        csi->IER1 = CSI_IER1_ESOTDL0IE | CSI_IER1_ESOTSYNCDL0IE
-                  | CSI_IER1_EESCDL0IE | CSI_IER1_ESYNCESCDL0IE
-                  | CSI_IER1_ECTRLDL0IE
-                  | CSI_IER1_ESOTDL1IE | CSI_IER1_ESOTSYNCDL1IE
-                  | CSI_IER1_EESCDL1IE | CSI_IER1_ESYNCESCDL1IE
-                  | CSI_IER1_ECTRLDL1IE;
+    if (conf->num_lanes == CSI_ONE_DATA_LANE) {
+        _csi->IER1 = CSI_IER1_ESOTDL0IE | CSI_IER1_ESOTSYNCDL0IE
+                   | CSI_IER1_EESCDL0IE | CSI_IER1_ESYNCESCDL0IE
+                   | CSI_IER1_ECTRLDL0IE;
+    } else {
+        _csi->IER1 = CSI_IER1_ESOTDL0IE | CSI_IER1_ESOTSYNCDL0IE
+                   | CSI_IER1_EESCDL0IE | CSI_IER1_ESYNCESCDL0IE
+                   | CSI_IER1_ECTRLDL0IE
+                   | CSI_IER1_ESOTDL1IE | CSI_IER1_ESOTSYNCDL1IE
+                   | CSI_IER1_EESCDL1IE | CSI_IER1_ESYNCESCDL1IE
+                   | CSI_IER1_ECTRLDL1IE;
     }
 
     /* Enable lanes */
     if (conf->num_lanes == CSI_ONE_DATA_LANE) {
-        csi->PCR = CSI_PCR_DL0EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
-    }
-    else {
-        csi->PCR = CSI_PCR_DL0EN | CSI_PCR_DL1EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
+        _csi->PCR = CSI_PCR_DL0EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
+    } else {
+        _csi->PCR = CSI_PCR_DL0EN | CSI_PCR_DL1EN | CSI_PCR_CLEN | CSI_PCR_PWRDOWN;
     }
 
-    csi->PMCR = 0;
+    _csi->PMCR = 0;
 }
 
-void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format)
-{
+void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format){
     uint32_t cfg = (dt_format << CSI_VC0CFGR1_CDTFT_Pos) | CSI_VC0CFGR1_ALLDT;
 
     if (vc == CSI_VIRTUAL_CHANNEL0)
-        csi->VC0CFGR1 = cfg;
+        _csi->VC0CFGR1 = cfg;
     else if (vc == CSI_VIRTUAL_CHANNEL1)
-        csi->VC1CFGR1 = cfg;
+        _csi->VC1CFGR1 = cfg;
     else if (vc == CSI_VIRTUAL_CHANNEL2)
-        csi->VC2CFGR1 = cfg;
+        _csi->VC2CFGR1 = cfg;
     else
-        csi->VC3CFGR1 = cfg;
+        _csi->VC3CFGR1 = cfg;
 }
 
-uint32_t CSI_StartVirtualChannel(uint32_t vc)
-{
+CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc){
     uint32_t mask;
 
     if (vc == CSI_VIRTUAL_CHANNEL0)
-        csi->CR |= CSI_CR_VC0START;
+        _csi->CR |= CSI_CR_VC0START;
     else if (vc == CSI_VIRTUAL_CHANNEL1)
-        csi->CR |= CSI_CR_VC1START;
+        _csi->CR |= CSI_CR_VC1START;
     else if (vc == CSI_VIRTUAL_CHANNEL2)
-        csi->CR |= CSI_CR_VC2START;
+        _csi->CR |= CSI_CR_VC2START;
     else
-        csi->CR |= CSI_CR_VC3START;
+        _csi->CR |= CSI_CR_VC3START;
 
     mask = CSI_SR0_VC0STATEF << vc;
     for (uint32_t t = 0; t < 100000; t++) {
-        if (csi->SR0 & mask) {
-            csi->IER0 |= CSI_IER0_SOF0IE << vc
-                      |  CSI_IER0_EOF0IE << vc;
-            return 1;
+        if (_csi->SR0 & mask) {
+            _csi->IER0 |= CSI_IER0_SOF0IE << vc
+                       |  CSI_IER0_EOF0IE << vc;
+            return CSI_OK;
         }
     }
-    return 0;
+    return CSI_ERROR;
 }
 
-void CSI_DBG_IRQHandler(void)
-{
-    if (csi->SR0) {
-        csi->FCR0 = csi->SR0;
+void CSI_DBG_IRQHandler(void){
+    if (_csi->SR0) {
+        _csi->FCR0 = _csi->SR0;
     }
 
-    if (csi->SR1) {
-        csi->FCR1 = csi->SR1;
+    if (_csi->SR1) {
+        _csi->FCR1 = _csi->SR1;
     }
 }
