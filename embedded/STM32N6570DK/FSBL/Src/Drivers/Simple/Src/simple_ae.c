@@ -1,6 +1,8 @@
 /**
- * @file    simple_ae.c
- * @brief   Auto-exposure (AE) control
+ * @file    simple_ae.h
+ * @author  Weber
+ * @date    15.06.2026
+ * @brief   Auto-exposure (AE) control source
  */
 
 #include <stddef.h>

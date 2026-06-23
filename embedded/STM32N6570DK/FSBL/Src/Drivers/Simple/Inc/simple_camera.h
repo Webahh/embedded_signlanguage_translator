@@ -1,10 +1,15 @@
 /**
-  ******************************************************************************
-  * @file    simple_camera.h
-  * @author  Groß
-  * @brief   Top-level camera subsystem header
-  ******************************************************************************
-  */
+ * @file    simple_camera.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Top-level camera subsystem header
+ *
+ * Usage
+ * -----
+ * 1. CAM_Init()                 – initialise DCMIPP, CSI, sensor
+ * 2. CAM_DisplayPipe_Start()    – start display pipe
+ * 3. CAM_NNPipe_Start()         – start NN pipe
+ */
 
 #ifndef SIMPLE_CAMERA_H
 #define SIMPLE_CAMERA_H

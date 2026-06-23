@@ -1,24 +1,13 @@
-/*
- * simple_rcc.c
- *
- *  Created on: 22.05.2026
- *      Author: Weber
- *
- * Provides helper functions for:
- * - basic system clock setup
- * - reading derived bus clocks
- * - enabling and resetting selected peripherals
- * - configuring selected peripheral clock sources
- *
- * This module intentionally supports only the clock sources and
- * peripherals currently used by the project.
- *
+/**
+ * @file    simple_rcc.h
+ * @author  Weber
+ * @date    May 22, 2026
+ * @brief   RCC clock configuration driver source
  */
 
 #include <stdint.h>
 
 #include "simple_rcc.h"
-
 #include "config.h"
 
 // -------------------------------------------------------------------------

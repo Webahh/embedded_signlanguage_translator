@@ -1,14 +1,9 @@
 /**
-  ******************************************************************************
-  * @file    simple_camera.c
-  * @author  Groß
-  * @brief   Top-level camera subsystem
-  *
-  *          Call sequence:
-  *            CAM_Init()     -- DCMIPP pipes + sensor registers
-  *            CAM_DisplayPipe_Start() / CAM_NNPipe_Start()
-  ******************************************************************************
-  */
+ * @file    simple_camera.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Top-level camera subsystem source
+ */
 
 #include <stddef.h>
 #include "simple_camera.h"

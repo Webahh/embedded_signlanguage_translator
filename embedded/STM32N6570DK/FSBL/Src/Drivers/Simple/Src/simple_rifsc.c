@@ -1,8 +1,14 @@
+/**
+ * @file    simple_rifsc.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   RIFSC security / access control driver source
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 
 #include "simple_rifsc.h"
-
 #include "simple_rcc.h"
 #include "stm32n657xx.h"
 

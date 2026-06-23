@@ -1,3 +1,15 @@
+/**
+ * @file    simple_text.h
+ * @author  Gross
+ * @date    05.06.2026
+ * @brief   Text rendering on LTDC layers header
+ *
+ * Usage
+ * -----
+ * 1. LTDC_Init() + LTDC_ConfigLayer*()   – display setup
+ * 2. TEXT_StringBg_draw()                 – render string on layer
+ */
+
 #ifndef SIMPLE_TEXT_H
 #define SIMPLE_TEXT_H
 

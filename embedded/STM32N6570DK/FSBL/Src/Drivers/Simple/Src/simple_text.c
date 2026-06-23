@@ -1,7 +1,13 @@
+/**
+ * @file    simple_text.h
+ * @author  Gross
+ * @date    05.06.2026
+ * @brief   Text rendering on LTDC layers source
+ */
+
 #include <stdint.h>
 
 #include "simple_text.h"
-
 #include "font_8x16.h"
 
 // -------------------------------------------------------------------------

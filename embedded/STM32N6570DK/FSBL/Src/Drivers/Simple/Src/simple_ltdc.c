@@ -1,3 +1,10 @@
+/**
+ * @file    simple_ltdc.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   LTDC display controller driver source
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 

@@ -1,8 +1,14 @@
+/**
+ * @file    simple_timer.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   TIM7 system timer driver source
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 
 #include "simple_timer.h"
-
 #include "simple_rcc.h"
 
 /*

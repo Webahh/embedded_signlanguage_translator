@@ -1,8 +1,13 @@
-/*
- * app.h
+/**
+ * @file    app.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   Application initialisation and main loop
  *
- *  Created on: 05.06.2026
- *      Author: Weber
+ * Usage
+ * -----
+ * 1. app_init()   – initialise all subsystems
+ * 2. app_run()    – start scheduler (never returns)
  */
 
 #ifndef APP_H

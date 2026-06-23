@@ -1,3 +1,15 @@
+/**
+ * @file    simple_xspi.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   XSPI PSRAM / NOR flash driver header
+ *
+ * Usage
+ * -----
+ * 1. XSPI_PSRAM_init() / XSPI_NOR_init()   – initialise with config
+ * 2. Memory-mapped access                    – read / write via mapped address
+ */
+
 #ifndef SIMPLE_XSPI_H
 #define SIMPLE_XSPI_H
 

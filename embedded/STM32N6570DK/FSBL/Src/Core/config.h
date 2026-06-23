@@ -1,8 +1,12 @@
-/*
- * config.h
+/**
+ * @file    config.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   Global configuration data and extern declarations
  *
- *  Created on: 05.06.2026
- *      Author: Weber
+ * Usage
+ * -----
+ * Include to access board-level config data and extern declarations
  */
 
 #ifndef CONFIG_H

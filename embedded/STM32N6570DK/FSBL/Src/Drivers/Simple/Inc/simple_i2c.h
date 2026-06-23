@@ -1,8 +1,14 @@
-/*
- * simple_i2c.h
+/**
+ * @file    simple_i2c.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   I2C bus driver header
  *
- *  Created on: 21.05.2026
- *      Author: Weber
+ * Usage
+ * -----
+ * 1. RCC_enable_I2C() + I2C_Config()   – initialise I2C bus
+ * 2. I2C_Device_ready()                 – probe device
+ * 3. I2C_Mem_write() / I2C_Mem_read()   – register access
  */
 
 #ifndef SIMPLE_I2C_H

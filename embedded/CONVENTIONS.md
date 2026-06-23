@@ -2,6 +2,27 @@
 
 ## HEADER (`.h`)
 
+### File Header Block
+
+```c
+/**
+ * @file    module.h
+ * @author  Name
+ * @date    2026-06-23
+ * @brief   One-line module description
+ *
+ * Usage
+ * -----
+ * 1. Module_Init()          – initialise hardware
+ * 2. Module_Config(...)     – apply configuration
+ * 3. Module_Start()         – begin operation
+ */
+```
+
+- `@author`, `@date`, and `@brief` are mandatory.
+- The **Usage** section is mandatory and must list the functions that must be
+  called before others, in the required order
+
 ### Guard
 
 ```c

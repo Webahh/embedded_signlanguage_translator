@@ -1,3 +1,14 @@
+/**
+ * @file    simple_rifsc.h
+ * @author  Weber
+ * @date    05.06.2026
+ * @brief   RIFSC security / access control driver header
+ *
+ * Usage
+ * -----
+ * 1. RIFSC_Config()   – configure IL / RL at early boot
+ */
+
 #ifndef SIMPLE_RIFSC_H
 #define SIMPLE_RIFSC_H
 

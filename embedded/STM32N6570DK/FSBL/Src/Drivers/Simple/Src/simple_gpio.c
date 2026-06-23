@@ -1,8 +1,8 @@
-/*
- * simple_gpio.c
- *
- *  Created on: May 21, 2026
- *      Author: Weber
+/**
+ * @file    simple_gpio.h
+ * @author  Weber
+ * @date    May 21, 2026
+ * @brief   GPIO control driver source
  */
 
 #include <stdint.h>

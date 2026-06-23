@@ -1,8 +1,13 @@
-/*
- * simple_rcc.h
+/**
+ * @file    simple_rcc.h
+ * @author  Weber
+ * @date    May 22, 2026
+ * @brief   RCC clock configuration driver header
  *
- *  Created on: May 22, 2026
- *      Author: Weber
+ * Usage
+ * -----
+ * 1. RCC_BoardClock_Config()   – system clock tree
+ * 2. RCC_enable_*()            – enable peripheral clocks
  */
 
 #ifndef SIMPLE_RCC_H

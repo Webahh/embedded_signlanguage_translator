@@ -1,16 +1,8 @@
-/*
- * simple_scheduler.c
- *
- * Priority preemptive scheduler on TIM7 (1 ms tick).  The TIM7 ISR marks
- * tasks ready and pends PendSV.  The PendSV handler performs a full context
- * switch (auto + callee-saved registers, including FPU if active).  SVC is
- * used to start the first task.  Idle task runs when no user task is ready.
- * Tick-count wrap-around is handled implicitly by unsigned 32-bit subtraction
- * - periods up to 2^31 ms (~ 24.9 days) are safe.
- * Lower priority values = higher priority.
- *
- * @author  Groß
- * @date    May 24, 2026
+/**
+ * @file    simple_scheduler.h
+ * @author  Gross
+ * @date    05.06.2026
+ * @brief   Priority preemptive scheduler driver source
  */
 
 #include <stdint.h>

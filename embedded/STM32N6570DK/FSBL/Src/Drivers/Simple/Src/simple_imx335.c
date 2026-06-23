@@ -1,14 +1,9 @@
 /**
-  ******************************************************************************
-  * @file    simple_imx335.c
-  * @author  Groß
-  * @brief   Register-level IMX335 (Sony Starvis) sensor driver
-  *
-  *          Initialisation register tables are sourced from the STM32
-  *          BSP driver
-  *
-  ******************************************************************************
-  */
+ * @file    simple_imx335.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level IMX335 (Sony Starvis) sensor driver source
+ */
 
 #include <stdint.h>
 #include <stddef.h>

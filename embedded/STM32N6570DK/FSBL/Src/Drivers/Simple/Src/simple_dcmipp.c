@@ -1,11 +1,11 @@
 /**
-  ******************************************************************************
-  * @file    simple_dcmipp.c
-  * @author  Groß
-  * @brief   Register-level DCMIPP + CSI-2 driver for STM32N6
-  *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
-  ******************************************************************************
-  */
+ * @file    simple_dcmipp.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level DCMIPP + CSI-2 driver header for STM32N6
+ *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
+ */
+
 #include <stdint.h>
 #include <stddef.h>
 

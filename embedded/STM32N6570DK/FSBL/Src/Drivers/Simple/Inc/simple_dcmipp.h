@@ -1,11 +1,17 @@
 /**
-  ******************************************************************************
-  * @file    simple_dcmipp.h
-  * @author  Groß
-  * @brief   Register-level DCMIPP + CSI-2 driver header for STM32N6
-  *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
-  ******************************************************************************
-  */
+ * @file    simple_dcmipp.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level DCMIPP + CSI-2 driver header for STM32N6
+ *          Supports two-pipe setup: PIPE1 (display) and PIPE2 (NN)
+ *
+ * Usage
+ * -----
+ * 1. DCMIPP_Init()                 – reset / enable DCMIPP
+ * 2. DCMIPP_Pipe_Config()          – configure pipe (cropping, downscale)
+ * 3. DCMIPP_CSI_Pipe_Config()      – link CSI-2 data type to pipe
+ * 4. DCMIPP_Pipe_Start()           – start capture
+ */
 
 #ifndef SIMPLE_DCMIPP_H
 #define SIMPLE_DCMIPP_H

@@ -1,6 +1,14 @@
 /**
  * @file    simple_ae.h
+ * @author  Weber
+ * @date    15.06.2026
  * @brief   Auto-exposure (AE) control header
+ *
+ * Usage
+ * -----
+ * 1. AE_Init()           – initialise with starting exposure
+ * 2. AE_OnFrameStats()   – call from DCMIPP frame ISR
+ * 3. AE_Process()        – run control loop (task context)
  */
 
 #ifndef SIMPLE_AE_H

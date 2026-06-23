@@ -1,10 +1,9 @@
 /**
-  ******************************************************************************
-  * @file    simple_csi.c
-  * @author  Groß
-  * @brief   Register-level CSI-2 host controller driver
-  ******************************************************************************
-  */
+ * @file    simple_csi.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level CSI-2 host controller driver source
+ */
 
 #include <stdint.h>
 #include <stddef.h>

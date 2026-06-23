@@ -1,10 +1,16 @@
 /**
-  ******************************************************************************
-  * @file    simple_csi.h
-  * @author  Groß
-  * @brief   Register-level CSI-2 host controller driver header
-  ******************************************************************************
-  */
+ * @file    simple_csi.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level CSI-2 host controller driver header
+ *
+ * Usage
+ * -----
+ * 1. CSI_Init()                   – reset CSI-2 host
+ * 2. CSI_Config()                 – apply configuration
+ * 3. CSI_SetVirtualChannelConfig() – VC format config
+ * 4. CSI_StartVirtualChannel()    – enable data flow
+ */
 
 #ifndef SIMPLE_CSI_H
 #define SIMPLE_CSI_H

@@ -1,9 +1,8 @@
 /**
- * @file    simple_i2c.c
- * @brief   Register-level I2C master driver for STM32N6.
- *
- *  Created on: 21.05.2026
- *      Author: Weber
+ * @file    simple_i2c.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   I2C bus driver source
  */
 
 #include <stddef.h>

@@ -1,10 +1,15 @@
 /**
-  ******************************************************************************
-  * @file    simple_imx335.h
-  * @author  Groß
-  * @brief   Register-level IMX335 (Sony Starvis) sensor driver header
-  ******************************************************************************
-  */
+ * @file    simple_imx335.h
+ * @author  Gross
+ * @date    21.05.2026
+ * @brief   Register-level IMX335 (Sony Starvis) sensor driver header
+ *
+ * Usage
+ * -----
+ * 1. IMX335_Probe()   – verify sensor ID
+ * 2. IMX335_Init()    – initialise sensor registers
+ * 3. IMX335_Start()   – start streaming
+ */
 
 #ifndef SIMPLE_IMX335_H
 #define SIMPLE_IMX335_H

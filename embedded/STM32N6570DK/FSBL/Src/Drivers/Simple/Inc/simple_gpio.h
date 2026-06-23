@@ -1,8 +1,15 @@
-/*
- * simple_gpio.h
+/**
+ * @file    simple_gpio.h
+ * @author  Weber
+ * @date    May 21, 2026
+ * @brief   GPIO control driver header
  *
- *  Created on: May 21, 2026
- *      Author: Weber
+ * Usage
+ * -----
+ * 1. RCC_enable_GPIO()   – enable GPIO clock
+ * 2. GPIO_Config()        – set pin mode / speed / AF
+ * 3. GPIO_BSRR_*()        – set / reset / toggle pin
+ * 4. GPIO_get()           – read pin state
  */
 
 #ifndef SIMPLE_GPIO_H

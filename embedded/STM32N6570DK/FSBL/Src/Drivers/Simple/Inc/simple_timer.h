@@ -1,3 +1,16 @@
+/**
+ * @file    simple_timer.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   TIM7 system timer driver header
+ *
+ * Usage
+ * -----
+ * 1. TIMER_Delay_init()   – configure TIM7 (1 ms period)
+ * 2. TIMER_Delay_ms()     – blocking delay
+ * 3. TIMER_GetTick()      – read system tick
+ */
+
 #ifndef SIMPLE_TIMER_H
 #define SIMPLE_TIMER_H
 

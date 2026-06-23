@@ -1,3 +1,10 @@
+/**
+ * @file    simple_xspi.h
+ * @author  Weber
+ * @date    21.05.2026
+ * @brief   XSPI PSRAM / NOR flash driver source
+ */
+
 #include <stdint.h>
 
 #include "stm32n657xx.h"
