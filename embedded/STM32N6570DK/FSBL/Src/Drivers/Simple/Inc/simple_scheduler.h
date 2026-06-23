@@ -57,6 +57,9 @@
 #define SCHEDULER_STACK_SIZE_BYTES		1024
 #define SCHEDULER_STACK_GUARD_BYTES		128
 
+// For debugging on Fault
+#define SCHED_MAGIC						0x53434448u
+
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
 
@@ -80,8 +83,6 @@ typedef struct {
 	uint32_t	msp, psp, psplim, control, exc_return;
 	uint32_t	r0, r1, r2, r3, r12, lr, pc, xpsr;
 } Scheduler_Fault_Dump_TypeDef;
-
-#define SCHED_MAGIC		0x53434844u
 
 // ── Mutable runtime state ──
 extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
