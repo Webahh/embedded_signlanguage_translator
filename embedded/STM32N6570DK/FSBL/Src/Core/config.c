@@ -42,17 +42,15 @@ const GPIO_cfg_TypeDef GPIO_XSPI_cfg = {
 		.speed 	= GPIO_SPEED_VERY_HIGH
 };
 
-const GPIO_cfg_TypeDef GPIO_USART_debug_cfg = {
-		.mode 	= GPIO_MODE_AF,
-		.otyp	= GPIO_OTYPE_PP,
-		.pupdr	= GPIO_PUPD_UP,
-		.af		= GPIO_AF_USART,
-		.speed	= GPIO_SPEED_VERY_HIGH
-};
-
 const Debug_log_cfg_TypeDef dbg_cfg = {
     .usart = USART1,
-	.gpio_cfg = GPIO_USART_debug_cfg,
+    .gpio_cfg = {
+    	.mode = GPIO_MODE_AF,
+    	.otyp = GPIO_OTYPE_PP,
+		.pupdr = GPIO_PUPD_UP,
+		.af = GPIO_AF_USART,
+		.speed = GPIO_SPEED_VERY_HIGH
+    },
     .baudrate = 9600,
     .enabled = 1
 };
@@ -214,7 +212,6 @@ LTDC_LayerConfig_TypeDef LTDC_Layer1Config = {
 };
 
 
-static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_FPF_ARGB4444_INIT;
 LTDC_LayerConfig_TypeDef LTDC_Layer2Config = {
     .regs            = LTDC_Layer2,
     .fb              = ltdc_fg_buffer[0],
@@ -230,6 +227,8 @@ LTDC_LayerConfig_TypeDef LTDC_Layer2Config = {
     .default_color   = 0x00,
     .blending_order  = 1,
 };
+
+static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_FPF_ARGB4444_INIT;
 
 
 

@@ -117,7 +117,7 @@ static volatile uint32_t* const _PLL_CFGR3[4] = {
  *
  * @param [in] pll Array of 4 PLL configurations
  */
-void RCC_config_PLLs(const RCC_PLL_cfg_TypeDef pll[4]){
+void RCC_Clock_PLL_set(const RCC_PLL_cfg_TypeDef pll[4]){
     for (uint32_t i = 0U; i < 4U; i++) {
         if (RCC->SR & _PLL_RDY[i]) continue;
 
@@ -152,7 +152,7 @@ static const uint32_t _IC_DIVEN[20] = {
  *
  * @param [in] ic Array of 20 IC configurations
  */
-void RCC_config_ICs(const RCC_IC_cfg_TypeDef ic[20]){
+void RCC_Clock_IC_set(const RCC_IC_cfg_TypeDef ic[20]){
     for (uint32_t i = 0U; i < 20U; i++) {
         if (ic[i].CFGR == 0U) continue;
 
@@ -168,12 +168,12 @@ void RCC_config_ICs(const RCC_IC_cfg_TypeDef ic[20]){
 void RCC_BoardClock_Config(void){
     RCC_SystemClock_Config();
 
-    RCC_config_PLLs(RCC_PLL_cfg);
+    RCC_Clock_PLL_set(RCC_PLL_cfg);
 
-    RCC_config_ICs(RCC_IC_cfg);
+    RCC_Clock_IC_set(RCC_IC_cfg);
 
     /*
-     * RCC_config_ICs() skips zero-valued entries, therefore IC1 must be
+     * RCC_Clock_IC_set() skips zero-valued entries, therefore IC1 must be
      * enabled explicitly.
      */
     RCC->IC1CFGR = 0x00000000;
@@ -198,7 +198,7 @@ void RCC_BoardClock_Config(void){
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetHSI(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz){
     *hz = RCC_HSI_VALUE_HZ;
     return RCC_OK;
 }
@@ -226,7 +226,7 @@ static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz){
     }
 
     uint32_t hsi;
-    RCC_GetHSI(&hsi);
+    RCC_Clock_HSI_get(&hsi);
 
     uint32_t vco_in = hsi / divm;
     *hz = (vco_in * divn) / (pdiv1 * pdiv2);
@@ -265,13 +265,13 @@ static RCC_Status_TypeDef RCC_GetICFreq(uint32_t ic_idx, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unknown clock source selected
  */
-RCC_Status_TypeDef RCC_GetSYSCLK(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_SYS_get(uint32_t* hz){
     uint32_t syssws =
         (RCC->CFGR1 & RCC_CFGR1_SYSSWS) >> RCC_CFGR1_SYSSWS_Pos;
 
     switch (syssws) {
         case 0x0U:
-            return RCC_GetHSI(hz);
+            return RCC_Clock_HSI_get(hz);
 
         case 0x3U:
             return RCC_GetICFreq(0, hz);
@@ -289,13 +289,13 @@ RCC_Status_TypeDef RCC_GetSYSCLK(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unknown clock source selected
  */
-RCC_Status_TypeDef RCC_GetCPUCLK(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_CPU_get(uint32_t* hz){
     uint32_t cpusws =
         (RCC->CFGR1 & RCC_CFGR1_CPUSWS) >> RCC_CFGR1_CPUSWS_Pos;
 
     switch (cpusws) {
         case 0x0U:
-            return RCC_GetHSI(hz);
+            return RCC_Clock_HSI_get(hz);
 
         case 0x3U:
             return RCC_GetICFreq(0, hz);
@@ -313,7 +313,7 @@ RCC_Status_TypeDef RCC_GetCPUCLK(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR PLL or IC not ready
  */
-RCC_Status_TypeDef RCC_GetAXICLK(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_AXI_get(uint32_t* hz){
     return RCC_GetICFreq(1, hz);
 }
 
@@ -325,9 +325,9 @@ RCC_Status_TypeDef RCC_GetAXICLK(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_GetHCLK(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_HCLK_get(uint32_t* hz){
     uint32_t axiclk;
-    RCC_Status_TypeDef status = RCC_GetAXICLK(&axiclk);
+    RCC_Status_TypeDef status = RCC_Clock_AXI_get(&axiclk);
     if (status != RCC_OK) {
         return status;
     }
@@ -352,9 +352,9 @@ RCC_Status_TypeDef RCC_GetHCLK(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_GetPCLK1(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK1_get(uint32_t* hz){
     uint32_t hclk;
-    RCC_Status_TypeDef status = RCC_GetHCLK(&hclk);
+    RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
         return status;
     }
@@ -379,9 +379,9 @@ RCC_Status_TypeDef RCC_GetPCLK1(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_GetPCLK2(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK2_get(uint32_t* hz){
     uint32_t hclk;
-    RCC_Status_TypeDef status = RCC_GetHCLK(&hclk);
+    RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
         return status;
     }
@@ -406,9 +406,9 @@ RCC_Status_TypeDef RCC_GetPCLK2(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_GetPCLK4(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK4_get(uint32_t* hz){
     uint32_t hclk;
-    RCC_Status_TypeDef status = RCC_GetHCLK(&hclk);
+    RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
         return status;
     }
@@ -433,9 +433,9 @@ RCC_Status_TypeDef RCC_GetPCLK4(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_GetPCLK5(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK5_get(uint32_t* hz){
     uint32_t hclk;
-    RCC_Status_TypeDef status = RCC_GetHCLK(&hclk);
+    RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
         return status;
     }
@@ -464,15 +464,15 @@ RCC_Status_TypeDef RCC_GetPCLK5(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported timer
  */
-RCC_Status_TypeDef RCC_GetTIMClock(TIM_TypeDef* TIMX, uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_TIM_get(TIM_TypeDef* TIMX, uint32_t* hz){
     if ((TIMX == TIM2) || (TIMX == TIM3) || (TIMX == TIM4) ||
         (TIMX == TIM5) || (TIMX == TIM6) || (TIMX == TIM7)) {
-        return RCC_GetPCLK1(hz);
+        return RCC_Clock_PCLK1_get(hz);
     }
 
     if ((TIMX == TIM1) || (TIMX == TIM8) ||
         (TIMX == TIM15) || (TIMX == TIM16) || (TIMX == TIM17)) {
-        return RCC_GetPCLK2(hz);
+        return RCC_Clock_PCLK2_get(hz);
     }
 
     return RCC_ERROR;
@@ -487,47 +487,43 @@ RCC_Status_TypeDef RCC_GetTIMClock(TIM_TypeDef* TIMX, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported I2C instance
  */
-RCC_Status_TypeDef RCC_GetI2CClock(I2C_TypeDef* I2CX, uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_I2C_get(I2C_TypeDef* I2CX, uint32_t* hz){
     if ((I2CX == I2C1) || (I2CX == I2C2) || (I2CX == I2C3)) {
-        return RCC_GetPCLK1(hz);
+        return RCC_Clock_PCLK1_get(hz);
     }
 
     if (I2CX == I2C4) {
-        return RCC_GetPCLK4(hz);
+        return RCC_Clock_PCLK4_get(hz);
     }
 
     return RCC_ERROR;
 }
 
-uint32_t RCC_GetUSARTClock(USART_TypeDef *USARTX)
-{
-    if (USARTX == USART1)
-    {
-        uint32_t source;
-
-        source =
-            (RCC->CCIPR13 & RCC_CCIPR13_USART1SEL_Msk)
-            >> RCC_CCIPR13_USART1SEL_Pos;
-
-        switch (source)
-        {
-            /*
-             * USART1SEL = 0:
-             * USART1 kernel clock is PCLK2.
-             */
-            case 0U:
-                return RCC_GetPCLK2();
-
-            /*
-             * Other possible USART1 clock sources are currently
-             * intentionally unsupported by this driver.
-             */
-            default:
-                return 0U;
-        }
+/**
+ * @brief Get the USART peripheral clock frequency
+ *
+ * @param [in]  USARTX USART peripheral instance
+ * @param [out] hz     USART clock in Hz
+ *
+ * @retval RCC_OK    Success
+ * @retval RCC_ERROR Unsupported USART instance
+ */
+RCC_Status_TypeDef RCC_Clock_USART_get(USART_TypeDef* USARTX, uint32_t* hz){
+    if (USARTX != USART1) {
+        return RCC_ERROR;
     }
 
-    return 0U;
+    uint32_t source =
+        (RCC->CCIPR13 & RCC_CCIPR13_USART1SEL_Msk)
+        >> RCC_CCIPR13_USART1SEL_Pos;
+
+    switch (source) {
+        case 0U:
+            return RCC_Clock_PCLK2_get(hz);
+
+        default:
+            return RCC_ERROR;
+    }
 }
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){

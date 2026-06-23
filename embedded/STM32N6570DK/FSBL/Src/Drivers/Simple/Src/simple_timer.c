@@ -20,7 +20,7 @@
  * TIM2..TIM7  -> APB1 -> 200 MHz
  * TIM1/TIM8   -> APB2 -> 200 MHz
  *
- * This avoids using RCC_GetTIMClock(), because the current RCC getter
+ * This avoids using RCC_Clock_TIM_get(), because the current RCC getter
  * does not yet decode the IC-based clock tree.
  */
 #define _TIMER_INPUT_CLK_HZ 200000000UL

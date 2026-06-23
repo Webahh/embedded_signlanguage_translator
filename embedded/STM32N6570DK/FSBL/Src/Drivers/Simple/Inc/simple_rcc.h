@@ -51,19 +51,19 @@ void RCC_SystemClock_Config(void);
  *
  * @param [in] pll Array of 4 PLL configurations
  */
-void RCC_config_PLLs(const RCC_PLL_cfg_TypeDef pll[4]);
+void RCC_Clock_PLL_set(const RCC_PLL_cfg_TypeDef pll[4]);
 
 /**
  * @brief Program internal clock dividers (ICs) from configuration table
  *
  * @param [in] ic Array of 20 IC configurations
  */
-void RCC_config_ICs(const RCC_IC_cfg_TypeDef ic[20]);
+void RCC_Clock_IC_set(const RCC_IC_cfg_TypeDef ic[20]);
 
 /**
  * @brief Full board clock configuration
  *
- * Calls RCC_SystemClock_Config, RCC_config_PLLs, RCC_config_ICs,
+ * Calls RCC_SystemClock_Config, RCC_Clock_PLL_set, RCC_Clock_IC_set,
  * then applies explicit IC1/CFGR1/CFGR2 overrides.
  */
 void RCC_BoardClock_Config(void);
@@ -75,7 +75,7 @@ void RCC_BoardClock_Config(void);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetHSI(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz);
 
 /**
  * @brief Get the SYSCLK frequency
@@ -84,7 +84,7 @@ RCC_Status_TypeDef RCC_GetHSI(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetSYSCLK(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_SYS_get(uint32_t* hz);
 
 /**
  * @brief Get the CPU clock frequency
@@ -93,7 +93,7 @@ RCC_Status_TypeDef RCC_GetSYSCLK(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetCPUCLK(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_CPU_get(uint32_t* hz);
 
 /**
  * @brief Get the AXI bus clock frequency
@@ -102,7 +102,7 @@ RCC_Status_TypeDef RCC_GetCPUCLK(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetAXICLK(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_AXI_get(uint32_t* hz);
 
 /**
  * @brief Get the HCLK (AHB bus) frequency
@@ -111,7 +111,7 @@ RCC_Status_TypeDef RCC_GetAXICLK(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetHCLK(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_HCLK_get(uint32_t* hz);
 
 /**
  * @brief Get the PCLK1 (APB1 bus) frequency
@@ -120,7 +120,7 @@ RCC_Status_TypeDef RCC_GetHCLK(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetPCLK1(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_PCLK1_get(uint32_t* hz);
 
 /**
  * @brief Get the PCLK2 (APB2 bus) frequency
@@ -129,7 +129,7 @@ RCC_Status_TypeDef RCC_GetPCLK1(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetPCLK2(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_PCLK2_get(uint32_t* hz);
 
 /**
  * @brief Get the PCLK4 (APB4 bus) frequency
@@ -138,7 +138,7 @@ RCC_Status_TypeDef RCC_GetPCLK2(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetPCLK4(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_PCLK4_get(uint32_t* hz);
 
 /**
  * @brief Get the PCLK5 (APB5 bus) frequency
@@ -147,7 +147,7 @@ RCC_Status_TypeDef RCC_GetPCLK4(uint32_t* hz);
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_GetPCLK5(uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_PCLK5_get(uint32_t* hz);
 
 /**
  * @brief Get the timer input clock frequency
@@ -158,7 +158,7 @@ RCC_Status_TypeDef RCC_GetPCLK5(uint32_t* hz);
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported timer
  */
-RCC_Status_TypeDef RCC_GetTIMClock(TIM_TypeDef* TIMX, uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_TIM_get(TIM_TypeDef* TIMX, uint32_t* hz);
 
 /**
  * @brief Get the I2C peripheral clock frequency
@@ -169,7 +169,18 @@ RCC_Status_TypeDef RCC_GetTIMClock(TIM_TypeDef* TIMX, uint32_t* hz);
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported I2C instance
  */
-RCC_Status_TypeDef RCC_GetI2CClock(I2C_TypeDef* I2CX, uint32_t* hz);
+RCC_Status_TypeDef RCC_Clock_I2C_get(I2C_TypeDef* I2CX, uint32_t* hz);
+
+/**
+ * @brief Get the USART peripheral clock frequency
+ *
+ * @param [in]  USARTX USART peripheral instance
+ * @param [out] hz     USART clock in Hz
+ *
+ * @retval RCC_OK    Success
+ * @retval RCC_ERROR Unsupported USART instance
+ */
+RCC_Status_TypeDef RCC_Clock_USART_get(USART_TypeDef* USARTX, uint32_t* hz);
 
 void RCC_enable_GPIO(GPIO_TypeDef* GPIOX);
 void RCC_enable_I2C(I2C_TypeDef* I2CX);

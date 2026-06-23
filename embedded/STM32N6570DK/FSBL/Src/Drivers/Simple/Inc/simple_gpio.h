@@ -41,6 +41,7 @@
 #define GPIO_AF_I2C         4
 #define GPIO_AF_LTDC        14
 #define GPIO_AF_XSPI        9
+#define GPIO_AF_USART       7
 
 /** GPIO operation status codes */
 typedef enum {
