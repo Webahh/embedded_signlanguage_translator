@@ -64,7 +64,7 @@ typedef enum {
 
 /** Top-level camera instance handle */
 typedef struct {
-    IMX335_Handle imx335;             /**< IMX335 sensor handle              */
+    IMX335_Handle_TypeDef imx335;             /**< IMX335 sensor handle              */
     uint32_t      display_buf;        /**< Display buffer base address       */
     uint32_t      nn_buf;             /**< NN buffer base address            */
     int32_t       display_pitch;      /**< Display pipe line pitch (bytes)   */
