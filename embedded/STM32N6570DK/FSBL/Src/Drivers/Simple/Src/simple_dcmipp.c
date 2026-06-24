@@ -140,13 +140,28 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     *decr  = DCMIPP_P1DECR_ENABLE;
 
+    // --- Color conversion matrix ---
+    /*
+     	 RR | RG | RB
+     	 ---+----+---
+     	 GR | GG | GB
+     	 ---+----+---
+     	 BR | BG | BB
+     */
     _dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;
-    _dcmipp->P1CCRR1 = 0x07CA01A6;
-    _dcmipp->P1CCRR2 = 0x790;
-    _dcmipp->P1CCGR1 = 0x01C9077D;
-    _dcmipp->P1CCGR2 = 0x7BA;
-    _dcmipp->P1CCBR1 = 0x078507E0;
-    _dcmipp->P1CCBR2 = 0x19B;
+
+    _dcmipp->P1CCRR1 = (0x07CA << DCMIPP_P1CCRR1_RG_Pos)  // Green
+                     | (0x01A6 << DCMIPP_P1CCRR1_RR_Pos); // Red
+    _dcmipp->P1CCRR2 = (0x0790 << DCMIPP_P1CCRR2_RB_Pos); // Blue
+
+    _dcmipp->P1CCGR1 = (0x077D << DCMIPP_P1CCGR1_GG_Pos)  // Green
+                     | (0x01C9 << DCMIPP_P1CCGR1_GR_Pos); // Red
+    _dcmipp->P1CCGR2 = (0x07BA << DCMIPP_P1CCGR2_GB_Pos); // Blue
+
+    _dcmipp->P1CCBR1 = (0x07E0 << DCMIPP_P1CCBR1_BG_Pos)  // Green
+                     | (0x0785 << DCMIPP_P1CCBR1_BR_Pos); // Red
+
+    _dcmipp->P1CCBR2 = (0x019B << DCMIPP_P1CCBR2_BB_Pos); // Blue
 
     *excr1 = DCMIPP_P1EXCR1_ENABLE
            | ((0xE9U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
@@ -172,14 +187,14 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
                      | ((972U << DCMIPP_P1STSZR_VSIZE_Pos) & DCMIPP_P1STSZR_VSIZE_Msk)
                      | DCMIPP_P1STSZR_CROPEN;
 
-    // ---- Pipe0 stat/crop: remove embedded data lines (none on IMX335) ----
+    // Pipe0 stat/crop: remove embedded data lines (none on IMX335)
     _dcmipp->P0SCSTR = 0U;
     _dcmipp->P0SCSZR = (2592U << DCMIPP_P0SCSZR_HSIZE_Pos)
                      | (1944U << DCMIPP_P0SCSZR_VSIZE_Pos)
                      | DCMIPP_P0SCSZR_POSNEG
                      | DCMIPP_P0SCSZR_ENABLE;
 
-    // ---- Pipe1 stat removal: disabled for IMX335 (no embedded data) ----
+    // Pipe1 stat removal: disabled for IMX335 (no embedded data)
     _dcmipp->P1SRCR = 0U;
 
     if (conf->enable_swap)
