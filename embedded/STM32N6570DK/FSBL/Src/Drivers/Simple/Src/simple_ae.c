@@ -12,8 +12,6 @@
 
 #include "simple_ae.h"
 #include "simple_imx335.h"
-#include "config.h"
-#include "simple_debug_log.h"
 
 // ---- Private defines ----
 
@@ -258,8 +256,6 @@ void AE_Init(uint32_t start_exposure_us){
     _stat2_raw = 0U;
     _stat3_raw = 0U;
     _brightness = 0U;
-
-    DEBUG_PRINTF("[AE] Init: exposure=%lu us, gain=%lu mdB, target=%lu\r\n", _exposure_us, _gain_mdb, _TARGET_LUMA);
 }
 
 /**
@@ -315,11 +311,6 @@ void AE_Process(CAM_Handle_TypeDef *h){
     //  Measure illuminance
     _lux_estimate = AE_EstimateLux(_brightness, _exposure_us, _gain_mdb);
 
-    DEBUG_PRINTF("[AE] bright=%lu target=%lu lux=%lu | R=%lu G=%lu B=%lu | exp=%lu gain=%lu\r\n",
-    			_brightness, _TARGET_LUMA, _lux_estimate,
-                s1, s2, s3,
-                _exposure_us, _gain_mdb);
-
     uint32_t new_exposure_us;
     uint32_t new_gain_mdb;
 
@@ -329,13 +320,11 @@ void AE_Process(CAM_Handle_TypeDef *h){
                            &new_gain_mdb);
 
     if (new_exposure_us != _exposure_us) {
-        DEBUG_PRINTF("[AE] Exposure: %lu -> %lu us\r\n", _exposure_us, new_exposure_us);
         _exposure_us = new_exposure_us;
         IMX335_SetExposureUs(&h->imx335, _exposure_us);
     }
 
     if (new_gain_mdb != _gain_mdb) {
-        DEBUG_PRINTF("[AE] Gain: %lu -> %lu mdB\r\n", _gain_mdb, new_gain_mdb);
         _gain_mdb = new_gain_mdb;
         IMX335_SetGainMdB(&h->imx335, _gain_mdb);
     }
