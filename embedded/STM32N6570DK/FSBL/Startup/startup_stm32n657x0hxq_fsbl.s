@@ -24,7 +24,7 @@
 
 .syntax unified
 .arch armv8.1-m.main
-.fpu softvfp
+.fpu fpv5-d16
 .thumb
 
 .global g_pfnVectors
@@ -58,6 +58,19 @@ Reset_Handler:
   ldr   sp, =_estack    /* set stack pointer */
   ldr   r0, =_sstack
   msr   MSPLIM, r0      /* set stack pointer limit */
+
+  /* Enable FPU (CP10 + CP11 full acess) + ASPEN (auto FPCA)*/
+  ldr	r0, =0xE000ED88
+  ldr	r1, [r0]
+  orr	r1, r1, #0x00F00000
+  str	r1, [r0]
+  ldr	r0, =0xE000EF34
+  ldr	r1, [r0]
+  orr	r1, r1, #2
+  str 	r1, [r0]
+  dsb
+  isb
+
 /* Call the clock system initialization function.*/
   bl  SystemInit
 
