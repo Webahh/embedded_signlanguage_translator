@@ -62,6 +62,14 @@ void app_init(){
     xspi_status = XSPI_NOR_init(XSPI_nor_cfg);
     DEBUG_PRINTF("NOR INIT Status: %d\r\n", xspi_status);
 
+    volatile const uint8_t *weights =
+        (volatile const uint8_t *)0x71000000UL;
+
+    volatile uint8_t weight_header[16];
+
+    for (uint32_t i = 0U; i < sizeof(weight_header); i++) {
+        weight_header[i] = weights[i];
+    }
 
     LTDC_Init();
 
