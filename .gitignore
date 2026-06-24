@@ -21,6 +21,8 @@ ml_pipeline/.idea/
 *.list
 *.hex
 *.bin
+!embedded/STM32N6570DK/FSBL/Assets/AI/
+!embedded/STM32N6570DK/FSBL/Assets/AI/*.bin
 *.srec
 *.log
 *.tmp

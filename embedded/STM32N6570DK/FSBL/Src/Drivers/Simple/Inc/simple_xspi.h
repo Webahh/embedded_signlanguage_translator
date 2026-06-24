@@ -14,13 +14,12 @@
 #define SIMPLE_XSPI_H
 
 #include <stdint.h>
-#include <stdlib.h>
-#include <stddef.h>
 
 typedef enum {
     XSPI_OK      = 0,
-    XSPI_ERROR   = 1,
-    XSPI_TIMEOUT = 2
+    XSPI_ERROR,
+    XSPI_TIMEOUT,
+	XSPI_INVALID_PARAM
 } XSPI_Status_TypeDef;
 
 typedef struct {
@@ -46,22 +45,50 @@ typedef struct {
 } XSPI_CCR_cfg_TypeDef;
 
 /**
- * @brief Initialise PSRAM device on XSPI1
+ * @brief Initialise the APS256XX PSRAM connected to XSPI1
  *
- * @param [in] init_cfg | XSPI configuration parameters
+ * The function performs:
+ * - XSPI1 clock and GPIO initialisation
+ * - peripheral reset and configuration
+ * - PSRAM mode-register configuration
+ * - clock-prescaler configuration
+ * - activation of memory-mapped mode
  *
- * @retval XSPI_OK      Initialisation successful
- * @retval XSPI_ERROR   Initialisation failed
+ * After successful initialisation, the PSRAM can be accessed through its
+ * memory-mapped address range.
+ *
+ * @param[in] init_cfg XSPI1 and PSRAM configuration
+ *
+ * @retval XSPI_OK            Initialisation successful
+ * @retval XSPI_ERROR         XSPI transfer error
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid configuration parameter
  */
 XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg);
 
 /**
- * @brief Initialise NOR Flash device on XSPI2
+ * @brief Initialise the MX66UW1G45G NOR flash connected to XSPI2
  *
- * @param [in] init_cfg | XSPI configuration parameters
+ * The function performs:
+ * - XSPI2 clock and GPIO initialisation
+ * - peripheral reset and configuration
+ * - NOR reset in SPI-STR mode
+ * - JEDEC-ID validation
+ * - flash-ready status validation
+ * - switch from SPI-STR to OPI-DTR mode
+ * - OPI-DTR communication validation
+ * - clock-prescaler configuration
+ * - activation of memory-mapped mode
  *
- * @retval XSPI_OK      Initialisation successful
- * @retval XSPI_ERROR   Initialisation failed
+ * After successful initialisation, the NOR flash can be read through the
+ * memory-mapped address range beginning at 0x71000000.
+ *
+ * @param[in] init_cfg XSPI2 and NOR configuration
+ *
+ * @retval XSPI_OK            Initialisation successful
+ * @retval XSPI_ERROR         Flash identification, status or transfer error
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid configuration parameter
  */
 XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg);
 
