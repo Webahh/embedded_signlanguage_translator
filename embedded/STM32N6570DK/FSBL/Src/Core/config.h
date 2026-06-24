@@ -36,7 +36,8 @@ extern const RCC_IC_cfg_TypeDef RCC_IC_cfg[20];
 extern const XSPI_cfg_TypeDef XSPI_psram_cfg;
 extern const XSPI_cfg_TypeDef XSPI_nor_cfg;
 extern const XSPI_CCR_cfg_TypeDef XSPI_write_reg_cfg;
-extern const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg;
+extern const XSPI_CCR_cfg_TypeDef XSPI_PSRAM_memorymapped_cfg;
+extern const XSPI_CCR_cfg_TypeDef XSPI_NOR_memorymapped_cfg;
 
 extern const CSI_cfg_TypeDef CSI_cfg;
 extern const DCMIPP_Pipe_cfg_TypeDef DCMIPP_display_pipe_cfg;

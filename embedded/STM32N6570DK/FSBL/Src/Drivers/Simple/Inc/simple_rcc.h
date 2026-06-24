@@ -210,6 +210,7 @@ void RCC_enable_XSPIM(void);
 void RCC_reset_XSPIM(void);
 void RCC_enable_RIFSC(void);
 void RCC_setXSPI1_clock_source(uint32_t source);
+void RCC_setXSPI2_clock_source(uint32_t source);
 void RCC_enable_USART(USART_TypeDef* USARTX);
 
 #endif /* SIMPLE_RCC_H */

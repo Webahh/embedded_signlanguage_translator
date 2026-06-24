@@ -844,11 +844,18 @@ void RCC_enable_RIFSC(void){
 }
 
 void RCC_setXSPI1_clock_source(uint32_t source){
-    source &= 0x3U;
+    source &= 0x7U;
 
     RCC->CCIPR6 &= ~RCC_CCIPR6_XSPI1SEL_Msk;
     RCC->CCIPR6 |=  (source << RCC_CCIPR6_XSPI1SEL_Pos);
+    (void)RCC->CCIPR6;
+}
 
+void RCC_setXSPI2_clock_source(uint32_t source){
+    source &= 0x7U;
+
+    RCC->CCIPR6 &= ~RCC_CCIPR6_XSPI2SEL_Msk;
+    RCC->CCIPR6 |=  (source << RCC_CCIPR6_XSPI2SEL_Pos);
     (void)RCC->CCIPR6;
 }
 

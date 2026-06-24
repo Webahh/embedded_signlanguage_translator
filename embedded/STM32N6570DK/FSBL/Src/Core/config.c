@@ -109,7 +109,7 @@ const XSPI_CCR_cfg_TypeDef XSPI_write_reg_cfg = {
     .data_qse          = 0
 };
 
-const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg = {
+const XSPI_CCR_cfg_TypeDef XSPI_PSRAM_memorymapped_cfg = {
     .instruction_mode  = 4,
     .instruction_dtr   = 0,
     .instruction_size  = 0,
@@ -119,6 +119,18 @@ const XSPI_CCR_cfg_TypeDef XSPI_memorymapped_cfg = {
     .data_mode         = 5,
     .data_dtr          = 1,
     .data_qse          = 1
+};
+
+const XSPI_CCR_cfg_TypeDef XSPI_NOR_memorymapped_cfg = {
+	.instruction_mode  = 4U,
+	.instruction_dtr   = 1U,
+	.instruction_size  = 1U,
+	.address_mode      = 4U,
+	.address_dtr       = 1U,
+	.address_size      = 3U,
+	.data_mode         = 4U,
+	.data_dtr          = 1U,
+	.data_qse          = 1U
 };
 
 

@@ -2,11 +2,10 @@
  * @file    simple_xspi.h
  * @author  Weber
  * @date    21.05.2026
- * @brief   XSPI PSRAM / NOR flash driver source
+ * @brief   Bare-metal XSPI driver for APS256XX PSRAM and MX66UW1G45G NOR
  */
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "stm32n657xx.h"
 
@@ -16,40 +15,52 @@
 #include "simple_timer.h"
 #include "config.h"
 
-#define _TIMEOUT                    	1000000
-#define _FIFO_THRESHOLD             	7
-#define _CLEAR_ADDRESS              	0
-#define _MM_APMS                    	1
-#define _MM_FMODE                   	3
-#define _FMODE_INDIRECT_WRITE   		0
-#define _FMODE_INDIRECT_READ    		1
+#define _XSPI_TIMEOUT                   1000000
+#define _XSPI_FIFO_THRESHOLD            7
+#define _XSPI_CLEAR_ADDRESS             0
 
-#define _PSRAM_MR0_ADDR             	0x00
-#define _PSRAM_MR4_ADDR             	0x04
-#define _PSRAM_MR8_ADDR             	0x08
+#define _XSPI_FMODE_INDIRECT_WRITE   	0
+#define _XSPI_FMODE_INDIRECT_READ    	1
+#define _XSPI_FMODE_MEMORY_MAPPED    	3
+
+#define _PSRAM_MR0_ADDRESS             	0x00
+#define _PSRAM_MR4_ADDRESS             	0x04
+#define _PSRAM_MR8_ADDRESS             	0x08
 #define _PSRAM_MR0_VALUE            	0x30
 #define _PSRAM_MR4_VALUE            	0x20
 #define _PSRAM_MR8_VALUE            	0x40
-#define _PSRAM_REG_WRITE_DLR        	0x1
-#define _PSRAM_REG_WRITE_DUMMY_BYTE 	0x0
-#define _PSRAM_REG_WRITE_CMD        	0xC0
-#define _PSRAM_CMD_LINEAR_BURST_READ   	0x20
-#define _PSRAM_CMD_LINEAR_BURST_WRITE  	0xA0
+
+#define _PSRAM_REGISTER_WRITE_CMD    	0xC0
+#define _PSRAM_REGISTER_WRITE_DLR     	0x01
+#define _PSRAM_REGISTER_DUMMY_BYTE    	0x00
+
+#define _PSRAM_LINEAR_READ_CMD        	0x20
+#define _PSRAM_LINEAR_WRITE_CMD       	0xA0
 #define _PSRAM_READ_DUMMY_CYCLES    	6
 #define _PSRAM_WRITE_DUMMY_CYCLES   	6
 
-#define _NOR_MX66_RESET_ENABLE_CMD		0x66
-#define _NOR_MX66_RESET_MEMORY_CMD      0x99
-#define _NOR_MX66_READ_ID_CMD           0x9F
-#define _NOR_MX66_ID_SIZE               3
-#define _NOR_PSMKR_READY_MASK       	0x1
-#define _NOR_POLLING_INTERVAL       	0x10
-#define _NOR_READ_OPCODE            	0xEE11
-#define _NOR_READ_DUMMY_CYCLES      	0x0A
-#define _NOR_WRITE_OPCODE           	0x12ED
+#define _NOR_RESET_ENABLE_CMD         	0x66
+#define _NOR_RESET_MEMORY_CMD         	0x99
+#define _NOR_READ_ID_CMD              	0x9F
+#define _NOR_READ_STATUS_CMD          	0x05
+#define _NOR_WRITE_ENABLE_CMD         	0x06
+#define _NOR_WRITE_CFG_REG2_CMD       	0x72
+#define _NOR_OCTA_READ_STATUS_CMD     	0x05FA
+#define _NOR_OCTA_READ_DTR_CMD        	0xEE11
+#define _NOR_OCTA_PAGE_PROGRAM_CMD    	0x12ED
+#define _NOR_CR2_PROTOCOL_ADDRESS     	0x00000000
+#define _NOR_CR2_DOPI_VALUE           	0x02
+#define _NOR_ID_SIZE                 	3
+#define _NOR_DTR_STATUS_SIZE          	2
+#define _NOR_STATUS_WIP               	0x01
+#define _NOR_STATUS_WEL               	0x02
+#define _NOR_MANUFACTURER_ID          	0xC2
+#define _NOR_MEMORY_TYPE_ID           	0x81
+#define _NOR_MEMORY_DENSITY_ID        	0x3B
+#define _NOR_REGISTER_DTR_DUMMY       	5
+#define _NOR_READ_DTR_DUMMY           	10
 
-
-#define _FIELD(REG, FIELD, VAL) \
+#define _XSPI_FIELD(REG, FIELD, VAL) \
     (((uint32_t)(VAL) << XSPI_##REG##_##FIELD##_Pos) & XSPI_##REG##_##FIELD##_Msk)
 
 // -------------------------------------------------------------------------
@@ -57,31 +68,144 @@
 // -------------------------------------------------------------------------
 
 /**
- * @brief Set XSPI prescaler with busy-wait timeout guards
+ * @brief Wait until the specified XSPI peripheral is no longer busy
  *
- * @param [in] xspi      XSPI peripheral instance
- * @param [in] prescaler Prescaler divider value
+ * @param[in] xspi Pointer to the XSPI peripheral instance
+ *
+ * @retval XSPI_OK      Peripheral is ready
+ * @retval XSPI_TIMEOUT Timeout while waiting for the peripheral
  */
-static void _prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
-    uint32_t timeout = _TIMEOUT;
+static XSPI_Status_TypeDef _XSPI_wait_not_busy(XSPI_TypeDef *xspi)
+{
+    uint32_t timeout = _XSPI_TIMEOUT;
 
-    while (xspi->SR & XSPI_SR_BUSY){
-        if (--timeout == 0) break;
+    while ((xspi->SR & XSPI_SR_BUSY) != 0U) {
+        if (--timeout == 0U) {
+            return XSPI_TIMEOUT;
+        }
+    }
+    return XSPI_OK;
+}
+
+/**
+ * @brief Wait for completion of the current XSPI transfer
+ *
+ * @param[in] xspi Pointer to the XSPI peripheral instance
+ *
+ * @retval XSPI_OK      Transfer completed successfully
+ * @retval XSPI_ERROR   Transfer error detected
+ * @retval XSPI_TIMEOUT Timeout while waiting for completion
+ */
+static XSPI_Status_TypeDef _XSPI_wait_transfer_complete(XSPI_TypeDef *xspi)
+{
+    uint32_t timeout = _XSPI_TIMEOUT;
+
+    while ((xspi->SR & XSPI_SR_TCF) == 0U) {
+        if ((xspi->SR & XSPI_SR_TEF) != 0U) {
+            xspi->FCR = XSPI_FCR_CTEF;
+            return XSPI_ERROR;
+        }
+
+        if (--timeout == 0U) {
+            return XSPI_TIMEOUT;
+        }
     }
 
+    xspi->FCR = XSPI_FCR_CTCF;
+
+    return XSPI_OK;
+}
+
+/**
+ * @brief Clear the XSPI transfer-complete and transfer-error flags
+ *
+ * @param[in] xspi Pointer to the XSPI peripheral instance
+ */
+static void _XSPI_clear_flags(XSPI_TypeDef *xspi)
+{
     xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+}
 
-    // Set prescaler
-    xspi->DCR2 &= ~XSPI_DCR2_PRESCALER_Msk;
-    xspi->DCR2 |= _FIELD(DCR2, PRESCALER, prescaler);
+/**
+ * @brief Set the clock prescaler of an XSPI peripheral
+ *
+ * @param[in] xspi      Pointer to the XSPI peripheral instance
+ * @param[in] prescaler Prescaler register value
+ *
+ * @retval XSPI_OK      Prescaler changed successfully
+ * @retval XSPI_TIMEOUT Peripheral remained busy
+ */
+static XSPI_Status_TypeDef _XSPI_prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler)
+{
+    XSPI_Status_TypeDef status;
 
-    // Timeout guard
-    timeout = _TIMEOUT;
-    while (xspi->SR & XSPI_SR_BUSY){
-        if (--timeout == 0) break;
+    status = _XSPI_wait_not_busy(xspi);
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+    _XSPI_clear_flags(xspi);
+
+    xspi->DCR2 =
+        (xspi->DCR2 & ~XSPI_DCR2_PRESCALER_Msk)
+        | _XSPI_FIELD(DCR2, PRESCALER, prescaler);
+
+    status = _XSPI_wait_not_busy(xspi);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    _XSPI_clear_flags(xspi);
+
+    return XSPI_OK;
+}
+
+/**
+ * @brief Build an XSPI CCR or WCCR register value
+ *
+ * @param[in] cfg Communication configuration
+ *
+ * @return Encoded CCR register value
+ */
+static uint32_t _XSPI_CCR_build(XSPI_CCR_cfg_TypeDef cfg)
+{
+    return _XSPI_FIELD(CCR, IMODE,  cfg.instruction_mode)
+         | _XSPI_FIELD(CCR, IDTR,   cfg.instruction_dtr)
+         | _XSPI_FIELD(CCR, ISIZE,  cfg.instruction_size)
+         | _XSPI_FIELD(CCR, ADMODE, cfg.address_mode)
+         | _XSPI_FIELD(CCR, ADDTR,  cfg.address_dtr)
+         | _XSPI_FIELD(CCR, ADSIZE, cfg.address_size)
+         | _XSPI_FIELD(CCR, DMODE,  cfg.data_mode)
+         | _XSPI_FIELD(CCR, DDTR,   cfg.data_dtr)
+         | _XSPI_FIELD(CCR, DQSE,   cfg.data_qse);
+}
+
+/**
+ * @brief Configure the common registers of an XSPI peripheral
+ *
+ * @param[in] xspi Pointer to the XSPI peripheral instance
+ * @param[in] cfg  Device configuration
+ */
+static void _XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg)
+{
+    xspi->DCR1 =
+          _XSPI_FIELD(DCR1, MTYP,    cfg.memory_type)
+        | _XSPI_FIELD(DCR1, DEVSIZE, cfg.devsize)
+        | _XSPI_FIELD(DCR1, CSHT,    cfg.chipselect_high_time);
+
+    xspi->DCR2 =
+        _XSPI_FIELD(DCR2, PRESCALER, cfg.prescaler);
+
+    xspi->DCR3 =
+          _XSPI_FIELD(DCR3, MAXTRAN, cfg.maxtran_value)
+        | _XSPI_FIELD(DCR3, CSBOUND, cfg.chipselect_boundary);
+
+    xspi->DCR4 = cfg.refresh_cycles;
+
+    xspi->CR =
+        _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD);
+
+    xspi->TCR = 0U;
 }
 
 /**
@@ -91,7 +215,8 @@ static void _prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
  *   GPIOO{0,2,3,4} = CLK, IO3, DQS0, NCS1
  *   GPIOP{0..15}   = IO0-IO15
  */
-static void _XSPI1_PSRAM_GPIO_init(void){
+static void _XSPI1_PSRAM_GPIO_init(void)
+{
     RCC_enable_GPIO(GPIOO);
     RCC_enable_GPIO(GPIOP);
 
@@ -113,317 +238,553 @@ static void _XSPI1_PSRAM_GPIO_init(void){
  *   PN0=DQS0, PN1=NCS1, PN2-5=IO0-3, PN6=CLK,
  *   PN7=NCLK, PN8-11=IO4-7
  */
-static void _XSPI2_NOR_GPIO_init(void){
+static void _XSPI2_NOR_GPIO_init(void)
+{
     RCC_enable_GPIO(GPION);
+
     for (int p = 0; p <= 11; p++){
         GPIO_Config(GPION, p, GPIO_XSPI_cfg);
     }
 }
 
 /**
- * @brief Program XSPI device configuration registers
+ * @brief Write one APS256XX mode register
  *
- * @param [in] xspi XSPI peripheral instance
- * @param [in] cfg  Device configuration parameters
+ * @param[in] register_address Address of the PSRAM mode register
+ * @param[in] value            Value to write
+ *
+ * @retval XSPI_OK      Register written successfully
+ * @retval XSPI_ERROR   Transfer error detected
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
  */
-static void _XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
-    xspi->DCR1 = _FIELD(DCR1, MTYP,     cfg.memory_type)
-               | _FIELD(DCR1, DEVSIZE,  cfg.devsize)
-               | _FIELD(DCR1, CSHT,     cfg.chipselect_high_time);
-    xspi->DCR2 = _FIELD(DCR2, PRESCALER, cfg.prescaler);
-    xspi->DCR3 = _FIELD(DCR3, MAXTRAN,  cfg.maxtran_value)
-               | _FIELD(DCR3, CSBOUND,  cfg.chipselect_boundary);
-    xspi->DCR4 = cfg.refresh_cycles;
+static XSPI_Status_TypeDef _PSRAM_register_write(uint8_t register_address, uint8_t value)
+{
+    XSPI_Status_TypeDef status;
+    uint32_t ccr;
 
-    xspi->CR  = _FIELD(CR, FTHRES, _FIFO_THRESHOLD);
-    xspi->TCR = 0;
-}
-
-/**
- * @brief Build a CCR register value from a configuration struct
- *
- * @param [in]  cfg    CCR configuration parameters
- * @param [out] result Built CCR register value
- */
-static void _ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
-    *result = _FIELD(CCR, IMODE,  cfg.instruction_mode)
-            | _FIELD(CCR, IDTR,   cfg.instruction_dtr)
-            | _FIELD(CCR, ISIZE,  cfg.instruction_size)
-            | _FIELD(CCR, ADMODE, cfg.address_mode)
-            | _FIELD(CCR, ADDTR,  cfg.address_dtr)
-            | _FIELD(CCR, ADSIZE, cfg.address_size)
-            | _FIELD(CCR, DMODE,  cfg.data_mode)
-            | _FIELD(CCR, DDTR,   cfg.data_dtr)
-            | _FIELD(CCR, DQSE,   cfg.data_qse);
-}
-
-/**
- * @brief Indirect register write to an XSPI device
- *
- * Sends 1 byte via octal DTR protocol: 8-bit cmd + 32-bit addr + 8-bit data
- *
- * @param [in] xspi     XSPI peripheral instance
- * @param [in] reg_addr Target register address
- * @param [in] value    Value to write
- *
- * @retval XSPI_OK      Write successful
- * @retval XSPI_TIMEOUT Busy or transfer wait timed out
- */
-static XSPI_Status_TypeDef _register_write(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
-    uint32_t timeout;
-    uint32_t ccr_val;
-
-    xspi->CR = _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
-             | XSPI_CR_EN;
-
-    timeout = _TIMEOUT;
-    while (xspi->SR & XSPI_SR_BUSY){
-        if (--timeout == 0) return XSPI_TIMEOUT;
+    status = _XSPI_wait_not_busy(XSPI1);
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
-    xspi->TCR = 0;
+    _XSPI_clear_flags(XSPI1);
 
-    _ccr_build(XSPI_write_reg_cfg, &ccr_val);
-    xspi->CCR = ccr_val;
+    XSPI1->CR =
+          _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
+        | XSPI_CR_EN;
 
-    xspi->IR  = _PSRAM_REG_WRITE_CMD;
-    xspi->AR  = reg_addr;
-    xspi->DLR = _PSRAM_REG_WRITE_DLR;
+    XSPI1->TCR = 0U;
 
-    *((__IO uint8_t*)&xspi->DR) = value;
-    *((__IO uint8_t*)&xspi->DR) = _PSRAM_REG_WRITE_DUMMY_BYTE;
+    ccr = _XSPI_CCR_build(XSPI_write_reg_cfg);
+    XSPI1->CCR = ccr;
 
-    timeout = _TIMEOUT;
-    while (!(xspi->SR & XSPI_SR_TCF)){
-        if (--timeout == 0) return XSPI_TIMEOUT;
+    XSPI1->IR  = _PSRAM_REGISTER_WRITE_CMD;
+    XSPI1->AR  =  register_address;
+    XSPI1->DLR = _PSRAM_REGISTER_WRITE_DLR;
+
+    *((__IO uint8_t *)&XSPI1->DR) = value;
+    *((__IO uint8_t *)&XSPI1->DR) = _PSRAM_REGISTER_DUMMY_BYTE;
+
+    status = _XSPI_wait_transfer_complete(XSPI1);
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    xspi->AR  = _CLEAR_ADDRESS;
-    xspi->FCR = XSPI_FCR_CTCF;
+    XSPI1->AR = _XSPI_CLEAR_ADDRESS;
 
     return XSPI_OK;
 }
 
 /**
- * @brief Write PSRAM mode register configuration on XSPI1
+ * @brief Configure the APS256XX mode registers
+ *
+ * Programs mode registers MR0, MR4 and MR8.
+ *
+ * @retval XSPI_OK      Configuration completed successfully
+ * @retval XSPI_ERROR   Register write failed
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
  */
-static void _PSRAM_config_write(void){
-    _register_write(XSPI1, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
-    _register_write(XSPI1, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
-    _register_write(XSPI1, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
-}
-
-static bool _NOR_Command_SPI(XSPI_TypeDef *xspi, uint8_t instruction)
+static XSPI_Status_TypeDef _PSRAM_config_write(void)
 {
-    uint32_t timeout = _TIMEOUT;
+    XSPI_Status_TypeDef status;
 
-    while ((xspi->SR & XSPI_SR_BUSY) != 0U) {
-        if (--timeout == 0U) {
-            return false;
-        }
+    status = _PSRAM_register_write(
+        _PSRAM_MR0_ADDRESS,
+        _PSRAM_MR0_VALUE);
+
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+    status = _PSRAM_register_write(
+        _PSRAM_MR4_ADDRESS,
+        _PSRAM_MR4_VALUE);
 
-    xspi->TCR = 0U;
-    xspi->DLR = 0U;
+    if (status != XSPI_OK) {
+        return status;
+    }
 
-    /*
-     * SPI 1-0-0:
-     * - 8-Bit Instruction
-     * - eine Datenleitung für die Instruction
-     * - keine Adresse
-     * - keine Daten
-     */
-    xspi->CCR =
-          _FIELD(CCR, IMODE, 1U)
-        | _FIELD(CCR, IDTR,  0U)
-        | _FIELD(CCR, ISIZE, 0U)
-        | _FIELD(CCR, ADMODE, 0U)
-        | _FIELD(CCR, DMODE, 0U);
+    status = _PSRAM_register_write(
+        _PSRAM_MR8_ADDRESS,
+        _PSRAM_MR8_VALUE);
 
-    xspi->CR =
-          _FIELD(CR, FMODE, _FMODE_INDIRECT_WRITE)
-        | _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    return XSPI_OK;
+}
+
+/**
+ * @brief Enable memory-mapped mode for the APS256XX PSRAM
+ *
+ * @retval XSPI_OK      Memory-mapped mode enabled
+ * @retval XSPI_TIMEOUT XSPI1 remained busy
+ */
+static XSPI_Status_TypeDef _PSRAM_memory_mapped_enable(void)
+{
+    XSPI_Status_TypeDef status;
+    uint32_t ccr;
+
+    status = _XSPI_wait_not_busy(XSPI1);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    _XSPI_clear_flags(XSPI1);
+
+    ccr = _XSPI_CCR_build(XSPI_PSRAM_memorymapped_cfg);
+
+    XSPI1->WCCR = ccr;
+    XSPI1->WIR  = _PSRAM_LINEAR_WRITE_CMD;
+    XSPI1->WTCR =
+        _XSPI_FIELD(WTCR, DCYC, _PSRAM_WRITE_DUMMY_CYCLES);
+
+    XSPI1->CCR = ccr;
+    XSPI1->IR  = _PSRAM_LINEAR_READ_CMD;
+    XSPI1->TCR =
+        _XSPI_FIELD(TCR, DCYC, _PSRAM_READ_DUMMY_CYCLES);
+
+    XSPI1->CR =
+          _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_MEMORY_MAPPED)
+        | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
         | XSPI_CR_EN;
 
-    xspi->IR = instruction;
-
-    timeout = _TIMEOUT;
-
-    while ((xspi->SR & XSPI_SR_TCF) == 0U) {
-        if ((xspi->SR & XSPI_SR_TEF) != 0U) {
-            xspi->FCR = XSPI_FCR_CTEF;
-            return false;
-        }
-
-        if (--timeout == 0U) {
-            return false;
-        }
-    }
-
-    xspi->FCR = XSPI_FCR_CTCF;
-
-    return true;
+    return XSPI_OK;
 }
 
-static bool _NOR_Read_SPI(XSPI_TypeDef *xspi,
-                          uint8_t instruction,
-                          uint8_t *data,
-                          uint32_t length)
+/**
+ * @brief Send a command to the NOR flash in SPI-STR mode
+ *
+ * Uses the 1-0-0 protocol without address or data phase.
+ *
+ * @param[in] instruction Command opcode
+ *
+ * @retval XSPI_OK      Command completed successfully
+ * @retval XSPI_ERROR   Transfer error detected
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
+ */
+static XSPI_Status_TypeDef _NOR_command_SPI(uint8_t instruction)
 {
-    uint32_t timeout = _TIMEOUT;
+    XSPI_Status_TypeDef status;
+
+    status = _XSPI_wait_not_busy(XSPI2);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    _XSPI_clear_flags(XSPI2);
+
+    XSPI2->TCR = 0U;
+    XSPI2->DLR = 0U;
+
+    XSPI2->CCR =
+          _XSPI_FIELD(CCR, IMODE, 1U)
+        | _XSPI_FIELD(CCR, IDTR, 0U)
+        | _XSPI_FIELD(CCR, ISIZE, 0U)
+        | _XSPI_FIELD(CCR, ADMODE, 0U)
+        | _XSPI_FIELD(CCR, DMODE, 0U);
+
+    XSPI2->CR =
+          _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_INDIRECT_WRITE)
+        | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
+        | XSPI_CR_EN;
+
+    XSPI2->IR = instruction;
+
+    return _XSPI_wait_transfer_complete(XSPI2);
+}
+
+/**
+ * @brief Read data from the NOR flash in SPI-STR mode
+ *
+ * Uses the 1-0-1 protocol.
+ *
+ * @param[in]  instruction Command opcode
+ * @param[out] data        Destination buffer
+ * @param[in]  length      Number of bytes to receive
+ *
+ * @retval XSPI_OK            Read completed successfully
+ * @retval XSPI_ERROR         Transfer error detected
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid buffer or length
+ */
+static XSPI_Status_TypeDef _NOR_read_SPI(
+    uint8_t instruction,
+    uint8_t *data,
+    uint32_t length)
+{
+    XSPI_Status_TypeDef status;
+    uint32_t timeout;
 
     if ((data == NULL) || (length == 0U)) {
-        return false;
+        return XSPI_INVALID_PARAM;
     }
 
-    while ((xspi->SR & XSPI_SR_BUSY) != 0U) {
-        if (--timeout == 0U) {
-            return false;
-        }
+    status = _XSPI_wait_not_busy(XSPI2);
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+    _XSPI_clear_flags(XSPI2);
 
-    xspi->TCR = 0U;
-    xspi->DLR = length - 1U;
+    XSPI2->TCR = 0U;
+    XSPI2->DLR = length - 1U;
 
-    /*
-     * SPI 1-0-1:
-     * - 8-Bit Instruction
-     * - keine Adresse
-     * - Daten über eine Leitung
-     */
-    xspi->CCR =
-          _FIELD(CCR, IMODE, 1U)
-        | _FIELD(CCR, IDTR,  0U)
-        | _FIELD(CCR, ISIZE, 0U)
-        | _FIELD(CCR, ADMODE, 0U)
-        | _FIELD(CCR, DMODE, 1U)
-        | _FIELD(CCR, DDTR,  0U)
-        | _FIELD(CCR, DQSE,  0U);
+    XSPI2->CCR =
+          _XSPI_FIELD(CCR, IMODE, 1U)
+        | _XSPI_FIELD(CCR, IDTR, 0U)
+        | _XSPI_FIELD(CCR, ISIZE, 0U)
+        | _XSPI_FIELD(CCR, ADMODE, 0U)
+        | _XSPI_FIELD(CCR, DMODE, 1U)
+        | _XSPI_FIELD(CCR, DDTR, 0U)
+        | _XSPI_FIELD(CCR, DQSE, 0U);
 
-    xspi->CR =
-          _FIELD(CR, FMODE, _FMODE_INDIRECT_READ)
-        | _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
+    XSPI2->CR =
+          _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_INDIRECT_READ)
+        | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
         | XSPI_CR_EN;
 
-    xspi->IR = instruction;
+    XSPI2->IR = instruction;
 
-    for (uint32_t i = 0U; i < length; i++) {
-        timeout = _TIMEOUT;
+    for (uint32_t index = 0U; index < length; index++) {
+        timeout = _XSPI_TIMEOUT;
 
-        while ((xspi->SR & XSPI_SR_FLEVEL_Msk) == 0U) {
-            if ((xspi->SR & XSPI_SR_TEF) != 0U) {
-                xspi->FCR = XSPI_FCR_CTEF;
-                return false;
+        while ((XSPI2->SR & XSPI_SR_FLEVEL_Msk) == 0U) {
+            if ((XSPI2->SR & XSPI_SR_TEF) != 0U) {
+                XSPI2->FCR = XSPI_FCR_CTEF;
+                return XSPI_ERROR;
             }
 
             if (--timeout == 0U) {
-                return false;
+                return XSPI_TIMEOUT;
             }
         }
 
-        data[i] = *((__IO uint8_t *)&xspi->DR);
+        data[index] = *((__IO uint8_t *)&XSPI2->DR);
     }
 
-    timeout = _TIMEOUT;
-
-    while ((xspi->SR & XSPI_SR_TCF) == 0U) {
-        if ((xspi->SR & XSPI_SR_TEF) != 0U) {
-            xspi->FCR = XSPI_FCR_CTEF;
-            return false;
-        }
-
-        if (--timeout == 0U) {
-            return false;
-        }
-    }
-
-    xspi->FCR = XSPI_FCR_CTCF;
-
-    return true;
+    return _XSPI_wait_transfer_complete(XSPI2);
 }
 
-static bool _NOR_ResetMemory(void)
+/**
+ * @brief Write one byte to an addressed NOR configuration register
+ *
+ * Uses the SPI 1-1-1 protocol with a 32-bit address.
+ *
+ * @param[in] instruction Command opcode
+ * @param[in] address     Register address
+ * @param[in] value       Value to write
+ *
+ * @retval XSPI_OK      Write completed successfully
+ * @retval XSPI_ERROR   Transfer error detected
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
+ */
+static XSPI_Status_TypeDef _NOR_write_SPI_addressed(uint8_t instruction, uint32_t address, uint8_t value)
 {
-    if (!_NOR_Command_SPI(XSPI2, _NOR_MX66_RESET_ENABLE_CMD)) {
-        return false;
+    XSPI_Status_TypeDef status;
+
+    status = _XSPI_wait_not_busy(XSPI2);
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    if (!_NOR_Command_SPI(XSPI2, _NOR_MX66_RESET_MEMORY_CMD)) {
-        return false;
+    _XSPI_clear_flags(XSPI2);
+
+    XSPI2->TCR = 0U;
+    XSPI2->DLR = 0U;
+
+    XSPI2->CCR = _XSPI_FIELD(CCR, IMODE,  1U)
+			   | _XSPI_FIELD(CCR, IDTR,   0U)
+			   | _XSPI_FIELD(CCR, ISIZE,  0U)
+			   | _XSPI_FIELD(CCR, ADMODE, 1U)
+			   | _XSPI_FIELD(CCR, ADDTR,  0U)
+			   | _XSPI_FIELD(CCR, ADSIZE, 3U)
+			   | _XSPI_FIELD(CCR, DMODE,  1U)
+			   | _XSPI_FIELD(CCR, DDTR,   0U)
+			   | _XSPI_FIELD(CCR, DQSE,   0U);
+
+    XSPI2->CR = _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_INDIRECT_WRITE)
+        	  | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
+			  | XSPI_CR_EN;
+
+    XSPI2->IR = instruction;
+    XSPI2->AR = address;
+
+    *((__IO uint8_t *)&XSPI2->DR) = value;
+
+    return _XSPI_wait_transfer_complete(XSPI2);
+}
+
+/**
+ * @brief Reset the MX66UW1G45G NOR flash in SPI-STR mode
+ *
+ * @retval XSPI_OK      Reset completed successfully
+ * @retval XSPI_ERROR   Reset command failed
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
+ */
+static XSPI_Status_TypeDef _NOR_reset(void)
+{
+    XSPI_Status_TypeDef status;
+
+    status = _NOR_command_SPI(_NOR_RESET_ENABLE_CMD);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    status = _NOR_command_SPI(_NOR_RESET_MEMORY_CMD);
+    if (status != XSPI_OK) {
+        return status;
     }
 
     TIMER_Delay_ms(1);
 
-    return true;
+    return XSPI_OK;
 }
 
-/**
- * @brief Write NOR configuration to registers on XSPI2
- */
-static void _NOR_config_write(void){
-    _register_write(XSPI2, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
-    _register_write(XSPI2, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
-    _register_write(XSPI2, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
-}
 
 /**
- * @brief Enable memory-mapped mode on XSPI1 (PSRAM)
+ * @brief Read the JEDEC identification of the NOR flash
  *
- * Configures read (CCR/IR/TCR) and write (WCCR/WIR/WTCR) channel
- * opcodes for octal-DTR protocol, then sets FMODE=3 (memory-mapped).
+ * @param[out] id Buffer for the three identification bytes
+ *
+ * @retval XSPI_OK            Identification read successfully
+ * @retval XSPI_ERROR         Transfer error detected
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid destination buffer
  */
-static void _PSRAM_memoryMapped_enable(void){
-    uint32_t ccr_val;
+static XSPI_Status_TypeDef _NOR_read_ID(uint8_t id[_NOR_ID_SIZE])
+{
+    return _NOR_read_SPI(_NOR_READ_ID_CMD, id, _NOR_ID_SIZE);
+}
 
-    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
-    XSPI1->WCCR = ccr_val;
 
-    XSPI1->WIR  = _PSRAM_CMD_LINEAR_BURST_WRITE;
-    XSPI1->WTCR = _FIELD(WTCR, DCYC, _PSRAM_WRITE_DUMMY_CYCLES);
+/**
+ * @brief Validate the NOR flash JEDEC identification
+ *
+ * @param[in] id Three-byte JEDEC identification
+ *
+ * @retval 1 Identification is valid
+ * @retval 0 Identification is invalid
+ */
+static uint8_t _NOR_ID_is_valid(const uint8_t id[_NOR_ID_SIZE])
+{
+    if (id == NULL) {
+        return 0;
+    }
 
-    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
-    XSPI1->CCR  = ccr_val;
+    return (id[0] == _NOR_MANUFACTURER_ID)
+        && (id[1] == _NOR_MEMORY_TYPE_ID)
+        && (id[2] == _NOR_MEMORY_DENSITY_ID);
+}
 
-    XSPI1->IR   = _PSRAM_CMD_LINEAR_BURST_READ;
-    XSPI1->TCR  = _FIELD(TCR, DCYC, _PSRAM_READ_DUMMY_CYCLES);
 
-    XSPI1->CR = _FIELD(CR, FMODE,  _MM_FMODE)
-              | _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
-              | XSPI_CR_EN;
+/**
+ * @brief Read the NOR status register in SPI-STR mode
+ *
+ * @param[out] status Destination for the status-register value
+ *
+ * @retval XSPI_OK            Status read successfully
+ * @retval XSPI_ERROR         Transfer error detected
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid destination pointer
+ */
+static XSPI_Status_TypeDef _NOR_read_status_SPI(uint8_t *status)
+{
+    return _NOR_read_SPI(_NOR_READ_STATUS_CMD, status, 1);
 }
 
 /**
- * @brief Enable memory-mapped mode on XSPI2 (NOR Flash)
+ * @brief Enable write operations on the NOR flash
  *
- * Sets up automatic polling (PSMKR/PIR), read channel (CCR/IR/TCR),
- * write channel (WCCR/WIR), then switches to memory-mapped mode.
+ * Sends Write Enable and verifies the WEL bit.
+ *
+ * @retval XSPI_OK      Write Enable Latch was set
+ * @retval XSPI_ERROR   WEL bit was not set
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
  */
-static void _NOR_memoryMapped_enable(void){
-    uint32_t ccr_val;
+static XSPI_Status_TypeDef _NOR_write_enable(void)
+{
+    XSPI_Status_TypeDef status;
+    uint8_t flash_status = 0U;
 
-    XSPI2->PSMKR = _NOR_PSMKR_READY_MASK;
-    XSPI2->PIR   = _NOR_POLLING_INTERVAL;
+    status = _NOR_command_SPI(_NOR_WRITE_ENABLE_CMD);
+    if (status != XSPI_OK) {
+        return status;
+    }
 
-    XSPI2->WIR   = _NOR_WRITE_OPCODE;
+    status = _NOR_read_status_SPI(&flash_status);
+    if (status != XSPI_OK) {
+        return status;
+    }
 
-    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
-    XSPI2->WCCR  = ccr_val;
+    if ((flash_status & _NOR_STATUS_WEL) == 0U) {
+        return XSPI_ERROR;
+    }
 
-    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
-    XSPI2->CCR   = ccr_val;
+    return XSPI_OK;
+}
 
-    XSPI2->TCR  = XSPI_TCR_DHQC
-                | _FIELD(TCR, DCYC, _PSRAM_READ_DUMMY_CYCLES);
-    XSPI2->IR   = _NOR_READ_OPCODE;
+/**
+ * @brief Switch the NOR flash from SPI-STR to OPI-DTR mode
+ *
+ * Programs the DOPI bit in Configuration Register 2.
+ *
+ * @retval XSPI_OK      OPI-DTR mode configured successfully
+ * @retval XSPI_ERROR   Configuration write failed
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
+ */
+static XSPI_Status_TypeDef _NOR_OPI_DTR_enable(void)
+{
+    XSPI_Status_TypeDef status;
 
-    XSPI2->CR = _FIELD(CR, FMODE, _MM_FMODE)
-              | _FIELD(CR, APMS,  _MM_APMS)
-              | XSPI_CR_EN;
+    status = _NOR_write_enable();
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    status = _NOR_write_SPI_addressed(_NOR_WRITE_CFG_REG2_CMD, _NOR_CR2_PROTOCOL_ADDRESS, _NOR_CR2_DOPI_VALUE);
+
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    TIMER_Delay_ms(1);
+
+    return XSPI_OK;
+}
+
+/**
+ * @brief Read the NOR status register in OPI-DTR mode
+ *
+ * @param[out] status_data Two-byte status response
+ *
+ * @retval XSPI_OK            Status read successfully
+ * @retval XSPI_ERROR         Transfer error detected
+ * @retval XSPI_TIMEOUT       Peripheral operation timed out
+ * @retval XSPI_INVALID_PARAM Invalid destination buffer
+ */
+static XSPI_Status_TypeDef _NOR_read_status_OPI_DTR(uint8_t status_data[_NOR_DTR_STATUS_SIZE])
+{
+    XSPI_Status_TypeDef status;
+    uint32_t timeout;
+
+    if (status_data == NULL) {
+        return XSPI_INVALID_PARAM;
+       }
+
+       status = _XSPI_wait_not_busy(XSPI2);
+       if (status != XSPI_OK) {
+           return status;
+       }
+
+       _XSPI_clear_flags(XSPI2);
+
+       XSPI2->DLR = _NOR_DTR_STATUS_SIZE - 1;
+
+       XSPI2->TCR = XSPI_TCR_DHQC
+    		   	  | _XSPI_FIELD(TCR, DCYC, _NOR_REGISTER_DTR_DUMMY);
+
+       XSPI2->CCR = _XSPI_FIELD(CCR, IMODE, 4U)
+                  | _XSPI_FIELD(CCR, IDTR, 1U)
+				  | _XSPI_FIELD(CCR, ISIZE, 1U)
+				  | _XSPI_FIELD(CCR, ADMODE, 4U)
+				  | _XSPI_FIELD(CCR, ADDTR, 1U)
+				  | _XSPI_FIELD(CCR, ADSIZE, 3U)
+				  | _XSPI_FIELD(CCR, DMODE, 4U)
+				  | _XSPI_FIELD(CCR, DDTR, 1U)
+				  | _XSPI_FIELD(CCR, DQSE, 1U);
+
+       XSPI2->CR  = _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_INDIRECT_READ)
+                  | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
+				  | XSPI_CR_EN;
+
+       XSPI2->IR = _NOR_OCTA_READ_STATUS_CMD;
+       XSPI2->AR = 0U;
+
+       for (uint32_t index = 0U;
+            index < _NOR_DTR_STATUS_SIZE;
+            index++) {
+
+           timeout = _XSPI_TIMEOUT;
+
+           while ((XSPI2->SR & XSPI_SR_FLEVEL_Msk) == 0U) {
+               if ((XSPI2->SR & XSPI_SR_TEF) != 0U) {
+                   XSPI2->FCR = XSPI_FCR_CTEF;
+                   return XSPI_ERROR;
+               }
+
+               if (--timeout == 0U) {
+                   return XSPI_TIMEOUT;
+               }
+           }
+
+           status_data[index] =
+               *((__IO uint8_t *)&XSPI2->DR);
+       }
+
+       return _XSPI_wait_transfer_complete(XSPI2);
+   }
+
+/**
+ * @brief Enable memory-mapped OPI-DTR mode for the NOR flash
+ *
+ * Configures the octal DTR read and page-program command formats
+ * and switches XSPI2 into memory-mapped mode.
+ *
+ * @retval XSPI_OK      Memory-mapped mode enabled
+ * @retval XSPI_TIMEOUT XSPI2 remained busy
+ */
+static XSPI_Status_TypeDef _NOR_memory_mapped_enable(void)
+{
+    XSPI_Status_TypeDef status;
+    uint32_t ccr;
+
+    status = _XSPI_wait_not_busy(XSPI2);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    _XSPI_clear_flags(XSPI2);
+
+    ccr = _XSPI_CCR_build(XSPI_NOR_memorymapped_cfg);
+
+    XSPI2->CCR = ccr;
+    XSPI2->IR  = _NOR_OCTA_READ_DTR_CMD;
+    XSPI2->TCR =
+          XSPI_TCR_DHQC
+        | _XSPI_FIELD(TCR, DCYC, _NOR_READ_DTR_DUMMY);
+
+    XSPI2->WCCR = ccr;
+    XSPI2->WIR  = _NOR_OCTA_PAGE_PROGRAM_CMD;
+    XSPI2->WTCR = 0U;
+
+    XSPI2->CR =
+          _XSPI_FIELD(CR, FMODE, _XSPI_FMODE_MEMORY_MAPPED)
+        | _XSPI_FIELD(CR, FTHRES, _XSPI_FIFO_THRESHOLD)
+        | XSPI_CR_EN;
+
+    return XSPI_OK;
 }
 
 // -------------------------------------------------------------------------
@@ -431,17 +792,18 @@ static void _NOR_memoryMapped_enable(void){
 // -------------------------------------------------------------------------
 
 /**
- * @brief Initialise PSRAM device on XSPI1
+ * @brief Initialise the APS256XX PSRAM connected to XSPI1
  *
- * Full sequence: clock enable/reset, GPIO config, device register setup,
- * PSRAM-specific register writes, prescaler bypass, memory-mapped mode.
- *
- * @param [in] init_cfg | XSPI configuration parameters
+ * @param[in] init_cfg XSPI1 and PSRAM configuration
  *
  * @retval XSPI_OK      Initialisation successful
- * @retval XSPI_ERROR   Initialisation failed
+ * @retval XSPI_ERROR   PSRAM or XSPI transfer failed
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
  */
-XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg){
+XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg)
+{
+	XSPI_Status_TypeDef status;
+
     RCC_setXSPI1_clock_source(0);
 
     RCC_enable_XSPI1();
@@ -462,71 +824,114 @@ XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg){
     _XSPI_device_init(XSPI1, init_cfg);
     TIMER_Delay_ms(1);
 
-    _PSRAM_config_write();
+    status = _PSRAM_config_write();
+    if (status != XSPI_OK) {
+        return status;
+    }
     TIMER_Delay_ms(1);
 
-    _prescaler_set(XSPI1, 0);
+    status = _XSPI_prescaler_set(XSPI1, 0);
+    if (status != XSPI_OK) {
+        return status;
+    }
     TIMER_Delay_ms(1);
 
-    _PSRAM_memoryMapped_enable();
+    status = _PSRAM_memory_mapped_enable();
+    if (status != XSPI_OK) {
+        return status;
+    }
     TIMER_Delay_ms(1);
 
     return XSPI_OK;
 }
 
 /**
- * @brief Initialise NOR Flash device on XSPI2
+ * @brief Initialise the MX66UW1G45G NOR flash connected to XSPI2
  *
- * Full sequence: clock enable/reset, GPIO config, device register setup,
- * NOR-specific register writes, memory-mapped mode with auto-polling.
- *
- * @param [in] init_cfg | XSPI configuration parameters
+ * @param[in] init_cfg XSPI2 and NOR configuration
  *
  * @retval XSPI_OK      Initialisation successful
- * @retval XSPI_ERROR   Initialisation failed
- *
- * @note Not yet fully supported – placeholder implementation.
+ * @retval XSPI_ERROR   Identification, status or transfer validation failed
+ * @retval XSPI_TIMEOUT Peripheral operation timed out
  */
-XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg){
-    TIMER_Delay_ms(5);
+XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg)
+{
+    XSPI_Status_TypeDef status;
+    uint8_t nor_id[_NOR_ID_SIZE] = {0};
+    uint8_t spi_status = 0;
+    uint8_t dtr_status[_NOR_DTR_STATUS_SIZE] = {0};
+
+    RCC_setXSPI2_clock_source(0U);
 
     RCC_enable_XSPI2();
     RCC_enable_XSPIM();
-    TIMER_Delay_ms(1);
+    TIMER_Delay_ms(1U);
 
     RCC_reset_XSPI2();
     RCC_reset_XSPIM();
-    TIMER_Delay_ms(1);
+    TIMER_Delay_ms(1U);
 
     RCC_enable_XSPI2();
     RCC_enable_XSPIM();
-    TIMER_Delay_ms(1);
+    TIMER_Delay_ms(1U);
 
     _XSPI2_NOR_GPIO_init();
-    TIMER_Delay_ms(1);
+    TIMER_Delay_ms(1U);
 
     _XSPI_device_init(XSPI2, init_cfg);
-    TIMER_Delay_ms(1);
+    TIMER_Delay_ms(1U);
 
-    if(!_NOR_ResetMemory()){
-    	return XSPI_ERROR;
+    status = _NOR_reset();
+    if (status != XSPI_OK) {
+        return status;
     }
 
-    //_NOR_config_write();
-    //TIMER_Delay_ms(1);
+    status = _NOR_read_ID(nor_id);
+    if (status != XSPI_OK) {
+        return status;
+    }
 
-    //_NOR_memoryMapped_enable();
-    //TIMER_Delay_ms(1);
+    if (!_NOR_ID_is_valid(nor_id)) {
+        return XSPI_ERROR;
+    }
+
+    status = _NOR_read_status_SPI(&spi_status);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    if ((spi_status & _NOR_STATUS_WIP) != 0U) {
+        return XSPI_ERROR;
+    }
+
+    status = _NOR_OPI_DTR_enable();
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    status = _NOR_read_status_OPI_DTR(dtr_status);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    if ((dtr_status[0] & _NOR_STATUS_WIP) != 0U) {
+        return XSPI_ERROR;
+    }
+
+
+    status = _XSPI_prescaler_set(XSPI2, 0U);
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    TIMER_Delay_ms(1U);
+
+    status = _NOR_memory_mapped_enable();
+    if (status != XSPI_OK) {
+        return status;
+    }
+
+    TIMER_Delay_ms(1U);
 
     return XSPI_OK;
-}
-
-bool NOR_ReadID(uint8_t id[_NOR_MX66_ID_SIZE])
-{
-    return _NOR_Read_SPI(
-        XSPI2,
-        _NOR_MX66_READ_ID_CMD,
-        id,
-        _NOR_MX66_ID_SIZE
-    );
 }
