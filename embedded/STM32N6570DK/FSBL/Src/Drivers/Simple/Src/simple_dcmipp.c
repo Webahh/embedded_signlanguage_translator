@@ -150,18 +150,23 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
      */
     _dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;
 
+    // Row Red
     _dcmipp->P1CCRR1 = (0x07CA << DCMIPP_P1CCRR1_RG_Pos)  // Green
                      | (0x01A6 << DCMIPP_P1CCRR1_RR_Pos); // Red
-    _dcmipp->P1CCRR2 = (0x0790 << DCMIPP_P1CCRR2_RB_Pos); // Blue
+    _dcmipp->P1CCRR2 = (0x0000 << DCMIPP_P1CCRR2_RA_Pos)  // Added column
+                     | (0x0790 << DCMIPP_P1CCRR2_RB_Pos); // Blue
 
-    _dcmipp->P1CCGR1 = (0x077D << DCMIPP_P1CCGR1_GG_Pos)  // Green
-                     | (0x01C9 << DCMIPP_P1CCGR1_GR_Pos); // Red
-    _dcmipp->P1CCGR2 = (0x07BA << DCMIPP_P1CCGR2_GB_Pos); // Blue
+    // Row Green
+    _dcmipp->P1CCGR1 = (0x01C9 << DCMIPP_P1CCGR1_GG_Pos)  // Green
+                     | (0x077D << DCMIPP_P1CCGR1_GR_Pos); // Red
+    _dcmipp->P1CCGR2 = (0x0000 << DCMIPP_P1CCGR2_GA_Pos)  // Added column
+                     | (0x07BA << DCMIPP_P1CCGR2_GB_Pos); // Blue
 
-    _dcmipp->P1CCBR1 = (0x07E0 << DCMIPP_P1CCBR1_BG_Pos)  // Green
-                     | (0x0785 << DCMIPP_P1CCBR1_BR_Pos); // Red
-
-    _dcmipp->P1CCBR2 = (0x019B << DCMIPP_P1CCBR2_BB_Pos); // Blue
+    // Row Blue
+    _dcmipp->P1CCBR1 = (0x0785 << DCMIPP_P1CCBR1_BG_Pos)  // Green
+                     | (0x07E0 << DCMIPP_P1CCBR1_BR_Pos); // Red
+    _dcmipp->P1CCBR2 = (0x0000 << DCMIPP_P1CCBR2_BA_Pos)  // Added column
+                     | (0x019B << DCMIPP_P1CCBR2_BB_Pos); // Blue
 
     *excr1 = DCMIPP_P1EXCR1_ENABLE
            | ((0xE9U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
