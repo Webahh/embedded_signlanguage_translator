@@ -130,19 +130,19 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
     *decr  = DCMIPP_P1DECR_ENABLE;
 
     _dcmipp->P1CCCR  = DCMIPP_P1CCCR_ENABLE;
-    _dcmipp->P1CCRR1 = 0x7fb0188;
-    _dcmipp->P1CCRR2 = 0x77d;
-    _dcmipp->P1CCGR1 = 0x1e8079a;
-    _dcmipp->P1CCGR2 = 0x77f;
-    _dcmipp->P1CCBR1 = 0x79f07e3;
-    _dcmipp->P1CCBR2 = 0x17e;
+    _dcmipp->P1CCRR1 = 0x07CA01A6;
+    _dcmipp->P1CCRR2 = 0x790;
+    _dcmipp->P1CCGR1 = 0x01C9077D;
+    _dcmipp->P1CCGR2 = 0x7BA;
+    _dcmipp->P1CCBR1 = 0x078507E0;
+    _dcmipp->P1CCBR2 = 0x19B;
 
     *excr1 = DCMIPP_P1EXCR1_ENABLE
-           | ((0x93U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
-           | ((0x1U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
+           | ((0xE9U << DCMIPP_P1EXCR1_MULTR_Pos) & DCMIPP_P1EXCR1_MULTR_Msk)
+           | ((0x0U  << DCMIPP_P1EXCR1_SHFR_Pos)  & DCMIPP_P1EXCR1_SHFR_Msk);
 
-    *excr2 = ((0xCBU << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
-           | ((0x0U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
+    *excr2 = ((0x88U << DCMIPP_P1EXCR2_MULTB_Pos) & DCMIPP_P1EXCR2_MULTB_Msk)
+           | ((0x1U  << DCMIPP_P1EXCR2_SHFB_Pos)  & DCMIPP_P1EXCR2_SHFB_Msk)
            | ((0x80U << DCMIPP_P1EXCR2_MULTG_Pos) & DCMIPP_P1EXCR2_MULTG_Msk)
            | ((0x0U  << DCMIPP_P1EXCR2_SHFG_Pos)  & DCMIPP_P1EXCR2_SHFG_Msk);
 
@@ -154,6 +154,22 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     *st3cr = DCMIPP_P1ST3CR_ENABLE
            | ((0x6U << DCMIPP_P1ST3CR_SRC_Pos) & DCMIPP_P1ST3CR_SRC_Msk);
+
+    _dcmipp->P1STSTR = ((648U << DCMIPP_P1STSTR_HSTART_Pos) & DCMIPP_P1STSTR_HSTART_Msk)
+                     | ((486U << DCMIPP_P1STSTR_VSTART_Pos) & DCMIPP_P1STSTR_VSTART_Msk);
+    _dcmipp->P1STSZR = ((1296U << DCMIPP_P1STSZR_HSIZE_Pos) & DCMIPP_P1STSZR_HSIZE_Msk)
+                     | ((972U << DCMIPP_P1STSZR_VSIZE_Pos) & DCMIPP_P1STSZR_VSIZE_Msk)
+                     | DCMIPP_P1STSZR_CROPEN;
+
+    // ---- Pipe0 stat/crop: remove embedded data lines (none on IMX335) ----
+    _dcmipp->P0SCSTR = 0U;
+    _dcmipp->P0SCSZR = (2592U << DCMIPP_P0SCSZR_HSIZE_Pos)
+                     | (1944U << DCMIPP_P0SCSZR_VSIZE_Pos)
+                     | DCMIPP_P0SCSZR_POSNEG
+                     | DCMIPP_P0SCSZR_ENABLE;
+
+    // ---- Pipe1 stat removal: disabled for IMX335 (no embedded data) ----
+    _dcmipp->P1SRCR = 0U;
 
     if (conf->enable_swap)
         _dcmipp->CMCR |= DCMIPP_CMCR_SWAPRB;
