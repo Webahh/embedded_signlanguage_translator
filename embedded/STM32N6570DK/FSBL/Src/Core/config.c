@@ -89,9 +89,9 @@ const XSPI_cfg_TypeDef XSPI_psram_cfg = {
 
 const XSPI_cfg_TypeDef XSPI_nor_cfg = {
     .memory_type           = 1,
-    .devsize               = 24,
+    .devsize               = 26,
     .chipselect_high_time  = 1,
-    .prescaler             = 0,
+    .prescaler             = 3,
     .chipselect_boundary   = 0,
     .maxtran_value         = 0,
     .refresh_cycles        = 0

@@ -6,6 +6,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "stm32n657xx.h"
 
@@ -15,31 +16,38 @@
 #include "simple_timer.h"
 #include "config.h"
 
-#define _TIMEOUT                    1000000
-#define _FIFO_THRESHOLD             7
-#define _CLEAR_ADDRESS              0
-#define _MM_APMS                    1U
-#define _MM_FMODE                   3
+#define _TIMEOUT                    	1000000
+#define _FIFO_THRESHOLD             	7
+#define _CLEAR_ADDRESS              	0
+#define _MM_APMS                    	1
+#define _MM_FMODE                   	3
+#define _FMODE_INDIRECT_WRITE   		0
+#define _FMODE_INDIRECT_READ    		1
 
-#define _PSRAM_MR0_ADDR             0x00
-#define _PSRAM_MR4_ADDR             0x04
-#define _PSRAM_MR8_ADDR             0x08
-#define _PSRAM_MR0_VALUE            0x30
-#define _PSRAM_MR4_VALUE            0x20
-#define _PSRAM_MR8_VALUE            0x40
-#define _PSRAM_REG_WRITE_DLR        0x1
-#define _PSRAM_REG_WRITE_DUMMY_BYTE 0x0
-#define _PSRAM_REG_WRITE_CMD        0xC0
-#define _PSRAM_CMD_LINEAR_BURST_READ   0x20
-#define _PSRAM_CMD_LINEAR_BURST_WRITE  0xA0
-#define _PSRAM_READ_DUMMY_CYCLES    6
-#define _PSRAM_WRITE_DUMMY_CYCLES   6
+#define _PSRAM_MR0_ADDR             	0x00
+#define _PSRAM_MR4_ADDR             	0x04
+#define _PSRAM_MR8_ADDR             	0x08
+#define _PSRAM_MR0_VALUE            	0x30
+#define _PSRAM_MR4_VALUE            	0x20
+#define _PSRAM_MR8_VALUE            	0x40
+#define _PSRAM_REG_WRITE_DLR        	0x1
+#define _PSRAM_REG_WRITE_DUMMY_BYTE 	0x0
+#define _PSRAM_REG_WRITE_CMD        	0xC0
+#define _PSRAM_CMD_LINEAR_BURST_READ   	0x20
+#define _PSRAM_CMD_LINEAR_BURST_WRITE  	0xA0
+#define _PSRAM_READ_DUMMY_CYCLES    	6
+#define _PSRAM_WRITE_DUMMY_CYCLES   	6
 
-#define _NOR_PSMKR_READY_MASK       0x1U
-#define _NOR_POLLING_INTERVAL       0x10U
-#define _NOR_READ_OPCODE            0xEE11U
-#define _NOR_READ_DUMMY_CYCLES      0x0AU
-#define _NOR_WRITE_OPCODE           0x12EDU
+#define _NOR_MX66_RESET_ENABLE_CMD		0x66
+#define _NOR_MX66_RESET_MEMORY_CMD      0x99
+#define _NOR_MX66_READ_ID_CMD           0x9F
+#define _NOR_MX66_ID_SIZE               3
+#define _NOR_PSMKR_READY_MASK       	0x1
+#define _NOR_POLLING_INTERVAL       	0x10
+#define _NOR_READ_OPCODE            	0xEE11
+#define _NOR_READ_DUMMY_CYCLES      	0x0A
+#define _NOR_WRITE_OPCODE           	0x12ED
+
 
 #define _FIELD(REG, FIELD, VAL) \
     (((uint32_t)(VAL) << XSPI_##REG##_##FIELD##_Pos) & XSPI_##REG##_##FIELD##_Msk)
@@ -54,7 +62,7 @@
  * @param [in] xspi      XSPI peripheral instance
  * @param [in] prescaler Prescaler divider value
  */
-static void XSPI_prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
+static void _prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
     uint32_t timeout = _TIMEOUT;
 
     while (xspi->SR & XSPI_SR_BUSY){
@@ -83,7 +91,7 @@ static void XSPI_prescaler_set(XSPI_TypeDef *xspi, uint32_t prescaler){
  *   GPIOO{0,2,3,4} = CLK, IO3, DQS0, NCS1
  *   GPIOP{0..15}   = IO0-IO15
  */
-static void XSPI_PSRAM_gpio_init(void){
+static void _XSPI1_PSRAM_GPIO_init(void){
     RCC_enable_GPIO(GPIOO);
     RCC_enable_GPIO(GPIOP);
 
@@ -105,7 +113,7 @@ static void XSPI_PSRAM_gpio_init(void){
  *   PN0=DQS0, PN1=NCS1, PN2-5=IO0-3, PN6=CLK,
  *   PN7=NCLK, PN8-11=IO4-7
  */
-static void XSPI_NOR_gpio_init(void){
+static void _XSPI2_NOR_GPIO_init(void){
     RCC_enable_GPIO(GPION);
     for (int p = 0; p <= 11; p++){
         GPIO_Config(GPION, p, GPIO_XSPI_cfg);
@@ -118,7 +126,7 @@ static void XSPI_NOR_gpio_init(void){
  * @param [in] xspi XSPI peripheral instance
  * @param [in] cfg  Device configuration parameters
  */
-static void XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
+static void _XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
     xspi->DCR1 = _FIELD(DCR1, MTYP,     cfg.memory_type)
                | _FIELD(DCR1, DEVSIZE,  cfg.devsize)
                | _FIELD(DCR1, CSHT,     cfg.chipselect_high_time);
@@ -137,7 +145,7 @@ static void XSPI_device_init(XSPI_TypeDef *xspi, XSPI_cfg_TypeDef cfg){
  * @param [in]  cfg    CCR configuration parameters
  * @param [out] result Built CCR register value
  */
-static void XSPI_ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
+static void _ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
     *result = _FIELD(CCR, IMODE,  cfg.instruction_mode)
             | _FIELD(CCR, IDTR,   cfg.instruction_dtr)
             | _FIELD(CCR, ISIZE,  cfg.instruction_size)
@@ -161,7 +169,7 @@ static void XSPI_ccr_build(const XSPI_CCR_cfg_TypeDef cfg, uint32_t *result){
  * @retval XSPI_OK      Write successful
  * @retval XSPI_TIMEOUT Busy or transfer wait timed out
  */
-static XSPI_Status_TypeDef XSPI_register_write(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
+static XSPI_Status_TypeDef _register_write(XSPI_TypeDef *xspi, uint8_t reg_addr, uint8_t value){
     uint32_t timeout;
     uint32_t ccr_val;
 
@@ -176,7 +184,7 @@ static XSPI_Status_TypeDef XSPI_register_write(XSPI_TypeDef *xspi, uint8_t reg_a
     xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
     xspi->TCR = 0;
 
-    XSPI_ccr_build(XSPI_write_reg_cfg, &ccr_val);
+    _ccr_build(XSPI_write_reg_cfg, &ccr_val);
     xspi->CCR = ccr_val;
 
     xspi->IR  = _PSRAM_REG_WRITE_CMD;
@@ -200,19 +208,167 @@ static XSPI_Status_TypeDef XSPI_register_write(XSPI_TypeDef *xspi, uint8_t reg_a
 /**
  * @brief Write PSRAM mode register configuration on XSPI1
  */
-static void XSPI_PSRAM_config_write(void){
-    XSPI_register_write(XSPI1, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
-    XSPI_register_write(XSPI1, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
-    XSPI_register_write(XSPI1, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
+static void _PSRAM_config_write(void){
+    _register_write(XSPI1, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
+    _register_write(XSPI1, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
+    _register_write(XSPI1, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
+}
+
+static bool _NOR_Command_SPI(XSPI_TypeDef *xspi, uint8_t instruction)
+{
+    uint32_t timeout = _TIMEOUT;
+
+    while ((xspi->SR & XSPI_SR_BUSY) != 0U) {
+        if (--timeout == 0U) {
+            return false;
+        }
+    }
+
+    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+
+    xspi->TCR = 0U;
+    xspi->DLR = 0U;
+
+    /*
+     * SPI 1-0-0:
+     * - 8-Bit Instruction
+     * - eine Datenleitung für die Instruction
+     * - keine Adresse
+     * - keine Daten
+     */
+    xspi->CCR =
+          _FIELD(CCR, IMODE, 1U)
+        | _FIELD(CCR, IDTR,  0U)
+        | _FIELD(CCR, ISIZE, 0U)
+        | _FIELD(CCR, ADMODE, 0U)
+        | _FIELD(CCR, DMODE, 0U);
+
+    xspi->CR =
+          _FIELD(CR, FMODE, _FMODE_INDIRECT_WRITE)
+        | _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
+        | XSPI_CR_EN;
+
+    xspi->IR = instruction;
+
+    timeout = _TIMEOUT;
+
+    while ((xspi->SR & XSPI_SR_TCF) == 0U) {
+        if ((xspi->SR & XSPI_SR_TEF) != 0U) {
+            xspi->FCR = XSPI_FCR_CTEF;
+            return false;
+        }
+
+        if (--timeout == 0U) {
+            return false;
+        }
+    }
+
+    xspi->FCR = XSPI_FCR_CTCF;
+
+    return true;
+}
+
+static bool _NOR_Read_SPI(XSPI_TypeDef *xspi,
+                          uint8_t instruction,
+                          uint8_t *data,
+                          uint32_t length)
+{
+    uint32_t timeout = _TIMEOUT;
+
+    if ((data == NULL) || (length == 0U)) {
+        return false;
+    }
+
+    while ((xspi->SR & XSPI_SR_BUSY) != 0U) {
+        if (--timeout == 0U) {
+            return false;
+        }
+    }
+
+    xspi->FCR = XSPI_FCR_CTCF | XSPI_FCR_CTEF;
+
+    xspi->TCR = 0U;
+    xspi->DLR = length - 1U;
+
+    /*
+     * SPI 1-0-1:
+     * - 8-Bit Instruction
+     * - keine Adresse
+     * - Daten über eine Leitung
+     */
+    xspi->CCR =
+          _FIELD(CCR, IMODE, 1U)
+        | _FIELD(CCR, IDTR,  0U)
+        | _FIELD(CCR, ISIZE, 0U)
+        | _FIELD(CCR, ADMODE, 0U)
+        | _FIELD(CCR, DMODE, 1U)
+        | _FIELD(CCR, DDTR,  0U)
+        | _FIELD(CCR, DQSE,  0U);
+
+    xspi->CR =
+          _FIELD(CR, FMODE, _FMODE_INDIRECT_READ)
+        | _FIELD(CR, FTHRES, _FIFO_THRESHOLD)
+        | XSPI_CR_EN;
+
+    xspi->IR = instruction;
+
+    for (uint32_t i = 0U; i < length; i++) {
+        timeout = _TIMEOUT;
+
+        while ((xspi->SR & XSPI_SR_FLEVEL_Msk) == 0U) {
+            if ((xspi->SR & XSPI_SR_TEF) != 0U) {
+                xspi->FCR = XSPI_FCR_CTEF;
+                return false;
+            }
+
+            if (--timeout == 0U) {
+                return false;
+            }
+        }
+
+        data[i] = *((__IO uint8_t *)&xspi->DR);
+    }
+
+    timeout = _TIMEOUT;
+
+    while ((xspi->SR & XSPI_SR_TCF) == 0U) {
+        if ((xspi->SR & XSPI_SR_TEF) != 0U) {
+            xspi->FCR = XSPI_FCR_CTEF;
+            return false;
+        }
+
+        if (--timeout == 0U) {
+            return false;
+        }
+    }
+
+    xspi->FCR = XSPI_FCR_CTCF;
+
+    return true;
+}
+
+static bool _NOR_ResetMemory(void)
+{
+    if (!_NOR_Command_SPI(XSPI2, _NOR_MX66_RESET_ENABLE_CMD)) {
+        return false;
+    }
+
+    if (!_NOR_Command_SPI(XSPI2, _NOR_MX66_RESET_MEMORY_CMD)) {
+        return false;
+    }
+
+    TIMER_Delay_ms(1);
+
+    return true;
 }
 
 /**
  * @brief Write NOR configuration to registers on XSPI2
  */
-static void XSPI_NOR_config_write(void){
-    XSPI_register_write(XSPI2, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
-    XSPI_register_write(XSPI2, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
-    XSPI_register_write(XSPI2, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
+static void _NOR_config_write(void){
+    _register_write(XSPI2, _PSRAM_MR0_ADDR, _PSRAM_MR0_VALUE);
+    _register_write(XSPI2, _PSRAM_MR4_ADDR, _PSRAM_MR4_VALUE);
+    _register_write(XSPI2, _PSRAM_MR8_ADDR, _PSRAM_MR8_VALUE);
 }
 
 /**
@@ -221,16 +377,16 @@ static void XSPI_NOR_config_write(void){
  * Configures read (CCR/IR/TCR) and write (WCCR/WIR/WTCR) channel
  * opcodes for octal-DTR protocol, then sets FMODE=3 (memory-mapped).
  */
-static void XSPI_PSRAM_memoryMapped_enable(void){
+static void _PSRAM_memoryMapped_enable(void){
     uint32_t ccr_val;
 
-    XSPI_ccr_build(XSPI_memorymapped_cfg, &ccr_val);
+    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
     XSPI1->WCCR = ccr_val;
 
     XSPI1->WIR  = _PSRAM_CMD_LINEAR_BURST_WRITE;
     XSPI1->WTCR = _FIELD(WTCR, DCYC, _PSRAM_WRITE_DUMMY_CYCLES);
 
-    XSPI_ccr_build(XSPI_memorymapped_cfg, &ccr_val);
+    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
     XSPI1->CCR  = ccr_val;
 
     XSPI1->IR   = _PSRAM_CMD_LINEAR_BURST_READ;
@@ -247,7 +403,7 @@ static void XSPI_PSRAM_memoryMapped_enable(void){
  * Sets up automatic polling (PSMKR/PIR), read channel (CCR/IR/TCR),
  * write channel (WCCR/WIR), then switches to memory-mapped mode.
  */
-static void XSPI_NOR_memoryMapped_enable(void){
+static void _NOR_memoryMapped_enable(void){
     uint32_t ccr_val;
 
     XSPI2->PSMKR = _NOR_PSMKR_READY_MASK;
@@ -255,10 +411,10 @@ static void XSPI_NOR_memoryMapped_enable(void){
 
     XSPI2->WIR   = _NOR_WRITE_OPCODE;
 
-    XSPI_ccr_build(XSPI_memorymapped_cfg, &ccr_val);
+    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
     XSPI2->WCCR  = ccr_val;
 
-    XSPI_ccr_build(XSPI_memorymapped_cfg, &ccr_val);
+    _ccr_build(XSPI_memorymapped_cfg, &ccr_val);
     XSPI2->CCR   = ccr_val;
 
     XSPI2->TCR  = XSPI_TCR_DHQC
@@ -300,19 +456,19 @@ XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg){
     RCC_enable_XSPIM();
     TIMER_Delay_ms(1);
 
-    XSPI_PSRAM_gpio_init();
+    _XSPI1_PSRAM_GPIO_init();
     TIMER_Delay_ms(1);
 
-    XSPI_device_init(XSPI1, init_cfg);
+    _XSPI_device_init(XSPI1, init_cfg);
     TIMER_Delay_ms(1);
 
-    XSPI_PSRAM_config_write();
+    _PSRAM_config_write();
     TIMER_Delay_ms(1);
 
-    XSPI_prescaler_set(XSPI1, 0);
+    _prescaler_set(XSPI1, 0);
     TIMER_Delay_ms(1);
 
-    XSPI_PSRAM_memoryMapped_enable();
+    _PSRAM_memoryMapped_enable();
     TIMER_Delay_ms(1);
 
     return XSPI_OK;
@@ -346,17 +502,31 @@ XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg){
     RCC_enable_XSPIM();
     TIMER_Delay_ms(1);
 
-    XSPI_NOR_gpio_init();
+    _XSPI2_NOR_GPIO_init();
     TIMER_Delay_ms(1);
 
-    XSPI_device_init(XSPI2, init_cfg);
+    _XSPI_device_init(XSPI2, init_cfg);
     TIMER_Delay_ms(1);
 
-    XSPI_NOR_config_write();
-    TIMER_Delay_ms(1);
+    if(!_NOR_ResetMemory()){
+    	return XSPI_ERROR;
+    }
 
-    XSPI_NOR_memoryMapped_enable();
-    TIMER_Delay_ms(1);
+    //_NOR_config_write();
+    //TIMER_Delay_ms(1);
+
+    //_NOR_memoryMapped_enable();
+    //TIMER_Delay_ms(1);
 
     return XSPI_OK;
+}
+
+bool NOR_ReadID(uint8_t id[_NOR_MX66_ID_SIZE])
+{
+    return _NOR_Read_SPI(
+        XSPI2,
+        _NOR_MX66_READ_ID_CMD,
+        id,
+        _NOR_MX66_ID_SIZE
+    );
 }

@@ -16,6 +16,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <stdbool.h>
+
+#define _NOR_MX66_ID_SIZE               3
 
 typedef enum {
     XSPI_OK      = 0,
@@ -64,5 +67,7 @@ XSPI_Status_TypeDef XSPI_PSRAM_init(XSPI_cfg_TypeDef init_cfg);
  * @retval XSPI_ERROR   Initialisation failed
  */
 XSPI_Status_TypeDef XSPI_NOR_init(XSPI_cfg_TypeDef init_cfg);
+
+bool NOR_ReadID(uint8_t id[_NOR_MX66_ID_SIZE]);
 
 #endif /* SIMPLE_XSPI_H */

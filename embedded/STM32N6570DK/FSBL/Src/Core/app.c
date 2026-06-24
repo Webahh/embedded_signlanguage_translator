@@ -56,7 +56,26 @@ void app_init(){
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
     XSPI_PSRAM_init(XSPI_psram_cfg);
-    XSPI_NOR_init(XSPI_nor_cfg);
+
+    //XSPI_NOR_init(XSPI_nor_cfg);
+
+    volatile XSPI_Status_TypeDef nor_init_ok;
+    volatile bool nor_id_ok;
+    volatile uint8_t nor_id[3];
+
+    nor_init_ok = XSPI_NOR_init(XSPI_nor_cfg);
+
+    if (nor_init_ok != XSPI_OK) {
+        while (1) {
+        }
+    }
+
+    nor_id_ok = NOR_ReadID((uint8_t *)nor_id);
+
+    if (!nor_id_ok) {
+        while (1) {
+        }
+    }
 
     LTDC_Init();
 
