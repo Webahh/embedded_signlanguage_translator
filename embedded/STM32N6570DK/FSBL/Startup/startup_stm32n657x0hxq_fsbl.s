@@ -213,7 +213,7 @@ g_pfnVectors:
   .word	0                          			/* Reserved                                                      */
   .word	0                          			/* Reserved                                                      */
   .word	PAHB_ERR_IRQHandler        			/* Write posting errors on Cortex-M55 PAHB interface             */
-  .word	NPU_end_of_epoch_IRQHandler			/* NPU mst_ints[0] line                                          */
+  .word NPU0_IRQHandler						/* NPU mst_ints[0] line                                          */
   .word	NPU1_IRQHandler            			/* NPU mst_ints[1] line                                          */
   .word	NPU2_IRQHandler            			/* NPU mst_ints[2] line                                          */
   .word	NPU3_IRQHandler            			/* NPU mst_ints[3] line                                          */
@@ -530,8 +530,8 @@ g_pfnVectors:
 	.weak	PAHB_ERR_IRQHandler
 	.thumb_set PAHB_ERR_IRQHandler,Default_Handler
 
-	.weak	NPU_end_of_epoch_IRQHandler
-	.thumb_set NPU_end_of_epoch_IRQHandler,Default_Handler
+	.weak NPU0_IRQHandler
+	.thumb_set NPU0_IRQHandler,Default_Handler
 
 	.weak	NPU1_IRQHandler
 	.thumb_set NPU1_IRQHandler,Default_Handler
