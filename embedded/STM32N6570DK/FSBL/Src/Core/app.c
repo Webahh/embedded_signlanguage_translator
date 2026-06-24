@@ -27,8 +27,9 @@ extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
+   	AE_OnFrameStats();
+
     if (pipe == DCMIPP_PIPE1) {
-    	AE_OnFrameStats();
         ltdc_bg_buffer_disp_idx ^= 1;
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
 

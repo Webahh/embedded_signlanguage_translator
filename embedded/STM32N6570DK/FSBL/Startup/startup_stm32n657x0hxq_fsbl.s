@@ -59,15 +59,15 @@ Reset_Handler:
   ldr   r0, =_sstack
   msr   MSPLIM, r0      /* set stack pointer limit */
 
-  /* Enable FPU (CP10 + CP11 full acess) + ASPEN (auto FPCA)*/
-  ldr	r0, =0xE000ED88
-  ldr	r1, [r0]
-  orr	r1, r1, #0x00F00000
-  str	r1, [r0]
-  ldr	r0, =0xE000EF34
-  ldr	r1, [r0]
-  orr	r1, r1, #2
-  str 	r1, [r0]
+/* Enable FPU (CP10 + CP11 full access) + ASPEN (auto FPCA) */
+  ldr   r0, =0xE000ED88
+  ldr   r1, [r0]
+  orr   r1, r1, #0x00F00000
+  str   r1, [r0]
+  ldr   r0, =0xE000EF34
+  ldr   r1, [r0]
+  orr   r1, r1, #2
+  str   r1, [r0]
   dsb
   isb
 
