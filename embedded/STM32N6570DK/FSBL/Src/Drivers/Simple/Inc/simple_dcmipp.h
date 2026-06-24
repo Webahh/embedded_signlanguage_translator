@@ -260,13 +260,4 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe);
 void DCMIPP_PIPE_VsyncEventCallback(uint32_t pipe);
 void DCMIPP_PIPE_ErrorCallback(uint32_t pipe);
 
-/**
- * @brief  Align pitch to 16-byte boundary (DCMIPP HW requirement)
- * @param [in] pitch | Raw line pitch in bytes
- * @retval Aligned pitch (multiple of 16)
- */
-static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch){
-    return (pitch + 15) & ~15U;
-}
-
 #endif /* SIMPLE_DCMIPP_H */

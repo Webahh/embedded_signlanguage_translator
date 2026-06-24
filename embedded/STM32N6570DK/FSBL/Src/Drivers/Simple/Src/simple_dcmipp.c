@@ -17,6 +17,17 @@
 
 static DCMIPP_TypeDef *_dcmipp = DCMIPP;
 
+// --- Helper/Private Functions ---
+
+/**
+ * @brief  Align pitch to 16-byte boundary (DCMIPP HW requirement)
+ * @param [in] pitch | Raw line pitch in bytes
+ * @retval Aligned pitch (multiple of 16)
+ */
+static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch){
+    return (pitch + 15) & ~15U;
+}
+
 // ---- API ----
 
 void DCMIPP_Init(void){
