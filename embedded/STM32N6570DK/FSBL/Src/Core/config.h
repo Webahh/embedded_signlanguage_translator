@@ -27,6 +27,8 @@ extern const GPIO_cfg_TypeDef GPIO_LTDC_cfg;
 extern const GPIO_cfg_TypeDef GPIO_I2C_cfg;
 extern const GPIO_cfg_TypeDef GPIO_XSPI_cfg;
 extern const GPIO_cfg_TypeDef GPIO_USART_debug_cfg;
+extern const GPIO_cfg_TypeDef GPIO_TS_RST_cfg;
+extern const GPIO_cfg_TypeDef GPIO_TS_INT_cfg;
 
 extern const Debug_log_cfg_TypeDef dbg_cfg;
 

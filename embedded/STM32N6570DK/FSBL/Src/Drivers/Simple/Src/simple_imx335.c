@@ -26,7 +26,7 @@ struct _regval {
     uint8_t  val;
 };
 
-static const struct _regval res_2592_1944_regs[] = {
+static const struct _regval _res_2592_1944_regs[] = {
     {0x3000, 0x01},
     {0x3002, 0x00},
     {0x300c, 0x3b},
@@ -114,7 +114,7 @@ static const struct _regval res_2592_1944_regs[] = {
     {0x3a00, 0x00},
 };
 
-static const struct _regval mode_2l_10b_regs[] = {
+static const struct _regval _mode_2l_10b_regs[] = {
     {0x3050, 0x00},
     {0x319D, 0x00},
     {0x341c, 0xff},
@@ -122,32 +122,32 @@ static const struct _regval mode_2l_10b_regs[] = {
     {0x3a01, 0x01},
 };
 
-static const struct _regval framerate_10fps_regs[] = {
+static const struct _regval _framerate_10fps_regs[] = {
     {0x3030, 0xC0},
     {0x3031, 0x34},
 };
 
-static const struct _regval framerate_15fps_regs[] = {
+static const struct _regval _framerate_15fps_regs[] = {
     {0x3030, 0x2A},
     {0x3031, 0x23},
 };
 
-static const struct _regval framerate_20fps_regs[] = {
+static const struct _regval _framerate_20fps_regs[] = {
     {0x3030, 0x60},
     {0x3031, 0x1A},
 };
 
-static const struct _regval framerate_25fps_regs[] = {
+static const struct _regval _framerate_25fps_regs[] = {
     {0x3030, 0x1A},
     {0x3031, 0x15},
 };
 
-static const struct _regval framerate_30fps_regs[] = {
+static const struct _regval _framerate_30fps_regs[] = {
     {0x3030, 0x94},
     {0x3031, 0x11},
 };
 
-static const struct _regval mirrorflip_none_regs[] = {
+static const struct _regval _mirrorflip_none_regs[] = {
     {0x3074, 0xc8},
     {0x3075, 0x00},
     {0x304E, 0x00},
@@ -160,7 +160,7 @@ static const struct _regval mirrorflip_none_regs[] = {
     {0x3117, 0x00},
 };
 
-static const struct _regval mirrorflip_mirror_regs[] = {
+static const struct _regval _mirrorflip_mirror_regs[] = {
     {0x3074, 0xc8},
     {0x3075, 0x00},
     {0x304E, 0x01},
@@ -332,15 +332,15 @@ IMX335_Status_TypeDef IMX335_Init(IMX335_Handle_TypeDef *h){
         return IMX335_OK;
     }
 
-    if (_write_table(h, res_2592_1944_regs, _ARRAY_SIZE(res_2592_1944_regs))) {
+    if (_write_table(h, _res_2592_1944_regs, _ARRAY_SIZE(_res_2592_1944_regs))) {
         return IMX335_ERROR;
     }
 
-    if (_write_table(h, mode_2l_10b_regs, _ARRAY_SIZE(mode_2l_10b_regs))) {
+    if (_write_table(h, _mode_2l_10b_regs, _ARRAY_SIZE(_mode_2l_10b_regs))) {
         return IMX335_ERROR;
     }
 
-    if (_write_table(h, framerate_30fps_regs, _ARRAY_SIZE(framerate_30fps_regs))) {
+    if (_write_table(h, _framerate_30fps_regs, _ARRAY_SIZE(_framerate_30fps_regs))) {
         return IMX335_ERROR;
     }
 
@@ -363,23 +363,23 @@ IMX335_Status_TypeDef IMX335_Stop(IMX335_Handle_TypeDef *h){
 IMX335_Status_TypeDef IMX335_SetFramerate(IMX335_Handle_TypeDef *h, uint32_t fps){
     switch (fps) {
         case 10:
-            return _write_table(h, framerate_10fps_regs, _ARRAY_SIZE(framerate_10fps_regs));
+            return _write_table(h, _framerate_10fps_regs, _ARRAY_SIZE(_framerate_10fps_regs));
         case 15:
-            return _write_table(h, framerate_15fps_regs, _ARRAY_SIZE(framerate_15fps_regs));
+            return _write_table(h, _framerate_15fps_regs, _ARRAY_SIZE(_framerate_15fps_regs));
         case 20:
-            return _write_table(h, framerate_20fps_regs, _ARRAY_SIZE(framerate_20fps_regs));
+            return _write_table(h, _framerate_20fps_regs, _ARRAY_SIZE(_framerate_20fps_regs));
         case 25:
-            return _write_table(h, framerate_25fps_regs, _ARRAY_SIZE(framerate_25fps_regs));
+            return _write_table(h, _framerate_25fps_regs, _ARRAY_SIZE(_framerate_25fps_regs));
         default:
-            return _write_table(h, framerate_30fps_regs, _ARRAY_SIZE(framerate_30fps_regs));
+            return _write_table(h, _framerate_30fps_regs, _ARRAY_SIZE(_framerate_30fps_regs));
     }
 }
 
 IMX335_Status_TypeDef IMX335_SetMirrorFlip(IMX335_Handle_TypeDef *h, uint32_t config){
     if (config) {
-        return _write_table(h, mirrorflip_mirror_regs, _ARRAY_SIZE(mirrorflip_mirror_regs));
+        return _write_table(h, _mirrorflip_mirror_regs, _ARRAY_SIZE(_mirrorflip_mirror_regs));
     } else {
-        return _write_table(h, mirrorflip_none_regs, _ARRAY_SIZE(mirrorflip_none_regs));
+        return _write_table(h, _mirrorflip_none_regs, _ARRAY_SIZE(_mirrorflip_none_regs));
     }
 }
 
@@ -406,15 +406,15 @@ IMX335_Status_TypeDef IMX335_VerifyConfig(IMX335_Handle_TypeDef *h){
     if (!h)
         return IMX335_ERROR;
 
-    if (_write_table_verify(h, res_2592_1944_regs, _ARRAY_SIZE(res_2592_1944_regs))) {
+    if (_write_table_verify(h, _res_2592_1944_regs, _ARRAY_SIZE(_res_2592_1944_regs))) {
         return IMX335_ERROR;
     }
 
-    if (_write_table_verify(h, mode_2l_10b_regs, _ARRAY_SIZE(mode_2l_10b_regs))) {
+    if (_write_table_verify(h, _mode_2l_10b_regs, _ARRAY_SIZE(_mode_2l_10b_regs))) {
         return IMX335_ERROR;
     }
 
-    if (_write_table_verify(h, framerate_30fps_regs, _ARRAY_SIZE(framerate_30fps_regs))) {
+    if (_write_table_verify(h, _framerate_30fps_regs, _ARRAY_SIZE(_framerate_30fps_regs))) {
         return IMX335_ERROR;
     }
 

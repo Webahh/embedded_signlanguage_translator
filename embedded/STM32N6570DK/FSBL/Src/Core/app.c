@@ -21,7 +21,9 @@
 #include "image_bitmap.h"
 #include "simple_rcc.h"
 #include "simple_ae.h"
+#include "simple_touch.h"
 #include "tasks.h"
+#include "simple_i2c.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
@@ -90,6 +92,26 @@ void app_init(){
 //    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
 //    		error++;
 //    	}
+    }
+
+    /* --- Touch --- */
+    TOUCH_ConfigIO();
+    TIMER_Delay_ms(50);
+
+    uint8_t found_addrs[128] = {0};
+    uint32_t found = 0;
+    I2C_Scan(TS_I2C, found_addrs, &found);
+
+    static TOUCH_Handle_TypeDef h_touch;
+
+    uint8_t id[4];
+
+    I2C_Mem_read(I2C2, 0x5d, 0x8140, id, 4);
+
+    if (TOUCH_Probe(&h_touch, TS_I2C) == TOUCH_OK) {
+        TOUCH_Init(&h_touch);
+    } else {
+        DEBUG_PRINTF("Touch: no controller found\r\n");
     }
 
     volatile uint8_t *ai_input;
