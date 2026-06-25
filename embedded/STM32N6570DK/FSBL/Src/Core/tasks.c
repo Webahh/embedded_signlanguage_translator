@@ -15,6 +15,7 @@
 #include "config.h"
 #include "simple_timer.h"
 #include "simple_text.h"
+#include "simple_touch.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
@@ -81,4 +82,22 @@ void vBackgroundTask(void) {
 
 void vAETask(void){
 	AE_Process(&h_cam);
+}
+
+void vTouchTask(void){
+	uint8_t pending = 0;
+	TOUCH_GetPending(&pending);
+    if (pending)
+    {
+        TOUCH_Data_TypeDef data;
+        TOUCH_GetState(NULL, &data);
+
+        if (data.pressed)
+        {
+            int next_idx = ltdc_bg_buffer_disp_idx ^ 1;
+            LTDC_LayerConfig_TypeDef tmp = LTDC_Layer1Config;
+            tmp.fb = (void *)&ltdc_bg_buffer[next_idx];
+            LTDC_LayerDrawCricle(&tmp, data.x, data.y, 5, LTDC_COLOR_BLUE);
+        }
+    }
 }

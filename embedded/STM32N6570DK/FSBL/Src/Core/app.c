@@ -21,7 +21,9 @@
 #include "image_bitmap.h"
 #include "simple_rcc.h"
 #include "simple_ae.h"
+#include "simple_touch.h"
 #include "tasks.h"
+#include "simple_i2c.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
@@ -79,10 +81,10 @@ void app_init(){
     TIMER_Delay_ms(10);
 
     LTDC_ConfigLayer1();
-    LTDC_ConfigLayer2();
+//    LTDC_ConfigLayer2();
 
-    LTDC_FillLayer(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-    LTDC_FillLayer(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
+    LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
+//    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -94,6 +96,31 @@ void app_init(){
 //    	}
     }
 
+    /* --- Touch --- */
+    TOUCH_ConfigIO();
+    TIMER_Delay_ms(50);
+
+    uint8_t found_addrs[128] = {0};
+    uint32_t found = 0;
+    I2C_Scan(TS_I2C, found_addrs, &found);
+
+    static TOUCH_Handle_TypeDef h_touch;
+
+    uint8_t id[4];
+
+    I2C_Mem_read(I2C2, 0x5d, 0x8140, id, 4);
+
+    if (TOUCH_Probe(&h_touch, TS_I2C) == TOUCH_OK) {
+        TOUCH_Init(&h_touch);
+    } else {
+        DEBUG_PRINTF("Touch: no controller found\r\n");
+    }
+
+    volatile uint8_t *ai_input;
+    volatile uint8_t *ai_output;
+    volatile uint32_t ai_input_size;
+    volatile uint32_t ai_output_size;
+
     AI_Status_TypeDef status = AI_Init();
 
     if (status != AI_STATUS_OK) {
@@ -101,33 +128,29 @@ void app_init(){
         }
     }
 
-    static const uint8_t ai_test_input_b[AI_INPUT_SIZE] = {
-        128, 128, 134, 119, 135, 102, 130,  90, 125,  83, 136,
-         87, 137,  69, 137,  58, 137,  48, 132,  86, 133,  67,
-        133,  55, 134,  45, 128,  87, 128,  70, 128,  60, 129,
-         50, 123,  91, 123,  78, 123,  70, 123,  63, 175, 235,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128
-    };
+    ai_input = AI_GetInputBuffer();
+    ai_output = AI_GetOutputBuffer();
 
-    static uint8_t ai_output_data[AI_OUTPUT_SIZE];
+    ai_input_size = AI_GetInputSize();
+    ai_output_size = AI_GetOutputSize();
 
-    static volatile uint32_t predicted_index;
-    static volatile uint8_t predicted_score;
-    static volatile const char *predicted_label;
+    uint8_t *input = AI_GetInputBuffer();
 
-    if (!AI_Run(ai_test_input_b, ai_output_data)) {
+    if (input == NULL) {
         while (1) {
         }
     }
 
-    AI_Result_TypeDef result = AI_GetResult(ai_output_data);
+    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
+        input[i] = (uint8_t)i;
+    }
 
-    predicted_index = result.class_index;
-    predicted_score = result.score;
-    predicted_label = result.label;
+    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
+        if (input[i] != (uint8_t)i) {
+            while (1) {
+            }
+        }
+    }
 
     for (uint32_t i = 0U; i < LANDMARK_INPUT_SIZE; i++) {
         landmark_test_input[i] = (uint8_t)i;
@@ -140,6 +163,7 @@ void app_init(){
 
 	uint8_t task_idx;
 
+	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
 	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
