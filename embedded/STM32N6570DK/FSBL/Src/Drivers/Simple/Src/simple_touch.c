@@ -54,26 +54,6 @@ static TOUCH_Status_TypeDef _write_config(TOUCH_Handle_TypeDef *h)
     return TOUCH_OK;
 }
 
-TOUCH_Status_TypeDef TOUCH_ReadReg(TOUCH_Handle_TypeDef *h,
-                                   uint16_t reg, uint8_t *val)
-{
-    if (h == NULL || val == NULL)
-        return TOUCH_ERROR;
-
-    I2C_Status_TypeDef ret = I2C_Mem_read(h->i2c, h->addr, reg, val, 1);
-    return (ret == I2C_OK) ? TOUCH_OK : TOUCH_ERROR;
-}
-
-TOUCH_Status_TypeDef TOUCH_WriteReg(TOUCH_Handle_TypeDef *h,
-                                    uint16_t reg, uint8_t val)
-{
-    if (h == NULL)
-        return TOUCH_ERROR;
-
-    I2C_Status_TypeDef ret = I2C_Mem_write(h->i2c, h->addr, reg, &val, 1);
-    return (ret == I2C_OK) ? TOUCH_OK : TOUCH_ERROR;
-}
-
 void TOUCH_ConfigIO(void)
 {
     RCC_enable_GPIO(GPIOD);
@@ -129,21 +109,6 @@ TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c)
     }
 
     return TOUCH_ERROR;
-}
-
-TOUCH_Status_TypeDef TOUCH_ReadID(TOUCH_Handle_TypeDef *h,
-                                  uint32_t *id)
-{
-    if (h == NULL || id == NULL)
-        return TOUCH_ERROR;
-
-    uint8_t buf[4];
-    if (I2C_Mem_read(h->i2c, h->addr, GT911_REG_CHIP_ID_H, buf, 4) != I2C_OK)
-        return TOUCH_ERROR;
-
-    *id = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
-        | ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
-    return TOUCH_OK;
 }
 
 uint8_t TOUCH_GetPending(void)

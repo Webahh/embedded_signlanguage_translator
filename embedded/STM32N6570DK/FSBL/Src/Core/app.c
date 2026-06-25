@@ -156,11 +156,11 @@ void app_init(){
 
 	uint8_t task_idx;
 
+	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
 	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
-	SCHEDULER_Task_add(vTouchTask, "Touch", 10, 5, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
 }
 

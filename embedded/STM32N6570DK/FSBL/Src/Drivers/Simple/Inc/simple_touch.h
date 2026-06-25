@@ -37,10 +37,6 @@ typedef struct {
 // =====================================================================
 
 #define GT911_I2C_ADDR              0x5D
-#define GT911_I2C_ADDR_ALT          0x14   /**< Alternative address     */
-
-#define GT911_REG_CMD               0x8040
-#define GT911_CMD_READ              0x00
 
 #define GT911_REG_MSW1              0x804D
 #define GT911_REG_CONFIG_CHKSUM     0x80FF
@@ -48,40 +44,14 @@ typedef struct {
 
 #define GT911_REG_CHIP_ID_H         0x8140
 
-#define GT911_REG_CONFIG_VERSION    0x8047
-
 #define GT911_REG_TD_STATUS         0x814E
 
 #define GT911_REG_TOUCH1_XL         0x8150
 #define GT911_REG_TOUCH1_XH         0x8151
 #define GT911_REG_TOUCH1_YL         0x8152
 #define GT911_REG_TOUCH1_YH         0x8153
-#define GT911_REG_TOUCH1_SIZE       0x8154
 
-#define GT911_REG_TOUCH2_XL         0x8156
-#define GT911_REG_TOUCH2_XH         0x8157
-#define GT911_REG_TOUCH2_YL         0x8158
-#define GT911_REG_TOUCH2_YH         0x8159
-#define GT911_REG_TOUCH2_SIZE       0x815A
-
-#define GT911_MAX_TOUCHES           2
-
-// =====================================================================
-// Common pins
-// =====================================================================
-
-#define TS_I2C          I2C2
-#define TS_I2C_SCL_PIN  14
-#define TS_I2C_SDA_PIN  4
-#define TS_I2C_PORT     GPIOD
-
-#define TS_RST_PORT     GPIOE
-#define TS_RST_PIN      1
-
-#define TS_INT_PORT     GPIOQ
-#define TS_INT_PIN      4
-
-#define TS_I2C_CLK_SRC  0   /**< RCC_I2C2CLKSOURCE_PCLK1 */
+#define TS_I2C  I2C2
 
 // =====================================================================
 // Public API
@@ -131,48 +101,15 @@ TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c);
 TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h);
 
 /**
- * @brief  Read GT911 chip ID (4 bytes at 0x8140)
- *
- * @param  h  Touch handle
- * @param  id Output: chip ID as big-endian uint32 (e.g. 0x39313100)
- * @retval TOUCH_OK    on success
- * @retval TOUCH_ERROR on I2C read failure
- */
-TOUCH_Status_TypeDef TOUCH_ReadID(TOUCH_Handle_TypeDef *h, uint32_t *id);
-
-/**
  * @brief  Read the current touch state (single-touch, GT911)
  *
- * @param  h        Touch handle
+ * @param  h        Touch handle (unused, kept for API compat)
  * @param  x        Output: X coordinate
  * @param  y        Output: Y coordinate
  * @param  pressed  Output: 1 if touched, 0 if not
  * @retval TOUCH_OK    on success
- * @retval TOUCH_ERROR on I2C read failure
+ * @retval TOUCH_ERROR on NULL pointer
  */
 TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h, uint16_t *x, uint16_t *y, uint8_t *pressed);
-
-/**
- * @brief  Read an 8-bit register via I2C
- *
- * @param  h   Touch handle
- * @param  reg 16-bit register address
- * @param  val Output: register value
- * @retval TOUCH_OK    on success
- * @retval TOUCH_ERROR on I2C error or NULL pointer
- */
-TOUCH_Status_TypeDef TOUCH_ReadReg(TOUCH_Handle_TypeDef *h, uint16_t reg, uint8_t *val);
-
-/**
- * @brief  Write an 8-bit register via I2C
- *
- * @param  h   Touch handle
- * @param  reg 16-bit register address
- * @param  val Value to write
- * @retval TOUCH_OK    on success
- * @retval TOUCH_ERROR on I2C error
- */
-TOUCH_Status_TypeDef TOUCH_WriteReg(TOUCH_Handle_TypeDef *h, uint16_t reg,
-		uint8_t val);
 
 #endif /* SIMPLE_TOUCH_H */

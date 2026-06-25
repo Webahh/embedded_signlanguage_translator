@@ -92,6 +92,11 @@ void vTouchTask(void){
         TOUCH_GetState(NULL, &x, &y, &pressed);
 
         if (pressed)
-            LTDC_LayerDrawCricle(&LTDC_Layer1Config, x, y, 5, LTDC_COLOR_BLUE);
+        {
+            int next_idx = ltdc_bg_buffer_disp_idx ^ 1;
+            LTDC_LayerConfig_TypeDef tmp = LTDC_Layer1Config;
+            tmp.fb = (void *)&ltdc_bg_buffer[next_idx];
+            LTDC_LayerDrawCricle(&tmp, x, y, 5, LTDC_COLOR_BLUE);
+        }
     }
 }
