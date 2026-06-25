@@ -316,7 +316,7 @@ void LTDC_ConfigLayer(const LTDC_LayerConfig_TypeDef *cfg){
     while (LTDC->SRCR & LTDC_SRCR_IMR);
 }
 
-void LTDC_FillLayer(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
+void LTDC_LayerFill(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
     uint32_t pixel;
     LTDC_ColorToPixel(cfg, color, &pixel);
     int bpp;
@@ -341,7 +341,7 @@ void LTDC_FillLayer(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
     }
 }
 
-void LTDC_FillLayer2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2) {
+void LTDC_LayerFill2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2) {
     uint32_t p1;
     LTDC_ColorToPixel(cfg, color1, &p1);
     uint32_t p2;
@@ -370,6 +370,97 @@ void LTDC_FillLayer2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, 
         for (uint32_t y = 0; y < cfg->height; y++)
             for (uint32_t x = 0; x < cfg->width; x++)
                 fb[y * cfg->width + x] = (x < half) ? p1 : p2;
+    }
+}
+
+static void _plot4(volatile uint16_t *fb, int16_t cx, int16_t cy,
+                   int16_t x, int16_t y, uint16_t pixel,
+                   uint16_t w, uint16_t h, uint16_t stride)
+{
+    int16_t px, py;
+    px = cx + x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx - x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx + x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx - x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+}
+
+static void _plot4_3(volatile uint8_t *fb, int16_t cx, int16_t cy,
+                     int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b,
+                     uint16_t w, uint16_t h, uint16_t stride)
+{
+    int16_t px, py; uint32_t off;
+    px = cx + x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) { off = (py * stride + px) * 3; fb[off+0]=r; fb[off+1]=g; fb[off+2]=b; }
+    px = cx - x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) { off = (py * stride + px) * 3; fb[off+0]=r; fb[off+1]=g; fb[off+2]=b; }
+    px = cx + x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) { off = (py * stride + px) * 3; fb[off+0]=r; fb[off+1]=g; fb[off+2]=b; }
+    px = cx - x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) { off = (py * stride + px) * 3; fb[off+0]=r; fb[off+1]=g; fb[off+2]=b; }
+}
+
+static void _plot4_32(volatile uint32_t *fb, int16_t cx, int16_t cy,
+                      int16_t x, int16_t y, uint32_t pixel,
+                      uint16_t w, uint16_t h, uint16_t stride)
+{
+    int16_t px, py;
+    px = cx + x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx - x; py = cy + y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx + x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+    px = cx - x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
+}
+
+void LTDC_LayerDrawCricle(const LTDC_LayerConfig_TypeDef *cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color)
+{
+    uint32_t pixel;
+    LTDC_ColorToPixel(cfg, color, &pixel);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
+
+    int16_t x = radius;
+    int16_t y = 0;
+    int16_t p = 1 - (int16_t)radius;
+
+    if (bpp == 2)
+    {
+        volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        while (y <= x)
+        {
+            _plot4(fb, pos_x, pos_y, x, y, (uint16_t)pixel, cfg->width, cfg->height, cfg->buf_width);
+            if (x != y)
+                _plot4(fb, pos_x, pos_y, y, x, (uint16_t)pixel, cfg->width, cfg->height, cfg->buf_width);
+            y++;
+            if (p <= 0)
+                p += 2 * y + 1;
+            else { x--; p += 2 * (y - x) + 1; }
+        }
+    }
+    else if (bpp == 3)
+    {
+        volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+        uint8_t r = (uint8_t)(pixel);
+        uint8_t g = (uint8_t)(pixel >> 8);
+        uint8_t b = (uint8_t)(pixel >> 16);
+        while (y <= x)
+        {
+            _plot4_3(fb, pos_x, pos_y, x, y, r, g, b, cfg->width, cfg->height, cfg->buf_width);
+            if (x != y)
+                _plot4_3(fb, pos_x, pos_y, y, x, r, g, b, cfg->width, cfg->height, cfg->buf_width);
+            y++;
+            if (p <= 0)
+                p += 2 * y + 1;
+            else { x--; p += 2 * (y - x) + 1; }
+        }
+    }
+    else
+    {
+        volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+        while (y <= x)
+        {
+            _plot4_32(fb, pos_x, pos_y, x, y, pixel, cfg->width, cfg->height, cfg->buf_width);
+            if (x != y)
+                _plot4_32(fb, pos_x, pos_y, y, x, pixel, cfg->width, cfg->height, cfg->buf_width);
+            y++;
+            if (p <= 0)
+                p += 2 * y + 1;
+            else { x--; p += 2 * (y - x) + 1; }
+        }
     }
 }
 

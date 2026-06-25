@@ -81,8 +81,8 @@ void app_init(){
     LTDC_ConfigLayer1();
     LTDC_ConfigLayer2();
 
-    LTDC_FillLayer(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-    LTDC_FillLayer(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
+    LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
+    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -160,6 +160,7 @@ void app_init(){
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
+	SCHEDULER_Task_add(vTouchTask, "Touch", 10, 5, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
 }
 

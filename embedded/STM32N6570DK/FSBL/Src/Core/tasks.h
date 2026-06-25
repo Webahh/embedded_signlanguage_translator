@@ -20,5 +20,6 @@ void vSystemTimeTask(void);
 void vLEDTask(void);
 void vBackgroundTask(void);
 void vAETask(void);
+void vTouchTask(void);
 
 #endif /* TASKS_H */

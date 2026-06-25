@@ -145,7 +145,7 @@ void LTDC_ConfigLayer(const LTDC_LayerConfig_TypeDef *cfg);
  * @param [in] cfg   Layer configuration
  * @param [in] color ARGB fill colour
  */
-void LTDC_FillLayer(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color);
+void LTDC_LayerFill(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color);
 
 /**
  * @brief Fill a layer with two colours side by side
@@ -154,7 +154,18 @@ void LTDC_FillLayer(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color);
  * @param [in] color1 Left-side ARGB colour
  * @param [in] color2 Right-side ARGB colour
  */
-void LTDC_FillLayer2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2);
+void LTDC_LayerFill2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2);
+
+/**
+ * @brief Draws circle on Layer at position (x,y) with color and radius
+ *
+ * @param [in] cfg		Layer configuration
+ * @param [in] pos_x	Circle center position x
+ * @param [in] pos_y	Circle center position y
+ * @param [in] radius	radius in pixels
+ * @param [in] color	color of the circle
+ */
+void LTDC_LayerDrawCricle(const LTDC_LayerConfig_TypeDef* cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color);
 
 /**
  * @brief Blit an image onto a layer at a destination position

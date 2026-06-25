@@ -257,7 +257,7 @@ TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
                                     uint16_t *x, uint16_t *y,
                                     uint8_t *pressed)
 {
-    if (h == NULL || x == NULL || y == NULL || pressed == NULL)
+    if (x == NULL || y == NULL || pressed == NULL)
         return TOUCH_ERROR;
 
     *x = _saved_x;
