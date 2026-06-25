@@ -21,7 +21,7 @@
 
 #define X_RES_VAL        800
 #define Y_RES_VAL        480
-#define MSW1_VAL         0x00
+#define MSW1_VAL         0x0C  /* bits 2|3 = Y/X reverse (Max-Min) */
 
 #define CONFIG_VERSION   0x82
 

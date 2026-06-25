@@ -79,10 +79,10 @@ void app_init(){
     TIMER_Delay_ms(10);
 
     LTDC_ConfigLayer1();
-    LTDC_ConfigLayer2();
+//    LTDC_ConfigLayer2();
 
     LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
+//    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
