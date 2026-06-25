@@ -42,10 +42,13 @@ typedef struct {
 #define GT911_REG_CMD               0x8040
 #define GT911_CMD_READ              0x00
 
+#define GT911_REG_MSW1              0x804D
+#define GT911_REG_CONFIG_CHKSUM     0x80FF
+#define GT911_REG_CONFIG_FRESH      0x8100
+
 #define GT911_REG_CHIP_ID_H         0x8140
 
 #define GT911_REG_CONFIG_VERSION    0x8047
-#define GT911_REG_CONFIG_FRESH      0x8100
 
 #define GT911_REG_TD_STATUS         0x814E
 
@@ -61,7 +64,7 @@ typedef struct {
 #define GT911_REG_TOUCH2_YH         0x8159
 #define GT911_REG_TOUCH2_SIZE       0x815A
 
-#define GT911_MAX_TOUCHES           5
+#define GT911_MAX_TOUCHES           2
 
 // =====================================================================
 // Common pins
@@ -83,6 +86,16 @@ typedef struct {
 // =====================================================================
 // Public API
 // =====================================================================
+
+/**
+ * @brief  Check if a touch interrupt is pending
+ *
+ * Atomically reads and clears the interrupt flag.
+ * Call from the main loop; if non-zero, call TOUCH_GetState().
+ *
+ * @retval 1 touch data ready, 0 no pending interrupt
+ */
+uint8_t TOUCH_GetPending(void);
 
 /**
  * @brief  Configure all touch-related GPIOs and initialise I2C2
@@ -125,8 +138,7 @@ TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h);
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR on I2C read failure
  */
-TOUCH_Status_TypeDef TOUCH_ReadID(TOUCH_Handle_TypeDef *h,
-                                  uint32_t *id);
+TOUCH_Status_TypeDef TOUCH_ReadID(TOUCH_Handle_TypeDef *h, uint32_t *id);
 
 /**
  * @brief  Read the current touch state (single-touch, GT911)
@@ -138,9 +150,7 @@ TOUCH_Status_TypeDef TOUCH_ReadID(TOUCH_Handle_TypeDef *h,
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR on I2C read failure
  */
-TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
-                                    uint16_t *x, uint16_t *y,
-                                    uint8_t *pressed);
+TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h, uint16_t *x, uint16_t *y, uint8_t *pressed);
 
 /**
  * @brief  Read an 8-bit register via I2C
@@ -151,8 +161,7 @@ TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR on I2C error or NULL pointer
  */
-TOUCH_Status_TypeDef TOUCH_ReadReg(TOUCH_Handle_TypeDef *h,
-                                   uint16_t reg, uint8_t *val);
+TOUCH_Status_TypeDef TOUCH_ReadReg(TOUCH_Handle_TypeDef *h, uint16_t reg, uint8_t *val);
 
 /**
  * @brief  Write an 8-bit register via I2C
@@ -163,7 +172,7 @@ TOUCH_Status_TypeDef TOUCH_ReadReg(TOUCH_Handle_TypeDef *h,
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR on I2C error
  */
-TOUCH_Status_TypeDef TOUCH_WriteReg(TOUCH_Handle_TypeDef *h,
-                                    uint16_t reg, uint8_t val);
+TOUCH_Status_TypeDef TOUCH_WriteReg(TOUCH_Handle_TypeDef *h, uint16_t reg,
+		uint8_t val);
 
 #endif /* SIMPLE_TOUCH_H */
