@@ -44,6 +44,8 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 
 volatile uint32_t ai_init_before = 0;
 volatile uint32_t ai_init_after = 0;
+static uint8_t landmark_test_input[LANDMARK_INPUT_SIZE];
+static AI_LandmarkOutput_TypeDef landmark_test_output;
 
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
@@ -126,6 +128,12 @@ void app_init(){
     predicted_index = result.class_index;
     predicted_score = result.score;
     predicted_label = result.label;
+
+    for (uint32_t i = 0U; i < LANDMARK_INPUT_SIZE; i++) {
+        landmark_test_input[i] = (uint8_t)i;
+    }
+
+    bool landmark_copy_ok = AI_RunLandmark(landmark_test_input, &landmark_test_output);
 
     /* --- Scheduler --- */
     SCHEDULER_System_init();
