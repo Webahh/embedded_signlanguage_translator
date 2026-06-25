@@ -85,18 +85,19 @@ void vAETask(void){
 }
 
 void vTouchTask(void){
-    if (TOUCH_GetPending())
+	uint8_t pending = 0;
+	TOUCH_GetPending(&pending);
+    if (pending)
     {
-        uint16_t x, y;
-        uint8_t pressed;
-        TOUCH_GetState(NULL, &x, &y, &pressed);
+        TOUCH_Data_TypeDef data;
+        TOUCH_GetState(NULL, &data);
 
-        if (pressed)
+        if (data.pressed)
         {
             int next_idx = ltdc_bg_buffer_disp_idx ^ 1;
             LTDC_LayerConfig_TypeDef tmp = LTDC_Layer1Config;
             tmp.fb = (void *)&ltdc_bg_buffer[next_idx];
-            LTDC_LayerDrawCricle(&tmp, x, y, 5, LTDC_COLOR_BLUE);
+            LTDC_LayerDrawCricle(&tmp, data.x, data.y, 5, LTDC_COLOR_BLUE);
         }
     }
 }

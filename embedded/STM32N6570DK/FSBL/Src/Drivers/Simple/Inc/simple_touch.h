@@ -32,6 +32,12 @@ typedef struct {
     uint8_t          initialized;   /**< Device initialized flag         */
 } TOUCH_Handle_TypeDef;
 
+typedef struct {
+	uint16_t x;
+	uint16_t y;
+	uint16_t pressed;
+} TOUCH_Data_TypeDef;
+
 // =====================================================================
 // GT911 (Goodix) — primary touch controller on STM32N6570-DK
 // =====================================================================
@@ -54,35 +60,27 @@ typedef struct {
 #define TS_I2C  I2C2
 
 // =====================================================================
-// Public API
+// API
 // =====================================================================
 
 /**
  * @brief  Check if a touch interrupt is pending
  *
- * Atomically reads and clears the interrupt flag.
- * Call from the main loop; if non-zero, call TOUCH_GetState().
- *
- * @retval 1 touch data ready, 0 no pending interrupt
+ * @param [out] p	| pending flag [0,1]
  */
-uint8_t TOUCH_GetPending(void);
+void TOUCH_GetPending(uint8_t *p);
 
 /**
  * @brief  Configure all touch-related GPIOs and initialise I2C2
- *
- * Enables clocks for GPIOD/E/Q, configures I2C2 pins (PD14/PD4),
- * resets the touch controller (PE1 pulse), configures interrupt pin
- * (PQ4), and calls I2C_Config for I2C2.
- *
- * Must be called once before TOUCH_Probe().
  */
 void TOUCH_ConfigIO(void);
 
 /**
  * @brief  Probe the GT911 touch controller on I2C2
  *
- * @param  h   Touch handle (output: i2c/addr/chip filled)
- * @param  i2c I2C instance pointer (pass I2C2)
+ * @param [in]  h	| Touch handle (output: i2c/addr/chip filled)
+ * @param [in]	i2c	| I2C instance pointer (pass I2C2)
+ *
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR if GT911 does not respond
  */
@@ -94,7 +92,8 @@ TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c);
  * Writes init registers and sets operating mode.
  * Must be called after TOUCH_Probe() succeeds.
  *
- * @param  h Touch handle
+ * @param [in] h	| Touch handle
+ *
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR if h is NULL or not initialised
  */
@@ -103,13 +102,14 @@ TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h);
 /**
  * @brief  Read the current touch state (single-touch, GT911)
  *
- * @param  h        Touch handle (unused, kept for API compat)
- * @param  x        Output: X coordinate
- * @param  y        Output: Y coordinate
- * @param  pressed  Output: 1 if touched, 0 if not
+ * Used in a Task in order to fetch from interrupt provided touch data;
+ *
+ * @param [in]  h		| Touch handle (unused, kept for API compat)
+ * @param [out] data	| touch data
+ *
  * @retval TOUCH_OK    on success
  * @retval TOUCH_ERROR on NULL pointer
  */
-TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h, uint16_t *x, uint16_t *y, uint8_t *pressed);
+TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h, TOUCH_Data_TypeDef *data);
 
 #endif /* SIMPLE_TOUCH_H */
