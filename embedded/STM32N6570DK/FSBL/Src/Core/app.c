@@ -116,11 +116,6 @@ void app_init(){
         DEBUG_PRINTF("Touch: no controller found\r\n");
     }
 
-    volatile uint8_t *ai_input;
-    volatile uint8_t *ai_output;
-    volatile uint32_t ai_input_size;
-    volatile uint32_t ai_output_size;
-
     AI_Status_TypeDef status = AI_Init();
 
     if (status != AI_STATUS_OK) {
@@ -128,29 +123,33 @@ void app_init(){
         }
     }
 
-    ai_input = AI_GetInputBuffer();
-    ai_output = AI_GetOutputBuffer();
+    static const uint8_t ai_test_input_b[AI_INPUT_SIZE] = {
+        128, 128, 134, 119, 135, 102, 130,  90, 125,  83, 136,
+         87, 137,  69, 137,  58, 137,  48, 132,  86, 133,  67,
+        133,  55, 134,  45, 128,  87, 128,  70, 128,  60, 129,
+         50, 123,  91, 123,  78, 123,  70, 123,  63, 175, 235,
+        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128
+    };
 
-    ai_input_size = AI_GetInputSize();
-    ai_output_size = AI_GetOutputSize();
+    static uint8_t ai_output_data[AI_OUTPUT_SIZE];
 
-    uint8_t *input = AI_GetInputBuffer();
+    static volatile uint32_t predicted_index;
+    static volatile uint8_t predicted_score;
+    static volatile const char *predicted_label;
 
-    if (input == NULL) {
+    if (!AI_Run(ai_test_input_b, ai_output_data)) {
         while (1) {
         }
     }
 
-    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
-        input[i] = (uint8_t)i;
-    }
+    AI_Result_TypeDef result = AI_GetResult(ai_output_data);
 
-    for (uint32_t i = 0; i < AI_GetInputSize(); i++) {
-        if (input[i] != (uint8_t)i) {
-            while (1) {
-            }
-        }
-    }
+    predicted_index = result.class_index;
+    predicted_score = result.score;
+    predicted_label = result.label;
 
     for (uint32_t i = 0U; i < LANDMARK_INPUT_SIZE; i++) {
         landmark_test_input[i] = (uint8_t)i;
