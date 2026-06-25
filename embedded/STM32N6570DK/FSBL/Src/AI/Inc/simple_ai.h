@@ -11,8 +11,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum
-{
+#define AI_INPUT_SIZE   88
+#define AI_OUTPUT_SIZE  26
+
+typedef enum{
     AI_STATUS_OK = 0,
     AI_STATUS_NOT_INITIALIZED,
     AI_STATUS_CACHEAXI_ERROR,
@@ -21,7 +23,15 @@ typedef enum
     AI_STATUS_RUNTIME_ERROR
 } AI_Status_TypeDef;
 
+typedef struct {
+    uint32_t class_index;
+    uint8_t score;
+    const char *label;
+} AI_Result_TypeDef;
+
 AI_Status_TypeDef AI_Init(void);
+bool AI_Run(const uint8_t input[AI_INPUT_SIZE], uint8_t output[AI_OUTPUT_SIZE]);
+AI_Result_TypeDef AI_GetResult(const uint8_t output[AI_OUTPUT_SIZE]);
 
 uint8_t *AI_GetInputBuffer(void);
 uint8_t *AI_GetOutputBuffer(void);
