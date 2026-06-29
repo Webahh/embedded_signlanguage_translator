@@ -60,10 +60,10 @@ typedef void (*UI_Callback_TypeDef)(void);
  * @brief A simple rectangular on-screen button
  */
 typedef struct {
-	uint16_t x;
-	uint16_t y;
-	uint16_t w;
-	uint16_t h;
+	uint16_t x_pos;
+	uint16_t y_pos;
+	uint16_t width;
+	uint16_t height;
 	UI_State_TypeDef state;
 	uint32_t color;
 	uint32_t color_pressed;
@@ -78,10 +78,10 @@ void UI_Init(void);
 /**
  * @brief Register a simple button
  *
- * @param [in]  x       | Left edge
- * @param [in]  y       | Top edge
- * @param [in]  w       | Width
- * @param [in]  h       | Height
+ * @param [in]  x_pos  | Left edge
+ * @param [in]  y_pos  | Top edge
+ * @param [in]  width  | Width
+ * @param [in]  height | Height
  * @param [in]  color   | Idle fill colour
  * @param [in]  cb      | Callback on release
  * @param [out] out_idx | Receives the new object index (may be NULL)
@@ -89,20 +89,20 @@ void UI_Init(void);
  * @retval UI_OK       Button registered
  * @retval UI_ERR_FULL Object array full
  */
-UI_Status_TypeDef UI_AddButton(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color, UI_Callback_TypeDef cb, int *out_idx);
+UI_Status_TypeDef UI_AddButton(uint16_t x_pos, uint16_t y_pos, uint16_t width, uint16_t height, uint32_t color, UI_Callback_TypeDef cb, int *out_idx);
 
 /**
  * @brief Dispatch touch event to simple buttons
  *
- * @param [in]  x       | Touch x
- * @param [in]  y       | Touch y
+ * @param [in]  touch_x | Touch x
+ * @param [in]  touch_y | Touch y
  * @param [in]  pressed | 1 = press, 0 = release
  * @param [out] out_idx | Receives index of touched object (may be NULL)
  *
  * @retval UI_OK            A button was pressed and released
  * @retval UI_ERR_NOT_FOUND No button hit
  */
-UI_Status_TypeDef UI_HandleTouch(uint16_t x, uint16_t y, uint8_t pressed, int *out_idx);
+UI_Status_TypeDef UI_HandleTouch(uint16_t touch_x, uint16_t touch_y, uint8_t pressed, int *out_idx);
 
 /**
  * @brief Redraw all simple buttons
@@ -137,7 +137,7 @@ typedef void (*UI_DrawerItemCallback_TypeDef)(uint8_t item_idx,
 /** @brief Extra state for UI_DRAWER_ITEM_COMPOSITE */
 typedef struct {
 	uint8_t visible;
-	uint8_t slider;
+	uint8_t slider_value;
 } UI_Composite_TypeDef;
 
 /** @brief A single drawer item (label, toggle, slider, selector, composite) */
@@ -145,15 +145,15 @@ typedef struct {
 	UI_DrawerItemType_TypeDef type;
 	char label[24];
 	uint8_t value;
-	UI_Composite_TypeDef comp;
+	UI_Composite_TypeDef composite;
 	UI_DrawerItemCallback_TypeDef callback;
 	void *context;
 } UI_DrawerItem_TypeDef;
 
 /** @brief Slide-out drawer instance */
 typedef struct {
-	uint16_t x;
-	uint16_t y;
+	uint16_t x_pos;
+	uint16_t y_pos;
 	uint8_t is_open;
 	uint32_t color_bg;
 	uint32_t color_border;
@@ -225,8 +225,8 @@ void UI_Drawer_Close(UI_Drawer_TypeDef *drawer);
  * @brief Dispatch touch event to drawer
  *
  * @param [in]  drawer  | Drawer instance
- * @param [in]  tx      | Touch x
- * @param [in]  ty      | Touch y
+ * @param [in]  touch_x | Touch x
+ * @param [in]  touch_y | Touch y
  * @param [in]  pressed | 1 = press, 0 = release
  * @param [in]  cfg     | LTDC layer config (needed to re-render touched items)
  * @param [out] out_idx | Receives item index that changed, or -2 if toggle
@@ -236,7 +236,7 @@ void UI_Drawer_Close(UI_Drawer_TypeDef *drawer);
  * @retval UI_ERR_NOT_FOUND No interaction
  */
 UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
-	uint16_t tx, uint16_t ty, uint8_t pressed,
+	uint16_t touch_x, uint16_t touch_y, uint8_t pressed,
 	const LTDC_LayerConfig_TypeDef *cfg, int *out_idx);
 
 /**
