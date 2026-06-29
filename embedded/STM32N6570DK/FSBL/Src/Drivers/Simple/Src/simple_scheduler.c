@@ -8,10 +8,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "simple_scheduler.h"
-
 #include "stm32n657xx.h"
+
+#include "simple_scheduler.h"
 #include "simple_timer.h"
+#include "simple_debug_log.h"
+#include "config.h"
 
 // -------------------------------------------------------------------------
 // Private defines / datatypes
@@ -549,6 +551,50 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 		g_sched_fault.lr  = frame[5];
 		g_sched_fault.pc  = frame[6];
 		g_sched_fault.xpsr = frame[7];
+	}
+
+	char* reason_str;
+	switch (reason) {
+	case 1:
+		reason_str = "Hard Fault (1)";
+		break;
+	case 2:
+		reason_str = "MemManage Fault (2)";
+		break;
+	case 3:
+		reason_str = "Bus Fault (3)";
+		break;
+	case 4:
+		reason_str = "Usage Fault (4)";
+		break;
+	case 5:
+		reason_str = "NMI Fault (5)";
+		break;
+	default:
+		reason_str = "Unknown (?)";
+		break;
+	}
+
+	DEBUG_PRINTF("\r\n===== SCHEDULER FAULT =====\r\n");
+	DEBUG_PRINTF("Reason:%s Task:\"%s\"(%lu) Tick:%lu\r\n",
+			reason_str,
+			_tasks[_current_task].pcName ? _tasks[_current_task].pcName : "?",
+			(uint32_t)_current_task,
+			_sys_tick_ms);
+	DEBUG_PRINTF("CFSR:0x%lx HFSR:0x%lx\r\n", g_sched_fault.cfsr, g_sched_fault.hfsr);
+	DEBUG_PRINTF("DFSR:0x%lx AFSR:0x%lx\r\n", g_sched_fault.dfsr, g_sched_fault.afsr);
+	DEBUG_PRINTF("MMFAR:0x%lx BFAR:0x%lx\r\n", g_sched_fault.mmfar, g_sched_fault.bfar);
+	DEBUG_PRINTF("ICSR:0x%lx SHCSR:0x%lx\r\n", g_sched_fault.icsr, g_sched_fault.shcsr);
+	DEBUG_PRINTF("MSP:0x%lx PSP:0x%lx PSPLIM:0x%lx\r\n", g_sched_fault.msp, g_sched_fault.psp, g_sched_fault.psplim);
+	DEBUG_PRINTF("CONTROL:0x%lx EXC_RETURN:0x%lx\r\n", g_sched_fault.control, g_sched_fault.exc_return);
+
+	if (frame) {
+		DEBUG_PRINTF("R0:0x%lx R1:0x%lx R2:0x%lx R3:0x%lx\r\n",
+			g_sched_fault.r0, g_sched_fault.r1,
+			g_sched_fault.r2, g_sched_fault.r3);
+		DEBUG_PRINTF("R12:0x%lx LR:0x%lx PC:0x%lx xPSR:0x%lx\r\n",
+			g_sched_fault.r12, g_sched_fault.lr,
+			g_sched_fault.pc, g_sched_fault.xpsr);
 	}
 
 	__BKPT(0);
