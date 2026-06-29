@@ -126,7 +126,9 @@ int UI_Drawer_AddItem(UI_Drawer_TypeDef *d, UI_DrawerItemType_TypeDef type,
     if (d->item_count >= UI_DRAWER_MAX_ITEMS) return -1;
     UI_DrawerItem_TypeDef *it = &d->items[d->item_count];
     it->type = type;
-    it->value = (type == UI_DRAWER_ITEM_TOGGLE) ? 0 : 50;
+    it->value = (type == UI_DRAWER_ITEM_TOGGLE || type == UI_DRAWER_ITEM_SELECTOR) ? 0 : 50;
+    it->comp.visible = 1;
+    it->comp.slider  = 50;
     it->callback = cb;
     it->context = NULL;
 
@@ -248,6 +250,56 @@ int UI_Drawer_HandleTouch(UI_Drawer_TypeDef *d, uint16_t tx, uint16_t ty, uint8_
                 d->active_item = -1;
                 return 1;
             }
+            else if (it->type == UI_DRAWER_ITEM_SELECTOR)
+            {
+                uint16_t seg_x = d->x + _DRAWER_ITEM_PAD_L;
+                uint16_t seg_w = (UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R) / 3;
+                uint8_t s = (tx < seg_x) ? 0 : (tx - seg_x) / seg_w;
+                if (s > 2) s = 2;
+                it->value = s;
+                if (it->callback)
+                    it->callback(idx, it->value, it->context);
+                _render_item_in_open_buf(d, idx, cfg);
+                d->active_item = -1;
+                return 1;
+            }
+            else if (it->type == UI_DRAWER_ITEM_COMPOSITE)
+            {
+                uint16_t cx = d->x + _DRAWER_ITEM_PAD_L;
+                uint16_t aw = UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R;
+
+                uint8_t ll = 0;
+                for (uint8_t k = 0; it->label[k]; k++) ll++;
+                uint16_t eye_x = cx + ll * 8 + 12;
+
+                /* Hit-test eye icon */
+                if (tx >= eye_x && tx < eye_x + 12)
+                {
+                    it->comp.visible = !it->comp.visible;
+                    if (it->callback)
+                        it->callback(idx, it->comp.visible, it->context);
+                    _render_item_in_open_buf(d, idx, cfg);
+                    d->active_item = -1;
+                    return 1;
+                }
+
+                /* Hit-test slider */
+                uint16_t slider_x = eye_x + 12 + 10;
+                uint16_t slider_w = cx + aw - slider_x;
+                if ((int16_t)slider_w > 20 && tx >= slider_x)
+                {
+                    int16_t rel = (tx >= slider_x + slider_w) ? slider_w : tx - slider_x;
+                    if (rel < 0) rel = 0;
+                    uint8_t val = (uint8_t)((uint32_t)rel * 100U / slider_w);
+                    if (val > 100) val = 100;
+                    it->comp.slider = val;
+                    if (it->callback)
+                        it->callback(idx, val, it->context);
+                    _render_item_in_open_buf(d, idx, cfg);
+                    d->active_item = -1;
+                    return 1;
+                }
+            }
 
             d->active_item = -1;
         }
@@ -310,6 +362,68 @@ static void _draw_item(UI_Drawer_TypeDef *d, uint8_t idx, const LTDC_LayerConfig
             uint16_t cx = sx + fw;
             uint16_t cy = sy + _DRAWER_SLIDER_H / 2;
             LTDC_LayerDrawCricle(cfg, cx, cy, _DRAWER_THUMB_R, d->color_text);
+        }
+    }
+    else if (it->type == UI_DRAWER_ITEM_SELECTOR)
+    {
+        const char *labels[3] = {"Palm", "Hand", "Sign"};
+        uint16_t sx = d->x + _DRAWER_ITEM_PAD_L;
+        uint16_t aw = UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R;
+        uint16_t sw = aw / 3;
+        uint16_t sh = 30;
+        uint16_t sy = iy + (UI_DRAWER_ITEM_HEIGHT - sh) / 2;
+
+        for (uint8_t s = 0; s < 3; s++)
+        {
+            uint16_t seg_x = sx + s * sw;
+            uint32_t bg = (s == it->value) ? d->color_accent : 0x00444444U;
+            LTDC_LayerDrawRect(cfg, seg_x, sy, sw - 2, sh, bg);
+            LTDC_LayerDrawRectBorder(cfg, seg_x, sy, sw - 2, sh, 0x00777777U);
+
+            uint8_t len = 0;
+            for (uint8_t k = 0; labels[s][k]; k++) len++;
+            uint16_t tx = seg_x + (sw - 2 - len * 8) / 2;
+            uint16_t ty = sy + (sh - 16) / 2;
+            TEXT_String_draw(cfg, labels[s], tx, ty, d->color_text);
+        }
+    }
+    else if (it->type == UI_DRAWER_ITEM_COMPOSITE)
+    {
+        uint16_t cx = d->x + _DRAWER_ITEM_PAD_L;
+        uint16_t aw = UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R;
+        uint16_t mid_y = iy + UI_DRAWER_ITEM_HEIGHT / 2;
+
+        /* Label */
+        TEXT_String_draw(cfg, it->label, cx, mid_y - 8, d->color_text);
+        uint8_t ll = 0;
+        for (uint8_t k = 0; it->label[k]; k++) ll++;
+
+        /* Eye icon */
+        uint16_t eye_x = cx + ll * 8 + 12;
+        uint16_t eye_y = mid_y - 8;
+        uint16_t eye_r = 6;
+        if (it->comp.visible)
+        {
+            LTDC_LayerDrawCricle(cfg, eye_x + eye_r, eye_y + eye_r, eye_r, d->color_text);
+            LTDC_LayerDrawCricle(cfg, eye_x + eye_r, eye_y + eye_r, 2, d->color_text);
+        }
+        else
+        {
+            LTDC_LayerDrawRect(cfg, eye_x + 2, eye_y + eye_r - 1, eye_r * 2 - 4, 2, d->color_text);
+        }
+
+        /* Slider */
+        uint16_t slider_x = eye_x + eye_r * 2 + 10;
+        uint16_t slider_w = cx + aw - slider_x;
+        if ((int16_t)slider_w > 20)
+        {
+            uint16_t slider_y = mid_y - 4;
+            uint16_t slider_h = 8;
+            LTDC_LayerDrawRect(cfg, slider_x, slider_y, slider_w, slider_h, 0x00555555U);
+            uint16_t fill_w = (uint16_t)((uint32_t)slider_w * it->comp.slider / 100);
+            if (fill_w > 0)
+                LTDC_LayerDrawRect(cfg, slider_x, slider_y, fill_w, slider_h, d->color_accent);
+            LTDC_LayerDrawCricle(cfg, slider_x + fill_w, slider_y + slider_h / 2, 6, d->color_text);
         }
     }
 }

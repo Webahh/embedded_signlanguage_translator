@@ -49,14 +49,22 @@ typedef enum {
     UI_DRAWER_ITEM_LABEL = 0,
     UI_DRAWER_ITEM_TOGGLE,
     UI_DRAWER_ITEM_SLIDER,
+    UI_DRAWER_ITEM_SELECTOR,
+    UI_DRAWER_ITEM_COMPOSITE,
 } UI_DrawerItemType_TypeDef;
 
 typedef void (*UI_DrawerItemCallback_TypeDef)(uint8_t item_idx, uint8_t value, void *context);
 
 typedef struct {
+    uint8_t visible;
+    uint8_t slider;
+} UI_Composite_TypeDef;
+
+typedef struct {
     UI_DrawerItemType_TypeDef type;
     char label[24];
     uint8_t value;
+    UI_Composite_TypeDef comp;
     UI_DrawerItemCallback_TypeDef callback;
     void *context;
 } UI_DrawerItem_TypeDef;

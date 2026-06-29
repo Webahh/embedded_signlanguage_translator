@@ -57,6 +57,21 @@ static void _dr_cb_toggle(uint8_t idx, uint8_t val, void *ctx)
         GPIO_BSRR_reset(GPIOG, LED2_PIN);
 }
 
+static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
+	static uint8_t systemtime_id;
+	(void)idx;
+	(void)ctx;
+	if (val) {
+		// Add task
+		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
+	} else {
+		// Remove Task and clean layer
+		SCHEDULER_Task_remove(systemtime_id);
+		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+	}
+}
+
+
 static void _dr_cb_slider(uint8_t idx, uint8_t val, void *ctx)
 {
     (void)idx;
@@ -125,13 +140,14 @@ void app_init(){
 
     /* --- UI --- */
 	UI_Init();
-
 	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "Settings",       NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE,  "LED Control",    _dr_cb_toggle);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SLIDER,  "Brightness",     _dr_cb_slider);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE,  "Auto Exposure",  NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "v1.0.0",         NULL);
+
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR,"Mode",           NULL);				// Selector
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Palm",           NULL);				// Tracking Palm
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Hand",           NULL);				// Tracking Hand
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Sign",           NULL);				// Tracking Sign
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime);// System Time
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "v1.0.0",         NULL);				// Label
 
 	UI_DrawAll(&LTDC_Layer2Config);
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
@@ -184,7 +200,6 @@ void app_init(){
 	uint8_t task_idx;
 
 	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
-//	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
