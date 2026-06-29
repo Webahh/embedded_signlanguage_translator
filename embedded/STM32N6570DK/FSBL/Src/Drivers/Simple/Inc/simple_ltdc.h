@@ -6,10 +6,10 @@
  *
  * Usage
  * -----
- * 1. LTDC_Init()              – initialise LTDC peripheral
- * 2. LTDC_ConfigLayer1/2()    – configure layer parameters
- * 3. LTDC_UpdateLayerAddress() – update framebuffer pointer
- * 4. LTDC_FillLayer()         – fill layer with colour
+ * 1. LTDC_Init()				- initialise LTDC peripheral
+ * 2. LTDC_ConfigLayer1/2()		- configure layer parameters
+ * 3. LTDC_UpdateLayerAddress() - update framebuffer pointer
+ * 4. LTDC_FillLayer()			- fill layer with colour
  */
 
 #ifndef SIMPLE_LTDC_H
@@ -31,7 +31,7 @@
 #define LTDC_DISPLAY_BPP          3
 
 #define LTDC_NN_BUFFER_NB    2
-#define LTDC_NN_BPP          3
+#define LTDC_NN_BPP          2
 
 #define LTDC_COLOR_BLACK  0xFF000000U
 #define LTDC_COLOR_WHITE  0xFFFFFFFFU
@@ -90,7 +90,7 @@ typedef struct LTDC_LayerConfig {
     uint8_t                                          blending_order;
 } LTDC_LayerConfig_TypeDef;
 
-// ── Mutable runtime state ──
+// -- Mutable runtime state --
 extern volatile uint8_t     ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP];
 extern volatile uint8_t     ltdc_fg_buffer[2][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP];
 extern volatile int         ltdc_bg_buffer_disp_idx;

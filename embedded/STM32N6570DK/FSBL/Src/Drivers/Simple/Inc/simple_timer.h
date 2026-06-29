@@ -6,9 +6,9 @@
  *
  * Usage
  * -----
- * 1. TIMER_Delay_init()   – configure TIM7 (1 ms period)
- * 2. TIMER_Delay_ms()     – blocking delay
- * 3. TIMER_GetTick()      – read system tick
+ * 1. TIMER_Delay_init()   - configure TIM7 (1 ms period)
+ * 2. TIMER_Delay_ms()     - blocking delay
+ * 3. TIMER_GetTick()      - read system tick
  */
 
 #ifndef SIMPLE_TIMER_H

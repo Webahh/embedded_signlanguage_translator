@@ -94,9 +94,11 @@ void vTouchTask(void){
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
 
-        int ui = UI_HandleTouch(data.x, data.y, data.pressed);
-        UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed, &LTDC_Layer2Config);
-        if (ui != -1)
+        int ui_idx = -1;
+        UI_HandleTouch(data.x, data.y, data.pressed, &ui_idx);
+        UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed,
+            &LTDC_Layer2Config, NULL);
+        if (ui_idx != -1)
             UI_DrawAll(&LTDC_Layer2Config);
 
         if (data.pressed)

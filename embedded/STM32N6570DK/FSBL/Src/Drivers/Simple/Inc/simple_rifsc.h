@@ -6,7 +6,7 @@
  *
  * Usage
  * -----
- * 1. RIFSC_Config()   – configure IL / RL at early boot
+ * 1. RIFSC_Config()	- configure IL / RL at early boot
  */
 
 #ifndef SIMPLE_RIFSC_H

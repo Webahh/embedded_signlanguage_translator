@@ -210,7 +210,7 @@ RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz){
  * @param [out] hz      PLL frequency in Hz
  *
  * @retval RCC_OK    Success
- * @retval RCC_ERROR Divider zero – cannot compute
+ * @retval RCC_ERROR Divider zero - cannot compute
  */
 static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz){
     volatile uint32_t* cfgr1 = _PLL_CFGR1[pll_idx];
@@ -240,7 +240,7 @@ static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz){
  * @param [out] hz     IC output frequency in Hz
  *
  * @retval RCC_OK    Success
- * @retval RCC_ERROR PLL not ready – frequency unknown
+ * @retval RCC_ERROR PLL not ready - frequency unknown
  */
 static RCC_Status_TypeDef RCC_GetICFreq(uint32_t ic_idx, uint32_t* hz){
     uint32_t cfgr = *_IC_CFGR[ic_idx];

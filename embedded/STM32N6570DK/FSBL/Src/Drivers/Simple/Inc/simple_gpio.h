@@ -6,10 +6,10 @@
  *
  * Usage
  * -----
- * 1. RCC_enable_GPIO()   – enable GPIO clock
- * 2. GPIO_Config()        – set pin mode / speed / AF
- * 3. GPIO_BSRR_*()        – set / reset / toggle pin
- * 4. GPIO_get()           – read pin state
+ * 1. RCC_enable_GPIO()	- enable GPIO clock
+ * 2. GPIO_Config()     - set pin mode / speed / AF
+ * 3. GPIO_BSRR_*()     - set / reset / toggle pin
+ * 4. GPIO_get()        - read pin state
  */
 
 #ifndef SIMPLE_GPIO_H

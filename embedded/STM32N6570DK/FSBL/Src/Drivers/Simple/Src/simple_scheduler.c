@@ -669,7 +669,7 @@ __attribute__((naked)) void BusFault_Handler(void){
 }
 
 /**
- * @brief UsageFault handler – stack overflow, undefined instruction,
+ * @brief UsageFault handler - stack overflow, undefined instruction,
  *        unaligned access, divide-by-zero
  */
 __attribute__((naked)) void UsageFault_Handler(void){

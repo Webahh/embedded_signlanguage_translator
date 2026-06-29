@@ -6,8 +6,8 @@
  *
  * Usage
  * -----
- * 1. app_init()   – initialise all subsystems
- * 2. app_run()    – start scheduler (never returns)
+ * 1. app_init()   - initialise all subsystems
+ * 2. app_run()    - start scheduler (never returns)
  */
 
 #ifndef APP_H

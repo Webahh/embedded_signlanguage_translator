@@ -114,7 +114,6 @@ void app_init(){
     LTDC_ConfigLayer2();
 
     LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_BLACK);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -142,12 +141,12 @@ void app_init(){
 	UI_Init();
 	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
 
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR,"Mode",           NULL);				// Selector
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Palm",           NULL);				// Tracking Palm
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Hand",           NULL);				// Tracking Hand
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE,"Sign",           NULL);				// Tracking Sign
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime);// System Time
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "v1.0.0",         NULL);				// Label
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL);
 
 	UI_DrawAll(&LTDC_Layer2Config);
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);

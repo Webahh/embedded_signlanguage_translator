@@ -6,8 +6,8 @@
  *
  * Usage
  * -----
- * 1. XSPI_PSRAM_init() / XSPI_NOR_init()   – initialise with config
- * 2. Memory-mapped access                    – read / write via mapped address
+ * 1. XSPI_PSRAM_init() / XSPI_NOR_init()	-  initialise with config
+ * 2. Memory-mapped access                  - read / write via mapped address
  */
 
 #ifndef SIMPLE_XSPI_H
