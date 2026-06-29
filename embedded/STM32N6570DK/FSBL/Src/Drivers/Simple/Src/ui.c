@@ -1,5 +1,6 @@
 #include "ui.h"
 #include "simple_text.h"
+#include "config.h"
 
 static UI_Object_TypeDef _objects[UI_MAX_OBJECTS];
 static int _object_count = 0;
@@ -84,7 +85,7 @@ void UI_DrawAll(const LTDC_LayerConfig_TypeDef *cfg)
 #define _DRAWER_TOGGLE_H     24
 #define _DRAWER_THUMB_R       7
 
-void UI_Drawer_Init(UI_Drawer_TypeDef *d)
+void UI_Drawer_Init(UI_Drawer_TypeDef *d, uint8_t *buf_open, uint8_t *buf_closed)
 {
     d->x = 0;
     d->y = 0;
@@ -96,6 +97,27 @@ void UI_Drawer_Init(UI_Drawer_TypeDef *d)
     d->color_surface=0x00383838U;
     d->item_count = 0;
     d->active_item = -1;
+    d->buf_open = buf_open;
+    d->buf_closed = buf_closed;
+}
+
+void UI_Drawer_Prepare(UI_Drawer_TypeDef *d, const LTDC_LayerConfig_TypeDef *cfg)
+{
+    LTDC_LayerConfig_TypeDef tmp = *cfg;
+
+    tmp.fb = d->buf_closed;
+    LTDC_LayerFill(&tmp, LTDC_COLOR_BLACK);
+    d->is_open = 0;
+    UI_Drawer_Draw(d, &tmp);
+
+    tmp.fb = d->buf_open;
+    LTDC_LayerFill(&tmp, LTDC_COLOR_BLACK);
+    d->is_open = 1;
+    UI_Drawer_Draw(d, &tmp);
+
+    d->is_open = 0;
+    LTDC_Layer2Config.fb = d->buf_closed;
+    LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
 }
 
 int UI_Drawer_AddItem(UI_Drawer_TypeDef *d, UI_DrawerItemType_TypeDef type,
@@ -119,16 +141,22 @@ int UI_Drawer_AddItem(UI_Drawer_TypeDef *d, UI_DrawerItemType_TypeDef type,
 void UI_Drawer_Toggle(UI_Drawer_TypeDef *d)
 {
     d->is_open = !d->is_open;
+    LTDC_Layer2Config.fb = d->is_open ? d->buf_open : d->buf_closed;
+    LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
 }
 
 void UI_Drawer_Open(UI_Drawer_TypeDef *d)
 {
     d->is_open = 1;
+    LTDC_Layer2Config.fb = d->buf_open;
+    LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
 }
 
 void UI_Drawer_Close(UI_Drawer_TypeDef *d)
 {
     d->is_open = 0;
+    LTDC_Layer2Config.fb = d->buf_closed;
+    LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
 }
 
 uint8_t UI_Drawer_GetItemValue(const UI_Drawer_TypeDef *d, uint8_t idx)
@@ -137,7 +165,14 @@ uint8_t UI_Drawer_GetItemValue(const UI_Drawer_TypeDef *d, uint8_t idx)
     return d->items[idx].value;
 }
 
-int UI_Drawer_HandleTouch(UI_Drawer_TypeDef *d, uint16_t tx, uint16_t ty, uint8_t pressed)
+static void _render_item_in_open_buf(UI_Drawer_TypeDef *d, uint8_t idx, const LTDC_LayerConfig_TypeDef *cfg)
+{
+    LTDC_LayerConfig_TypeDef tmp = *cfg;
+    tmp.fb = d->buf_open;
+    UI_Drawer_DrawItem(d, idx, &tmp);
+}
+
+int UI_Drawer_HandleTouch(UI_Drawer_TypeDef *d, uint16_t tx, uint16_t ty, uint8_t pressed, const LTDC_LayerConfig_TypeDef *cfg)
 {
     if (pressed)
     {
@@ -179,12 +214,14 @@ int UI_Drawer_HandleTouch(UI_Drawer_TypeDef *d, uint16_t tx, uint16_t ty, uint8_
         if (d->active_item >= 0 && (uint8_t)d->active_item < d->item_count)
         {
             UI_DrawerItem_TypeDef *it = &d->items[d->active_item];
+            uint8_t idx = (uint8_t)d->active_item;
 
             if (it->type == UI_DRAWER_ITEM_TOGGLE)
             {
                 it->value = !it->value;
                 if (it->callback)
-                    it->callback(d->active_item, it->value, it->context);
+                    it->callback(idx, it->value, it->context);
+                _render_item_in_open_buf(d, idx, cfg);
                 d->active_item = -1;
                 return 1;
             }
@@ -206,7 +243,8 @@ int UI_Drawer_HandleTouch(UI_Drawer_TypeDef *d, uint16_t tx, uint16_t ty, uint8_
                 if (it->value > 100) it->value = 100;
 
                 if (it->callback)
-                    it->callback(d->active_item, it->value, it->context);
+                    it->callback(idx, it->value, it->context);
+                _render_item_in_open_buf(d, idx, cfg);
                 d->active_item = -1;
                 return 1;
             }
@@ -230,79 +268,72 @@ static void _draw_hamburger(const LTDC_LayerConfig_TypeDef *cfg,
     LTDC_LayerDrawRect(cfg, bar_x, (uint16_t)by + 28, bar_w, bar_h, color);
 }
 
+static void _draw_item(UI_Drawer_TypeDef *d, uint8_t idx, const LTDC_LayerConfig_TypeDef *cfg)
+{
+    uint16_t iy = d->y + UI_DRAWER_BTN_SIZE + 8 + idx * (UI_DRAWER_ITEM_HEIGHT + UI_DRAWER_ITEM_GAP);
+    if (iy + UI_DRAWER_ITEM_HEIGHT > cfg->height)
+        return;
+    UI_DrawerItem_TypeDef *it = &d->items[idx];
+    uint16_t lx = d->x + _DRAWER_ITEM_PAD_L;
+    uint16_t ly = iy + (UI_DRAWER_ITEM_HEIGHT - 16) / 2;
+
+    if (it->type == UI_DRAWER_ITEM_LABEL)
+    {
+        TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
+    }
+    else if (it->type == UI_DRAWER_ITEM_TOGGLE)
+    {
+        TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
+        uint16_t tx = d->x + UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_R - _DRAWER_TOGGLE_W;
+        uint16_t ty = iy + (UI_DRAWER_ITEM_HEIGHT - _DRAWER_TOGGLE_H) / 2;
+        uint32_t tc = it->value ? d->color_accent : 0x00555555U;
+        LTDC_LayerDrawRect(cfg, tx, ty, _DRAWER_TOGGLE_W, _DRAWER_TOGGLE_H, tc);
+        LTDC_LayerDrawRectBorder(cfg, tx, ty, _DRAWER_TOGGLE_W, _DRAWER_TOGGLE_H, 0x00777777U);
+        uint16_t cx = it->value ? tx + _DRAWER_TOGGLE_W - _DRAWER_THUMB_R - 3 : tx + _DRAWER_THUMB_R + 3;
+        uint16_t cy = ty + _DRAWER_TOGGLE_H / 2;
+        LTDC_LayerDrawCricle(cfg, cx, cy, _DRAWER_THUMB_R, d->color_text);
+    }
+    else if (it->type == UI_DRAWER_ITEM_SLIDER)
+    {
+        TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
+        uint16_t lw = 0;
+        for (uint8_t j = 0; it->label[j]; j++) lw += 8;
+        uint16_t sx = lx + lw + 16;
+        uint16_t sy = iy + (UI_DRAWER_ITEM_HEIGHT - _DRAWER_SLIDER_H) / 2;
+        uint16_t sw = UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R - lw - 16;
+        if ((int16_t)sw > 0)
+        {
+            LTDC_LayerDrawRect(cfg, sx, sy, sw, _DRAWER_SLIDER_H, 0x00555555U);
+            uint16_t fw = (uint16_t)((uint32_t)sw * it->value / 100);
+            if (fw > 0)
+                LTDC_LayerDrawRect(cfg, sx, sy, fw, _DRAWER_SLIDER_H, d->color_accent);
+            uint16_t cx = sx + fw;
+            uint16_t cy = sy + _DRAWER_SLIDER_H / 2;
+            LTDC_LayerDrawCricle(cfg, cx, cy, _DRAWER_THUMB_R, d->color_text);
+        }
+    }
+}
+
 void UI_Drawer_Draw(UI_Drawer_TypeDef *d, const LTDC_LayerConfig_TypeDef *cfg)
 {
     /* Clear full drawer area to prevent stale pixels */
     LTDC_LayerDrawRect(cfg, d->x, d->y, UI_DRAWER_WIDTH, cfg->height - d->y, LTDC_COLOR_BLACK);
 
-    /* Draw panel if open */
     if (d->is_open)
     {
         LTDC_LayerDrawRect(cfg, d->x, d->y, UI_DRAWER_WIDTH, cfg->height - d->y, d->color_bg);
         LTDC_LayerDrawRectBorder(cfg, d->x, d->y, UI_DRAWER_WIDTH, cfg->height - d->y, d->color_border);
 
-        uint16_t item_y = d->y + UI_DRAWER_BTN_SIZE + 8;
         for (uint8_t i = 0; i < d->item_count; i++)
         {
-            UI_DrawerItem_TypeDef *it = &d->items[i];
-
-            if (item_y + UI_DRAWER_ITEM_HEIGHT > cfg->height)
+            uint16_t iy = d->y + UI_DRAWER_BTN_SIZE + 8 + i * (UI_DRAWER_ITEM_HEIGHT + UI_DRAWER_ITEM_GAP);
+            if (iy + UI_DRAWER_ITEM_HEIGHT > cfg->height)
                 break;
-
-            LTDC_LayerDrawRect(cfg, d->x + 4, item_y,
-                               UI_DRAWER_WIDTH - 8, UI_DRAWER_ITEM_HEIGHT, d->color_surface);
-
-            uint16_t lx = d->x + _DRAWER_ITEM_PAD_L;
-            uint16_t ly = item_y + (UI_DRAWER_ITEM_HEIGHT - 16) / 2;
-
-            if (it->type == UI_DRAWER_ITEM_LABEL)
-            {
-                TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
-            }
-            else if (it->type == UI_DRAWER_ITEM_TOGGLE)
-            {
-                TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
-
-                uint16_t toggle_x = d->x + UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_R - _DRAWER_TOGGLE_W;
-                uint16_t toggle_y = item_y + (UI_DRAWER_ITEM_HEIGHT - _DRAWER_TOGGLE_H) / 2;
-
-                uint32_t track_color = it->value ? d->color_accent : 0x00555555U;
-                LTDC_LayerDrawRect(cfg, toggle_x, toggle_y, _DRAWER_TOGGLE_W, _DRAWER_TOGGLE_H, track_color);
-                LTDC_LayerDrawRectBorder(cfg, toggle_x, toggle_y, _DRAWER_TOGGLE_W, _DRAWER_TOGGLE_H, 0x00777777U);
-
-                uint16_t thumb_cx = it->value
-                    ? toggle_x + _DRAWER_TOGGLE_W - _DRAWER_THUMB_R - 3
-                    : toggle_x + _DRAWER_THUMB_R + 3;
-                uint16_t thumb_cy = toggle_y + _DRAWER_TOGGLE_H / 2;
-                LTDC_LayerDrawCricle(cfg, thumb_cx, thumb_cy, _DRAWER_THUMB_R, d->color_text);
-            }
-            else if (it->type == UI_DRAWER_ITEM_SLIDER)
-            {
-                TEXT_String_draw(cfg, it->label, lx, ly, d->color_text);
-
-                uint16_t label_w = 0;
-                for (uint8_t j = 0; it->label[j]; j++)
-                    label_w += 8;
-
-                uint16_t slider_x = lx + label_w + 16;
-                uint16_t slider_y = item_y + (UI_DRAWER_ITEM_HEIGHT - _DRAWER_SLIDER_H) / 2;
-                uint16_t slider_w = UI_DRAWER_WIDTH - _DRAWER_ITEM_PAD_L - _DRAWER_ITEM_PAD_R - label_w - 16;
-
-                if ((int16_t)slider_w > 0)
-                {
-                    LTDC_LayerDrawRect(cfg, slider_x, slider_y, slider_w, _DRAWER_SLIDER_H, 0x00555555U);
-                    uint16_t fill_w = (uint16_t)((uint32_t)slider_w * it->value / 100);
-                    if (fill_w > 0)
-                        LTDC_LayerDrawRect(cfg, slider_x, slider_y, fill_w, _DRAWER_SLIDER_H, d->color_accent);
-
-                    uint16_t thumb_cx = slider_x + fill_w;
-                    uint16_t thumb_cy = slider_y + _DRAWER_SLIDER_H / 2;
-                    LTDC_LayerDrawCricle(cfg, thumb_cx, thumb_cy, _DRAWER_THUMB_R, d->color_text);
-                }
-            }
-
-            item_y += UI_DRAWER_ITEM_HEIGHT + UI_DRAWER_ITEM_GAP;
+            LTDC_LayerDrawRect(cfg, d->x + 4, iy, UI_DRAWER_WIDTH - 8, UI_DRAWER_ITEM_HEIGHT, d->color_surface);
         }
+
+        for (uint8_t i = 0; i < d->item_count; i++)
+            _draw_item(d, i, cfg);
     }
 
     /* Draw button on top */
@@ -310,4 +341,15 @@ void UI_Drawer_Draw(UI_Drawer_TypeDef *d, const LTDC_LayerConfig_TypeDef *cfg)
     LTDC_LayerDrawRect(cfg, d->x, d->y, UI_DRAWER_BTN_SIZE, UI_DRAWER_BTN_SIZE, btn_color);
     LTDC_LayerDrawRectBorder(cfg, d->x, d->y, UI_DRAWER_BTN_SIZE, UI_DRAWER_BTN_SIZE, d->color_border);
     _draw_hamburger(cfg, (int16_t)d->x, (int16_t)d->y, d->color_text);
+}
+
+void UI_Drawer_DrawItem(UI_Drawer_TypeDef *d, uint8_t idx, const LTDC_LayerConfig_TypeDef *cfg)
+{
+    if (idx >= d->item_count || !d->is_open)
+        return;
+    uint16_t item_y = d->y + UI_DRAWER_BTN_SIZE + 8 + idx * (UI_DRAWER_ITEM_HEIGHT + UI_DRAWER_ITEM_GAP);
+    if (item_y + UI_DRAWER_ITEM_HEIGHT > cfg->height)
+        return;
+    LTDC_LayerDrawRect(cfg, d->x + 4, item_y, UI_DRAWER_WIDTH - 8, UI_DRAWER_ITEM_HEIGHT, d->color_surface);
+    _draw_item(d, idx, cfg);
 }

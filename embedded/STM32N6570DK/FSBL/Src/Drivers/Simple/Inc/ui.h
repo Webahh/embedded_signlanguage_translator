@@ -73,15 +73,19 @@ typedef struct {
     UI_DrawerItem_TypeDef items[UI_DRAWER_MAX_ITEMS];
     uint8_t item_count;
     int8_t active_item;
+    uint8_t *buf_open;
+    uint8_t *buf_closed;
 } UI_Drawer_TypeDef;
 
-void UI_Drawer_Init(UI_Drawer_TypeDef *drawer);
+void UI_Drawer_Init(UI_Drawer_TypeDef *drawer, uint8_t *buf_open, uint8_t *buf_closed);
 int  UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer, UI_DrawerItemType_TypeDef type, const char *label, UI_DrawerItemCallback_TypeDef cb);
+void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, const LTDC_LayerConfig_TypeDef *cfg);
 void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer);
 void UI_Drawer_Open(UI_Drawer_TypeDef *drawer);
 void UI_Drawer_Close(UI_Drawer_TypeDef *drawer);
-int  UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer, uint16_t tx, uint16_t ty, uint8_t pressed);
+int  UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer, uint16_t tx, uint16_t ty, uint8_t pressed, const LTDC_LayerConfig_TypeDef *cfg);
 void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer, const LTDC_LayerConfig_TypeDef *cfg);
+void UI_Drawer_DrawItem(UI_Drawer_TypeDef *drawer, uint8_t idx, const LTDC_LayerConfig_TypeDef *cfg);
 uint8_t UI_Drawer_GetItemValue(const UI_Drawer_TypeDef *drawer, uint8_t item_idx);
 
 #endif

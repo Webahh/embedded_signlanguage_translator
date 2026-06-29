@@ -126,7 +126,7 @@ void app_init(){
     /* --- UI --- */
 	UI_Init();
 
-	UI_Drawer_Init(&_drawer);
+	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "Settings",       NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE,  "LED Control",    _dr_cb_toggle);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SLIDER,  "Brightness",     _dr_cb_slider);
@@ -134,7 +134,7 @@ void app_init(){
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "v1.0.0",         NULL);
 
 	UI_DrawAll(&LTDC_Layer2Config);
-	UI_Drawer_Draw(&_drawer, &LTDC_Layer2Config);
+	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
     AI_Status_TypeDef status = AI_Init();
