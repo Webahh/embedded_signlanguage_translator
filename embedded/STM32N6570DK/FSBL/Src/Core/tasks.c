@@ -16,6 +16,7 @@
 #include "simple_timer.h"
 #include "simple_text.h"
 #include "simple_touch.h"
+#include "ui.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
@@ -52,7 +53,7 @@ void vSystemTimeTask(void) {
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	TEXT_StringBg_draw(&LTDC_Layer2Config, str, 10, 10, LTDC_COLOR_GREEN, LTDC_COLOR_WHITE);
+	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 10, 10, LTDC_COLOR_GREEN, LTDC_COLOR_WHITE);
 }
 
 void vLEDTask(void) {
@@ -91,6 +92,8 @@ void vTouchTask(void){
     {
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
+
+        UI_HandleTouch(data.x, data.y, data.pressed);
 
         if (data.pressed)
         {

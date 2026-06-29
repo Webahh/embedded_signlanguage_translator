@@ -24,6 +24,7 @@
 #include "simple_touch.h"
 #include "tasks.h"
 #include "simple_i2c.h"
+#include "ui.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
@@ -37,10 +38,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
 
-    } else if (pipe == DCMIPP_PIPE2) {
-        ltdc_fg_disp_idx ^= 1;
-        LTDC_Layer2Config.fb = ltdc_fg_buffer[ltdc_fg_disp_idx];
-        LTDC_UpdateLayerAddress(&LTDC_Layer2Config);
+        UI_DrawAll(&LTDC_Layer2Config);
     }
 }
 
@@ -48,6 +46,11 @@ volatile uint32_t ai_init_before = 0;
 volatile uint32_t ai_init_after = 0;
 static uint8_t landmark_test_input[LANDMARK_INPUT_SIZE];
 static AI_LandmarkOutput_TypeDef landmark_test_output;
+
+static void _btn_callback(void)
+{
+    GPIO_BSRR_toggle(GPIOG, LED2_PIN);
+}
 
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
@@ -82,10 +85,10 @@ void app_init(){
     TIMER_Delay_ms(10);
 
     LTDC_ConfigLayer1();
-//    LTDC_ConfigLayer2();
+    LTDC_ConfigLayer2();
 
     LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-//    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
+    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_BLACK);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -117,6 +120,12 @@ void app_init(){
         DEBUG_PRINTF("Touch: no controller found\r\n");
     }
 
+    /* --- UI --- */
+	UI_Init();
+	UI_AddButton(784, 0, 16, 16, UI_COLOR_YELLOW, _btn_callback);
+	UI_DrawAll(&LTDC_Layer2Config);
+
+    /* --- AI --- */
     AI_Status_TypeDef status = AI_Init();
 
     if (status != AI_STATUS_OK) {
@@ -164,7 +173,7 @@ void app_init(){
 	uint8_t task_idx;
 
 	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
-	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
+//	SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);

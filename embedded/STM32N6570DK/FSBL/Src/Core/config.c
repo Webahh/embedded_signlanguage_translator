@@ -242,12 +242,12 @@ LTDC_LayerConfig_TypeDef LTDC_Layer1Config = {
 
 LTDC_LayerConfig_TypeDef LTDC_Layer2Config = {
     .regs            = LTDC_Layer2,
-    .fb              = ltdc_fg_buffer[0],
-    .x               = 0,
+    .fb              = ltdc_fg_buffer,
+    .x               = 784,
     .y               = 0,
-    .width           = LTDC_FG_WIDTH,
-    .height          = LTDC_FG_HEIGHT,
-    .buf_width       = LTDC_FG_WIDTH,
+    .width           = 16,
+    .height          = 16,
+    .buf_width       = 16,
     .pixel_format    = LTDC_PF_RGB888,
     .flexible_fmt    = NULL,
     .const_alpha     = 0xFF,

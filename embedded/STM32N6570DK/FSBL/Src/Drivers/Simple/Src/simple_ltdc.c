@@ -15,8 +15,8 @@
 #include "config.h"
 
 volatile uint8_t ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile uint8_t ltdc_fg_buffer[LTDC_NN_BUFFER_NB][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile int ltdc_bg_buffer_disp_idx = 0;
+volatile uint8_t ltdc_fg_buffer[LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile int     ltdc_bg_buffer_disp_idx;
 
 /**
  * @brief Configure LTDC GPIO pins
@@ -491,6 +491,58 @@ void LTDC_BlitImage(const LTDC_LayerConfig_TypeDef *cfg, const void *img, uint16
         for (uint16_t y = 0; y < img_h && (dst_y + y) < cfg->height; y++)
             for (uint16_t x = 0; x < img_w && (dst_x + x) < cfg->width; x++)
                 fb[(dst_y + y) * cfg->buf_width + dst_x + x] = src[y * img_w + x];
+    }
+}
+
+void LTDC_LayerDrawRect(const LTDC_LayerConfig_TypeDef *cfg,
+    uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color)
+{
+    uint32_t pixel;
+    LTDC_ColorToPixel(cfg, color, &pixel);
+    int bpp;
+    LTDC_BytesPerPixel(cfg, &bpp);
+
+    if (bpp == 2)
+    {
+        volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
+        for (uint16_t row = 0; row < h && (y + row) < cfg->height; row++)
+            for (uint16_t col = 0; col < w && (x + col) < cfg->width; col++)
+                fb[(y + row) * cfg->buf_width + x + col] = (uint16_t)pixel;
+    }
+    else if (bpp == 3)
+    {
+        volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
+        uint8_t r = (uint8_t)(pixel);
+        uint8_t g = (uint8_t)(pixel >> 8);
+        uint8_t b = (uint8_t)(pixel >> 16);
+        for (uint16_t row = 0; row < h && (y + row) < cfg->height; row++)
+            for (uint16_t col = 0; col < w && (x + col) < cfg->width; col++)
+            {
+                uint32_t off = ((y + row) * cfg->buf_width + x + col) * 3;
+                fb[off + 0] = r;
+                fb[off + 1] = g;
+                fb[off + 2] = b;
+            }
+    }
+    else
+    {
+        volatile uint32_t *fb = (volatile uint32_t *)cfg->fb;
+        for (uint16_t row = 0; row < h && (y + row) < cfg->height; row++)
+            for (uint16_t col = 0; col < w && (x + col) < cfg->width; col++)
+                fb[(y + row) * cfg->buf_width + x + col] = pixel;
+    }
+}
+
+void LTDC_LayerDrawRectBorder(const LTDC_LayerConfig_TypeDef *cfg,
+    uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color)
+{
+    LTDC_LayerDrawRect(cfg, x, y, w, 1, color);
+    if (h > 1)
+        LTDC_LayerDrawRect(cfg, x, y + h - 1, w, 1, color);
+    if (w > 1)
+    {
+        LTDC_LayerDrawRect(cfg, x, y + 1, 1, h - 2, color);
+        LTDC_LayerDrawRect(cfg, x + w - 1, y + 1, 1, h - 2, color);
     }
 }
 
