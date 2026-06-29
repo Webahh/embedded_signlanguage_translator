@@ -24,8 +24,8 @@
 #define LTDC_BG_WIDTH  800
 #define LTDC_BG_HEIGHT 480
 
-#define LTDC_FG_WIDTH  192
-#define LTDC_FG_HEIGHT 144
+#define LTDC_FG_WIDTH  800
+#define LTDC_FG_HEIGHT 480
 
 #define LTDC_DISPLAY_BUFFER_NB    2
 #define LTDC_DISPLAY_BPP          3

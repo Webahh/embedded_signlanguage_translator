@@ -13,9 +13,11 @@
 #ifndef APP_H
 #define APP_H
 
+#include "ui.h"
+
 void app_init();
 void app_run();
 
-
+extern UI_Drawer_TypeDef _drawer;
 
 #endif /* APP_H */

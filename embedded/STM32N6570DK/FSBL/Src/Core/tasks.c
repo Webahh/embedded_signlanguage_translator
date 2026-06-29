@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "tasks.h"
+#include "app.h"
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
@@ -93,7 +94,12 @@ void vTouchTask(void){
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
 
-        UI_HandleTouch(data.x, data.y, data.pressed);
+        int ui = UI_HandleTouch(data.x, data.y, data.pressed);
+        int dr = UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed);
+        if (ui != -1 || dr != -1) {
+            UI_DrawAll(&LTDC_Layer2Config);
+            UI_Drawer_Draw(&_drawer, &LTDC_Layer2Config);
+        }
 
         if (data.pressed)
         {

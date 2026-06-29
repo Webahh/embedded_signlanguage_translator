@@ -37,8 +37,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
 
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
-
-        UI_DrawAll(&LTDC_Layer2Config);
     }
 }
 
@@ -47,9 +45,23 @@ volatile uint32_t ai_init_after = 0;
 static uint8_t landmark_test_input[LANDMARK_INPUT_SIZE];
 static AI_LandmarkOutput_TypeDef landmark_test_output;
 
-static void _btn_callback(void)
+UI_Drawer_TypeDef _drawer;
+
+static void _dr_cb_toggle(uint8_t idx, uint8_t val, void *ctx)
 {
-    GPIO_BSRR_toggle(GPIOG, LED2_PIN);
+    (void)idx;
+    (void)ctx;
+    if (val)
+        GPIO_BSRR_set(GPIOG, LED2_PIN);
+    else
+        GPIO_BSRR_reset(GPIOG, LED2_PIN);
+}
+
+static void _dr_cb_slider(uint8_t idx, uint8_t val, void *ctx)
+{
+    (void)idx;
+    (void)val;
+    (void)ctx;
 }
 
 void app_init(){
@@ -63,7 +75,6 @@ void app_init(){
 	DEBUG_PRINTF("Lets debug!\r\n");
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
-
 
 	XSPI_Status_TypeDef xspi_status = XSPI_ERROR;
 	xspi_status = XSPI_PSRAM_init(XSPI_psram_cfg);
@@ -104,15 +115,7 @@ void app_init(){
     TOUCH_ConfigIO();
     TIMER_Delay_ms(50);
 
-    uint8_t found_addrs[128] = {0};
-    uint32_t found = 0;
-    I2C_Scan(TS_I2C, found_addrs, &found);
-
     static TOUCH_Handle_TypeDef h_touch;
-
-    uint8_t id[4];
-
-    I2C_Mem_read(I2C2, 0x5d, 0x8140, id, 4);
 
     if (TOUCH_Probe(&h_touch, TS_I2C) == TOUCH_OK) {
         TOUCH_Init(&h_touch);
@@ -122,8 +125,16 @@ void app_init(){
 
     /* --- UI --- */
 	UI_Init();
-	UI_AddButton(784, 0, 16, 16, UI_COLOR_YELLOW, _btn_callback);
+
+	UI_Drawer_Init(&_drawer);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "Settings",       NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE,  "LED Control",    _dr_cb_toggle);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SLIDER,  "Brightness",     _dr_cb_slider);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE,  "Auto Exposure",  NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL,   "v1.0.0",         NULL);
+
 	UI_DrawAll(&LTDC_Layer2Config);
+	UI_Drawer_Draw(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
     AI_Status_TypeDef status = AI_Init();
