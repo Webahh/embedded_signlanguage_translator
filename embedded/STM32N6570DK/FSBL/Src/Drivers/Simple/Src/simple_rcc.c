@@ -874,4 +874,196 @@ void RCC_enable_USART(USART_TypeDef* USARTX)
     }
 }
 
+// -------------------------------------------------------------------------
+// Sleep mode configuration
+// -------------------------------------------------------------------------
+
+void RCC_config_SleepModeLPEN(void)
+{
+	// SLEEPDEEP = 0 (reset value) -> On __WFI() enters Sleep mode
+	// RM0486 Table 56
+
+	// Embedded Busses
+    RCC->BUSLPENR = RCC_BUSLPENR_ACLKNLPEN | RCC_BUSLPENR_ACLKNCLPEN;
+
+    // Miscellaneous
+    RCC->MISCLPENR = RCC_MISCLPENR_DBGLPEN
+                   | RCC_MISCLPENR_XSPIPHYCOMPLPEN
+                   | RCC_MISCLPENR_PERLPEN;
+
+    // Memory
+    RCC->MEMLPENR = RCC_MEMLPENR_AXISRAM1LPEN
+                  | RCC_MEMLPENR_AXISRAM2LPEN
+                  | RCC_MEMLPENR_AXISRAM3LPEN
+                  | RCC_MEMLPENR_AXISRAM4LPEN
+                  | RCC_MEMLPENR_AXISRAM5LPEN
+                  | RCC_MEMLPENR_AXISRAM6LPEN
+                  | RCC_MEMLPENR_AHBSRAM1LPEN
+                  | RCC_MEMLPENR_AHBSRAM2LPEN
+                  | RCC_MEMLPENR_BKPSRAMLPEN
+                  | RCC_MEMLPENR_FLEXRAMLPEN
+                  | RCC_MEMLPENR_CACHEAXIRAMLPEN
+                  | RCC_MEMLPENR_VENCRAMLPEN
+                  | RCC_MEMLPENR_BOOTROMLPEN;
+
+    // Advanced High Performance Bus - 1
+    RCC->AHB1LPENR = RCC_AHB1LPENR_GPDMA1LPEN
+                   | RCC_AHB1LPENR_ADC12LPEN;
+
+    // Advanced High Performance Bus - 2
+    RCC->AHB2LPENR = RCC_AHB2LPENR_RAMCFGLPEN
+                   | RCC_AHB2LPENR_MDF1LPEN
+                   | RCC_AHB2LPENR_ADF1LPEN;
+
+    // Advanced High Performance Bus - 3
+    RCC->AHB3LPENR = RCC_AHB3LPENR_RNGLPEN
+                   | RCC_AHB3LPENR_HASHLPEN
+                   | RCC_AHB3LPENR_CRYPLPEN
+                   | RCC_AHB3LPENR_SAESLPEN
+                   | RCC_AHB3LPENR_PKALPEN
+                   | RCC_AHB3LPENR_RIFSCLPEN
+                   | RCC_AHB3LPENR_IACLPEN
+                   | RCC_AHB3LPENR_RISAFLPEN;
+
+    // Advanced High Performance Bus - 4
+    RCC->AHB4LPENR = RCC_AHB4LPENR_GPIOALPEN
+                   | RCC_AHB4LPENR_GPIOBLPEN
+                   | RCC_AHB4LPENR_GPIOCLPEN
+                   | RCC_AHB4LPENR_GPIODLPEN
+                   | RCC_AHB4LPENR_GPIOELPEN
+                   | RCC_AHB4LPENR_GPIOFLPEN
+                   | RCC_AHB4LPENR_GPIOGLPEN
+                   | RCC_AHB4LPENR_GPIOHLPEN
+                   | RCC_AHB4LPENR_GPIONLPEN
+                   | RCC_AHB4LPENR_GPIOOLPEN
+                   | RCC_AHB4LPENR_GPIOPLPEN
+                   | RCC_AHB4LPENR_GPIOQLPEN
+                   | RCC_AHB4LPENR_PWRLPEN
+                   | RCC_AHB4LPENR_CRCLPEN;
+
+    // Advanced High Performance Bus - 5
+    RCC->AHB5LPENR = RCC_AHB5LPENR_HPDMA1LPEN
+                   | RCC_AHB5LPENR_DMA2DLPEN
+                   | RCC_AHB5LPENR_JPEGLPEN
+                   | RCC_AHB5LPENR_FMCLPEN
+                   | RCC_AHB5LPENR_XSPI1LPEN
+                   | RCC_AHB5LPENR_PSSILPEN
+                   | RCC_AHB5LPENR_SDMMC2LPEN
+                   | RCC_AHB5LPENR_SDMMC1LPEN
+                   | RCC_AHB5LPENR_XSPI2LPEN
+                   | RCC_AHB5LPENR_XSPIMLPEN
+                   | RCC_AHB5LPENR_MCE1LPEN
+                   | RCC_AHB5LPENR_MCE2LPEN
+                   | RCC_AHB5LPENR_MCE3LPEN
+                   | RCC_AHB5LPENR_XSPI3LPEN
+                   | RCC_AHB5LPENR_MCE4LPEN
+                   | RCC_AHB5LPENR_GFXMMULPEN
+                   | RCC_AHB5LPENR_GPU2DLPEN
+                   | RCC_AHB5LPENR_ETH1MACLPEN
+                   | RCC_AHB5LPENR_ETH1TXLPEN
+                   | RCC_AHB5LPENR_ETH1RXLPEN
+                   | RCC_AHB5LPENR_ETH1LPEN
+                   | RCC_AHB5LPENR_OTG1LPEN
+                   | RCC_AHB5LPENR_OTGPHY1LPEN
+                   | RCC_AHB5LPENR_OTGPHY2LPEN
+                   | RCC_AHB5LPENR_OTG2LPEN
+                   | RCC_AHB5LPENR_CACHEAXILPEN
+                   | RCC_AHB5LPENR_NPULPEN;
+
+    // Advanced Peripheral Bus - 1.1
+    RCC->APB1LPENR1 = RCC_APB1LPENR1_TIM2LPEN
+                    | RCC_APB1LPENR1_TIM3LPEN
+                    | RCC_APB1LPENR1_TIM4LPEN
+                    | RCC_APB1LPENR1_TIM5LPEN
+                    | RCC_APB1LPENR1_TIM6LPEN
+                    | RCC_APB1LPENR1_TIM7LPEN
+                    | RCC_APB1LPENR1_TIM12LPEN
+                    | RCC_APB1LPENR1_TIM13LPEN
+                    | RCC_APB1LPENR1_TIM14LPEN
+                    | RCC_APB1LPENR1_LPTIM1LPEN
+                    | RCC_APB1LPENR1_WWDGLPEN
+                    | RCC_APB1LPENR1_TIM10LPEN
+                    | RCC_APB1LPENR1_TIM11LPEN
+                    | RCC_APB1LPENR1_SPI2LPEN
+                    | RCC_APB1LPENR1_SPI3LPEN
+                    | RCC_APB1LPENR1_SPDIFRX1LPEN
+                    | RCC_APB1LPENR1_USART2LPEN
+                    | RCC_APB1LPENR1_USART3LPEN
+                    | RCC_APB1LPENR1_UART4LPEN
+                    | RCC_APB1LPENR1_UART5LPEN
+                    | RCC_APB1LPENR1_I2C1LPEN
+                    | RCC_APB1LPENR1_I2C2LPEN
+                    | RCC_APB1LPENR1_I2C3LPEN
+                    | RCC_APB1LPENR1_I3C1LPEN
+                    | RCC_APB1LPENR1_I3C2LPEN
+                    | RCC_APB1LPENR1_UART7LPEN
+                    | RCC_APB1LPENR1_UART8LPEN;
+
+    // Advanced Peripheral Bus - 1.2
+    RCC->APB1LPENR2 = RCC_APB1LPENR2_MDIOSLPEN
+                    | RCC_APB1LPENR2_FDCANLPEN
+                    | RCC_APB1LPENR2_UCPD1LPEN;
+
+    // Advanced Peripheral Bus - 2
+    RCC->APB2LPENR = RCC_APB2LPENR_TIM1LPEN
+                   | RCC_APB2LPENR_TIM8LPEN
+                   | RCC_APB2LPENR_USART1LPEN
+                   | RCC_APB2LPENR_USART6LPEN
+                   | RCC_APB2LPENR_UART9LPEN
+                   | RCC_APB2LPENR_USART10LPEN
+                   | RCC_APB2LPENR_SPI1LPEN
+                   | RCC_APB2LPENR_SPI4LPEN
+                   | RCC_APB2LPENR_TIM18LPEN
+                   | RCC_APB2LPENR_TIM15LPEN
+                   | RCC_APB2LPENR_TIM16LPEN
+                   | RCC_APB2LPENR_TIM17LPEN
+                   | RCC_APB2LPENR_TIM9LPEN
+                   | RCC_APB2LPENR_SPI5LPEN
+                   | RCC_APB2LPENR_SAI1LPEN
+                   | RCC_APB2LPENR_SAI2LPEN;
+
+    // Advanced Peripheral Bus - 3
+    RCC->APB3LPENR = RCC_APB3LPENR_DFTLPEN;
+
+    // Advanced Peripheral Bus - 4.1
+    RCC->APB4LPENR1 = RCC_APB4LPENR1_HDPLPEN
+                    | RCC_APB4LPENR1_LPUART1LPEN
+                    | RCC_APB4LPENR1_SPI6LPEN
+                    | RCC_APB4LPENR1_I2C4LPEN
+                    | RCC_APB4LPENR1_LPTIM2LPEN
+                    | RCC_APB4LPENR1_LPTIM3LPEN
+                    | RCC_APB4LPENR1_LPTIM4LPEN
+                    | RCC_APB4LPENR1_LPTIM5LPEN
+                    | RCC_APB4LPENR1_VREFBUFLPEN
+                    | RCC_APB4LPENR1_RTCLPEN
+                    | RCC_APB4LPENR1_RTCAPBLPEN;
+
+    // Advanced Peripheral Bus - 4.2
+    RCC->APB4LPENR2 = RCC_APB4LPENR2_SYSCFGLPEN
+                    | RCC_APB4LPENR2_BSECLPEN
+                    | RCC_APB4LPENR2_DTSLPEN;
+
+    // Advanced Peripheral Bus - 5
+    RCC->APB5LPENR = RCC_APB5LPENR_LTDCLPEN
+                   | RCC_APB5LPENR_DCMIPPLPEN
+                   | RCC_APB5LPENR_GFXTIMLPEN
+                   | RCC_APB5LPENR_VENCLPEN
+                   | RCC_APB5LPENR_CSILPEN;
+
+    (void)RCC->BUSLPENR;
+    (void)RCC->MISCLPENR;
+    (void)RCC->MEMLPENR;
+    (void)RCC->AHB1LPENR;
+    (void)RCC->AHB2LPENR;
+    (void)RCC->AHB3LPENR;
+    (void)RCC->AHB4LPENR;
+    (void)RCC->AHB5LPENR;
+    (void)RCC->APB1LPENR1;
+    (void)RCC->APB1LPENR2;
+    (void)RCC->APB2LPENR;
+    (void)RCC->APB3LPENR;
+    (void)RCC->APB4LPENR1;
+    (void)RCC->APB4LPENR2;
+    (void)RCC->APB5LPENR;
+}
 

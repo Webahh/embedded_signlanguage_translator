@@ -213,4 +213,6 @@ void RCC_setXSPI1_clock_source(uint32_t source);
 void RCC_setXSPI2_clock_source(uint32_t source);
 void RCC_enable_USART(USART_TypeDef* USARTX);
 
+void RCC_config_SleepModeLPEN(void);
+
 #endif /* SIMPLE_RCC_H */

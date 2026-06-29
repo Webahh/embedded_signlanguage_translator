@@ -53,6 +53,7 @@ void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
 	RIFSC_Config();
 	RCC_config_PWR();
+	RCC_config_SleepModeLPEN();
 	RCC_BoardClock_Config();
 	debug_init(dbg_cfg);
 	TIMER_Delay_init();
