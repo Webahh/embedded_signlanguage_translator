@@ -553,7 +553,7 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 
 	__BKPT(0);
 
-	while (1) { __WFI(); }
+	while (1) { __NOP(); }
 }
 
 // -------------------------------------------------------------------------
