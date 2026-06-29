@@ -56,7 +56,7 @@ static int					_current_task = 0;
 
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE] __attribute__((aligned(8)));
 
-_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES, "SCHEDULER_STACK_SIZE_BYTES mismatch");
+_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,"SCHEDULER_STACK_SIZE_BYTES mismatch");
 
 volatile Scheduler_Fault_Dump_TypeDef g_sched_fault;
 
@@ -511,6 +511,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task,
  * @param [in] frame      Stack frame pointer (may be NULL)
  * @param [in] reason     Fault reason identifier
  */
+
 void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 	uint32_t reason){
 

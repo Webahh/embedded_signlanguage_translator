@@ -42,7 +42,7 @@
 // ---- NN input dimensions (pixels) ----
 
 #define CAM_NN_WIDTH            192U
-#define CAM_NN_HEIGHT           144U
+#define CAM_NN_HEIGHT           192U
 
 /** NN inference buffer base address */
 #define CAM_NN_BUF              0x34180000U

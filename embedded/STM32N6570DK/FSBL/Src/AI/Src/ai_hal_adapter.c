@@ -8,13 +8,6 @@
 #include "stm32n6xx_hal.h"
 #include "simple_scheduler.h"
 
-void HAL_CACHEAXI_MspInit(CACHEAXI_HandleTypeDef *hcacheaxi)
-{
-    if ((hcacheaxi != NULL) && (hcacheaxi->Instance == CACHEAXI)) {
-        __HAL_RCC_CACHEAXI_CLK_ENABLE();
-    }
-}
-
 /*
  * HAL compatibility bridge.
  *

@@ -44,9 +44,11 @@ _Min_Stack_Size = 0x4000; /* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  ROM    (xrw)    : ORIGIN = 0x34180400,   LENGTH = 255K
-  RAM    (xrw)    : ORIGIN = 0x341C0000,   LENGTH = 256K
-  PSRAM  (xrw)    : ORIGIN = 0x91000000,   LENGTH =  16M
+  ROM         (xrw) : ORIGIN = 0x34180400, LENGTH = 255K
+  RAM         (xrw) : ORIGIN = 0x341C0000, LENGTH = 256K
+  EC_RUNTIME  (xrw) : ORIGIN = 0x90100000, LENGTH = 15M
+  PSRAM       (xrw) : ORIGIN = 0x91000000, LENGTH = 16M
+  ECBLOBS     (rx)  : ORIGIN = 0x72000000, LENGTH = 8M
 }
 
 /* Sections */
@@ -198,6 +200,22 @@ SECTIONS
     *(.psram_bss)
     . = ALIGN(32);
   } >PSRAM
+  
+.ecblobs_const (NOLOAD) :
+{
+    . = ALIGN(64);
+    KEEP(*(.ecblobs_const))
+    KEEP(*(.ecblobs_const.*))
+    . = ALIGN(64);
+} > ECBLOBS
+
+.ecblobs_runtime (NOLOAD) :
+{
+    . = ALIGN(64);
+    KEEP(*(.ecblobs_runtime))
+    KEEP(*(.ecblobs_runtime.*))
+    . = ALIGN(64);
+} > EC_RUNTIME
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
@@ -209,3 +227,7 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 }
+
+PROVIDE(_mem_pool_xSPI2_fingeralphabet_model_v3 = 0x71000000);
+PROVIDE(_mem_pool_xSPI2_palm_detection_model_v3 = 0x71200000);
+PROVIDE(_mem_pool_xSPI2_hand_landmark_model_v3 = 0x71600000);
