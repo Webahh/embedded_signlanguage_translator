@@ -411,7 +411,7 @@ void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer,
 
 UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 	UI_DrawerItemType_TypeDef type, const char *label,
-	UI_DrawerItemCallback_TypeDef cb, int *out_idx) {
+	UI_DrawerItemCallback_TypeDef cb, void *context, int *out_idx) {
 	if (drawer->item_count >= UI_DRAWER_MAX_ITEMS) return UI_ERR_FULL;
 	UI_DrawerItem_TypeDef *item = &drawer->items[drawer->item_count];
 	item->type = type;
@@ -420,14 +420,17 @@ UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 	item->composite.visible = 1;
 	item->composite.slider_value  = 50;
 	item->callback = cb;
-	item->context = NULL;
+	item->context = context;
 
 	uint8_t i;
-	for (i = 0; i < sizeof(item->label) - 1 && label[i]; i++)
+	for (i = 0; i < sizeof(item->label) - 1 && label[i]; i++) {
 		item->label[i] = label[i];
+	}
 	item->label[i] = '\0';
 
-	if (out_idx) *out_idx = (int)drawer->item_count;
+	if (out_idx) {
+		*out_idx = (int)drawer->item_count;
+	}
 	drawer->item_count++;
 	return UI_OK;
 }
@@ -452,8 +455,15 @@ void UI_Drawer_Close(UI_Drawer_TypeDef *drawer) {
 
 UI_Status_TypeDef UI_Drawer_GetItemValue(
 	const UI_Drawer_TypeDef *drawer, uint8_t idx, uint8_t *out_val) {
-	if (idx >= drawer->item_count) return UI_ERR_RANGE;
-	if (out_val) *out_val = drawer->items[idx].value;
+
+	if (idx >= drawer->item_count) {
+		return UI_ERR_RANGE;
+	}
+
+	if (out_val) {
+		*out_val = drawer->items[idx].value;
+	}
+
 	return UI_OK;
 }
 

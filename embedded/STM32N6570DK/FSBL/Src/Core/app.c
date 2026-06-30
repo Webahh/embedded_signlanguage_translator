@@ -47,14 +47,18 @@ static AI_LandmarkOutput_TypeDef landmark_test_output;
 
 UI_Drawer_TypeDef _drawer;
 
-static void _dr_cb_toggle(uint8_t idx, uint8_t val, void *ctx)
-{
-    (void)idx;
-    (void)ctx;
-    if (val)
-        GPIO_BSRR_set(GPIOG, LED2_PIN);
-    else
-        GPIO_BSRR_reset(GPIOG, LED2_PIN);
+static void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx) {
+	(void)idx;
+	(void)ctx;
+	DEBUG_PRINTF("[UI] Mode: %u\r\n", val);
+}
+
+static void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx) {
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] %s: visible=%u slider=%u\r\n",
+		drawer->items[idx].label, drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
 }
 
 static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
@@ -69,14 +73,6 @@ static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
 		SCHEDULER_Task_remove(systemtime_id);
 		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
 	}
-}
-
-
-static void _dr_cb_slider(uint8_t idx, uint8_t val, void *ctx)
-{
-    (void)idx;
-    (void)val;
-    (void)ctx;
 }
 
 void app_init(){
@@ -141,12 +137,12 @@ void app_init(){
 	UI_Init();
 	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
 
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", NULL, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", NULL, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", NULL, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", NULL, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", _dr_cb_SystemMode, NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL, NULL);
 
 	UI_DrawAll(&LTDC_Layer2Config);
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);

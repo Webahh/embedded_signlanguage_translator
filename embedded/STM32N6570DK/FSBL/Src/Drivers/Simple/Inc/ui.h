@@ -183,6 +183,7 @@ void UI_Drawer_Init(UI_Drawer_TypeDef *drawer, uint8_t *buf_open, uint8_t *buf_c
  * @param [in]  type    | Item type (label / toggle / slider / selector / composite)
  * @param [in]  label   | Text label (max 23 chars)
  * @param [in]  cb      | Callback on value change (may be NULL)
+ * @param [in]  context | User context pointer passed to callback (may be NULL)
  * @param [out] out_idx | Receives index of new item (may be NULL)
  *
  * @retval UI_OK       Item added
@@ -190,7 +191,7 @@ void UI_Drawer_Init(UI_Drawer_TypeDef *drawer, uint8_t *buf_open, uint8_t *buf_c
  */
 UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 	UI_DrawerItemType_TypeDef type, const char *label,
-	UI_DrawerItemCallback_TypeDef cb, int *out_idx);
+	UI_DrawerItemCallback_TypeDef cb, void *context, int *out_idx);
 
 /**
  * @brief Pre-render both open and closed states into their framebuffers
