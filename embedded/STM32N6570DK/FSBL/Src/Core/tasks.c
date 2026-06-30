@@ -86,6 +86,7 @@ void vAETask(void){
 	AE_Process(&h_cam);
 }
 
+// Poll touch, dispatch to drawer, draw a blue dot on press
 void vTouchTask(void){
 	uint8_t pending = 0;
 	TOUCH_GetPending(&pending);
@@ -94,13 +95,11 @@ void vTouchTask(void){
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
 
-        int ui_idx = -1;
-        UI_HandleTouch(data.x, data.y, data.pressed, &ui_idx);
+        // Route touch events to drawer (toggle, slider, selector, composite)
         UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed,
             &LTDC_Layer2Config, NULL);
-        if (ui_idx != -1)
-            UI_DrawAll(&LTDC_Layer2Config);
 
+        // Paint touch feedback dot on the camera layer
         if (data.pressed)
         {
             int next_idx = ltdc_bg_buffer_disp_idx ^ 1;

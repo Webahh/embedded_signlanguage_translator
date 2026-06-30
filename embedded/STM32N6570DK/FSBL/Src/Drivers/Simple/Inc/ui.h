@@ -2,17 +2,15 @@
  * @file    ui.h
  * @author  Groß
  * @date    23.06.2026
- * @brief   Simple UI: button objects + drawer with controls
+ * @brief   Simple UI: slide-out drawer with toggle / slider / selector / composite items
  *
  * Usage
  * -----
- * 1. UI_Init()               					- reset object store
- * 2. UI_AddButton(...)        					- register simple buttons
- * 3. UI_Drawer_Init(...)      					- initialise drawer with two framebuffers
- * 4. UI_Drawer_AddItem(...)   					- populate drawer items
- * 5. UI_Drawer_Prepare(...)   					- pre-render both open/closed states
- * 6. UI_HandleTouch / UI_Drawer_HandleTouch	- dispatch touch
- * 7. UI_DrawAll / UI_Drawer_Draw				- render (Prepare handles initial draw)
+ * 1. UI_Drawer_Init(...)      					- initialise drawer with two framebuffers
+ * 2. UI_Drawer_AddItem(...)   					- populate drawer items
+ * 3. UI_Drawer_Prepare(...)   					- pre-render both open/closed states
+ * 4. UI_Drawer_HandleTouch    					- dispatch touch
+ * 5. UI_Drawer_Draw           					- render (Prepare handles initial draw)
  */
 
 #ifndef UI_H
@@ -26,90 +24,15 @@
 #include "simple_ltdc.h"
 
 // -------------------------------------------------------------------------
-// UI System
+// Status codes
 // -------------------------------------------------------------------------
 
-#define UI_MAX_OBJECTS     16
-
-#define UI_COLOR_YELLOW       0xFFFF00U
-#define UI_COLOR_YELLOW_DARK  0xC89600U
-#define UI_COLOR_BLACK        0x000000U
-
-/**
- * @brief Status codes returned by all non-void UI functions
- */
 typedef enum {
 	UI_OK            =  0,
 	UI_ERR_FULL      = -1,
 	UI_ERR_NOT_FOUND = -2,
 	UI_ERR_RANGE     = -3,
 } UI_Status_TypeDef;
-
-/**
- * @brief Interactive state for a simple button object
- */
-typedef enum {
-	UI_STATE_IDLE = 0,
-	UI_STATE_PRESSED,
-} UI_State_TypeDef;
-
-/** @brief Touch-event callback (no arguments) */
-typedef void (*UI_Callback_TypeDef)(void);
-
-/**
- * @brief A simple rectangular on-screen button
- */
-typedef struct {
-	uint16_t x_pos;
-	uint16_t y_pos;
-	uint16_t width;
-	uint16_t height;
-	UI_State_TypeDef state;
-	uint32_t color;
-	uint32_t color_pressed;
-	UI_Callback_TypeDef callback;
-} UI_Object_TypeDef;
-
-/**
- * @brief Reset the object store
- */
-void UI_Init(void);
-
-/**
- * @brief Register a simple button
- *
- * @param [in]  x_pos  | Left edge
- * @param [in]  y_pos  | Top edge
- * @param [in]  width  | Width
- * @param [in]  height | Height
- * @param [in]  color   | Idle fill colour
- * @param [in]  cb      | Callback on release
- * @param [out] out_idx | Receives the new object index (may be NULL)
- *
- * @retval UI_OK       Button registered
- * @retval UI_ERR_FULL Object array full
- */
-UI_Status_TypeDef UI_AddButton(uint16_t x_pos, uint16_t y_pos, uint16_t width, uint16_t height, uint32_t color, UI_Callback_TypeDef cb, int *out_idx);
-
-/**
- * @brief Dispatch touch event to simple buttons
- *
- * @param [in]  touch_x | Touch x
- * @param [in]  touch_y | Touch y
- * @param [in]  pressed | 1 = press, 0 = release
- * @param [out] out_idx | Receives index of touched object (may be NULL)
- *
- * @retval UI_OK            A button was pressed and released
- * @retval UI_ERR_NOT_FOUND No button hit
- */
-UI_Status_TypeDef UI_HandleTouch(uint16_t touch_x, uint16_t touch_y, uint8_t pressed, int *out_idx);
-
-/**
- * @brief Redraw all simple buttons
- *
- * @param [in] cfg | LTDC layer config (x/y offset, fb pointer)
- */
-void UI_DrawAll(const LTDC_LayerConfig_TypeDef *cfg);
 
 // -------------------------------------------------------------------------
 // Drawer System
@@ -146,6 +69,8 @@ typedef struct {
 	char label[24];
 	uint8_t value;
 	UI_Composite_TypeDef composite;
+	const char **seg_labels;
+	uint8_t seg_count;
 	UI_DrawerItemCallback_TypeDef callback;
 	void *context;
 } UI_DrawerItem_TypeDef;
@@ -199,28 +124,15 @@ UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
  * @param [in] drawer | Drawer instance
  * @param [in] cfg    | LTDC layer config for dimensions and format
  */
-void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, const LTDC_LayerConfig_TypeDef *cfg);
+void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg);
 
 /**
  * @brief Toggle drawer open/closed (swaps framebuffer pointer)
  *
  * @param [in] drawer | Drawer instance
+ * @param [in] cfg    | LTDC layer config
  */
-void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer);
-
-/**
- * @brief Open drawer (shows open framebuffer)
- *
- * @param [in] drawer | Drawer instance
- */
-void UI_Drawer_Open(UI_Drawer_TypeDef *drawer);
-
-/**
- * @brief Close drawer (shows closed framebuffer)
- *
- * @param [in] drawer | Drawer instance
- */
-void UI_Drawer_Close(UI_Drawer_TypeDef *drawer);
+void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg);
 
 /**
  * @brief Dispatch touch event to drawer
@@ -238,7 +150,7 @@ void UI_Drawer_Close(UI_Drawer_TypeDef *drawer);
  */
 UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
 	uint16_t touch_x, uint16_t touch_y, uint8_t pressed,
-	const LTDC_LayerConfig_TypeDef *cfg, int *out_idx);
+	LTDC_LayerConfig_TypeDef *cfg, int *out_idx);
 
 /**
  * @brief Full redraw of the drawer

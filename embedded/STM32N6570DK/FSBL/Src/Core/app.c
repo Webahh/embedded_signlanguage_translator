@@ -47,6 +47,8 @@ static AI_LandmarkOutput_TypeDef landmark_test_output;
 
 UI_Drawer_TypeDef _drawer;
 
+static const char *_mode_labels[] = {"Palm", "Hand", "Sign"};
+
 static void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx) {
 	(void)idx;
 	(void)ctx;
@@ -66,10 +68,8 @@ static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
 	(void)idx;
 	(void)ctx;
 	if (val) {
-		// Add task
 		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
 	} else {
-		// Remove Task and clean layer
 		SCHEDULER_Task_remove(systemtime_id);
 		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
 	}
@@ -134,17 +134,23 @@ void app_init(){
     }
 
     /* --- UI --- */
-	UI_Init();
 	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
 
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", _dr_cb_SystemMode, NULL, NULL);
+	// Mode: 3-segment selector (Palm / Hand / Sign)
+	int mode_idx;
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", _dr_cb_SystemMode, NULL, &mode_idx);
+	_drawer.items[mode_idx].seg_labels = _mode_labels;
+	_drawer.items[mode_idx].seg_count = 3;
+
+	// Composite items: visibility eye + slider per gesture class
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", _dr_cb_composite, &_drawer, NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", _dr_cb_composite, &_drawer, NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_composite, &_drawer, NULL);
+
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL, NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL, NULL);
 
-	UI_DrawAll(&LTDC_Layer2Config);
+	// Pre-render both open/closed buffers
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
