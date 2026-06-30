@@ -29,6 +29,7 @@
 #include "simple_i2c.h"
 #include "pd_anchors.h"
 #include "palm_detection_logic.h"
+#include "ui.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
@@ -43,12 +44,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
 
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
-
-    } else if (pipe == DCMIPP_PIPE2) {
-        nn_completed_buffer_idx = (uint8_t)ltdc_fg_disp_idx;
-        ltdc_fg_disp_idx ^= 1;
-
-        nn_frame_ready = 1U;
     }
 }
 
@@ -100,17 +95,59 @@ static void vPalmTask(void)
     );
 }
 
+UI_Drawer_TypeDef _drawer;
+
+static const char *_mode_labels[] = {"Palm", "Hand", "Sign"};
+
+static void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx) {
+	(void)idx;
+	(void)ctx;
+	DEBUG_PRINTF("[UI] Mode: %u\r\n", val);
+}
+
+static void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx) {
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] %s: visible=%u slider=%u\r\n",
+		drawer->items[idx].label, drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
+	static uint8_t systemtime_id;
+	(void)idx;
+	(void)ctx;
+	if (val) {
+		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
+	} else {
+		SCHEDULER_Task_remove(systemtime_id);
+		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+	}
+}
+
+static void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx) {
+	(void)idx;
+	(void)ctx;
+	if(val){
+
+	} else {
+
+	}
+
+	DEBUG_PRINTF("[UI] SystemInfo: %u\r\n", val);
+}
+
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
 	RIFSC_Config();
 	RCC_config_PWR();
+	RCC_config_SleepModeLPEN();
 	RCC_BoardClock_Config();
 	debug_init(dbg_cfg);
 	TIMER_Delay_init();
 	DEBUG_PRINTF("Lets debug!\r\n");
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
-
 
 	XSPI_Status_TypeDef xspi_status = XSPI_ERROR;
 	xspi_status = XSPI_PSRAM_init(XSPI_psram_cfg);
@@ -123,10 +160,9 @@ void app_init(){
     TIMER_Delay_ms(10);
 
     LTDC_ConfigLayer1();
-//    LTDC_ConfigLayer2();
+    LTDC_ConfigLayer2();
 
     LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
-//    LTDC_LayerFill(&LTDC_Layer2Config, LTDC_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -142,15 +178,7 @@ void app_init(){
     TOUCH_ConfigIO();
     TIMER_Delay_ms(50);
 
-    uint8_t found_addrs[128] = {0};
-    uint32_t found = 0;
-    I2C_Scan(TS_I2C, found_addrs, &found);
-
     static TOUCH_Handle_TypeDef h_touch;
-
-    uint8_t id[4];
-
-    I2C_Mem_read(I2C2, 0x5d, 0x8140, id, 4);
 
     if (TOUCH_Probe(&h_touch, TS_I2C) == TOUCH_OK) {
         TOUCH_Init(&h_touch);
@@ -158,21 +186,47 @@ void app_init(){
         DEBUG_PRINTF("Touch: no controller found\r\n");
     }
 
-    if (!AI_SelfTest()) {
+    /* --- UI --- */
+	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
+
+	// Mode: 3-segment selector (Palm / Hand / Sign)
+	int mode_idx;
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_SELECTOR, "Mode", _dr_cb_SystemMode, NULL, &mode_idx);
+	_drawer.items[mode_idx].seg_labels = _mode_labels;
+	_drawer.items[mode_idx].seg_count = 3;
+
+	// Composite items: visibility eye + slider per gesture class
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_composite, &_drawer, NULL);
+
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Info", _dr_cb_toggle_SystemInfo, NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL, NULL);
+
+	// Pre-render both open/closed buffers
+	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
+
+    /* --- AI --- */
+  if (!AI_SelfTest()) {
         DEBUG_PRINTF("AI self-test failed\r\n");
-        while (1) {
-        }
+  }
+  
+  AI_Status_TypeDef status = AI_Init();
+
+  if (status != AI_STATUS_OK) {
+    while (1) {
+    }
     }
     DEBUG_PRINTF("AI self-test successful\r\n");
 
 
-    /* --- Scheduler --- */
-    SCHEDULER_System_init();
+  /* --- Scheduler --- */
+  SCHEDULER_System_init();
 
 	uint8_t task_idx;
 
 	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
-	//SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);

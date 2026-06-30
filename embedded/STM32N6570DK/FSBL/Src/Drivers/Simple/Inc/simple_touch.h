@@ -6,10 +6,10 @@
  *
  * Usage
  * -----
- * 1. TOUCH_ConfigIO()     – configure GPIO, I2C2, reset controller
- * 2. TOUCH_Probe()        – probe GT911 on I2C2, verify chip ID
- * 3. TOUCH_Init()         – write chip-specific config registers
- * 4. TOUCH_GetState()     – poll touch coordinates
+ * 1. TOUCH_ConfigIO()     - configure GPIO, I2C2, reset controller
+ * 2. TOUCH_Probe()        - probe GT911 on I2C2, verify chip ID
+ * 3. TOUCH_Init()         - write chip-specific config registers
+ * 4. TOUCH_GetState()     - poll touch coordinates
  */
 
 #ifndef SIMPLE_TOUCH_H

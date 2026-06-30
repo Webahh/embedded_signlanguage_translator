@@ -240,23 +240,23 @@ LTDC_LayerConfig_TypeDef LTDC_Layer1Config = {
 };
 
 
+static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_FPF_ARGB4444_INIT;
 LTDC_LayerConfig_TypeDef LTDC_Layer2Config = {
     .regs            = LTDC_Layer2,
-    .fb              = ltdc_fg_buffer[0],
+    .fb              = ltdc_fg_buffer,
     .x               = 0,
     .y               = 0,
     .width           = LTDC_FG_WIDTH,
     .height          = LTDC_FG_HEIGHT,
     .buf_width       = LTDC_FG_WIDTH,
-    .pixel_format    = LTDC_PF_RGB888,
-    .flexible_fmt    = NULL,
+    .pixel_format    = LTDC_PF_Flexible,
+    .flexible_fmt    = &LTDC_FPF_ARGB4444,
     .const_alpha     = 0xFF,
-    .per_pixel_alpha = 0,
+    .per_pixel_alpha = 1,
     .default_color   = 0x00,
     .blending_order  = 1,
 };
 
-static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_FPF_ARGB4444_INIT;
 
 
 

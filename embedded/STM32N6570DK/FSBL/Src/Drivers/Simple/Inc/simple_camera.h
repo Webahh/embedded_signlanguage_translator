@@ -6,9 +6,9 @@
  *
  * Usage
  * -----
- * 1. CAM_Init()                 – initialise DCMIPP, CSI, sensor
- * 2. CAM_DisplayPipe_Start()    – start display pipe
- * 3. CAM_NNPipe_Start()         – start NN pipe
+ * 1. CAM_Init()                 - initialise DCMIPP, CSI, sensor
+ * 2. CAM_DisplayPipe_Start()    - start display pipe
+ * 3. CAM_NNPipe_Start()         - start NN pipe
  */
 
 #ifndef SIMPLE_CAMERA_H

@@ -7,10 +7,10 @@
  *
  * Usage
  * -----
- * 1. DCMIPP_Init()                 – reset / enable DCMIPP
- * 2. DCMIPP_Pipe_Config()          – configure pipe (cropping, downscale)
- * 3. DCMIPP_CSI_Pipe_Config()      – link CSI-2 data type to pipe
- * 4. DCMIPP_Pipe_Start()           – start capture
+ * 1. DCMIPP_Init()                 - reset / enable DCMIPP
+ * 2. DCMIPP_Pipe_Config()          - configure pipe (cropping, downscale)
+ * 3. DCMIPP_CSI_Pipe_Config()      - link CSI-2 data type to pipe
+ * 4. DCMIPP_Pipe_Start()           - start capture
  */
 
 #ifndef SIMPLE_DCMIPP_H

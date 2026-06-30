@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "tasks.h"
+#include "app.h"
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
@@ -16,6 +17,7 @@
 #include "simple_timer.h"
 #include "simple_text.h"
 #include "simple_touch.h"
+#include "ui.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
@@ -52,7 +54,7 @@ void vSystemTimeTask(void) {
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	TEXT_StringBg_draw(&LTDC_Layer2Config, str, 10, 10, LTDC_COLOR_GREEN, LTDC_COLOR_WHITE);
+	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 720, 0, LTDC_COLOR_WHITE, 0x00000000U);
 }
 
 void vLEDTask(void) {
@@ -84,6 +86,7 @@ void vAETask(void){
 	AE_Process(&h_cam);
 }
 
+// Poll touch, dispatch to drawer, draw a blue dot on press
 void vTouchTask(void){
 	uint8_t pending = 0;
 	TOUCH_GetPending(&pending);
@@ -92,6 +95,11 @@ void vTouchTask(void){
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
 
+        // Route touch events to drawer (toggle, slider, selector, composite)
+        UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed,
+            &LTDC_Layer2Config, NULL);
+
+        // Paint touch feedback dot on the camera layer
         if (data.pressed)
         {
             int next_idx = ltdc_bg_buffer_disp_idx ^ 1;

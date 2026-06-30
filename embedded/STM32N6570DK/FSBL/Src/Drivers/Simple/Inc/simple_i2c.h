@@ -6,9 +6,9 @@
  *
  * Usage
  * -----
- * 1. RCC_enable_I2C() + I2C_Config()   – initialise I2C bus
- * 2. I2C_Device_ready()                 – probe device
- * 3. I2C_Mem_write() / I2C_Mem_read()   – register access
+ * 1. RCC_enable_I2C() + I2C_Config()	- initialise I2C bus
+ * 2. I2C_Device_ready()                - probe device
+ * 3. I2C_Mem_write() / I2C_Mem_read()  - register access
  */
 
 #ifndef SIMPLE_I2C_H

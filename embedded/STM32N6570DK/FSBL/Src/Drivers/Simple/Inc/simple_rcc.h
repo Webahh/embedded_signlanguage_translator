@@ -6,8 +6,8 @@
  *
  * Usage
  * -----
- * 1. RCC_BoardClock_Config()   – system clock tree
- * 2. RCC_enable_*()            – enable peripheral clocks
+ * 1. RCC_BoardClock_Config()   - system clock tree
+ * 2. RCC_enable_*()            - enable peripheral clocks
  */
 
 #ifndef SIMPLE_RCC_H
@@ -212,5 +212,7 @@ void RCC_enable_RIFSC(void);
 void RCC_setXSPI1_clock_source(uint32_t source);
 void RCC_setXSPI2_clock_source(uint32_t source);
 void RCC_enable_USART(USART_TypeDef* USARTX);
+
+void RCC_config_SleepModeLPEN(void);
 
 #endif /* SIMPLE_RCC_H */
