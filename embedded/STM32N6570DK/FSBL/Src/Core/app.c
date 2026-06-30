@@ -35,15 +35,14 @@ extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
-
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
-   	//AE_OnFrameStats();
-
     if (pipe == DCMIPP_PIPE1) {
         ltdc_bg_buffer_disp_idx ^= 1;
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
-
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
+    } else if (pipe == DCMIPP_PIPE2) {
+        nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
+        nn_frame_ready = 1U;
     }
 }
 
@@ -67,7 +66,7 @@ static void vPalmTask(void)
         return;
     }
 
-    memcpy(palm_input, (const void *)ltdc_fg_buffer[completed_idx], PALM_INPUT_ELEMENT_COUNT);
+    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_ELEMENT_COUNT);
 
     NVIC_DisableIRQ(TIM7_IRQn);
 
@@ -217,8 +216,8 @@ void app_init(){
   if (status != AI_STATUS_OK) {
     while (1) {
     }
-    }
-    DEBUG_PRINTF("AI self-test successful\r\n");
+  }
+  DEBUG_PRINTF("AI self-test successful\r\n");
 
 
   /* --- Scheduler --- */

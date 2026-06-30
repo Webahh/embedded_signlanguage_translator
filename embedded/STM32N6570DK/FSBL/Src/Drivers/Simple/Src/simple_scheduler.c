@@ -395,13 +395,13 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].period_ms	    = period_ms;
 	_tasks[slot].last_run_ms    = _sys_tick_ms;
 	_tasks[slot].priority	    = priority;
-	_tasks[slot].ready		    = 1;
-	_tasks[slot].active		    = 1;
-	_tasks[slot].needs_init     = 0;
 	_tasks[slot].stack_overflow = 0;
 	_tasks[slot].pcName         = pcName;
 
 	SCHEDULER_InitTaskStack(slot);
+
+	_tasks[slot].ready		    = 1;
+	_tasks[slot].active		    = 1;
 
 	*taskIndex = (uint8_t)slot;
 

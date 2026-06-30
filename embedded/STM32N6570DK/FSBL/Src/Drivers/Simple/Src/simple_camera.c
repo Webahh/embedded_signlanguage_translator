@@ -139,7 +139,7 @@ CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h){
 }
 
 CAM_Status_TypeDef CAM_NNPipe_Start(CAM_Handle_TypeDef *h){
-    DCMIPP_Pipe_Start(CAM_PIPE_NN, (uint32_t)&ltdc_fg_buffer[0], 0);
+    DCMIPP_Pipe_Start(CAM_PIPE_NN, 0, 0);
 
     //LTDC_Layer2Config.fb = ltdc_fg_buffer[1];
     //LTDC_Layer2Config.pixel_format = LTDC_PF_RGB888;
