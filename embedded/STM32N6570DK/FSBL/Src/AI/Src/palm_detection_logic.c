@@ -1,0 +1,88 @@
+/*
+ * palm_detection_logic.c
+ *
+ *  Created on: 29.06.2026
+ *      Author: Weber
+ */
+
+#include <math.h>
+#include <stddef.h>
+
+#include "palm_detection_logic.h"
+#include "pd_anchors.h"
+
+#define PALM_MODEL_INPUT_SIZE 192.0f
+
+bool PALM_FindBestDetection(const AI_PalmOutput_TypeDef *output, PalmDetection_TypeDef *detection)
+{
+    if ((output == NULL) || (detection == NULL)) {
+        return false;
+    }
+
+    uint32_t best_index = 0U;
+    float best_score = output->scores[0];
+
+    for (uint32_t i = 1U; i < PALM_DETECTION_COUNT; i++) {
+        if (output->scores[i] > best_score) {
+            best_score = output->scores[i];
+            best_index = i;
+        }
+    }
+
+    const pd_pp_point_t *anchor = PD_GetAnchor(best_index);
+
+    if (anchor == NULL) {
+        return false;
+    }
+
+    const float *regression = &output->regressions[best_index * PALM_REGRESSION_SIZE];
+
+    detection->center_x = anchor->x + regression[0] / PALM_MODEL_INPUT_SIZE;
+    detection->center_y =anchor->y + regression[1] / PALM_MODEL_INPUT_SIZE;
+    detection->width = regression[2] / PALM_MODEL_INPUT_SIZE;
+    detection->height = regression[3] / PALM_MODEL_INPUT_SIZE;
+
+    for (uint32_t i = 0U; i < PALM_KEYPOINT_COUNT; i++) {
+        detection->keypoints[i][0] = anchor->x + regression[4U + 2U * i] / PALM_MODEL_INPUT_SIZE;
+
+        detection->keypoints[i][1] = anchor->y + regression[5U + 2U * i] / PALM_MODEL_INPUT_SIZE;
+    }
+
+    detection->score = best_score;
+    detection->probability = 1.0f / (1.0f + expf(-best_score));
+    detection->anchor_index = best_index;
+
+    return true;
+}
+
+void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t probability_permille)
+{
+    if (filter == NULL) {
+        return;
+    }
+
+    if (probability_permille >= PALM_DETECTION_THRESHOLD_PERMILLE) {
+        filter->negative_count = 0U;
+
+        if (filter->positive_count < PALM_CONFIRM_FRAME_COUNT) {
+            filter->positive_count++;
+        }
+
+        if (filter->positive_count >= PALM_CONFIRM_FRAME_COUNT) {
+            filter->detected = true;
+        }
+
+    } else {
+        filter->positive_count = 0U;
+
+        if (filter->negative_count < PALM_CONFIRM_FRAME_COUNT) {
+            filter->negative_count++;
+        }
+
+        if (filter->negative_count >= PALM_CONFIRM_FRAME_COUNT) {
+            filter->detected = false;
+        }
+    }
+}
+
+

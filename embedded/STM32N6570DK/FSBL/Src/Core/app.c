@@ -6,6 +6,9 @@
  */
 
 #include <string.h>
+#include <math.h>
+#include <float.h>
+#include <stdlib.h>
 #include "app.h"
 #include "config.h"
 #include "simple_gpio.h"
@@ -24,26 +27,72 @@
 #include "simple_touch.h"
 #include "tasks.h"
 #include "simple_i2c.h"
+#include "pd_anchors.h"
+#include "palm_detection_logic.h"
 #include "ui.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
-
+static volatile uint8_t nn_frame_ready = 0U;
+static volatile uint8_t nn_completed_buffer_idx = 0U;
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
-   	AE_OnFrameStats();
-
     if (pipe == DCMIPP_PIPE1) {
         ltdc_bg_buffer_disp_idx ^= 1;
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
-
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
+    } else if (pipe == DCMIPP_PIPE2) {
+        nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
+        nn_frame_ready = 1U;
     }
 }
 
-volatile uint32_t ai_init_before = 0;
-volatile uint32_t ai_init_after = 0;
-static uint8_t landmark_test_input[LANDMARK_INPUT_SIZE];
-static AI_LandmarkOutput_TypeDef landmark_test_output;
+static AI_PalmOutput_TypeDef palm_output;
+static PalmDetection_TypeDef palm_detection;
+static PalmDetectionFilter_TypeDef palm_filter;
+
+static void vPalmTask(void)
+{
+    if (nn_frame_ready == 0U) {
+        return;
+    }
+
+    nn_frame_ready = 0U;
+
+    const uint8_t completed_idx = nn_completed_buffer_idx;
+
+    uint8_t *palm_input = AI_GetPalmInputBuffer();
+
+    if (palm_input == NULL) {
+        return;
+    }
+
+    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_ELEMENT_COUNT);
+
+    NVIC_DisableIRQ(TIM7_IRQn);
+
+    const bool inference_ok = AI_RunPalm(&palm_output);
+
+    NVIC_EnableIRQ(TIM7_IRQn);
+
+    if (!inference_ok) {
+        return;
+    }
+
+    if (!PALM_FindBestDetection(&palm_output, &palm_detection)) {
+        return;
+    }
+
+    const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
+
+    PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
+
+    DEBUG_PRINTF(
+        "Palm p=%u idx=%u detected=%u\r\n",
+        probability_permille,
+        palm_detection.anchor_index,
+        (uint32_t)palm_filter.detected
+    );
+}
 
 UI_Drawer_TypeDef _drawer;
 
@@ -105,15 +154,6 @@ void app_init(){
     xspi_status = XSPI_NOR_init(XSPI_nor_cfg);
     DEBUG_PRINTF("NOR INIT Status: %d\r\n", xspi_status);
 
-    volatile const uint8_t *weights =
-        (volatile const uint8_t *)0x71000000UL;
-
-    volatile uint8_t weight_header[16];
-
-    for (uint32_t i = 0U; i < sizeof(weight_header); i++) {
-        weight_header[i] = weights[i];
-    }
-
     LTDC_Init();
 
     TIMER_Delay_ms(10);
@@ -128,9 +168,9 @@ void app_init(){
     	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
     		error++;
     	}
-//    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
-//    		error++;
-//    	}
+    	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
+    		error++;
+    	}
     }
 
     /* --- Touch --- */
@@ -167,49 +207,21 @@ void app_init(){
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
-    AI_Status_TypeDef status = AI_Init();
+  if (!AI_SelfTest()) {
+        DEBUG_PRINTF("AI self-test failed\r\n");
+  }
+  
+  AI_Status_TypeDef status = AI_Init();
 
-    if (status != AI_STATUS_OK) {
-        while (1) {
-        }
+  if (status != AI_STATUS_OK) {
+    while (1) {
     }
+  }
+  DEBUG_PRINTF("AI self-test successful\r\n");
 
-    static const uint8_t ai_test_input_b[AI_INPUT_SIZE] = {
-        128, 128, 134, 119, 135, 102, 130,  90, 125,  83, 136,
-         87, 137,  69, 137,  58, 137,  48, 132,  86, 133,  67,
-        133,  55, 134,  45, 128,  87, 128,  70, 128,  60, 129,
-         50, 123,  91, 123,  78, 123,  70, 123,  63, 175, 235,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128
-    };
 
-    static uint8_t ai_output_data[AI_OUTPUT_SIZE];
-
-    static volatile uint32_t predicted_index;
-    static volatile uint8_t predicted_score;
-    static volatile const char *predicted_label;
-
-    if (!AI_Run(ai_test_input_b, ai_output_data)) {
-        while (1) {
-        }
-    }
-
-    AI_Result_TypeDef result = AI_GetResult(ai_output_data);
-
-    predicted_index = result.class_index;
-    predicted_score = result.score;
-    predicted_label = result.label;
-
-    for (uint32_t i = 0U; i < LANDMARK_INPUT_SIZE; i++) {
-        landmark_test_input[i] = (uint8_t)i;
-    }
-
-    bool landmark_copy_ok = AI_RunLandmark(landmark_test_input, &landmark_test_output);
-
-    /* --- Scheduler --- */
-    SCHEDULER_System_init();
+  /* --- Scheduler --- */
+  SCHEDULER_System_init();
 
 	uint8_t task_idx;
 
@@ -218,6 +230,7 @@ void app_init(){
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
+	SCHEDULER_Task_add(vPalmTask,"Palm", 250, 4, &task_idx);
 }
 
 void app_run(){

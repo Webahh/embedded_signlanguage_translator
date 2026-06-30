@@ -22,6 +22,8 @@
 #ifndef STM32N6xx_HAL_CONF_H
 #define STM32N6xx_HAL_CONF_H
 
+#include "stm32n6xx_hal_def.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

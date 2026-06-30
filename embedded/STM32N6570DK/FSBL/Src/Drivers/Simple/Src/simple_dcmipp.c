@@ -97,7 +97,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
         dsrtior = &_dcmipp->P2DSRTIOR; dsszr   = &_dcmipp->P2DSSZR;
         dscr    = &_dcmipp->P2DSCR;    gmcr    = &_dcmipp->P2GMCR;
         ppcr    = &_dcmipp->P2PPCR;    ppm0pr  = &_dcmipp->P2PPM0PR;
-        fctcr   = &_dcmipp->P2FCTCR;   decr    = &_dcmipp->P1DECR;
+        fctcr   = &_dcmipp->P2FCTCR;   //decr    = &_dcmipp->P1DECR;
         dccr    = &_dcmipp->P2DCCR;
         blccr   = &_dcmipp->P1BLCCR;   excr1   = &_dcmipp->P1EXCR1;
         excr2   = &_dcmipp->P1EXCR2;   st1cr   = &_dcmipp->P1ST1CR;
@@ -231,8 +231,8 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
         DCMIPP->P1PPM0AR1 = (uint32_t)&ltdc_bg_buffer[0];
         DCMIPP->P1PPM0AR2 = (uint32_t)&ltdc_bg_buffer[1];
     } else if (pipe == DCMIPP_PIPE2) {
-        DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_fg_buffer[0];
-        DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_fg_buffer[1];
+        DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_nn_raw_buffer[0];
+        DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_nn_raw_buffer[1];
     }
 }
 

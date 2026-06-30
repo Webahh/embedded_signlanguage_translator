@@ -16,6 +16,7 @@
 
 volatile uint8_t ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
 volatile uint8_t ltdc_fg_buffer[2][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint8_t ltdc_nn_raw_buffer[2][LTDC_NN_RAW_SIZE] __attribute__((section(".psram_bss"), aligned(32)));
 volatile int     ltdc_bg_buffer_disp_idx;
 
 /**
