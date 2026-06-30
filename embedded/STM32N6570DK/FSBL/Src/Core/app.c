@@ -75,6 +75,18 @@ static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
 	}
 }
 
+static void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx) {
+	(void)idx;
+	(void)ctx;
+	if(val){
+
+	} else {
+
+	}
+
+	DEBUG_PRINTF("[UI] SystemInfo: %u\r\n", val);
+}
+
 void app_init(){
 	SCB->VTOR = (uint32_t)g_pfnVectors;
 	RIFSC_Config();
@@ -148,6 +160,7 @@ void app_init(){
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_composite, &_drawer, NULL);
 
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Info", _dr_cb_toggle_SystemInfo, NULL, NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_LABEL, "v1.0.0", NULL, NULL, NULL);
 
 	// Pre-render both open/closed buffers
