@@ -6,10 +6,10 @@
  *
  * Usage
  * -----
- * 1. LTDC_Init()              – initialise LTDC peripheral
- * 2. LTDC_ConfigLayer1/2()    – configure layer parameters
- * 3. LTDC_UpdateLayerAddress() – update framebuffer pointer
- * 4. LTDC_FillLayer()         – fill layer with colour
+ * 1. LTDC_Init()				- initialise LTDC peripheral
+ * 2. LTDC_ConfigLayer1/2()		- configure layer parameters
+ * 3. LTDC_UpdateLayerAddress() - update framebuffer pointer
+ * 4. LTDC_FillLayer()			- fill layer with colour
  */
 
 #ifndef SIMPLE_LTDC_H
@@ -24,14 +24,14 @@
 #define LTDC_BG_WIDTH  800
 #define LTDC_BG_HEIGHT 480
 
-#define LTDC_FG_WIDTH  192
-#define LTDC_FG_HEIGHT 144
+#define LTDC_FG_WIDTH  800
+#define LTDC_FG_HEIGHT 480
 
 #define LTDC_DISPLAY_BUFFER_NB    2
 #define LTDC_DISPLAY_BPP          3
 
 #define LTDC_NN_BUFFER_NB    2
-#define LTDC_NN_BPP          3
+#define LTDC_NN_BPP          2
 
 #define LTDC_COLOR_BLACK  0xFF000000U
 #define LTDC_COLOR_WHITE  0xFFFFFFFFU
@@ -90,9 +90,9 @@ typedef struct LTDC_LayerConfig {
     uint8_t                                          blending_order;
 } LTDC_LayerConfig_TypeDef;
 
-// ── Mutable runtime state ──
+// -- Mutable runtime state --
 extern volatile uint8_t     ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP];
-extern volatile uint8_t     ltdc_fg_buffer[LTDC_NN_BUFFER_NB][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP];
+extern volatile uint8_t     ltdc_fg_buffer[2][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP];
 extern volatile int         ltdc_bg_buffer_disp_idx;
 
 /**
@@ -166,6 +166,30 @@ void LTDC_LayerFill2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, 
  * @param [in] color	color of the circle
  */
 void LTDC_LayerDrawCricle(const LTDC_LayerConfig_TypeDef* cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color);
+
+/**
+ * @brief Draw a filled rectangle on a layer
+ *
+ * @param [in] cfg   Layer configuration
+ * @param [in] x     Top-left X (pixels)
+ * @param [in] y     Top-left Y (pixels)
+ * @param [in] w     Width (pixels)
+ * @param [in] h     Height (pixels)
+ * @param [in] color ARGB fill colour
+ */
+void LTDC_LayerDrawRect(const LTDC_LayerConfig_TypeDef *cfg, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color);
+
+/**
+ * @brief Draw a 1-pixel border of a rectangle
+ *
+ * @param [in] cfg   Layer configuration
+ * @param [in] x     Top-left X (pixels)
+ * @param [in] y     Top-left Y (pixels)
+ * @param [in] w     Width (pixels)
+ * @param [in] h     Height (pixels)
+ * @param [in] color ARGB border colour
+ */
+void LTDC_LayerDrawRectBorder(const LTDC_LayerConfig_TypeDef *cfg, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color);
 
 /**
  * @brief Blit an image onto a layer at a destination position

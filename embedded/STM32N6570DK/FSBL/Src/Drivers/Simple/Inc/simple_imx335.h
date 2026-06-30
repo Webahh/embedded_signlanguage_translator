@@ -6,9 +6,9 @@
  *
  * Usage
  * -----
- * 1. IMX335_Probe()   – verify sensor ID
- * 2. IMX335_Init()    – initialise sensor registers
- * 3. IMX335_Start()   – start streaming
+ * 1. IMX335_Probe()   - verify sensor ID
+ * 2. IMX335_Init()    - initialise sensor registers
+ * 3. IMX335_Start()   - start streaming
  */
 
 #ifndef SIMPLE_IMX335_H

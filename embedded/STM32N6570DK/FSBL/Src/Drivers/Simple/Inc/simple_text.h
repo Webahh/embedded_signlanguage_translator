@@ -6,8 +6,8 @@
  *
  * Usage
  * -----
- * 1. LTDC_Init() + LTDC_ConfigLayer*()   – display setup
- * 2. TEXT_StringBg_draw()                 – render string on layer
+ * 1. LTDC_Init() + LTDC_ConfigLayer*()	- display setup
+ * 2. TEXT_StringBg_draw()              - render string on layer
  */
 
 #ifndef SIMPLE_TEXT_H

@@ -6,8 +6,8 @@
  *
  * Usage
  * -----
- * 1. RCC_BoardClock_Config()   – system clock tree
- * 2. RCC_enable_*()            – enable peripheral clocks
+ * 1. RCC_BoardClock_Config()   - system clock tree
+ * 2. RCC_enable_*()            - enable peripheral clocks
  */
 
 #ifndef SIMPLE_RCC_H

@@ -6,10 +6,10 @@
  *
  * Usage
  * -----
- * 1. CSI_Init()                   – reset CSI-2 host
- * 2. CSI_Config()                 – apply configuration
- * 3. CSI_SetVirtualChannelConfig() – VC format config
- * 4. CSI_StartVirtualChannel()    – enable data flow
+ * 1. CSI_Init()                   	- reset CSI-2 host
+ * 2. CSI_Config()                 	- apply configuration
+ * 3. CSI_SetVirtualChannelConfig() - VC format config
+ * 4. CSI_StartVirtualChannel()		- enable data flow
  */
 
 #ifndef SIMPLE_CSI_H

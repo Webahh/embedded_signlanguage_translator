@@ -9,11 +9,11 @@
  *
  * Usage
  * -----
- * 1. SCHEDULER_System_init()   – initialise scheduler data
- * 2. SCHEDULER_Task_add()      – register tasks
- * 3. SCHEDULER_Tasks_run()     – start scheduling (never returns)
+ * 1. SCHEDULER_System_init()   - initialise scheduler data
+ * 2. SCHEDULER_Task_add()      - register tasks
+ * 3. SCHEDULER_Tasks_run()     - start scheduling (never returns)
  *
- * Example – blink an LED every 500 ms:
+ * Example - blink an LED every 500 ms:
  *
  * @code{.c}
  * void vLEDTask(void){
