@@ -28,7 +28,9 @@
 #include "tasks.h"
 #include "simple_i2c.h"
 #include "pd_anchors.h"
-#include "palm_detection_logic.h"
+#include "palm_detection.h"
+#include "fingeralphabet.h"
+#include "palm_postprocessing.h"
 #include "ui.h"
 
 extern uint32_t g_pfnVectors[];
@@ -36,6 +38,8 @@ static volatile int ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
+	AE_OnFrameStats();
+
     if (pipe == DCMIPP_PIPE1) {
         ltdc_bg_buffer_disp_idx ^= 1;
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
@@ -46,7 +50,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     }
 }
 
-static AI_PalmOutput_TypeDef palm_output;
+static PalmNetworkOutput_TypeDef palm_output;
 static PalmDetection_TypeDef palm_detection;
 static PalmDetectionFilter_TypeDef palm_filter;
 
@@ -60,17 +64,17 @@ static void vPalmTask(void)
 
     const uint8_t completed_idx = nn_completed_buffer_idx;
 
-    uint8_t *palm_input = AI_GetPalmInputBuffer();
+    uint8_t *palm_input = PALM_GetInputBuffer();
 
     if (palm_input == NULL) {
         return;
     }
 
-    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_ELEMENT_COUNT);
+    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
 
     NVIC_DisableIRQ(TIM7_IRQn);
 
-    const bool inference_ok = AI_RunPalm(&palm_output);
+    const bool inference_ok = PALM_Run(&palm_output);
 
     NVIC_EnableIRQ(TIM7_IRQn);
 
@@ -207,21 +211,17 @@ void app_init(){
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
-  if (!AI_SelfTest()) {
-        DEBUG_PRINTF("AI self-test failed\r\n");
-  }
-  
-  AI_Status_TypeDef status = AI_Init();
+	AI_Status_TypeDef status = AI_Init();
 
-  if (status != AI_STATUS_OK) {
-    while (1) {
-    }
-  }
-  DEBUG_PRINTF("AI self-test successful\r\n");
+	if (status != AI_STATUS_OK) {
+		while (1) {
+		}
+	}
 
 
-  /* --- Scheduler --- */
-  SCHEDULER_System_init();
+
+	/* --- Scheduler --- */
+	SCHEDULER_System_init();
 
 	uint8_t task_idx;
 

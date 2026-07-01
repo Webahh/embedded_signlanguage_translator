@@ -1,19 +1,20 @@
 /*
- * palm_detection_logic.h
+ * palm_postprocessing.h
  *
- *  Created on: 29.06.2026
+ *  Created on: 01.07.2026
  *      Author: Weber
  */
 
-#ifndef PALM_DETECTION_LOGIC_H
-#define PALM_DETECTION_LOGIC_H
+#ifndef PALM_POSTPROCESSING_H
+#define PALM_POSTPROCESSING_H
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "simple_ai.h"
+
+#include "palm_detection.h"
 
 #define PALM_KEYPOINT_COUNT               7U
-#define PALM_DETECTION_THRESHOLD_PERMILLE 700U
+#define PALM_DETECTION_THRESHOLD_PERMILLE 500U
 #define PALM_CONFIRM_FRAME_COUNT          2U
 
 typedef struct {
@@ -33,7 +34,7 @@ typedef struct {
     bool detected;
 } PalmDetectionFilter_TypeDef;
 
-bool PALM_FindBestDetection(const AI_PalmOutput_TypeDef *output, PalmDetection_TypeDef *detection);
+bool PALM_FindBestDetection(const PalmNetworkOutput_TypeDef *output, PalmDetection_TypeDef *detection);
 void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t probability_permille);
 
-#endif /* PALM_DETECTION_LOGIC_H */
+#endif /* PALM_POSTPROCESSING_H */

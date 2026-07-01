@@ -1,19 +1,19 @@
 /*
- * palm_detection_logic.c
+ * palm_postprocessing.c
  *
- *  Created on: 29.06.2026
+ *  Created on: 01.07.2026
  *      Author: Weber
  */
 
 #include <math.h>
 #include <stddef.h>
 
-#include "palm_detection_logic.h"
+#include "palm_postprocessing.h"
 #include "pd_anchors.h"
 
 #define PALM_MODEL_INPUT_SIZE 192.0f
 
-bool PALM_FindBestDetection(const AI_PalmOutput_TypeDef *output, PalmDetection_TypeDef *detection)
+bool PALM_FindBestDetection(const PalmNetworkOutput_TypeDef *output, PalmDetection_TypeDef *detection)
 {
     if ((output == NULL) || (detection == NULL)) {
         return false;
@@ -84,5 +84,3 @@ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t pr
         }
     }
 }
-
-
