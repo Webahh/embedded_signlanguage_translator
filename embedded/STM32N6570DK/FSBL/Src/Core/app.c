@@ -53,6 +53,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
 static PalmNetworkOutput_TypeDef palm_output;
 static PalmDetection_TypeDef palm_detection;
 static PalmDetectionFilter_TypeDef palm_filter;
+static HandROI_TypeDef landmark_roi;
 
 static void vPalmTask(void)
 {
@@ -87,15 +88,16 @@ static void vPalmTask(void)
     }
 
     const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
-
     PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
 
-    DEBUG_PRINTF(
-        "Palm p=%u idx=%u detected=%u\r\n",
-        probability_permille,
-        palm_detection.anchor_index,
-        (uint32_t)palm_filter.detected
-    );
+    ClearPreviousROI();
+
+    if (palm_filter.detected) {
+        if(PALM_CreateLandmarkROI(&palm_detection, &landmark_roi)){
+        	DrawLandmarkROI(&landmark_roi, LTDC_COLOR_RED);
+        }
+
+    }
 }
 
 UI_Drawer_TypeDef _drawer;
@@ -217,8 +219,6 @@ void app_init(){
 		while (1) {
 		}
 	}
-
-
 
 	/* --- Scheduler --- */
 	SCHEDULER_System_init();

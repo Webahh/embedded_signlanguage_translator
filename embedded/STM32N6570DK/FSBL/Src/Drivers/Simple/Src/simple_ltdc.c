@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "simple_ltdc.h"
 #include "simple_rcc.h"
@@ -546,6 +547,88 @@ void LTDC_LayerDrawRectBorder(const LTDC_LayerConfig_TypeDef *cfg,
         LTDC_LayerDrawRect(cfg, x + w - 1, y + 1, 1, h - 2, color);
     }
 }
+
+static bool roi_drawn = false;
+static uint16_t previous_roi_x;
+static uint16_t previous_roi_y;
+static uint16_t previous_roi_w;
+static uint16_t previous_roi_h;
+
+void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color)
+{
+    int32_t x0 =
+        (int32_t)(roi->corners[0][0] *
+                  LTDC_Layer2Config.width);
+
+    int32_t y0 =
+        (int32_t)(roi->corners[0][1] *
+                  LTDC_Layer2Config.height);
+
+    int32_t x1 =
+        (int32_t)(roi->corners[2][0] *
+                  LTDC_Layer2Config.width);
+
+    int32_t y1 =
+        (int32_t)(roi->corners[2][1] *
+                  LTDC_Layer2Config.height);
+
+    if (x0 < 0) {
+        x0 = 0;
+    }
+
+    if (y0 < 0) {
+        y0 = 0;
+    }
+
+    if (x1 >= LTDC_Layer2Config.width) {
+        x1 = LTDC_Layer2Config.width - 1;
+    }
+
+    if (y1 >= LTDC_Layer2Config.height) {
+        y1 = LTDC_Layer2Config.height - 1;
+    }
+
+    if ((x1 <= x0) || (y1 <= y0)) {
+        return;
+    }
+
+
+    LTDC_LayerDrawRectBorder(
+        &LTDC_Layer2Config,
+        (uint16_t)x0,
+        (uint16_t)y0,
+        (uint16_t)(x1 - x0),
+        (uint16_t)(y1 - y0),
+        color
+    );
+
+    previous_roi_x = (uint16_t)x0;
+    previous_roi_y = (uint16_t)y0;
+    previous_roi_w = (uint16_t)(x1 - x0);
+    previous_roi_h = (uint16_t)(y1 - y0);
+
+    roi_drawn = true;
+}
+
+void ClearPreviousROI(void)
+{
+    if (!roi_drawn) {
+        return;
+    }
+
+    LTDC_LayerDrawRectBorder(
+        &LTDC_Layer2Config,
+        previous_roi_x,
+        previous_roi_y,
+        previous_roi_w,
+        previous_roi_h,
+        0x00000000U
+    );
+
+    roi_drawn = false;
+}
+
+
 
 void LTDC_ConfigLayer1(void){
     LTDC_ConfigLayer(&LTDC_Layer1Config);
