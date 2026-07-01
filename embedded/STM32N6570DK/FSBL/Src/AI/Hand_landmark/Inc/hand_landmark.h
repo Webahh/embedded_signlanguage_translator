@@ -19,11 +19,14 @@
 #define LANDMARK_INPUT_CHANNELS   3U
 #define LANDMARK_INPUT_SIZE (LANDMARK_INPUT_WIDTH * LANDMARK_INPUT_HEIGHT * LANDMARK_INPUT_CHANNELS)
 
+#define LANDMARK_POINT_COUNT      21U
+#define LANDMARK_VALUE_COUNT      63U
+
 typedef struct {
-    float scalar_0;
-    float vector_0[63];
-    float scalar_1;
-    float vector_1[63];
+    float presence;
+    float handedness;
+    float landmarks[LANDMARK_VALUE_COUNT];
+    float world_landmarks[LANDMARK_VALUE_COUNT];
 } LandmarkNetworkOutput_TypeDef;
 
 AI_Status_TypeDef LANDMARK_Init(void);

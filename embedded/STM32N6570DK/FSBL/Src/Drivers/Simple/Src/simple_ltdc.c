@@ -628,6 +628,143 @@ void ClearPreviousROI(void)
     roi_drawn = false;
 }
 
+void LTDC_BlitRGB888ToARGB4444(
+    const LTDC_LayerConfig_TypeDef *cfg,
+    const uint8_t *source,
+    uint16_t source_width,
+    uint16_t source_height,
+    uint16_t destination_x,
+    uint16_t destination_y)
+{
+    if ((cfg == NULL) ||
+        (cfg->fb == NULL) ||
+        (source == NULL)) {
+        return;
+    }
+
+    volatile uint16_t *framebuffer =
+        (volatile uint16_t *)cfg->fb;
+
+    for (uint16_t y = 0U; y < source_height; y++) {
+        const uint32_t target_y =
+            (uint32_t)destination_y + y;
+
+        if (target_y >= cfg->height) {
+            break;
+        }
+
+        for (uint16_t x = 0U; x < source_width; x++) {
+            const uint32_t target_x =
+                (uint32_t)destination_x + x;
+
+            if (target_x >= cfg->width) {
+                break;
+            }
+
+            const uint32_t source_offset =
+                ((uint32_t)y * source_width + x) * 3U;
+
+            const uint8_t red =
+                source[source_offset + 0U];
+
+            const uint8_t green =
+                source[source_offset + 1U];
+
+            const uint8_t blue =
+                source[source_offset + 2U];
+
+            const uint16_t pixel =
+                (uint16_t)(
+                    (0xFU << 12U) |
+                    ((uint16_t)(red   >> 4U) << 8U) |
+                    ((uint16_t)(green >> 4U) << 4U) |
+                    ((uint16_t)(blue  >> 4U))
+                );
+
+            framebuffer[
+                target_y * cfg->buf_width + target_x
+            ] = pixel;
+        }
+    }
+}
+
+#define LANDMARK_DRAW_RADIUS 3U
+
+static bool landmarks_drawn = false;
+
+static uint16_t previous_landmark_x[LANDMARK_POINT_COUNT];
+static uint16_t previous_landmark_y[LANDMARK_POINT_COUNT];
+static uint8_t previous_landmark_valid[LANDMARK_POINT_COUNT];
+
+void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
+{
+    if (points == NULL) {
+        return;
+    }
+
+    bool point_drawn = false;
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        const int32_t x =
+            (int32_t)(points[i].x *
+                      (float)LTDC_Layer2Config.width);
+
+        const int32_t y =
+            (int32_t)(points[i].y *
+                      (float)LTDC_Layer2Config.height);
+
+        previous_landmark_valid[i] = 0U;
+
+        if ((x < 0) ||
+            (y < 0) ||
+            (x >= (int32_t)LTDC_Layer2Config.width) ||
+            (y >= (int32_t)LTDC_Layer2Config.height)) {
+            continue;
+        }
+
+        LTDC_LayerDrawCricle(
+            &LTDC_Layer2Config,
+            (uint16_t)x,
+            (uint16_t)y,
+            LANDMARK_DRAW_RADIUS,
+            LTDC_COLOR_RED
+        );
+
+        previous_landmark_x[i] = (uint16_t)x;
+        previous_landmark_y[i] = (uint16_t)y;
+        previous_landmark_valid[i] = 1U;
+
+        point_drawn = true;
+    }
+
+    landmarks_drawn = point_drawn;
+}
+
+void ClearPreviousLandmarks(void)
+{
+    if (!landmarks_drawn) {
+        return;
+    }
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        if (previous_landmark_valid[i] == 0U) {
+            continue;
+        }
+
+        LTDC_LayerDrawCricle(
+            &LTDC_Layer2Config,
+            previous_landmark_x[i],
+            previous_landmark_y[i],
+            LANDMARK_DRAW_RADIUS,
+            0x00000000U
+        );
+
+        previous_landmark_valid[i] = 0U;
+    }
+
+    landmarks_drawn = false;
+}
+
 
 
 void LTDC_ConfigLayer1(void){

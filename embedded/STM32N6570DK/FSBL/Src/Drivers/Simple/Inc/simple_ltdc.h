@@ -22,6 +22,7 @@
 #include "stm32n657xx.h"
 
 #include "palm_postprocessing.h"
+#include "hand_landmark_postprocessing.h"
 
 #define LTDC_BG_WIDTH  800
 #define LTDC_BG_HEIGHT 480
@@ -218,6 +219,18 @@ void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color);
 
 void ClearPreviousROI(void);
 
+void LTDC_BlitRGB888ToARGB4444(
+    const LTDC_LayerConfig_TypeDef *cfg,
+    const uint8_t *source,
+    uint16_t source_width,
+    uint16_t source_height,
+    uint16_t destination_x,
+    uint16_t destination_y
+);
+
+void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+
+void ClearPreviousLandmarks(void);
 
 /**
  * @brief Configure layer 1 using the global LTDC_Layer1Config
