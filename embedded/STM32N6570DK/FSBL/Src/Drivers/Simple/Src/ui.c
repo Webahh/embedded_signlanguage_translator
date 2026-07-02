@@ -121,7 +121,7 @@ static void _draw_toggle(UI_Drawer_TypeDef *drawer, uint8_t idx,
 		? toggle_x + _TOGGLE_W - _THUMB_R - 3
 		: toggle_x + _THUMB_R + 3;
 	uint16_t thumb_center_y = toggle_y + _TOGGLE_H / 2;
-	LTDC_Layer_Draw_Cricle(cfg, thumb_center_x, thumb_center_y, _THUMB_R, drawer->color_text);
+	LTDC_Layer_Draw_Circle(cfg, thumb_center_x, thumb_center_y, _THUMB_R, drawer->color_text);
 }
 
 // Value bar: label + track + accent fill + thumb at current position
@@ -148,7 +148,7 @@ static void _draw_slider(UI_Drawer_TypeDef *drawer, uint8_t idx,
 	if (fill_width > 0) {
 		LTDC_Layer_Draw_Rect(cfg, slider_x, slider_y, fill_width, _SLIDER_H, drawer->color_accent);
 	}
-	LTDC_Layer_Draw_Cricle(cfg, slider_x + fill_width, slider_y + _SLIDER_H / 2,
+	LTDC_Layer_Draw_Circle(cfg, slider_x + fill_width, slider_y + _SLIDER_H / 2,
 		_THUMB_R, drawer->color_text);
 }
 
@@ -193,9 +193,9 @@ static void _draw_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
 	uint16_t eye_x = content_x + _label_w(item->label) + _EYE_GAP;
 	uint16_t eye_y = midpoint_y - _EYE_R;
 	if (item->composite.visible) {
-		LTDC_Layer_Draw_Cricle(cfg, eye_x + _EYE_R, eye_y + _EYE_R,
+		LTDC_Layer_Draw_Circle(cfg, eye_x + _EYE_R, eye_y + _EYE_R,
 			_EYE_R, drawer->color_accent);
-		LTDC_Layer_Draw_Cricle(cfg, eye_x + _EYE_R, eye_y + _EYE_R,
+		LTDC_Layer_Draw_Circle(cfg, eye_x + _EYE_R, eye_y + _EYE_R,
 			_EYE_PUPIL_R, drawer->color_accent);
 	} else {
 		LTDC_Layer_Draw_Rect(cfg, eye_x + 2, eye_y + _EYE_R - 1,
@@ -215,7 +215,7 @@ static void _draw_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
 			LTDC_Layer_Draw_Rect(cfg, slider_x, slider_y,
 				fill_width, _SLIDER_H, drawer->color_accent);
 		}
-		LTDC_Layer_Draw_Cricle(cfg, slider_x + fill_width,
+		LTDC_Layer_Draw_Circle(cfg, slider_x + fill_width,
 			slider_y + _SLIDER_H / 2,
 			_SLIDER_THUMB_R, drawer->color_text);
 	}

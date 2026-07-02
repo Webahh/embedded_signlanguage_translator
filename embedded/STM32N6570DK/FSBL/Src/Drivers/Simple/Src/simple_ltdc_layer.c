@@ -4,8 +4,12 @@
  * @date 02.07.2026
  * @brief Contains logic for LTDC
  */
-#include "simple_ltdc.h"
+#include <stdint.h>
+#include <stddef.h>
+
 #include "simple_ltdc_layer.h"
+
+#include "simple_ltdc.h"
 #include "config.h"
 
 // ====================================

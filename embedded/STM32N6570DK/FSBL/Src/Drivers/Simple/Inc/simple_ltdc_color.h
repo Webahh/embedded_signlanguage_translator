@@ -1,8 +1,13 @@
 /**
- * @file simple_ltdc_colors.h
+ * @file simple_ltdc_color.h
  * @author Groß
  * @date 02.07.2026
- * @brief Contains color to be used
+ * @brief Colour constants for LTDC drawing operations
+ *
+ * Usage
+ * -----
+ * Include via simple_ltdc.h (unified header) or directly.
+ * Defines are usable anywhere after inclusion.
  */
 
 #ifndef SIMPLE_LTDC_COLOR_H

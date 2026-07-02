@@ -22,6 +22,8 @@
 #include "stm32n657xx.h"
 
 #include "simple_ltdc_layer.h"
+#include "simple_ltdc_color.h"
+#include "simple_ltdc_layer_draw.h"
 
 typedef enum {
     LTDC_OK    = 0,

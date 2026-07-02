@@ -1,16 +1,18 @@
 /**
- * @file simple_ltdc_layer_draw.h
+ * @file simple_ltdc_layer_draw.c
  * @author Groß
  * @date 02.07.2026
- * @brief
+ * @brief Drawing primitives implementation for LTDC layers
  */
 
-#include "stddef.h"
-#include "stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#include "config.h"
+#include "simple_ltdc_layer_draw.h"
+
 #include "simple_ltdc_layer.h"
 #include "simple_ltdc_color.h"
+#include "config.h"
 
 #include "palm_postprocessing.h"
 #include "hand_landmark_postprocessing.h"
@@ -114,7 +116,7 @@ void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t 
     }
 }
 
-void LTDC_Layer_Draw_Cricle(const LTDC_Layer_Config_TypeDef *cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color)
+void LTDC_Layer_Draw_Circle(const LTDC_Layer_Config_TypeDef *cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color)
 {
     uint32_t pixel;
     LTDC_Layer_ColorToPixel(cfg, color, &pixel);
@@ -255,19 +257,19 @@ void LTDC_Layer_Draw_RectBorder(const LTDC_Layer_Config_TypeDef *cfg,
 }
 
 
-#define LANDMARK_DRAW_RADIUS 3U
+#define _LANDMARK_DRAW_RADIUS 3U
 
-static bool landmarks_drawn = false;
+static bool _landmarks_drawn = false;
 
-static uint16_t previous_landmark_x[LANDMARK_POINT_COUNT];
-static uint16_t previous_landmark_y[LANDMARK_POINT_COUNT];
-static uint8_t previous_landmark_valid[LANDMARK_POINT_COUNT];
+static uint16_t _previous_landmark_x[LANDMARK_POINT_COUNT];
+static uint16_t _previous_landmark_y[LANDMARK_POINT_COUNT];
+static uint8_t _previous_landmark_valid[LANDMARK_POINT_COUNT];
 
-static bool roi_drawn = false;
-static uint16_t previous_roi_x;
-static uint16_t previous_roi_y;
-static uint16_t previous_roi_w;
-static uint16_t previous_roi_h;
+static bool _roi_drawn = false;
+static uint16_t _previous_roi_x;
+static uint16_t _previous_roi_y;
+static uint16_t _previous_roi_w;
+static uint16_t _previous_roi_h;
 
 void LTDC_BlitRGB888ToARGB4444(
     const LTDC_Layer_Config_TypeDef *cfg,
@@ -347,7 +349,7 @@ void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT
             (int32_t)(points[i].y *
                       (float)LTDC_Layer2Config.height);
 
-        previous_landmark_valid[i] = 0U;
+        _previous_landmark_valid[i] = 0U;
 
         if ((x < 0) ||
             (y < 0) ||
@@ -356,47 +358,47 @@ void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT
             continue;
         }
 
-        LTDC_Layer_Draw_Cricle(
+        LTDC_Layer_Draw_Circle(
             &LTDC_Layer2Config,
             (uint16_t)x,
             (uint16_t)y,
-            LANDMARK_DRAW_RADIUS,
+            _LANDMARK_DRAW_RADIUS,
             LTDC_LAYER_COLOR_RED
         );
 
-        previous_landmark_x[i] = (uint16_t)x;
-        previous_landmark_y[i] = (uint16_t)y;
-        previous_landmark_valid[i] = 1U;
+        _previous_landmark_x[i] = (uint16_t)x;
+        _previous_landmark_y[i] = (uint16_t)y;
+        _previous_landmark_valid[i] = 1U;
 
         point_drawn = true;
     }
 
-    landmarks_drawn = point_drawn;
+    _landmarks_drawn = point_drawn;
 }
 
 void LTDC_Layer_Draw_LandmarksClearPrevious(void)
 {
-    if (!landmarks_drawn) {
+    if (!_landmarks_drawn) {
         return;
     }
 
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        if (previous_landmark_valid[i] == 0U) {
+        if (_previous_landmark_valid[i] == 0U) {
             continue;
         }
 
-        LTDC_Layer_Draw_Cricle(
+        LTDC_Layer_Draw_Circle(
             &LTDC_Layer2Config,
-            previous_landmark_x[i],
-            previous_landmark_y[i],
-            LANDMARK_DRAW_RADIUS,
+            _previous_landmark_x[i],
+            _previous_landmark_y[i],
+            _LANDMARK_DRAW_RADIUS,
             0x00000000U
         );
 
-        previous_landmark_valid[i] = 0U;
+        _previous_landmark_valid[i] = 0U;
     }
 
-    landmarks_drawn = false;
+    _landmarks_drawn = false;
 }
 
 
@@ -448,30 +450,30 @@ void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color)
         color
     );
 
-    previous_roi_x = (uint16_t)x0;
-    previous_roi_y = (uint16_t)y0;
-    previous_roi_w = (uint16_t)(x1 - x0);
-    previous_roi_h = (uint16_t)(y1 - y0);
+    _previous_roi_x = (uint16_t)x0;
+    _previous_roi_y = (uint16_t)y0;
+    _previous_roi_w = (uint16_t)(x1 - x0);
+    _previous_roi_h = (uint16_t)(y1 - y0);
 
-    roi_drawn = true;
+    _roi_drawn = true;
 }
 
 
 void LTDC_Layer_Draw_ROIClearPrevious(void)
 {
-    if (!roi_drawn) {
+    if (!_roi_drawn) {
         return;
     }
 
     LTDC_Layer_Draw_RectBorder(
         &LTDC_Layer2Config,
-        previous_roi_x,
-        previous_roi_y,
-        previous_roi_w,
-        previous_roi_h,
+        _previous_roi_x,
+        _previous_roi_y,
+        _previous_roi_w,
+        _previous_roi_h,
         0x00000000U
     );
 
-    roi_drawn = false;
+    _roi_drawn = false;
 }
 

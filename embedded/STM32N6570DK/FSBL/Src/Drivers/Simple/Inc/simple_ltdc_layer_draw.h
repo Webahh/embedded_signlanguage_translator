@@ -2,7 +2,7 @@
  * @file simple_ltdc_layer_draw.h
  * @author Groß
  * @date 02.07.2026
- * @brief
+ * @brief Drawing primitives for LTDC layers (fill, rect, circle, blit, landmarks)
  *
  * Usage
  * -----
@@ -10,10 +10,11 @@
  * All methods take in ARGB pixel colors convert them into layer appropriate representation
  * and writes the desired pattern
  */
-#ifndef LTDC_LAYER_DRAW_H
-#define LTDC_LAYER_DRAW_H
+#ifndef SIMPLE_LTDC_LAYER_DRAW_H
+#define SIMPLE_LTDC_LAYER_DRAW_H
 
-#include "simple_ltdc.h"
+#include "simple_ltdc_layer.h"
+#include "simple_ltdc_color.h"
 #include "palm_postprocessing.h"
 #include "hand_landmark_postprocessing.h"
 
@@ -35,15 +36,15 @@ void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color);
 void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color1, uint32_t color2);
 
 /**
- * @brief Draws circle on Layer at position (x,y) with color and radius
+ * @brief Draw a filled circle on a layer using Bresenham's algorithm
  *
- * @param [in] cfg		Layer configuration
- * @param [in] pos_x	Circle center position x
- * @param [in] pos_y	Circle center position y
- * @param [in] radius	radius in pixels
- * @param [in] color	color of the circle
+ * @param [in] cfg    Layer configuration
+ * @param [in] pos_x  Circle center X (pixels)
+ * @param [in] pos_y  Circle center Y (pixels)
+ * @param [in] radius Circle radius (pixels)
+ * @param [in] color  ARGB fill colour
  */
-void LTDC_Layer_Draw_Cricle(const LTDC_Layer_Config_TypeDef* cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color);
+void LTDC_Layer_Draw_Circle(const LTDC_Layer_Config_TypeDef* cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color);
 
 /**
  * @brief Draw a filled rectangle on a layer
@@ -82,14 +83,41 @@ void LTDC_Layer_Draw_RectBorder(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x
 void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y);
 
 
+/**
+ * @brief Draw a line between two points on a layer
+ *
+ * @param [in] cfg   Layer configuration
+ * @param [in] x0    Start X (pixels)
+ * @param [in] y0    Start Y (pixels)
+ * @param [in] x1    End X (pixels)
+ * @param [in] y1    End Y (pixels)
+ * @param [in] color ARGB line colour
+ */
 void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color);
 
+/**
+ * @brief Draw a hand ROI bounding box
+ *
+ * @param [in] roi   Hand ROI data
+ * @param [in] color ARGB border colour
+ */
 void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color);
 
+/**
+ * @brief Clear the previously drawn ROI bounding box
+ */
 void LTDC_Layer_Draw_ROIClearPrevious(void);
 
+/**
+ * @brief Draw hand landmarks as filled circles
+ *
+ * @param [in] points Array of landmark points
+ */
 void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
 
+/**
+ * @brief Clear the previously drawn hand landmarks
+ */
 void LTDC_Layer_Draw_LandmarksClearPrevious(void);
 
-#endif /* LTDC_LAYER_DRAW_H */
+#endif /* SIMPLE_LTDC_LAYER_DRAW_H */

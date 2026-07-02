@@ -130,7 +130,7 @@ void vTouchTask(void){
             int next_idx = ltdc_layer_bg_buffer_disp_idx ^ 1;
             LTDC_Layer_Config_TypeDef tmp = LTDC_Layer1Config;
             tmp.fb = (void *)&ltdc_layer_bg_buffer[next_idx];
-            LTDC_Layer_Draw_Cricle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
+            LTDC_Layer_Draw_Circle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
         }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * @file    simple_ltdc.h
+ * @file    simple_ltdc.c
  * @author  Gross
  * @date    21.05.2026
  * @brief   LTDC display controller driver
@@ -85,7 +85,9 @@ static void _ConfigTiming(void){
                  ((vsync + vbp + height + vfp - 1U) << LTDC_TWCR_TOTALH_Pos);
 }
 
-// ---- API ----
+// -------------------------------------------------------------------------
+// API
+// -------------------------------------------------------------------------
 
 void LTDC_Init(void){
     RCC_enable_LTDC_memory();
