@@ -37,7 +37,7 @@
 #define _START_LUMA_THRESH      5U
 #define _START_EXPOSURE_BUMP    2000U
 
-#define _UPDATE_EVERY_N_FRAMES  5U
+#define _UPDATE_EVERY_N_FRAMES  2U
 #define _GAIN_MIN_MDB           0U
 #define _GAIN_MAX_MDB           72000U
 #define _MAX_GAIN_INCREMENT     10000U

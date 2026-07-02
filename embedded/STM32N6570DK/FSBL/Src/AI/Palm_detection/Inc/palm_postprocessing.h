@@ -14,7 +14,7 @@
 #include "palm_detection.h"
 
 #define PALM_KEYPOINT_COUNT               7U
-#define PALM_DETECTION_THRESHOLD_PERMILLE 600U
+#define PALM_DETECTION_THRESHOLD_PERMILLE 650U
 #define PALM_CONFIRM_FRAME_COUNT          2U
 
 typedef struct {

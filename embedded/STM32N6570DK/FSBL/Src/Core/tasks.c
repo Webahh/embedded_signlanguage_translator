@@ -26,6 +26,8 @@
 #include "hand_landmark.h"
 #include "hand_landmark_preprocessing.h"
 #include "hand_landmark_postprocessing.h"
+#include "fingeralphabet_preprocessing.h"
+#include "simple_text.h"
 #include "ui.h"
 
 #define LED2_PIN 10
@@ -144,90 +146,111 @@ static HandROI_TypeDef landmark_roi;
 static LandmarkNetworkOutput_TypeDef landmark_output;
 static uint8_t landmark_preprocessed_input[LANDMARK_INPUT_SIZE] __attribute__((aligned(32)));
 static LandmarkPoint_TypeDef landmark_points[LANDMARK_POINT_COUNT];
+
+static uint8_t fingeralphabet_input[FINGERALPHABET_INPUT_SIZE];
+static uint8_t fingeralphabet_output[FINGERALPHABET_OUTPUT_SIZE];
+
+static FingeralphabetResult_TypeDef fingeralphabet_result;
 void vAIPipelineTask(void){
 	if (nn_frame_ready == 0U) {
 	        return;
-	    }
+	}
 
-	    nn_frame_ready = 0U;
+	nn_frame_ready = 0U;
 
-	    const uint8_t completed_idx = nn_completed_buffer_idx;
-	    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
-	    uint8_t *palm_input = PALM_GetInputBuffer();
+	const uint8_t completed_idx = nn_completed_buffer_idx;
+	const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
-	    if (palm_input == NULL) {
-	        return;
-	    }
+	uint8_t *palm_input = PALM_GetInputBuffer();
 
-	    memcpy(palm_input, (const void *)ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+	if (palm_input == NULL) {
+		return;
+	}
 
-	    //NVIC_DisableIRQ(TIM7_IRQn);
-	    const bool palm_inference_ok = PALM_Run(&palm_output);
-	    //NVIC_EnableIRQ(TIM7_IRQn);
 
-	    if (!palm_inference_ok) {
-	        return;
-	    }
+	memcpy(palm_input, (const void *)ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
 
-	    if (!PALM_FindBestDetection(&palm_output, &palm_detection)) {
-	        return;
-	    }
+	const bool palm_inference_ok = PALM_Run(&palm_output);
 
-	    const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
-	    PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
+	if (!palm_inference_ok) {
+		return;
+	}
 
-	    if (!palm_filter.detected) {
-	    	LTDC_Layer_Draw_ROIClearPrevious();
-	    	LTDC_Layer_Draw_LandmarksClearPrevious();
-	    	return;
-	    }
+	if (!PALM_FindBestDetection(&palm_output, &palm_detection)) {
+		return;
+	}
 
-	    if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
-	    	LTDC_Layer_Draw_ROIClearPrevious();
-	    	LTDC_Layer_Draw_LandmarksClearPrevious();
-	    	return;
-	    }
+	const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
+	PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
 
-    	LTDC_Layer_Draw_ROIClearPrevious();
-    	LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+	if (!palm_filter.detected) {
+		LTDC_Layer_Draw_ROIClearPrevious();
+		LTDC_Layer_Draw_LandmarksClearPrevious();
+	   	return;
+	}
 
-	    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
-	    													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
-															  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
-															  &landmark_roi, landmark_preprocessed_input);
+	if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
+		LTDC_Layer_Draw_ROIClearPrevious();
+		LTDC_Layer_Draw_LandmarksClearPrevious();
+	   	return;
+	}
 
-	    if (!preprocessing_ok) {
-	        DEBUG_PRINTF("Landmark preprocessing failed\r\n");
-	        return;
-	    }
+	LTDC_Layer_Draw_ROIClearPrevious();
+	LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
-	    /*LTDC_BlitRGB888ToARGB4444(
-	        &LTDC_Layer2Config,
-	        landmark_preprocessed_input,
-	        LANDMARK_INPUT_WIDTH,
-	        LANDMARK_INPUT_HEIGHT,
-	        0U,
-	        200U
-	    );
-	    */
+	const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
+	  													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
+														  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
+														  &landmark_roi, landmark_preprocessed_input);
 
-	    //NVIC_DisableIRQ(TIM7_IRQn);
-	    const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
-	    //NVIC_EnableIRQ(TIM7_IRQn);
+	if (!preprocessing_ok) {
+	    DEBUG_PRINTF("Landmark preprocessing failed\r\n");
+	    return;
+	}
 
-	    if (!landmark_inference_ok) {
-	        DEBUG_PRINTF("Landmark inference failed\r\n");
-	        return;
-	    }
+/*
+	 	LTDC_BlitRGB888ToARGB4444(
+		&LTDC_Layer2Config,
+	    landmark_preprocessed_input,
+	    LANDMARK_INPUT_WIDTH,
+	    LANDMARK_INPUT_HEIGHT,
+	    0U,
+	    200U
+	);
+*/
 
-	    LTDC_Layer_Draw_LandmarksClearPrevious();
-	    if (landmark_output.presence >= 0.5f) {
-	        LANDMARK_MapToFrame(
-	            &landmark_output,
-	            &landmark_roi,
-	            landmark_points
-	        );
-	        LTDC_Layer_Draw_Landmarks(landmark_points);
-	    }
+
+	const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
+
+
+	if (!landmark_inference_ok) {
+	    DEBUG_PRINTF("Landmark inference failed\r\n");
+	    return;
+	}
+
+	LTDC_Layer_Draw_LandmarksClearPrevious();
+	if (landmark_output.presence >= 0.5f) {
+		LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
+		LTDC_Layer_Draw_Landmarks(landmark_points);
+	}
+
+    const bool finger_preprocessing_ok = FINGERALPHABET_Preprocess(landmark_points,
+    															   landmark_output.handedness,
+																   fingeralphabet_input);
+    if (!finger_preprocessing_ok) {
+        DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
+        return;
+    }
+
+    const bool fingeralphabet_ok = FINGERALPHABET_Run(fingeralphabet_input, fingeralphabet_output);
+
+    if(!fingeralphabet_ok){
+    	DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
+    	return;
+    }
+
+    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
+
+    TEXT_String_draw(&LTDC_Layer1Config, fingeralphabet_result.label, 200,200, TEXT_COLOR_RED);
 }
