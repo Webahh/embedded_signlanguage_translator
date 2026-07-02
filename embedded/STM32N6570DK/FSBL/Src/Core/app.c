@@ -28,15 +28,22 @@
 #include "tasks.h"
 #include "simple_i2c.h"
 #include "pd_anchors.h"
-#include "palm_detection_logic.h"
+#include "palm_detection.h"
+#include "fingeralphabet.h"
+#include "palm_postprocessing.h"
+#include "hand_landmark.h"
+#include "hand_landmark_preprocessing.h"
+#include "hand_landmark_postprocessing.h"
 #include "ui.h"
 
 extern uint32_t g_pfnVectors[];
 static volatile int ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
+
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1) {
+    	AE_OnFrameStats();
         ltdc_bg_buffer_disp_idx ^= 1;
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
         LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
@@ -46,9 +53,14 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     }
 }
 
-static AI_PalmOutput_TypeDef palm_output;
+static PalmNetworkOutput_TypeDef palm_output;
 static PalmDetection_TypeDef palm_detection;
 static PalmDetectionFilter_TypeDef palm_filter;
+static HandROI_TypeDef landmark_roi;
+
+static LandmarkNetworkOutput_TypeDef landmark_output;
+static uint8_t landmark_preprocessed_input[LANDMARK_INPUT_SIZE] __attribute__((aligned(32)));
+static LandmarkPoint_TypeDef landmark_points[LANDMARK_POINT_COUNT];
 
 static void vPalmTask(void)
 {
@@ -59,22 +71,21 @@ static void vPalmTask(void)
     nn_frame_ready = 0U;
 
     const uint8_t completed_idx = nn_completed_buffer_idx;
+    const uint8_t camera_buffer_idx = (uint8_t)ltdc_bg_buffer_disp_idx;
 
-    uint8_t *palm_input = AI_GetPalmInputBuffer();
+    uint8_t *palm_input = PALM_GetInputBuffer();
 
     if (palm_input == NULL) {
         return;
     }
 
-    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_ELEMENT_COUNT);
+    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
 
-    NVIC_DisableIRQ(TIM7_IRQn);
+    //NVIC_DisableIRQ(TIM7_IRQn);
+    const bool palm_inference_ok = PALM_Run(&palm_output);
+    //NVIC_EnableIRQ(TIM7_IRQn);
 
-    const bool inference_ok = AI_RunPalm(&palm_output);
-
-    NVIC_EnableIRQ(TIM7_IRQn);
-
-    if (!inference_ok) {
+    if (!palm_inference_ok) {
         return;
     }
 
@@ -83,16 +94,63 @@ static void vPalmTask(void)
     }
 
     const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
-
     PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
 
-    DEBUG_PRINTF(
-        "Palm p=%u idx=%u detected=%u\r\n",
-        probability_permille,
-        palm_detection.anchor_index,
-        (uint32_t)palm_filter.detected
+    if (!palm_filter.detected) {
+    	ClearPreviousROI();
+    	ClearPreviousLandmarks();
+    	return;
+    }
+
+    if(!PALM_CreateLandmarkROI(&palm_detection, &landmark_roi)){
+    	ClearPreviousROI();
+    	ClearPreviousLandmarks();
+        return;
+    }
+
+    ClearPreviousROI();
+    DrawLandmarkROI(&landmark_roi, LTDC_COLOR_GREEN);
+
+    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_bg_buffer[camera_buffer_idx],
+    													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
+														  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
+														  &landmark_roi, landmark_preprocessed_input);
+
+    if (!preprocessing_ok) {
+        DEBUG_PRINTF("Landmark preprocessing failed\r\n");
+        return;
+    }
+/*
+    LTDC_BlitRGB888ToARGB4444(
+        &LTDC_Layer2Config,
+        landmark_preprocessed_input,
+        LANDMARK_INPUT_WIDTH,
+        LANDMARK_INPUT_HEIGHT,
+        0U,
+        200U
     );
+*/
+    //NVIC_DisableIRQ(TIM7_IRQn);
+    const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
+    //NVIC_EnableIRQ(TIM7_IRQn);
+
+    if (!landmark_inference_ok) {
+        DEBUG_PRINTF("Landmark inference failed\r\n");
+        return;
+    }
+
+    ClearPreviousLandmarks();
+    if (landmark_output.presence >= 0.5f) {
+        LANDMARK_MapToFrame(
+            &landmark_output,
+            &landmark_roi,
+            landmark_points
+        );
+        DrawLandmarks(landmark_points);
+    }
 }
+
+
 
 UI_Drawer_TypeDef _drawer;
 
@@ -207,30 +265,24 @@ void app_init(){
 	UI_Drawer_Prepare(&_drawer, &LTDC_Layer2Config);
 
     /* --- AI --- */
-  if (!AI_SelfTest()) {
-        DEBUG_PRINTF("AI self-test failed\r\n");
-  }
-  
-  AI_Status_TypeDef status = AI_Init();
+	AI_Status_TypeDef status = AI_Init();
 
-  if (status != AI_STATUS_OK) {
-    while (1) {
-    }
-  }
-  DEBUG_PRINTF("AI self-test successful\r\n");
+	if (status != AI_STATUS_OK) {
+		while (1) {
+		}
+	}
 
-
-  /* --- Scheduler --- */
-  SCHEDULER_System_init();
+	/* --- Scheduler --- */
+	SCHEDULER_System_init();
 
 	uint8_t task_idx;
 
-	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 1, &task_idx);
+	SCHEDULER_Task_add(vTouchTask, "Touch", 1, 2, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, &task_idx);
 	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 20, 3, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 10, 4, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
-	SCHEDULER_Task_add(vPalmTask,"Palm", 250, 4, &task_idx);
+	SCHEDULER_Task_add(vPalmTask,"Palm", 30, 1, &task_idx);
 }
 
 void app_run(){

@@ -1,19 +1,19 @@
 /*
- * palm_detection_logic.c
+ * palm_postprocessing.c
  *
- *  Created on: 29.06.2026
+ *  Created on: 01.07.2026
  *      Author: Weber
  */
 
 #include <math.h>
 #include <stddef.h>
 
-#include "palm_detection_logic.h"
+#include "palm_postprocessing.h"
 #include "pd_anchors.h"
 
 #define PALM_MODEL_INPUT_SIZE 192.0f
 
-bool PALM_FindBestDetection(const AI_PalmOutput_TypeDef *output, PalmDetection_TypeDef *detection)
+bool PALM_FindBestDetection(const PalmNetworkOutput_TypeDef *output, PalmDetection_TypeDef *detection)
 {
     if ((output == NULL) || (detection == NULL)) {
         return false;
@@ -85,4 +85,41 @@ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t pr
     }
 }
 
+bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, HandROI_TypeDef *roi)
+{
+    if ((detection == NULL) || (roi == NULL)) {
+        return false;
+    }
+
+    const float shift_y = -0.5f;
+    const float scale = 2.8f;
+
+    const float roi_size =
+        fmaxf(detection->width, detection->height) * scale;
+
+    roi->center_x = detection->center_x;
+    roi->center_y =
+        detection->center_y +
+        detection->height * shift_y;
+
+    roi->width = roi_size;
+    roi->height = roi_size;
+    roi->rotation = 0.0f;
+
+    const float half_size = roi_size * 0.5f;
+
+    roi->corners[0][0] = roi->center_x - half_size;
+    roi->corners[0][1] = roi->center_y - half_size;
+
+    roi->corners[1][0] = roi->center_x + half_size;
+    roi->corners[1][1] = roi->center_y - half_size;
+
+    roi->corners[2][0] = roi->center_x + half_size;
+    roi->corners[2][1] = roi->center_y + half_size;
+
+    roi->corners[3][0] = roi->center_x - half_size;
+    roi->corners[3][1] = roi->center_y + half_size;
+
+    return true;
+}
 

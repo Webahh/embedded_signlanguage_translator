@@ -69,6 +69,10 @@
 									<listOptionValue builtIn="false" value="../Src/Drivers/HAL"/>
 									<listOptionValue builtIn="false" value="../Src/Drivers/HAL/STM32N6xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Src/Drivers/HAL/STM32N6xx_HAL_Driver/Inc/Legacy"/>
+									<listOptionValue builtIn="false" value="../Src/AI/Base/Inc"/>
+									<listOptionValue builtIn="false" value="../Src/AI/Fingeralphabet/Inc"/>
+									<listOptionValue builtIn="false" value="../Src/AI/Hand_landmark/Inc"/>
+									<listOptionValue builtIn="false" value="../Src/AI/Palm_detection/Inc"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.566776311" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

@@ -15,9 +15,9 @@
 
 // ---- Private defines ----
 
-#define _TARGET_LUMA            56U
-#define _FINE_TOLERANCE         5U
-#define _COARSE_TOLERANCE       10U
+#define _TARGET_LUMA            110U
+#define _FINE_TOLERANCE         4U
+#define _COARSE_TOLERANCE       8U
 #define _EXPOSURE_MIN_US        15U
 #define _EXPOSURE_MAX_US        33266U
 #define _STATS_WINDOW_PIXELS    1259712U

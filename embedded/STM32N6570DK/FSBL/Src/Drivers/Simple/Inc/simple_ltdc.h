@@ -21,6 +21,9 @@
 
 #include "stm32n657xx.h"
 
+#include "palm_postprocessing.h"
+#include "hand_landmark_postprocessing.h"
+
 #define LTDC_BG_WIDTH  800
 #define LTDC_BG_HEIGHT 480
 
@@ -208,6 +211,26 @@ void LTDC_LayerDrawRectBorder(const LTDC_LayerConfig_TypeDef *cfg, uint16_t x, u
  * @param [in] dst_y Destination Y offset (pixels)
  */
 void LTDC_BlitImage(const LTDC_LayerConfig_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y);
+
+
+void LTDC_LayerDrawLine(const LTDC_LayerConfig_TypeDef *cfg, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color);
+
+void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color);
+
+void ClearPreviousROI(void);
+
+void LTDC_BlitRGB888ToARGB4444(
+    const LTDC_LayerConfig_TypeDef *cfg,
+    const uint8_t *source,
+    uint16_t source_width,
+    uint16_t source_height,
+    uint16_t destination_x,
+    uint16_t destination_y
+);
+
+void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+
+void ClearPreviousLandmarks(void);
 
 /**
  * @brief Configure layer 1 using the global LTDC_Layer1Config
