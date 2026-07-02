@@ -121,12 +121,12 @@ void app_init(){
 
 	uint8_t task_idx;
 
-	SCHEDULER_Task_add(vTouchTask, "Touch", 10, 1, &task_idx);
+	SCHEDULER_Task_add(vTouchTask, "Touch", 50, 1, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 1, &task_idx);
 //	SCHEDULER_Task_add(vBackgroundTask, "BgColor", 10, 1, &task_idx);
 	SCHEDULER_Task_add(vAETask, "AETask", 50, 1, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
-//	SCHEDULER_Task_add(vAIPipelineTask,"AIPipeline", 30, 1, &task_idx);
+	SCHEDULER_Task_add(vAIPipelineTask,"AIPipeline", 30, 1, &task_idx);
 }
 
 void app_run(){

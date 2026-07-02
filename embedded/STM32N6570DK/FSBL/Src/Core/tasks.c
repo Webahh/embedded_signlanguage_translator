@@ -119,6 +119,12 @@ void vTouchTask(void){
 	TOUCH_GetPending(&pending);
     if (pending)
     {
+        static uint32_t last_ms;
+        uint32_t now;
+        SCHEDULER_Tick_get(&now);
+        if (now - last_ms < 30) return;
+        last_ms = now;
+
         TOUCH_Data_TypeDef data;
         TOUCH_GetState(NULL, &data);
 
