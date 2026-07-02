@@ -1,5 +1,5 @@
 /**
- * @file    simple_scheduler.h
+ * @file    simple_scheduler.c
  * @author  Gross
  * @date    05.06.2026
  * @brief   Priority preemptive scheduler driver source
@@ -396,68 +396,10 @@ void SCHEDULER_StartTick(void){
 
 static uint32_t _last_print_tick = 0;
 
-static void _pad(int n){
-	while (n-- > 0) DEBUG_PRINTF(" ");
-}
 
-static void _printName(const char* s, int w){
-	if (!s) s = "?";
-	DEBUG_PRINTF("%s", s);
-	int l = 0;
-	while (s[l]) l++;
-	_pad(w - l);
-}
-
-static void _printNum(uint32_t v, int w){
-	char b[12];
-	int i = 0;
-	if (v == 0) {
-		b[i++] = '0';
-	} else {
-		char r[12];
-		int ri = 0;
-		while (v) {
-			r[ri++] = '0' + (v % 10);
-			v /= 10;
-		}
-		while (ri--) b[i++] = r[ri];
-	}
-	b[i] = '\0';
-	_pad(w - i);
-	DEBUG_PRINTF("%s", b);
-}
-
-static void _printPct(uint32_t pct_x100, int w){
-	uint32_t ip = pct_x100 / 100;
-	uint32_t fp = pct_x100 % 100;
-	char b[8];
-	int i = 0;
-	if (ip == 0) {
-		b[i++] = '0';
-	} else {
-		char r[4];
-		int ri = 0;
-		while (ip) {
-			r[ri++] = '0' + (ip % 10);
-			ip /= 10;
-		}
-		while (ri--) b[i++] = r[ri];
-	}
-	b[i++] = '.';
-	b[i++] = '0' + (fp / 10);
-	b[i++] = '0' + (fp % 10);
-	b[i++] = '%';
-	b[i] = '\0';
-	_pad(w - i);
-	DEBUG_PRINTF("%s", b);
-}
 
 static void SCHEDULER_PrintStats(void){
-	uint32_t now;
-	uint32_t elapsed;
 	uint32_t total = 0;
-	uint32_t idle;
-	uint32_t idle_pct;
 
 	struct {
 		uint32_t cycles;
@@ -470,8 +412,8 @@ static void SCHEDULER_PrintStats(void){
 	int snap_n = 0;
 
 	__disable_irq();
-	now = DWT->CYCCNT;
-	elapsed = now - _last_stats_print_cycle;
+	uint32_t now = DWT->CYCCNT;
+	uint32_t elapsed = now - _last_stats_print_cycle;
 	_last_stats_print_cycle = now;
 
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
@@ -496,8 +438,7 @@ static void SCHEDULER_PrintStats(void){
 		}
 	}
 
-	idle = (elapsed > total) ? (elapsed - total) : 0;
-	idle_pct = (idle * 10000ULL) / elapsed;
+	uint32_t idle = (elapsed > total) ? (elapsed - total) : 0;
 	__enable_irq();
 
 	if (elapsed == 0) {
@@ -505,38 +446,27 @@ static void SCHEDULER_PrintStats(void){
 	}
 
 	DEBUG_PRINTF("\r\n");
-	_printName("Name", 14);
-	_printName("min", 10);
-	_printName("max", 10);
-	_printName("avg", 10);
-	_printName("%CPU", 7);
-	_printName("Prempt", 9);
-	_printName("Invoc", 8);
-	DEBUG_PRINTF("\r\n");
-	DEBUG_PRINTF("---------------------------------------------------------\r\n");
+	DEBUG_PRINTF("%-14.14s %-10s %-10s %-10s %-10s %-7s %-9s %-8s\r\n",
+		"Name", "cycle", "min", "max", "avg", "%CPU", "Prempt", "Invoc");
+	DEBUG_PRINTF("-------------------------------------------------------------------\r\n");
 
 	for (int i = 0; i < snap_n; i++) {
-		uint32_t pct = (snap[i].cycles * 10000ULL) / elapsed;
 		uint32_t avg = snap[i].invocs ? (snap[i].cycles / snap[i].invocs) : 0;
-		_printName(snap[i].name, 14);
-		_printNum(snap[i].min_cycles, 10);
-		_printNum(snap[i].max_cycles, 10);
-		_printNum(avg, 10);
-		_printPct(pct, 7);
-		_printNum(snap[i].preempts, 9);
-		_printNum(snap[i].invocs, 8);
-		DEBUG_PRINTF("\r\n");
+		DEBUG_PRINTF("%-14.14s %10lu %10lu %10lu %10lu %6.2f%% %9lu %8lu\r\n",
+			snap[i].name,
+			snap[i].cycles,
+			snap[i].min_cycles,
+			snap[i].max_cycles,
+			avg,
+			(float)snap[i].cycles * 100.0f / (float)elapsed,
+			snap[i].preempts,
+			snap[i].invocs);
 	}
 
-	_printName("Idle", 14);
-	_printNum(0, 10);
-	_printNum(0, 10);
-	_printNum(0, 10);
-	_printPct(idle_pct, 7);
-	_printNum(0, 9);
-	_printNum(0, 8);
-	DEBUG_PRINTF("\r\n");
-	DEBUG_PRINTF("=========================================================\r\n");
+	DEBUG_PRINTF("%-14.14s %10s %10s %10s %10s %6.2f%% %9s %8s\r\n",
+		"Idle", "0", "0", "0", "0",
+		(float)idle * 100.0f / (float)elapsed, "0", "0");
+	DEBUG_PRINTF("===================================================================\r\n");
 }
 
 /**

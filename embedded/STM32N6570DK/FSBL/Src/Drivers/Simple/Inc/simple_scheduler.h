@@ -38,8 +38,27 @@
  *        it when a higher-priority task becomes ready, resuming it on
  *        the next tick
  *
- * @author  Groß
- * @date    May 24, 2026
+ * Task Statistics
+ * ---------------
+ * The scheduler tracks per-task CPU usage using DWT CYCCNT (CPU cycle
+ * counter at core clock frequency).  Every 1 second the idle task prints
+ * a table with per-window counters, reset each cycle:
+ *
+ *   - min / max / avg  – min, max, and average cycles per invocation
+ *   - %CPU             – share of total wall-clock time (800 MHz basis)
+ *   - Prempt           – number of times preempted
+ *   - Invoc            – invocation count
+ *
+ * Total cycles for the window = avg * invoc (printed in "cycle" column).
+ * Idle %CPU is derived as (wall_cycles - sum(task_cycles)) / wall_cycles,
+ * so it includes WFI sleep time during which DWT CYCCNT stops.
+ *
+ * Usage
+ * -----
+ * 1. SCHEDULER_System_init()  – configures TIM7 (1 ms tick) and DWT
+ * 2. SCHEDULER_Task_add()     – register tasks (period, priority)
+ * 3. SCHEDULER_Tasks_run()    – start scheduler (never returns)
+ *
  */
 
 #ifndef SIMPLE_SCHEDULER_H
