@@ -10,6 +10,7 @@
 #include "simple_debug_log.h"
 #include "tasks.h"
 #include "simple_scheduler.h"
+#include "simple_ltdc_layer_draw.h"
 
 void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx)
 {
@@ -36,7 +37,7 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
 	} else {
 		SCHEDULER_Task_remove(systemtime_id);
-		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+		LTDC_Layer_Draw_Rect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
 	}
 }
 
