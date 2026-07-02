@@ -13,7 +13,12 @@
 #include "simple_gpio.h"
 #include "simple_timer.h"
 #include "simple_scheduler.h"
+
 #include "simple_ltdc.h"
+#include "simple_ltdc_color.h"
+#include "simple_ltdc_layer.h"
+#include "simple_ltdc_layer_draw.h"
+
 #include "simple_text.h"
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
@@ -55,10 +60,10 @@ void app_init(){
 
     TIMER_Delay_ms(10);
 
-    LTDC_ConfigLayer1();
-    LTDC_ConfigLayer2();
+    LTDC_Layer_Layer1_Config();
+    LTDC_Layer_Layer2_Config();
 
-    LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
+    LTDC_Layer_Draw_Fill(&LTDC_Layer1Config, LTDC_LAYER_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -83,7 +88,7 @@ void app_init(){
     }
 
     /* --- UI --- */
-	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
+	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_layer_fg_buffer[1], (uint8_t *)ltdc_layer_fg_buffer[0]);
 
 	// Mode: 3-segment selector (Palm / Hand / Sign)
 	int mode_idx;

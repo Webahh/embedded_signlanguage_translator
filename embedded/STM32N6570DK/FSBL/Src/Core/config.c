@@ -5,6 +5,7 @@
  *      Author: Weber
  */
 
+#include "simple_ltdc_layer.h"
 #include "config.h"
 
 //=========================================
@@ -224,14 +225,14 @@ CAM_Handle_TypeDef h_cam;
 //=========================================
 // LCD Layer
 //=========================================
-LTDC_LayerConfig_TypeDef LTDC_Layer1Config = {
+LTDC_Layer_Config_TypeDef LTDC_Layer1Config = {
     .regs            = LTDC_Layer1,
-    .fb              = ltdc_bg_buffer[0],
+    .fb              = ltdc_layer_bg_buffer[0],
     .x               = 0,
     .y               = 0,
-    .width           = LTDC_BG_WIDTH,
-    .height          = LTDC_BG_HEIGHT,
-    .buf_width       = LTDC_BG_WIDTH,
+    .width           = LTDC_LAYER_BG_WIDTH,
+    .height          = LTDC_LAYER_BG_HEIGHT,
+    .buf_width       = LTDC_LAYER_BG_WIDTH,
     .pixel_format    = LTDC_PF_RGB888,
     .const_alpha     = 0xFF,
     .per_pixel_alpha = 0,
@@ -240,15 +241,15 @@ LTDC_LayerConfig_TypeDef LTDC_Layer1Config = {
 };
 
 
-static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_FPF_ARGB4444_INIT;
-LTDC_LayerConfig_TypeDef LTDC_Layer2Config = {
+static const LTDC_Layer_FlexiblePixelFormat_TypeDef LTDC_FPF_ARGB4444 = LTDC_LAYER_FPF_ARGB4444_INIT;
+LTDC_Layer_Config_TypeDef LTDC_Layer2Config = {
     .regs            = LTDC_Layer2,
-    .fb              = ltdc_fg_buffer,
+    .fb              = ltdc_layer_fg_buffer,
     .x               = 0,
     .y               = 0,
-    .width           = LTDC_FG_WIDTH,
-    .height          = LTDC_FG_HEIGHT,
-    .buf_width       = LTDC_FG_WIDTH,
+    .width           = LTDC_LAYER_FG_WIDTH,
+    .height          = LTDC_LAYER_FG_HEIGHT,
+    .buf_width       = LTDC_LAYER_FG_WIDTH,
     .pixel_format    = LTDC_PF_Flexible,
     .flexible_fmt    = &LTDC_FPF_ARGB4444,
     .const_alpha     = 0xFF,

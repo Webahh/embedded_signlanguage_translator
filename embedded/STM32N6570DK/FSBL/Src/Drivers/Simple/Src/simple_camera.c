@@ -8,7 +8,10 @@
 #include <stddef.h>
 #include "simple_camera.h"
 #include "simple_rcc.h"
+
 #include "simple_ltdc.h"
+#include "simple_ltdc_layer.h"
+
 #include "simple_csi.h"
 #include "simple_dcmipp.h"
 #include "simple_gpio.h"
@@ -59,8 +62,8 @@ CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
     DCMIPP_Pipe_cfg_TypeDef pipe_cfg;
     DCMIPP_IPPlug_cfg_TypeDef ipplug_cfg;
 
-    h->display_buf      = (uint32_t)&ltdc_bg_buffer[0];
-    h->nn_buf           = (uint32_t)&ltdc_fg_buffer;
+    h->display_buf      = (uint32_t)&ltdc_layer_bg_buffer[0];
+    h->nn_buf           = (uint32_t)&ltdc_layer_fg_buffer;
     h->initialized      = 0;
 
     _CAM_hw_init();
@@ -130,10 +133,10 @@ CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
 CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h){
     DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, 0, 0);
 
-    ltdc_bg_buffer_disp_idx = 1;
+    ltdc_layer_bg_buffer_disp_idx = 1;
     LTDC_Layer1Config.pixel_format = LTDC_PF_RGB888;
-    LTDC_Layer1Config.fb = &ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
-    LTDC_ConfigLayer1();
+    LTDC_Layer1Config.fb = &ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_disp_idx];
+    LTDC_Layer_Layer1_Config();
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }
