@@ -124,7 +124,7 @@ UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
  * @param [in] drawer | Drawer instance
  * @param [in] cfg    | LTDC layer config for dimensions and format
  */
-void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg);
+void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, LTDC_Layer_Config_TypeDef *cfg);
 
 /**
  * @brief Toggle drawer open/closed (swaps framebuffer pointer)
@@ -132,7 +132,7 @@ void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg)
  * @param [in] drawer | Drawer instance
  * @param [in] cfg    | LTDC layer config
  */
-void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg);
+void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer, LTDC_Layer_Config_TypeDef *cfg);
 
 /**
  * @brief Dispatch touch event to drawer
@@ -150,7 +150,7 @@ void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer, LTDC_LayerConfig_TypeDef *cfg);
  */
 UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
 	uint16_t touch_x, uint16_t touch_y, uint8_t pressed,
-	LTDC_LayerConfig_TypeDef *cfg, int *out_idx);
+	LTDC_Layer_Config_TypeDef *cfg, int *out_idx);
 
 /**
  * @brief Full redraw of the drawer
@@ -159,7 +159,7 @@ UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
  * @param [in] cfg    | LTDC layer config
  */
 void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer,
-	const LTDC_LayerConfig_TypeDef *cfg);
+	const LTDC_Layer_Config_TypeDef *cfg);
 
 /**
  * @brief Redraw a single drawer item
@@ -168,7 +168,7 @@ void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer,
  * @param [in] idx    | Item index
  * @param [in] cfg    | LTDC layer config
  */
-void UI_Drawer_DrawItem(UI_Drawer_TypeDef *drawer, uint8_t idx, const LTDC_LayerConfig_TypeDef *cfg);
+void UI_Drawer_DrawItem(UI_Drawer_TypeDef *drawer, uint8_t idx, const LTDC_Layer_Config_TypeDef *cfg);
 
 /**
  * @brief Read the current value of a drawer item

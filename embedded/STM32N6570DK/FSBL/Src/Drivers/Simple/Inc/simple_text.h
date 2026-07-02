@@ -38,7 +38,7 @@
  * @param [in] y       | Y position (top-left)
  * @param [in] fg_color| Foreground colour in ARGB8888
  */
-void TEXT_Char_draw(const LTDC_LayerConfig_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color);
+void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color);
 
 /**
  * @brief Draw a null-terminated string
@@ -49,7 +49,7 @@ void TEXT_Char_draw(const LTDC_LayerConfig_TypeDef *cfg, char c, int16_t x, int1
  * @param [in] y       | Starting Y position
  * @param [in] fg_color| Foreground colour in ARGB8888
  */
-void TEXT_String_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color);
+void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color);
 
 /**
  * @brief Draw a string with foreground / background colours
@@ -61,7 +61,7 @@ void TEXT_String_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int1
  * @param [in] fg_color| Foreground colour in ARGB8888
  * @param [in] bg_color| Background colour in ARGB8888
  */
-void TEXT_StringBg_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color);
+void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color);
 
 /**
  * @brief Draw a scaled string (nearest-neighbour)
@@ -73,6 +73,6 @@ void TEXT_StringBg_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, in
  * @param [in] fg_color| Foreground colour in ARGB8888
  * @param [in] scale   | Scale factor (0/1 = unscaled, 2+ = scaled)
  */
-void TEXT_StringScaled_draw(const LTDC_LayerConfig_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale);
+void TEXT_StringScaled_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale);
 
 #endif /* SIMPLE_TEXT_H */

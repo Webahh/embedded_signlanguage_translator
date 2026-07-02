@@ -48,7 +48,7 @@ extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client2_cfg;
 extern const DCMIPP_IPPlug_cfg_TypeDef DCMIPP_IPPlug_client4_cfg;
 
 extern CAM_Handle_TypeDef h_cam;
-extern LTDC_LayerConfig_TypeDef LTDC_Layer1Config;
-extern LTDC_LayerConfig_TypeDef LTDC_Layer2Config;
+extern LTDC_Layer_Config_TypeDef LTDC_Layer1Config;
+extern LTDC_Layer_Config_TypeDef LTDC_Layer2Config;
 
 #endif /* CONFIG_H_ */

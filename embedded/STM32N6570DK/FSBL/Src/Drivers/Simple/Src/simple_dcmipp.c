@@ -228,11 +228,11 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
     if (out_pitch) *out_pitch = pitch;
 
     if (pipe == DCMIPP_PIPE1) {
-        DCMIPP->P1PPM0AR1 = (uint32_t)&ltdc_bg_buffer[0];
-        DCMIPP->P1PPM0AR2 = (uint32_t)&ltdc_bg_buffer[1];
+        DCMIPP->P1PPM0AR1 = (uint32_t)&ltdc_layer_bg_buffer[0];
+        DCMIPP->P1PPM0AR2 = (uint32_t)&ltdc_layer_bg_buffer[1];
     } else if (pipe == DCMIPP_PIPE2) {
-        DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_nn_raw_buffer[0];
-        DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_nn_raw_buffer[1];
+        DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_layer_nn_raw_buffer[0];
+        DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_layer_nn_raw_buffer[1];
     }
 }
 

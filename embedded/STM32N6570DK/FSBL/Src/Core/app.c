@@ -44,9 +44,9 @@ static volatile uint8_t nn_completed_buffer_idx = 0U;
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1) {
     	AE_OnFrameStats();
-        ltdc_bg_buffer_disp_idx ^= 1;
-        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
-        LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
+        ltdc_layer_bg_buffer_disp_idx ^= 1;
+        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_disp_idx];
+        LTDC_Layer_Address_Set(&LTDC_Layer1Config);
     } else if (pipe == DCMIPP_PIPE2) {
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
         nn_frame_ready = 1U;
@@ -71,7 +71,7 @@ static void vPalmTask(void)
     nn_frame_ready = 0U;
 
     const uint8_t completed_idx = nn_completed_buffer_idx;
-    const uint8_t camera_buffer_idx = (uint8_t)ltdc_bg_buffer_disp_idx;
+    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
     uint8_t *palm_input = PALM_GetInputBuffer();
 
@@ -79,7 +79,7 @@ static void vPalmTask(void)
         return;
     }
 
-    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+    memcpy(palm_input, (const void *)ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
 
     //NVIC_DisableIRQ(TIM7_IRQn);
     const bool palm_inference_ok = PALM_Run(&palm_output);
@@ -97,21 +97,21 @@ static void vPalmTask(void)
     PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
 
     if (!palm_filter.detected) {
-    	ClearPreviousROI();
-    	ClearPreviousLandmarks();
+    	LTDC_Layer_Draw_ROIClearPrevious();
+    	LTDC_Layer_Draw_LandmarksClearPrevious();
     	return;
     }
 
     if(!PALM_CreateLandmarkROI(&palm_detection, &landmark_roi)){
-    	ClearPreviousROI();
-    	ClearPreviousLandmarks();
+    	LTDC_Layer_Draw_ROIClearPrevious();
+    	LTDC_Layer_Draw_LandmarksClearPrevious();
         return;
     }
 
-    ClearPreviousROI();
-    DrawLandmarkROI(&landmark_roi, LTDC_COLOR_GREEN);
+    LTDC_Layer_Draw_ROIClearPrevious();
+    LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
-    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_bg_buffer[camera_buffer_idx],
+    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
     													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
 														  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
 														  &landmark_roi, landmark_preprocessed_input);
@@ -139,14 +139,14 @@ static void vPalmTask(void)
         return;
     }
 
-    ClearPreviousLandmarks();
+    LTDC_Layer_Draw_LandmarksClearPrevious();
     if (landmark_output.presence >= 0.5f) {
         LANDMARK_MapToFrame(
             &landmark_output,
             &landmark_roi,
             landmark_points
         );
-        DrawLandmarks(landmark_points);
+        LTDC_Layer_Draw_Landmarks(landmark_points);
     }
 }
 
@@ -178,7 +178,7 @@ static void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx) {
 		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
 	} else {
 		SCHEDULER_Task_remove(systemtime_id);
-		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+		LTDC_Layer_Draw_Rect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
 	}
 }
 
@@ -216,10 +216,10 @@ void app_init(){
 
     TIMER_Delay_ms(10);
 
-    LTDC_ConfigLayer1();
-    LTDC_ConfigLayer2();
+    LTDC_Layer_Layer1_Config();
+    LTDC_Layer_Layer2_Config();
 
-    LTDC_LayerFill(&LTDC_Layer1Config, LTDC_COLOR_WHITE);
+    LTDC_Layer_Draw_Fill(&LTDC_Layer1Config, LTDC_LAYER_COLOR_WHITE);
 
     uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
@@ -244,7 +244,7 @@ void app_init(){
     }
 
     /* --- UI --- */
-	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_fg_buffer[1], (uint8_t *)ltdc_fg_buffer[0]);
+	UI_Drawer_Init(&_drawer, (uint8_t *)ltdc_layer_fg_buffer[1], (uint8_t *)ltdc_layer_fg_buffer[0]);
 
 	// Mode: 3-segment selector (Palm / Hand / Sign)
 	int mode_idx;

@@ -54,7 +54,7 @@ void vSystemTimeTask(void) {
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 720, 0, LTDC_COLOR_WHITE, 0x00000000U);
+	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 720, 0, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
 }
 
 void vLEDTask(void) {
@@ -79,7 +79,7 @@ void vBackgroundTask(void) {
     uint8_t g = (uint8_t)(((uint32_t)bg_colors[bg_seg_idx][1] * (1000 - t) + (uint32_t)bg_colors[next_idx][1] * t) / 1000);
     uint8_t b = (uint8_t)(((uint32_t)bg_colors[bg_seg_idx][2] * (1000 - t) + (uint32_t)bg_colors[next_idx][2] * t) / 1000);
 
-    LTDC_SetBackgroundColor(r, g, b);
+    LTDC_BackgroundColor_Set(r, g, b);
 }
 
 void vAETask(void){
@@ -102,10 +102,10 @@ void vTouchTask(void){
         // Paint touch feedback dot on the camera layer
         if (data.pressed)
         {
-            int next_idx = ltdc_bg_buffer_disp_idx ^ 1;
-            LTDC_LayerConfig_TypeDef tmp = LTDC_Layer1Config;
-            tmp.fb = (void *)&ltdc_bg_buffer[next_idx];
-            LTDC_LayerDrawCricle(&tmp, data.x, data.y, 5, LTDC_COLOR_BLUE);
+            int next_idx = ltdc_layer_bg_buffer_disp_idx ^ 1;
+            LTDC_Layer_Config_TypeDef tmp = LTDC_Layer1Config;
+            tmp.fb = (void *)&ltdc_layer_bg_buffer[next_idx];
+            LTDC_Layer_Draw_Cricle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
         }
     }
 }

@@ -15,10 +15,10 @@
 #include "simple_timer.h"
 #include "config.h"
 
-volatile uint8_t ltdc_bg_buffer[LTDC_DISPLAY_BUFFER_NB][LTDC_BG_WIDTH * LTDC_BG_HEIGHT * LTDC_DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile uint8_t ltdc_fg_buffer[2][LTDC_FG_WIDTH * LTDC_FG_HEIGHT * LTDC_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
-volatile uint8_t ltdc_nn_raw_buffer[2][LTDC_NN_RAW_SIZE] __attribute__((section(".psram_bss"), aligned(32)));
-volatile int     ltdc_bg_buffer_disp_idx;
+volatile uint8_t ltdc_layer_bg_buffer[LTDC_LAYER_DISPLAY_BUFFER_NB][LTDC_LAYER_BG_WIDTH * LTDC_LAYER_BG_HEIGHT * LTDC_LAYER_DISPLAY_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint8_t ltdc_layer_fg_buffer[2][LTDC_LAYER_FG_WIDTH * LTDC_LAYER_FG_HEIGHT * LTDC_LAYER_NN_BPP] __attribute__((section(".psram_bss"), aligned(32)));
+volatile uint8_t ltdc_layer_nn_raw_buffer[2][LTDC_LAYER_NN_RAW_SIZE] __attribute__((section(".psram_bss"), aligned(32)));
+volatile int     ltdc_layer_bg_buffer_disp_idx;
 
 /**
  * @brief Configure LTDC GPIO pins
@@ -109,7 +109,7 @@ void LTDC_Init(void){
     LTDC->GCR |= LTDC_GCR_LTDCEN;
 }
 
-void LTDC_SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b){
+void LTDC_BackgroundColor_Set(uint8_t r, uint8_t g, uint8_t b){
     while (!(LTDC->CDSR & LTDC_CDSR_VDES));
     while (LTDC->CDSR & LTDC_CDSR_VDES);
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;
@@ -185,7 +185,7 @@ static uint32_t LTDC_ARGBtoFlexible(uint32_t argb, const LTDC_Layer_FlexiblePixe
     return pixel;
 }
 
-LTDC_Status_TypeDef LTDC_BytesPerPixel(const LTDC_LayerConfig_TypeDef *cfg, int *bpp) {
+LTDC_Status_TypeDef LTDC_Layer_BytesPerPixel(const LTDC_Layer_Config_TypeDef *cfg, int *bpp) {
     switch (cfg->pixel_format) {
         case LTDC_PF_ARGB8888:
         case LTDC_PF_ABGR8888:
@@ -215,7 +215,7 @@ LTDC_Status_TypeDef LTDC_BytesPerPixel(const LTDC_LayerConfig_TypeDef *cfg, int 
     }
 }
 
-LTDC_Status_TypeDef LTDC_ColorToPixel(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color, uint32_t *pixel) {
+LTDC_Status_TypeDef LTDC_Layer_ColorToPixel(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color, uint32_t *pixel) {
     if (cfg->pixel_format == LTDC_PF_Flexible && cfg->flexible_fmt != NULL) {
         *pixel = LTDC_ARGBtoFlexible(color, cfg->flexible_fmt);
         return LTDC_OK;
@@ -237,7 +237,7 @@ LTDC_Status_TypeDef LTDC_ColorToPixel(const LTDC_LayerConfig_TypeDef *cfg, uint3
  *
  * @param [in] cfg Layer configuration
  */
-static void LTDC_ConfigLayer_PixelFormat(const LTDC_LayerConfig_TypeDef *cfg){
+static void LTDC_ConfigLayer_PixelFormat(const LTDC_Layer_Config_TypeDef *cfg){
     if (cfg->pixel_format == LTDC_PF_Flexible) {
         if (cfg->flexible_fmt != NULL) {
             cfg->regs->PFCR  = 0b111;
@@ -252,10 +252,10 @@ static void LTDC_ConfigLayer_PixelFormat(const LTDC_LayerConfig_TypeDef *cfg){
     cfg->regs->FPF1R = 0U;
 }
 
-void LTDC_ConfigLayer(const LTDC_LayerConfig_TypeDef *cfg){
+void LTDC_ConfigLayer(const LTDC_Layer_Config_TypeDef *cfg){
     uint32_t hsync = 4U, hbp = 4U, vsync = 4U, vbp = 4U;
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
 
     uint32_t buf_pitch = cfg->buf_width * (uint32_t)bpp;
     uint32_t disp_pitch = cfg->width * (uint32_t)bpp;
@@ -318,11 +318,11 @@ void LTDC_ConfigLayer(const LTDC_LayerConfig_TypeDef *cfg){
     while (LTDC->SRCR & LTDC_SRCR_IMR);
 }
 
-void LTDC_LayerFill(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
+void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color){
     uint32_t pixel;
-    LTDC_ColorToPixel(cfg, color, &pixel);
+    LTDC_Layer_ColorToPixel(cfg, color, &pixel);
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
     uint32_t n = (uint32_t)cfg->buf_width * cfg->height;
 
     if (bpp == 2) {
@@ -343,13 +343,13 @@ void LTDC_LayerFill(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color){
     }
 }
 
-void LTDC_LayerFill2Sides(const LTDC_LayerConfig_TypeDef *cfg, uint32_t color1, uint32_t color2) {
+void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color1, uint32_t color2) {
     uint32_t p1;
-    LTDC_ColorToPixel(cfg, color1, &p1);
+    LTDC_Layer_ColorToPixel(cfg, color1, &p1);
     uint32_t p2;
-    LTDC_ColorToPixel(cfg, color2, &p2);
+    LTDC_Layer_ColorToPixel(cfg, color2, &p2);
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
     uint32_t half = cfg->width / 2;
 
     if (bpp == 2) {
@@ -408,12 +408,12 @@ static void _plot4_32(volatile uint32_t *fb, int16_t cx, int16_t cy,
     px = cx - x; py = cy - y; if (px >= 0 && px < w && py >= 0 && py < h) fb[py * stride + px] = pixel;
 }
 
-void LTDC_LayerDrawCricle(const LTDC_LayerConfig_TypeDef *cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color)
+void LTDC_Layer_Draw_Cricle(const LTDC_Layer_Config_TypeDef *cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color)
 {
     uint32_t pixel;
-    LTDC_ColorToPixel(cfg, color, &pixel);
+    LTDC_Layer_ColorToPixel(cfg, color, &pixel);
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
 
     int16_t x = radius;
     int16_t y = 0;
@@ -466,9 +466,9 @@ void LTDC_LayerDrawCricle(const LTDC_LayerConfig_TypeDef *cfg, uint16_t pos_x, u
     }
 }
 
-void LTDC_BlitImage(const LTDC_LayerConfig_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
 
     if (bpp == 2) {
         volatile uint16_t *fb = (volatile uint16_t *)cfg->fb;
@@ -496,13 +496,13 @@ void LTDC_BlitImage(const LTDC_LayerConfig_TypeDef *cfg, const void *img, uint16
     }
 }
 
-void LTDC_LayerDrawRect(const LTDC_LayerConfig_TypeDef *cfg,
+void LTDC_Layer_Draw_Rect(const LTDC_Layer_Config_TypeDef *cfg,
     uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color)
 {
     uint32_t pixel;
-    LTDC_ColorToPixel(cfg, color, &pixel);
+    LTDC_Layer_ColorToPixel(cfg, color, &pixel);
     int bpp;
-    LTDC_BytesPerPixel(cfg, &bpp);
+    LTDC_Layer_BytesPerPixel(cfg, &bpp);
 
     if (bpp == 2)
     {
@@ -535,16 +535,16 @@ void LTDC_LayerDrawRect(const LTDC_LayerConfig_TypeDef *cfg,
     }
 }
 
-void LTDC_LayerDrawRectBorder(const LTDC_LayerConfig_TypeDef *cfg,
+void LTDC_Layer_Draw_RectBorder(const LTDC_Layer_Config_TypeDef *cfg,
     uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color)
 {
-    LTDC_LayerDrawRect(cfg, x, y, w, 1, color);
+    LTDC_Layer_Draw_Rect(cfg, x, y, w, 1, color);
     if (h > 1)
-        LTDC_LayerDrawRect(cfg, x, y + h - 1, w, 1, color);
+        LTDC_Layer_Draw_Rect(cfg, x, y + h - 1, w, 1, color);
     if (w > 1)
     {
-        LTDC_LayerDrawRect(cfg, x, y + 1, 1, h - 2, color);
-        LTDC_LayerDrawRect(cfg, x + w - 1, y + 1, 1, h - 2, color);
+        LTDC_Layer_Draw_Rect(cfg, x, y + 1, 1, h - 2, color);
+        LTDC_Layer_Draw_Rect(cfg, x + w - 1, y + 1, 1, h - 2, color);
     }
 }
 
@@ -554,7 +554,7 @@ static uint16_t previous_roi_y;
 static uint16_t previous_roi_w;
 static uint16_t previous_roi_h;
 
-void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color)
+void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color)
 {
     int32_t x0 =
         (int32_t)(roi->corners[0][0] *
@@ -593,7 +593,7 @@ void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color)
     }
 
 
-    LTDC_LayerDrawRectBorder(
+    LTDC_Layer_Draw_RectBorder(
         &LTDC_Layer2Config,
         (uint16_t)x0,
         (uint16_t)y0,
@@ -610,13 +610,13 @@ void DrawLandmarkROI(const HandROI_TypeDef *roi, uint32_t color)
     roi_drawn = true;
 }
 
-void ClearPreviousROI(void)
+void LTDC_Layer_Draw_ROIClearPrevious(void)
 {
     if (!roi_drawn) {
         return;
     }
 
-    LTDC_LayerDrawRectBorder(
+    LTDC_Layer_Draw_RectBorder(
         &LTDC_Layer2Config,
         previous_roi_x,
         previous_roi_y,
@@ -629,7 +629,7 @@ void ClearPreviousROI(void)
 }
 
 void LTDC_BlitRGB888ToARGB4444(
-    const LTDC_LayerConfig_TypeDef *cfg,
+    const LTDC_Layer_Config_TypeDef *cfg,
     const uint8_t *source,
     uint16_t source_width,
     uint16_t source_height,
@@ -696,7 +696,7 @@ static uint16_t previous_landmark_x[LANDMARK_POINT_COUNT];
 static uint16_t previous_landmark_y[LANDMARK_POINT_COUNT];
 static uint8_t previous_landmark_valid[LANDMARK_POINT_COUNT];
 
-void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
+void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
 {
     if (points == NULL) {
         return;
@@ -722,12 +722,12 @@ void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
             continue;
         }
 
-        LTDC_LayerDrawCricle(
+        LTDC_Layer_Draw_Cricle(
             &LTDC_Layer2Config,
             (uint16_t)x,
             (uint16_t)y,
             LANDMARK_DRAW_RADIUS,
-            LTDC_COLOR_RED
+            LTDC_LAYER_COLOR_RED
         );
 
         previous_landmark_x[i] = (uint16_t)x;
@@ -740,7 +740,7 @@ void DrawLandmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
     landmarks_drawn = point_drawn;
 }
 
-void ClearPreviousLandmarks(void)
+void LTDC_Layer_Draw_LandmarksClearPrevious(void)
 {
     if (!landmarks_drawn) {
         return;
@@ -751,7 +751,7 @@ void ClearPreviousLandmarks(void)
             continue;
         }
 
-        LTDC_LayerDrawCricle(
+        LTDC_Layer_Draw_Cricle(
             &LTDC_Layer2Config,
             previous_landmark_x[i],
             previous_landmark_y[i],
@@ -767,15 +767,15 @@ void ClearPreviousLandmarks(void)
 
 
 
-void LTDC_ConfigLayer1(void){
+void LTDC_Layer_Layer1_Config(void){
     LTDC_ConfigLayer(&LTDC_Layer1Config);
 }
 
-void LTDC_ConfigLayer2(void){
+void LTDC_Layer_Layer2_Config(void){
     LTDC_ConfigLayer(&LTDC_Layer2Config);
 }
 
-void LTDC_UpdateLayerAddress(const LTDC_LayerConfig_TypeDef *cfg){
+void LTDC_Layer_Address_Set(const LTDC_Layer_Config_TypeDef *cfg){
     cfg->regs->CFBAR = (uint32_t)cfg->fb;
     LTDC->SRCR = LTDC_SRCR_VBR;
 }
