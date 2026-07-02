@@ -68,7 +68,7 @@ const Debug_log_cfg_TypeDef dbg_cfg = {
 		.af = GPIO_AF_USART,
 		.speed = GPIO_SPEED_VERY_HIGH
     },
-    .baudrate = 9600,
+    .baudrate = 921600,
     .enabled = 1
 };
 

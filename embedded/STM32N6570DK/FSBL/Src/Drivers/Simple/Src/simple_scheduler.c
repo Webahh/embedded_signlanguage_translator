@@ -56,6 +56,22 @@ static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
 static int					_current_task = 0;
 
+static volatile int			_scheduler_running = 0;
+
+typedef struct {
+	uint32_t					total_cycles;
+	uint32_t					total_preempts;
+	uint32_t					total_invocations;
+	uint32_t					min_cycles;
+	uint32_t					max_cycles;
+	uint32_t					last_start_cycle;
+	uint32_t					last_finish_cycle;
+} SchedulerTaskStats_TypeDef;
+
+static SchedulerTaskStats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
+static uint32_t						_last_stats_print_cycle;
+static volatile int					_stats_pending;
+
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE] __attribute__((aligned(8)));
 
 _Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,"SCHEDULER_STACK_SIZE_BYTES mismatch");
@@ -68,6 +84,7 @@ static int SCHEDULER_SelectNextTask(void);
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
 void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason);
 void SCHEDULER_StartTick(void);
+static void SCHEDULER_PrintStats(void);
 
 void UsageFault_Handler(void);
 void HardFault_Handler(void);
@@ -116,6 +133,10 @@ static void SCHEDULER_InitTaskStack(int i){
  */
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
+		if (_stats_pending) {
+			_stats_pending = 0;
+			SCHEDULER_PrintStats();
+		}
 		__WFI();
 	}
 }
@@ -131,6 +152,10 @@ void SCHEDULER_Task_exit(void){
 	__disable_irq();
 	_tasks[_current_task].ready      = 0;
 	_tasks[_current_task].needs_init = 1;
+
+	if (_scheduler_running) {
+		_task_stats[_current_task].last_finish_cycle = DWT->CYCCNT;
+	}
 
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	__enable_irq();
@@ -179,6 +204,31 @@ static int SCHEDULER_SelectNextTask(void){
 
 	if (best < 0) {
 		best = SCHEDULER_IDLE_TASK_INDEX;
+	}
+
+	if (_scheduler_running) {
+		uint32_t now = DWT->CYCCNT;
+		int prev = _current_task;
+		SchedulerTaskStats_TypeDef *ps = &_task_stats[prev];
+
+		ps->total_cycles += now - ps->last_start_cycle;
+
+		if (best != prev) {
+			uint32_t invoc_cycles = now - ps->last_start_cycle;
+			if (invoc_cycles < ps->min_cycles) ps->min_cycles = invoc_cycles;
+			if (invoc_cycles > ps->max_cycles) ps->max_cycles = invoc_cycles;
+
+			if (_tasks[prev].ready && prev != SCHEDULER_IDLE_TASK_INDEX) {
+				ps->total_preempts++;
+			}
+			ps->last_finish_cycle = now;
+
+			SchedulerTaskStats_TypeDef *ns = &_task_stats[best];
+			ns->last_start_cycle = now;
+			ns->total_invocations++;
+		} else {
+			ps->last_start_cycle = now;
+		}
 	}
 
 	return best;
@@ -337,6 +387,156 @@ void SCHEDULER_StartTick(void){
 	NVIC_ClearPendingIRQ(TIM7_IRQn);
 	NVIC_EnableIRQ(TIM7_IRQn);
 	TIMER_Start(TIM7);
+	_scheduler_running = 1;
+}
+
+// -------------------------------------------------------------------------
+// Scheduler statistics
+// -------------------------------------------------------------------------
+
+static uint32_t _last_print_tick = 0;
+
+static void _pad(int n){
+	while (n-- > 0) DEBUG_PRINTF(" ");
+}
+
+static void _printName(const char* s, int w){
+	if (!s) s = "?";
+	DEBUG_PRINTF("%s", s);
+	int l = 0;
+	while (s[l]) l++;
+	_pad(w - l);
+}
+
+static void _printNum(uint32_t v, int w){
+	char b[12];
+	int i = 0;
+	if (v == 0) {
+		b[i++] = '0';
+	} else {
+		char r[12];
+		int ri = 0;
+		while (v) {
+			r[ri++] = '0' + (v % 10);
+			v /= 10;
+		}
+		while (ri--) b[i++] = r[ri];
+	}
+	b[i] = '\0';
+	_pad(w - i);
+	DEBUG_PRINTF("%s", b);
+}
+
+static void _printPct(uint32_t pct_x100, int w){
+	uint32_t ip = pct_x100 / 100;
+	uint32_t fp = pct_x100 % 100;
+	char b[8];
+	int i = 0;
+	if (ip == 0) {
+		b[i++] = '0';
+	} else {
+		char r[4];
+		int ri = 0;
+		while (ip) {
+			r[ri++] = '0' + (ip % 10);
+			ip /= 10;
+		}
+		while (ri--) b[i++] = r[ri];
+	}
+	b[i++] = '.';
+	b[i++] = '0' + (fp / 10);
+	b[i++] = '0' + (fp % 10);
+	b[i++] = '%';
+	b[i] = '\0';
+	_pad(w - i);
+	DEBUG_PRINTF("%s", b);
+}
+
+static void SCHEDULER_PrintStats(void){
+	uint32_t now;
+	uint32_t elapsed;
+	uint32_t total = 0;
+	uint32_t idle;
+	uint32_t idle_pct;
+
+	struct {
+		uint32_t cycles;
+		uint32_t min_cycles;
+		uint32_t max_cycles;
+		uint32_t preempts;
+		uint32_t invocs;
+		const char* name;
+	} snap[SCHEDULER_MAX_TASKS];
+	int snap_n = 0;
+
+	__disable_irq();
+	now = DWT->CYCCNT;
+	elapsed = now - _last_stats_print_cycle;
+	_last_stats_print_cycle = now;
+
+	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
+		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
+		if (_tasks[i].active && _tasks[i].function) {
+			SchedulerTaskStats_TypeDef *s = &_task_stats[i];
+			snap[snap_n].cycles = s->total_cycles;
+			snap[snap_n].min_cycles = (s->min_cycles == 0xFFFFFFFF) ? 0 : s->min_cycles;
+			snap[snap_n].max_cycles = s->max_cycles;
+			snap[snap_n].preempts = s->total_preempts;
+			snap[snap_n].invocs = s->total_invocations;
+			snap[snap_n].name = _tasks[i].pcName ? _tasks[i].pcName : "?";
+			total += s->total_cycles;
+			s->total_cycles = 0;
+			s->total_preempts = 0;
+			s->total_invocations = 0;
+			s->min_cycles = 0xFFFFFFFF;
+			s->max_cycles = 0;
+			s->last_start_cycle = now;
+			s->last_finish_cycle = now;
+			snap_n++;
+		}
+	}
+
+	idle = (elapsed > total) ? (elapsed - total) : 0;
+	idle_pct = (idle * 10000ULL) / elapsed;
+	__enable_irq();
+
+	if (elapsed == 0) {
+		return;
+	}
+
+	DEBUG_PRINTF("\r\n");
+	_printName("Name", 14);
+	_printName("min", 10);
+	_printName("max", 10);
+	_printName("avg", 10);
+	_printName("%CPU", 7);
+	_printName("Prempt", 9);
+	_printName("Invoc", 8);
+	DEBUG_PRINTF("\r\n");
+	DEBUG_PRINTF("---------------------------------------------------------\r\n");
+
+	for (int i = 0; i < snap_n; i++) {
+		uint32_t pct = (snap[i].cycles * 10000ULL) / elapsed;
+		uint32_t avg = snap[i].invocs ? (snap[i].cycles / snap[i].invocs) : 0;
+		_printName(snap[i].name, 14);
+		_printNum(snap[i].min_cycles, 10);
+		_printNum(snap[i].max_cycles, 10);
+		_printNum(avg, 10);
+		_printPct(pct, 7);
+		_printNum(snap[i].preempts, 9);
+		_printNum(snap[i].invocs, 8);
+		DEBUG_PRINTF("\r\n");
+	}
+
+	_printName("Idle", 14);
+	_printNum(0, 10);
+	_printNum(0, 10);
+	_printNum(0, 10);
+	_printPct(idle_pct, 7);
+	_printNum(0, 9);
+	_printNum(0, 8);
+	DEBUG_PRINTF("\r\n");
+	DEBUG_PRINTF("=========================================================\r\n");
 }
 
 /**
@@ -364,6 +564,12 @@ void TIM7_IRQHandler(void){
 		}
 
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+
+		if (_scheduler_running
+			&& (_sys_tick_ms - _last_print_tick >= 1000)) {
+			_last_print_tick = _sys_tick_ms;
+			_stats_pending = 1;
+		}
 	}
 }
 
@@ -425,6 +631,17 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 void SCHEDULER_System_init(void){
 	TIMER_Config(TIM7, 200, 999, 0);
 	TIMER_EnableIT(TIM7);
+
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	uint32_t cnt = DWT->CYCCNT;
+	_last_stats_print_cycle = cnt;
+	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
+		_task_stats[i].last_start_cycle = cnt;
+		_task_stats[i].last_finish_cycle = cnt;
+		_task_stats[i].min_cycles = 0xFFFFFFFF;
+		_task_stats[i].max_cycles = 0;
+	}
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
@@ -448,6 +665,7 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
 
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);
