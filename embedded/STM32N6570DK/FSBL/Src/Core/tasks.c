@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "tasks.h"
 #include "app.h"
@@ -19,10 +20,29 @@
 #include "simple_timer.h"
 #include "simple_text.h"
 #include "simple_touch.h"
+#include "hand_landmark.h"
+#include "hand_landmark_preprocessing.h"
+#include "hand_landmark_postprocessing.h"
 #include "ui.h"
 
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
+
+static volatile int ltdc_fg_disp_idx = 1;
+static volatile uint8_t nn_frame_ready = 0U;
+static volatile uint8_t nn_completed_buffer_idx = 0U;
+
+void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
+    if (pipe == DCMIPP_PIPE1) {
+    	AE_OnFrameStats();
+        ltdc_bg_buffer_disp_idx ^= 1;
+        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
+        LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
+    } else if (pipe == DCMIPP_PIPE2) {
+        nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
+        nn_frame_ready = 1U;
+    }
+}
 
 static const uint8_t bg_colors[BG_NUM_COLORS][3] = {
     {255, 0, 0},    /* Red   */
@@ -110,4 +130,101 @@ void vTouchTask(void){
             LTDC_Layer_Draw_Cricle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
         }
     }
+}
+
+
+static PalmNetworkOutput_TypeDef palm_output;
+static PalmDetection_TypeDef palm_detection;
+static PalmDetectionFilter_TypeDef palm_filter;
+static HandROI_TypeDef landmark_roi;
+
+static LandmarkNetworkOutput_TypeDef landmark_output;
+static uint8_t landmark_preprocessed_input[LANDMARK_INPUT_SIZE] __attribute__((aligned(32)));
+static LandmarkPoint_TypeDef landmark_points[LANDMARK_POINT_COUNT];
+void vAIPipelineTask(void){
+	if (nn_frame_ready == 0U) {
+	        return;
+	    }
+
+	    nn_frame_ready = 0U;
+
+	    const uint8_t completed_idx = nn_completed_buffer_idx;
+	    const uint8_t camera_buffer_idx = (uint8_t)ltdc_bg_buffer_disp_idx;
+
+	    uint8_t *palm_input = PALM_GetInputBuffer();
+
+	    if (palm_input == NULL) {
+	        return;
+	    }
+
+	    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+
+	    //NVIC_DisableIRQ(TIM7_IRQn);
+	    const bool palm_inference_ok = PALM_Run(&palm_output);
+	    //NVIC_EnableIRQ(TIM7_IRQn);
+
+	    if (!palm_inference_ok) {
+	        return;
+	    }
+
+	    if (!PALM_FindBestDetection(&palm_output, &palm_detection)) {
+	        return;
+	    }
+
+	    const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
+	    PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
+
+	    if (!palm_filter.detected) {
+	    	ClearPreviousROI();
+	    	ClearPreviousLandmarks();
+	    	return;
+	    }
+
+	    if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
+	    	ClearPreviousROI();
+	    	ClearPreviousLandmarks();
+	        return;
+	    }
+
+	    ClearPreviousROI();
+	    DrawLandmarkROI(&landmark_roi, LTDC_COLOR_GREEN);
+
+	    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_bg_buffer[camera_buffer_idx],
+	    													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
+															  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
+															  &landmark_roi, landmark_preprocessed_input);
+
+	    if (!preprocessing_ok) {
+	        DEBUG_PRINTF("Landmark preprocessing failed\r\n");
+	        return;
+	    }
+
+	    /*LTDC_BlitRGB888ToARGB4444(
+	        &LTDC_Layer2Config,
+	        landmark_preprocessed_input,
+	        LANDMARK_INPUT_WIDTH,
+	        LANDMARK_INPUT_HEIGHT,
+	        0U,
+	        200U
+	    );
+	    */
+
+	    //NVIC_DisableIRQ(TIM7_IRQn);
+	    const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
+	    //NVIC_EnableIRQ(TIM7_IRQn);
+
+	    if (!landmark_inference_ok) {
+	        DEBUG_PRINTF("Landmark inference failed\r\n");
+	        return;
+	    }
+
+	    ClearPreviousLandmarks();
+	    if (landmark_output.presence >= 0.5f) {
+	        LANDMARK_MapToFrame(
+	            &landmark_output,
+	            &landmark_roi,
+	            landmark_points
+	        );
+	        DrawLandmarks(landmark_points);
+	    }
 }
