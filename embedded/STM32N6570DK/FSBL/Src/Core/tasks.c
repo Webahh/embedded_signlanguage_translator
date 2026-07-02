@@ -12,6 +12,8 @@
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc.h"
+#include "simple_ltdc_color.h"
+#include "simple_ltdc_layer_draw.h"
 #include "simple_ae.h"
 #include "config.h"
 #include "simple_timer.h"

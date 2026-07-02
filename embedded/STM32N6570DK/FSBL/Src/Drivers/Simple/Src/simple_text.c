@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "simple_ltdc_layer.h"
 #include "simple_text.h"
 #include "font_8x16.h"
 

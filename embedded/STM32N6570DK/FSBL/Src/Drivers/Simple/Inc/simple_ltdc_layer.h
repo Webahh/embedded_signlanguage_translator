@@ -2,12 +2,22 @@
  * @file simple_ltdc_layer.h
  * @author Groß
  * @date 02.07.2026
- * @brief Contains logic for LTDC layers
+ * @brief Contains logic for LTDC
  *
  * Usage
  * -----
  * 1. LTDC_ConfigLayer
  */
+
+#ifndef SIMPLE_LTDC_LAYER_H
+#define SIMPLE_LTDC_LAYER_H
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
+
+#include "stm32n657xx.h"
+
 
 // ==========================================================
 // Defines
@@ -36,6 +46,7 @@
 // ==========================================================
 // Typedefs
 // ==========================================================
+
 
 typedef enum {
     LTDC_PF_ARGB8888 = 0b000,
@@ -80,14 +91,66 @@ typedef struct LTDC_LayerConfig {
     uint8_t                                          blending_order;
 } LTDC_Layer_Config_TypeDef;
 
+typedef enum {
+    LTDC_Layer_OK    = 0,
+    LTDC_Layer_ERROR = 1
+} LTDC_Layer_Status_TypeDef;
+
 // ==========================================================
 // API
 // ==========================================================
+
+// -- Mutable runtime state --
+extern volatile uint8_t     ltdc_layer_bg_buffer[LTDC_LAYER_DISPLAY_BUFFER_NB][LTDC_LAYER_BG_WIDTH * LTDC_LAYER_BG_HEIGHT * LTDC_LAYER_DISPLAY_BPP];
+extern volatile uint8_t     ltdc_layer_fg_buffer[2][LTDC_LAYER_FG_WIDTH * LTDC_LAYER_FG_HEIGHT * LTDC_LAYER_NN_BPP];
+extern volatile uint8_t     ltdc_layer_nn_raw_buffer[2][LTDC_LAYER_NN_RAW_SIZE];
+extern volatile int         ltdc_layer_bg_buffer_disp_idx;
 
 /**
  * @brief Configure an LTDC layer from a configuration struct
  *
  * @param [in] cfg | Layer configuration
  */
-void LTDC_Layer_Config(const LTDC_Layer_Config_TypeDef *cfg);
+void LTDC_ConfigLayer(const LTDC_Layer_Config_TypeDef *cfg);
 
+/**
+ * @brief Configure layer 1 using the global LTDC_Layer1Config
+ */
+void LTDC_Layer_Layer1_Config(void);
+
+/**
+ * @brief Configure layer 2 using the global LTDC_Layer2Config
+ */
+void LTDC_Layer_Layer2_Config(void);
+
+/**
+ * @brief Update the framebuffer address for a layer
+ *
+ * @param [in] cfg Layer configuration
+ */
+void LTDC_Layer_Address_Set(const LTDC_Layer_Config_TypeDef *cfg);
+
+/**
+ * @brief Get bytes per pixel for a layer configuration
+ *
+ * @param [in]  cfg Layer configuration
+ * @param [out] bpp Bytes per pixel
+ *
+ * @retval LTDC_OK    Success
+ * @retval LTDC_ERROR Unknown pixel format or missing flexible format descriptor
+ */
+LTDC_Layer_Status_TypeDef LTDC_Layer_BytesPerPixel(const LTDC_Layer_Config_TypeDef *cfg, int *bpp);
+
+/**
+ * @brief Convert an ARGB colour to the native pixel value for a layer
+ *
+ * @param [in]  cfg   Layer configuration
+ * @param [in]  color ARGB colour value
+ * @param [out] pixel Native pixel value
+ *
+ * @retval LTDC_OK    Success
+ * @retval LTDC_ERROR Conversion failed
+ */
+LTDC_Layer_Status_TypeDef LTDC_Layer_ColorToPixel(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color, uint32_t *pixel);
+
+#endif

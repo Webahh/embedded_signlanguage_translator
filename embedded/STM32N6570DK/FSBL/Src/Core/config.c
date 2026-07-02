@@ -5,6 +5,7 @@
  *      Author: Weber
  */
 
+#include "simple_ltdc_layer.h"
 #include "config.h"
 
 //=========================================

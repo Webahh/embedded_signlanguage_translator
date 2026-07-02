@@ -7,6 +7,7 @@
 
 #include "ui.h"
 #include "simple_text.h"
+#include "simple_ltdc_layer_draw.h"
 #include "config.h"
 
 // -------------------------------------------------------------------------

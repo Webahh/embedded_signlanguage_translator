@@ -14,7 +14,10 @@
 
 #include <stdlib.h>
 #include "simple_gpio.h"
+
 #include "simple_ltdc.h"
+#include "simple_ltdc_layer.h"
+
 #include "simple_camera.h"
 #include "simple_rcc.h"
 #include "simple_xspi.h"
