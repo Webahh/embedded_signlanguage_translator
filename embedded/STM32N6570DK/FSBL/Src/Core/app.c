@@ -102,7 +102,7 @@ static void vPalmTask(void)
     	return;
     }
 
-    if(!PALM_CreateLandmarkROI(&palm_detection, &landmark_roi)){
+    if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
     	ClearPreviousROI();
     	ClearPreviousLandmarks();
         return;
@@ -120,8 +120,8 @@ static void vPalmTask(void)
         DEBUG_PRINTF("Landmark preprocessing failed\r\n");
         return;
     }
-/*
-    LTDC_BlitRGB888ToARGB4444(
+
+    /*LTDC_BlitRGB888ToARGB4444(
         &LTDC_Layer2Config,
         landmark_preprocessed_input,
         LANDMARK_INPUT_WIDTH,
@@ -129,7 +129,8 @@ static void vPalmTask(void)
         0U,
         200U
     );
-*/
+    */
+
     //NVIC_DisableIRQ(TIM7_IRQn);
     const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
     //NVIC_EnableIRQ(TIM7_IRQn);
