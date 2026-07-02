@@ -46,6 +46,7 @@ typedef struct {
 
 bool PALM_FindBestDetection(const PalmNetworkOutput_TypeDef *output, PalmDetection_TypeDef *detection);
 void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t probability_permille);
-bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, HandROI_TypeDef *roi);
+bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t frame_width,
+							uint32_t frame_height, HandROI_TypeDef *roi);
 
 #endif /* PALM_POSTPROCESSING_H */

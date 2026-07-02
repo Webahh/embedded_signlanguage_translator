@@ -1,0 +1,56 @@
+/*
+ * ui_callback.c
+ *
+ *  Created on: 02.07.2026
+ *      Author: Weber
+ */
+
+#include "ui.h"
+#include "config.h"
+#include "simple_debug_log.h"
+#include "tasks.h"
+#include "simple_scheduler.h"
+
+void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)ctx;
+	DEBUG_PRINTF("[UI] Mode: %u\r\n", val);
+}
+
+void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] %s: visible=%u slider=%u\r\n",
+		drawer->items[idx].label, drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
+{
+	static uint8_t systemtime_id;
+	(void)idx;
+	(void)ctx;
+	if (val) {
+		SCHEDULER_Task_add(vSystemTimeTask, "Display Systemtime", 3, 1, &systemtime_id);
+	} else {
+		SCHEDULER_Task_remove(systemtime_id);
+		LTDC_LayerDrawRect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+	}
+}
+
+void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)ctx;
+	if(val){
+
+	} else {
+
+	}
+
+	DEBUG_PRINTF("[UI] SystemInfo: %u\r\n", val);
+}
+
+

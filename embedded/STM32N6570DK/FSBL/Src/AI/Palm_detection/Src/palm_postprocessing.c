@@ -85,40 +85,44 @@ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, uint32_t pr
     }
 }
 
-bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, HandROI_TypeDef *roi)
+bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t frame_width,
+							uint32_t frame_height, HandROI_TypeDef *roi)
 {
-    if ((detection == NULL) || (roi == NULL)) {
+    if ((detection    == NULL) ||
+        (roi 	      == NULL) ||
+        (frame_width  == 0)    ||
+        (frame_height == 0)) {
         return false;
     }
 
     const float shift_y = -0.5f;
-    const float scale = 2.8f;
+    const float scale = 2.6f;
 
-    const float roi_size =
-        fmaxf(detection->width, detection->height) * scale;
+    const float detection_width_px = detection->width * (float)frame_width;
+    const float detection_height_px = detection->height * (float)frame_height;
+    const float roi_size_px = fmaxf(detection_width_px, detection_height_px) * scale;
 
     roi->center_x = detection->center_x;
-    roi->center_y =
-        detection->center_y +
-        detection->height * shift_y;
+    roi->center_y = detection->center_y + ((detection_height_px * shift_y) / (float)frame_height);
 
-    roi->width = roi_size;
-    roi->height = roi_size;
+    roi->width = roi_size_px / (float)frame_width;
+    roi->height = roi_size_px / (float)frame_height;
     roi->rotation = 0.0f;
 
-    const float half_size = roi_size * 0.5f;
+    const float half_width = roi->width * 0.5f;
+    const float half_height = roi->height * 0.5f;
 
-    roi->corners[0][0] = roi->center_x - half_size;
-    roi->corners[0][1] = roi->center_y - half_size;
+    roi->corners[0][0] = roi->center_x - half_width;
+    roi->corners[0][1] = roi->center_y - half_height;
 
-    roi->corners[1][0] = roi->center_x + half_size;
-    roi->corners[1][1] = roi->center_y - half_size;
+    roi->corners[1][0] = roi->center_x + half_width;
+    roi->corners[1][1] = roi->center_y - half_height;
 
-    roi->corners[2][0] = roi->center_x + half_size;
-    roi->corners[2][1] = roi->center_y + half_size;
+    roi->corners[2][0] = roi->center_x + half_width;
+    roi->corners[2][1] = roi->center_y + half_height;
 
-    roi->corners[3][0] = roi->center_x - half_size;
-    roi->corners[3][1] = roi->center_y + half_size;
+    roi->corners[3][0] = roi->center_x - half_width;
+    roi->corners[3][1] = roi->center_y + half_height;
 
     return true;
 }
