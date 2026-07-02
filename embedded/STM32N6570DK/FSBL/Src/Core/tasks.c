@@ -12,9 +12,12 @@
 #include "app.h"
 #include "simple_gpio.h"
 #include "simple_scheduler.h"
+
 #include "simple_ltdc.h"
+#include "simple_ltdc_layer.h"
 #include "simple_ltdc_color.h"
 #include "simple_ltdc_layer_draw.h"
+
 #include "simple_ae.h"
 #include "config.h"
 #include "simple_timer.h"
@@ -35,9 +38,9 @@ static volatile uint8_t nn_completed_buffer_idx = 0U;
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
     if (pipe == DCMIPP_PIPE1) {
     	AE_OnFrameStats();
-        ltdc_bg_buffer_disp_idx ^= 1;
-        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_bg_buffer[ltdc_bg_buffer_disp_idx];
-        LTDC_UpdateLayerAddress(&LTDC_Layer1Config);
+        ltdc_layer_bg_buffer_disp_idx ^= 1;
+        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_disp_idx];
+        LTDC_Layer_Address_Set(&LTDC_Layer1Config);
     } else if (pipe == DCMIPP_PIPE2) {
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
         nn_frame_ready = 1U;
@@ -149,7 +152,7 @@ void vAIPipelineTask(void){
 	    nn_frame_ready = 0U;
 
 	    const uint8_t completed_idx = nn_completed_buffer_idx;
-	    const uint8_t camera_buffer_idx = (uint8_t)ltdc_bg_buffer_disp_idx;
+	    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
 	    uint8_t *palm_input = PALM_GetInputBuffer();
 
@@ -157,7 +160,7 @@ void vAIPipelineTask(void){
 	        return;
 	    }
 
-	    memcpy(palm_input, (const void *)ltdc_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+	    memcpy(palm_input, (const void *)ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
 
 	    //NVIC_DisableIRQ(TIM7_IRQn);
 	    const bool palm_inference_ok = PALM_Run(&palm_output);
@@ -175,21 +178,21 @@ void vAIPipelineTask(void){
 	    PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
 
 	    if (!palm_filter.detected) {
-	    	ClearPreviousROI();
-	    	ClearPreviousLandmarks();
+	    	LTDC_Layer_Draw_ROIClearPrevious();
+	    	LTDC_Layer_Draw_LandmarksClearPrevious();
 	    	return;
 	    }
 
 	    if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
-	    	ClearPreviousROI();
-	    	ClearPreviousLandmarks();
-	        return;
+	    	LTDC_Layer_Draw_ROIClearPrevious();
+	    	LTDC_Layer_Draw_LandmarksClearPrevious();
+	    	return;
 	    }
 
-	    ClearPreviousROI();
-	    DrawLandmarkROI(&landmark_roi, LTDC_COLOR_GREEN);
+    	LTDC_Layer_Draw_ROIClearPrevious();
+    	LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
-	    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_bg_buffer[camera_buffer_idx],
+	    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
 	    													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
 															  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
 															  &landmark_roi, landmark_preprocessed_input);
@@ -218,13 +221,13 @@ void vAIPipelineTask(void){
 	        return;
 	    }
 
-	    ClearPreviousLandmarks();
+	    LTDC_Layer_Draw_LandmarksClearPrevious();
 	    if (landmark_output.presence >= 0.5f) {
 	        LANDMARK_MapToFrame(
 	            &landmark_output,
 	            &landmark_roi,
 	            landmark_points
 	        );
-	        DrawLandmarks(landmark_points);
+	        LTDC_Layer_Draw_Landmarks(landmark_points);
 	    }
 }
