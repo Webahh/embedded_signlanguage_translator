@@ -395,8 +395,7 @@ void SCHEDULER_StartTick(void){
 // -------------------------------------------------------------------------
 
 static uint32_t _last_print_tick = 0;
-
-
+static uint32_t _last_stats_tick = 0;
 
 static void SCHEDULER_PrintStats(void){
 	uint32_t total = 0;
@@ -415,6 +414,10 @@ static void SCHEDULER_PrintStats(void){
 	uint32_t now = DWT->CYCCNT;
 	uint32_t elapsed = now - _last_stats_print_cycle;
 	_last_stats_print_cycle = now;
+
+	uint32_t now_tick = _sys_tick_ms;
+	uint32_t elapsed_ms = now_tick - _last_stats_tick;
+	_last_stats_tick = now_tick;
 
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
 		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
@@ -447,8 +450,8 @@ static void SCHEDULER_PrintStats(void){
 
 	DEBUG_PRINTF("\r\n");
 	DEBUG_PRINTF("%-14.14s %-10s %-10s %-10s %-10s %-7s %-9s %-8s\r\n",
-		"Name", "cycle", "min", "max", "avg", "%CPU", "Prempt", "Invoc");
-	DEBUG_PRINTF("-------------------------------------------------------------------\r\n");
+		"Name", "cycle", "min", "max", "avg", "%ACT", "Prempt", "Invoc");
+	DEBUG_PRINTF("---------------------------------------------------------------------------------------\r\n");
 
 	for (int i = 0; i < snap_n; i++) {
 		uint32_t avg = snap[i].invocs ? (snap[i].cycles / snap[i].invocs) : 0;
@@ -466,7 +469,12 @@ static void SCHEDULER_PrintStats(void){
 	DEBUG_PRINTF("%-14.14s %10s %10s %10s %10s %6.2f%% %9s %8s\r\n",
 		"Idle", "0", "0", "0", "0",
 		(float)idle * 100.0f / (float)elapsed, "0", "0");
-	DEBUG_PRINTF("===================================================================\r\n");
+
+	uint32_t wall_cycles = elapsed_ms * 800000UL;
+	float cpu_util = (float)elapsed * 100.0f / (float)wall_cycles;
+	DEBUG_PRINTF("\r\nCPU Util: %6.2f%% (wall %lu ms, active %lu cycles, 800 MHz)\r\n",
+		cpu_util, elapsed_ms, elapsed);
+	DEBUG_PRINTF("=======================================================================================\r\n");
 }
 
 /**
@@ -566,6 +574,7 @@ void SCHEDULER_System_init(void){
 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	uint32_t cnt = DWT->CYCCNT;
 	_last_stats_print_cycle = cnt;
+	_last_stats_tick = 0;
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
 		_task_stats[i].last_start_cycle = cnt;
 		_task_stats[i].last_finish_cycle = cnt;
