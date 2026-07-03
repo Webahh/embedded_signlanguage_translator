@@ -365,7 +365,7 @@ void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT
             _LANDMARK_DRAW_RADIUS,
             LTDC_LAYER_COLOR_RED
         );
-
+
         _previous_landmark_x[i] = (uint16_t)x;
         _previous_landmark_y[i] = (uint16_t)y;
         _previous_landmark_valid[i] = 1U;
@@ -373,7 +373,7 @@ void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT
         point_drawn = true;
     }
 
-    _landmarks_drawn = point_drawn;
+    _landmarks_drawn = point_drawn;;
 }
 
 void LTDC_Layer_Draw_LandmarksClearPrevious(void)

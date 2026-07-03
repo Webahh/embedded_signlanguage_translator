@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "tasks.h"
 #include "app.h"
@@ -143,9 +144,11 @@ typedef enum {
 
 #define LANDMARK_PRESENCE_THRESHOLD  0.5f
 #define LANDMARK_LOST_FRAME_COUNT    3U
+#define PALM_SEARCH_INTERVAL_MS      250U
 
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
 static uint8_t landmark_lost_count = 0U;
+static uint32_t last_palm_search_tick = 0U;
 
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 {
@@ -195,13 +198,24 @@ static bool _runLandmark(uint8_t camera_buffer_idx)
 
 void vAIPipelineTask(void)
 {
-    if (nn_frame_ready == 0U) {
-        return;
-    }
+	if (nn_frame_ready == 0U) {
+		return;
+	}
 
-    nn_frame_ready = 0U;
-    const uint8_t completed_idx = nn_completed_buffer_idx;
-    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
+	if (hand_state == HAND_STATE_PALM_SEARCH) {
+	   uint32_t now;
+	   SCHEDULER_Tick_get(&now);
+
+	   if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) {
+		   return;
+	   }
+
+	   last_palm_search_tick = now;
+	}
+	nn_frame_ready = 0U;
+
+	const uint8_t completed_idx = nn_completed_buffer_idx;
+	const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
     switch (hand_state) {
     case HAND_STATE_PALM_SEARCH:
@@ -303,7 +317,7 @@ void vAIPipelineTask(void)
             }
             fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
 
-            TEXT_String_draw(&LTDC_Layer2Config, fingeralphabet_result.label, 200, 200, TEXT_COLOR_RED);
+            DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
             return;
         }
 

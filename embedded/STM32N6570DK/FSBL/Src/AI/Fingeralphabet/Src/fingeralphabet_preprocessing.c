@@ -100,7 +100,7 @@ bool FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT
      * 21 wrist-relative Landmarks.
      */
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        const int16_t point_x = FINGERALPHABET_NormalizedToInt16(FINGERALPHABET_MirrorNormalizedX(points[0].x));
+        const int16_t point_x = FINGERALPHABET_NormalizedToInt16(FINGERALPHABET_MirrorNormalizedX(points[i].x));
         const int16_t point_y = FINGERALPHABET_NormalizedToInt16(points[i].y);
 
         features[hand_offset + i * 2U + 0U] = (int16_t)(point_x - wrist_x);
