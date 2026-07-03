@@ -29,6 +29,7 @@
 #include "hand_landmark_postprocessing.h"
 #include "fingeralphabet_preprocessing.h"
 #include "simple_text.h"
+#include "simple_dma2d.h"
 #include "ui.h"
 
 #define LED2_PIN 10
@@ -137,6 +138,16 @@ static uint8_t fingeralphabet_input[FINGERALPHABET_INPUT_SIZE];
 static uint8_t fingeralphabet_output[FINGERALPHABET_OUTPUT_SIZE];
 static FingeralphabetResult_TypeDef fingeralphabet_result;
 
+static DMA2D_Handle_TypeDef _dma2d;
+static int _dma2d_initialized = 0;
+
+static void DMA2D_EnsureInit(void){
+    if (!_dma2d_initialized) {
+        DMA2D_Init(&_dma2d);
+        _dma2d_initialized = 1;
+    }
+}
+
 typedef enum {
     HAND_STATE_PALM_SEARCH = 0,
     HAND_STATE_LANDMARK_TRACKING
@@ -164,6 +175,7 @@ static void _resetTracking(void)
     hand_state = HAND_STATE_PALM_SEARCH;
     landmark_lost_count = 0U;
 
+
     LTDC_Layer_Draw_ROIClearPrevious();
     LTDC_Layer_Draw_LandmarksClearPrevious();
 }
@@ -180,7 +192,24 @@ static bool _runLandmark(uint8_t camera_buffer_idx)
         return false;
     }
 
-    if (!LANDMARK_Run(landmark_preprocessed_input, &landmark_output)) {
+    DMA2D_EnsureInit();
+    uint8_t *landmark_npu_buf = LANDMARK_GetInputBuffer();
+    if (landmark_npu_buf) {
+        _dma2d.cfg.src.address        = (uint32_t)landmark_preprocessed_input;
+        _dma2d.cfg.src.line_offset    = 0;
+        _dma2d.cfg.src.format         = DMA2D_FORMAT_RGB888;
+        _dma2d.cfg.dst.address        = (uint32_t)landmark_npu_buf;
+        _dma2d.cfg.dst.line_offset    = 0;
+        _dma2d.cfg.dst.format         = DMA2D_FORMAT_RGB888;
+        _dma2d.cfg.width_pixels       = LANDMARK_INPUT_WIDTH;
+        _dma2d.cfg.height_lines       = LANDMARK_INPUT_HEIGHT;
+        _dma2d.cfg.mode               = DMA2D_MODE_MEM_TO_MEM;
+        if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) {
+            return false;
+        }
+    }
+
+    if (!LANDMARK_Run(NULL, &landmark_output)) {
         return false;
     }
 
@@ -226,7 +255,19 @@ void vAIPipelineTask(void)
     		return;
     	}
 
-    	memcpy(palm_input, (const void *) ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+    	DMA2D_EnsureInit();
+        _dma2d.cfg.src.address        = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
+        _dma2d.cfg.src.line_offset    = 0;
+        _dma2d.cfg.src.format         = DMA2D_FORMAT_RGB888;
+        _dma2d.cfg.dst.address        = (uint32_t)palm_input;
+        _dma2d.cfg.dst.line_offset    = 0;
+        _dma2d.cfg.dst.format         = DMA2D_FORMAT_RGB888;
+        _dma2d.cfg.width_pixels       = PALM_INPUT_WIDTH;
+        _dma2d.cfg.height_lines       = PALM_INPUT_HEIGHT;
+        _dma2d.cfg.mode               = DMA2D_MODE_MEM_TO_MEM;
+        if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) {
+            return;
+        }
 
     	if (!PALM_Run(&palm_output)) {
     		return;
