@@ -55,11 +55,14 @@ AI_Status_TypeDef LANDMARK_Init(void)
 }
 
 
+uint8_t *LANDMARK_GetInputBuffer(void){
+    return landmark_input_buffer;
+}
+
 bool LANDMARK_Run(const uint8_t input[LANDMARK_INPUT_SIZE], LandmarkNetworkOutput_TypeDef *output)
 {
 	if(!hand_landmark_initialized ||
 	  (output == NULL)		      ||
-	  (input == NULL)             ||
 	  (landmark_input_buffer == NULL)){
 		return false;
 	}
@@ -68,7 +71,11 @@ bool LANDMARK_Run(const uint8_t input[LANDMARK_INPUT_SIZE], LandmarkNetworkOutpu
         LL_ATON_RT_Reset_Network(&NN_Instance_hand_landmark_model_v3);
 	}
 
-	memcpy(landmark_input_buffer, input, LANDMARK_INPUT_SIZE);
+	if (input != NULL) {
+		memcpy(landmark_input_buffer, input, LANDMARK_INPUT_SIZE);
+	}
+
+	LL_ATON_Cache_MCU_Clean_Range((uintptr_t)landmark_input_buffer, LANDMARK_INPUT_SIZE);
 
     if (!AI_RuntimeRunNetwork(&NN_Instance_hand_landmark_model_v3)) {
         return false;

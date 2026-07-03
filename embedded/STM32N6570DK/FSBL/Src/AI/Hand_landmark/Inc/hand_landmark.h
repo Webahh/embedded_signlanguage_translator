@@ -30,6 +30,7 @@ typedef struct {
 } LandmarkNetworkOutput_TypeDef;
 
 AI_Status_TypeDef LANDMARK_Init(void);
+uint8_t *LANDMARK_GetInputBuffer(void);
 bool LANDMARK_Run(const uint8_t input[LANDMARK_INPUT_SIZE], LandmarkNetworkOutput_TypeDef *output);
 
 

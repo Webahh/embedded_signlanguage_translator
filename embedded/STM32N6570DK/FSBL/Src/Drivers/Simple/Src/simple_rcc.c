@@ -838,6 +838,22 @@ void RCC_reset_XSPIM(void){
     (void)RCC->AHB5RSTCR;
 }
 
+void RCC_enable_DMA2D(void){
+    RCC->AHB5ENSR |= RCC_AHB5ENSR_DMA2DENS;
+    (void)RCC->AHB5ENSR;
+
+    RCC->AHB5LPENR |= RCC_AHB5LPENR_DMA2DLPEN;
+    (void)RCC->AHB5LPENR;
+}
+
+void RCC_reset_DMA2D(void){
+    RCC->AHB5RSTSR |= RCC_AHB5RSTSR_DMA2DRSTS;
+    (void)RCC->AHB5RSTSR;
+
+    RCC->AHB5RSTCR |= RCC_AHB5RSTCR_DMA2DRSTC;
+    (void)RCC->AHB5RSTCR;
+}
+
 void RCC_enable_RIFSC(void){
     RCC->AHB3ENR |= RCC_AHB3ENR_RIFSCEN;
     (void)RCC->AHB3ENR;
