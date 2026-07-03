@@ -149,108 +149,199 @@ static LandmarkPoint_TypeDef landmark_points[LANDMARK_POINT_COUNT];
 
 static uint8_t fingeralphabet_input[FINGERALPHABET_INPUT_SIZE];
 static uint8_t fingeralphabet_output[FINGERALPHABET_OUTPUT_SIZE];
-
 static FingeralphabetResult_TypeDef fingeralphabet_result;
-void vAIPipelineTask(void){
-	if (nn_frame_ready == 0U) {
-	        return;
-	}
 
-	nn_frame_ready = 0U;
+typedef enum {
+    HAND_STATE_PALM_SEARCH = 0,
+    HAND_STATE_LANDMARK_TRACKING
+} HandTrackingState_TypeDef;
 
+#define LANDMARK_PRESENCE_THRESHOLD  0.5f
+#define LANDMARK_LOST_FRAME_COUNT    3U
 
-	const uint8_t completed_idx = nn_completed_buffer_idx;
-	const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
+static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
+static uint8_t landmark_lost_count = 0U;
 
-	uint8_t *palm_input = PALM_GetInputBuffer();
+static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
+{
+    if (output == NULL) {
+        return false;
+    }
 
-	if (palm_input == NULL) {
-		return;
-	}
+    return output->presence >= LANDMARK_PRESENCE_THRESHOLD;
+}
 
+static void _resetTracking(void)
+{
+    hand_state = HAND_STATE_PALM_SEARCH;
+    landmark_lost_count = 0U;
 
-	memcpy(palm_input, (const void *)ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+    LTDC_Layer_Draw_ROIClearPrevious();
+    LTDC_Layer_Draw_LandmarksClearPrevious();
+}
 
-	const bool palm_inference_ok = PALM_Run(&palm_output);
-
-	if (!palm_inference_ok) {
-		return;
-	}
-
-	if (!PALM_FindBestDetection(&palm_output, &palm_detection)) {
-		return;
-	}
-
-	const uint32_t probability_permille = (uint32_t)(palm_detection.probability * 1000.0f);
-	PALM_UpdateDetectionFilter(&palm_filter,probability_permille);
-
-	if (!palm_filter.detected) {
-		LTDC_Layer_Draw_ROIClearPrevious();
-		LTDC_Layer_Draw_LandmarksClearPrevious();
-	   	return;
-	}
-
-	if(!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width, LTDC_Layer1Config.height, &landmark_roi)){
-		LTDC_Layer_Draw_ROIClearPrevious();
-		LTDC_Layer_Draw_LandmarksClearPrevious();
-	   	return;
-	}
-
-	LTDC_Layer_Draw_ROIClearPrevious();
-	LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
-
-	const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
-	  													  LTDC_Layer1Config.width, LTDC_Layer1Config.height,
+static bool _runLandmark(uint8_t camera_buffer_idx)
+{
+    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
+            										      LTDC_Layer1Config.width,
+														  LTDC_Layer1Config.height,
 														  LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
-														  &landmark_roi, landmark_preprocessed_input);
+														  &landmark_roi,
+														  landmark_preprocessed_input);
+    if (!preprocessing_ok) {
+        return false;
+    }
 
-	if (!preprocessing_ok) {
-	    DEBUG_PRINTF("Landmark preprocessing failed\r\n");
-	    return;
-	}
+    if (!LANDMARK_Run(landmark_preprocessed_input, &landmark_output)) {
+        return false;
+    }
 
-/*
-	 	LTDC_BlitRGB888ToARGB4444(
-		&LTDC_Layer2Config,
-	    landmark_preprocessed_input,
-	    LANDMARK_INPUT_WIDTH,
-	    LANDMARK_INPUT_HEIGHT,
-	    0U,
-	    200U
-	);
-*/
+    if (!_isLandmarkValid(&landmark_output)) {
+        return false;
+    }
 
+    LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
 
-	const bool landmark_inference_ok = LANDMARK_Run(landmark_preprocessed_input, &landmark_output);
+    LTDC_Layer_Draw_LandmarksClearPrevious();
+    LTDC_Layer_Draw_Landmarks(landmark_points);
 
+    return true;
+}
 
-	if (!landmark_inference_ok) {
-	    DEBUG_PRINTF("Landmark inference failed\r\n");
-	    return;
-	}
-
-	LTDC_Layer_Draw_LandmarksClearPrevious();
-	if (landmark_output.presence >= 0.5f) {
-		LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
-		LTDC_Layer_Draw_Landmarks(landmark_points);
-	}
-
-    const bool finger_preprocessing_ok = FINGERALPHABET_Preprocess(landmark_points,
-    															   landmark_output.handedness,
-																   fingeralphabet_input);
-    if (!finger_preprocessing_ok) {
-        DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
+void vAIPipelineTask(void)
+{
+    if (nn_frame_ready == 0U) {
         return;
     }
 
-    const bool fingeralphabet_ok = FINGERALPHABET_Run(fingeralphabet_input, fingeralphabet_output);
+    nn_frame_ready = 0U;
+    const uint8_t completed_idx = nn_completed_buffer_idx;
+    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
-    if(!fingeralphabet_ok){
-    	DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
-    	return;
+    switch (hand_state) {
+    case HAND_STATE_PALM_SEARCH:
+    {
+    	uint8_t *palm_input = PALM_GetInputBuffer();
+
+    	if (palm_input == NULL) {
+    		return;
+    	}
+
+    	memcpy(palm_input, (const void *) ltdc_layer_nn_raw_buffer[completed_idx], PALM_INPUT_SIZE);
+
+    	if (!PALM_Run(&palm_output)) {
+    		return;
+        }
+
+        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+
+        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
+
+        /*
+         * no valid candidate in frame
+         */
+        if (!palm_valid) {
+            if (!palm_filter.detected) {
+                LTDC_Layer_Draw_ROIClearPrevious();
+                LTDC_Layer_Draw_LandmarksClearPrevious();
+            }
+
+            return;
+        }
+
+        /*
+         * first unconfirmed palms
+         */
+        if (!palm_filter.detected) {
+            LTDC_Layer_Draw_ROIClearPrevious();
+            LTDC_Layer_Draw_LandmarksClearPrevious();
+            return;
+        }
+
+        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
+                					LTDC_Layer1Config.height, &landmark_roi)) {
+            _resetTracking();
+            return;
+        }
+
+        LTDC_Layer_Draw_ROIClearPrevious();
+        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+
+        /*
+         * palm gets confirmed through valid landmark run
+         */
+        if (!_runLandmark(camera_buffer_idx)) {
+            return;
+        }
+
+        LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
+        				   LTDC_Layer1Config.height, &landmark_roi);
+
+        LTDC_Layer_Draw_ROIClearPrevious();
+        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+
+        hand_state = HAND_STATE_LANDMARK_TRACKING;
+        landmark_lost_count = 0U;
+
+        DEBUG_PRINTF("AI state: LANDMARK_TRACKING\r\n");
+
+        break;
     }
 
-    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
+    case HAND_STATE_LANDMARK_TRACKING:
+    {
+        /*
+         * No palm inference, tracking through landmark
+         */
+        if (_runLandmark(camera_buffer_idx)) {
+            landmark_lost_count = 0U;
 
-    TEXT_String_draw(&LTDC_Layer1Config, fingeralphabet_result.label, 200,200, TEXT_COLOR_RED);
+            if (!LANDMARK_UpdateROI(landmark_points,LTDC_Layer1Config.width,
+                    				LTDC_Layer1Config.height, &landmark_roi)) {
+                _resetTracking();
+                return;
+            }
+
+            LTDC_Layer_Draw_ROIClearPrevious();
+            LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+
+            if (!FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness,
+                    					   fingeralphabet_input)) {
+                DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
+                return;
+            }
+
+            if (!FINGERALPHABET_Run(fingeralphabet_input, fingeralphabet_output)) {
+
+                DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
+                return;
+            }
+            fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
+
+            TEXT_String_draw(&LTDC_Layer2Config, fingeralphabet_result.label, 200, 200, TEXT_COLOR_RED);
+            return;
+        }
+
+        /*
+         * Landmark-Tracking was invalid -> back to palm inference after x counts!
+         */
+        if (landmark_lost_count < LANDMARK_LOST_FRAME_COUNT) {
+
+            landmark_lost_count++;
+        }
+
+        if (landmark_lost_count >= LANDMARK_LOST_FRAME_COUNT) {
+
+            DEBUG_PRINTF("AI state: PALM_SEARCH\r\n");
+
+            _resetTracking();
+        }
+
+        break;
+    }
+
+    default:
+        _resetTracking();
+        break;
+    }
 }

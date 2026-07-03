@@ -17,9 +17,10 @@ typedef struct {
     float z;
 } LandmarkPoint_TypeDef;
 
-void LANDMARK_MapToFrame(
-    const LandmarkNetworkOutput_TypeDef *output,
-    const HandROI_TypeDef *roi,
-    LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+void LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *roi,
+						 LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+
+bool LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t frame_width,
+						uint32_t frame_height, HandROI_TypeDef *roi);
 
 #endif /* HAND_LANDMARK_POSTPROCESSING_H */
