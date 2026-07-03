@@ -6,6 +6,7 @@
 #include "simple_timer.h"
 #include "simple_rcc.h"
 #include "simple_gpio.h"
+#include "simple_scheduler.h"
 #include "config.h"
 #include "stm32n657xx.h"
 
@@ -216,6 +217,7 @@ TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
 // -------------------------------------------------------------------------
 
 void EXTI4_IRQHandler(void) {
+	SCHEDULER_ISR_enter();
 	if (EXTI->RPR1 & EXTI_RPR1_RPIF4) {
 		EXTI->RPR1 = EXTI_RPR1_RPIF4;
 
@@ -238,4 +240,5 @@ void EXTI4_IRQHandler(void) {
 
 		_touch_pending = 1;
 	}
+	SCHEDULER_ISR_exit();
 }

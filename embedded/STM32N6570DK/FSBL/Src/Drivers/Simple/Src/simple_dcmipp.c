@@ -12,6 +12,7 @@
 #include "simple_dcmipp.h"
 #include "simple_rcc.h"
 #include "simple_ltdc.h"
+#include "simple_scheduler.h"
 
 // ---- Private ----
 
@@ -397,6 +398,7 @@ DCMIPP_Status_TypeDef DCMIPP_GetStatus(uint32_t pipe, uint32_t *status){
 }
 
 void DCMIPP_IRQHandler(void){
+	SCHEDULER_ISR_enter();
     uint32_t cmsr1 = _dcmipp->CMSR1;
     uint32_t cmsr2 = _dcmipp->CMSR2;
 
@@ -421,6 +423,7 @@ void DCMIPP_IRQHandler(void){
     }
 
     _dcmipp->CMFCR = 0xFFFFFFFFU;
+	SCHEDULER_ISR_exit();
 }
 
 __attribute__((weak)) void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe) { (void)pipe; }

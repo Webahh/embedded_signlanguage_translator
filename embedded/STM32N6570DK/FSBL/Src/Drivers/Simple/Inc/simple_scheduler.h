@@ -45,13 +45,20 @@
  * a table with per-window counters, reset each cycle:
  *
  *   - min / max / avg  – min, max, and average cycles per invocation
- *   - %CPU             – share of total wall-clock time (800 MHz basis)
+ *   - %ACT             – share of active (non-WFI) CPU time
  *   - Prempt           – number of times preempted
  *   - Invoc            – invocation count
  *
+ * ISR cycles are tracked via SCHEDULER_ISR_enter()/exit() and subtracted
+ * from the interrupted task's totals, so %ACT reflects pure application-
+ * level time.  An "ISR" row shows total interrupt overhead separately.
+ *
  * Total cycles for the window = avg * invoc (printed in "cycle" column).
- * Idle %CPU is derived as (wall_cycles - sum(task_cycles)) / wall_cycles,
- * so it includes WFI sleep time during which DWT CYCCNT stops.
+ * Idle %ACT is time spent in the idle loop with no ISR active.
+ *
+ * A separate "CPU Util" line reports wall-clock utilisation:
+ * DWT_elapsed / (elapsed_ms * 800 MHz), showing what fraction of real
+ * time the CPU was active (not in WFI sleep).
  *
  * Usage
  * -----
@@ -196,5 +203,20 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
  * This function never returns.
  */
 void SCHEDULER_Tasks_run(void);
+
+/**
+ * @brief  Mark ISR entry for cycle tracking
+ *
+ * Call at the top of every peripheral ISR.  See simple_scheduler.c for
+ * full documentation.
+ */
+void SCHEDULER_ISR_enter(void);
+
+/**
+ * @brief  Mark ISR exit for cycle tracking
+ *
+ * Call at the bottom of every peripheral ISR (paired with ISR_enter).
+ */
+void SCHEDULER_ISR_exit(void);
 
 #endif /* SIMPLE_SCHEDULER_H */

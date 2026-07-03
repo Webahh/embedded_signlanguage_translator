@@ -11,6 +11,7 @@
 #include "simple_csi.h"
 #include "simple_rcc.h"
 #include "simple_timer.h"
+#include "simple_scheduler.h"
 
 // ---- Private defines ----
 
@@ -194,6 +195,7 @@ CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc){
 }
 
 void CSI_DBG_IRQHandler(void){
+	SCHEDULER_ISR_enter();
     if (_csi->SR0) {
         _csi->FCR0 = _csi->SR0;
     }
@@ -201,4 +203,5 @@ void CSI_DBG_IRQHandler(void){
     if (_csi->SR1) {
         _csi->FCR1 = _csi->SR1;
     }
+	SCHEDULER_ISR_exit();
 }
