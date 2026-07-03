@@ -38,8 +38,30 @@
  *        it when a higher-priority task becomes ready, resuming it on
  *        the next tick
  *
- * @author  Groß
- * @date    May 24, 2026
+ * Task Statistics
+ * ---------------
+ * The scheduler tracks per-task CPU usage using DWT CYCCNT (CPU cycle
+ * counter at core clock frequency).  Every 1 second the idle task prints
+ * a table with per-window counters, reset each cycle:
+ *
+ *   - min / max / avg  – min, max, and average cycles per invocation
+ *   - %ACT             – share of active (non-WFI) CPU time
+ *   - Prempt           – number of times preempted
+ *   - Invoc            – invocation count
+ *
+ * ISR cycles are tracked via SCHEDULER_ISR_enter()/exit() and subtracted
+ * from the interrupted task's totals, so %ACT reflects pure application-
+ * level time.  An "ISR" row shows total interrupt overhead separately.
+ *
+ * Total cycles for the window = avg * invoc (printed in "cycle" column).
+ * Idle %ACT is time spent in the idle loop with no ISR active.
+ *
+ * Usage
+ * -----
+ * 1. SCHEDULER_System_init()  – configures TIM7 (1 ms tick) and DWT
+ * 2. SCHEDULER_Task_add()     – register tasks (period, priority)
+ * 3. SCHEDULER_Tasks_run()    – start scheduler (never returns)
+ *
  */
 
 #ifndef SIMPLE_SCHEDULER_H
@@ -177,5 +199,20 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
  * This function never returns.
  */
 void SCHEDULER_Tasks_run(void);
+
+/**
+ * @brief  Mark ISR entry for cycle tracking
+ *
+ * Call at the top of every peripheral ISR.  See simple_scheduler.c for
+ * full documentation.
+ */
+void SCHEDULER_ISR_enter(void);
+
+/**
+ * @brief  Mark ISR exit for cycle tracking
+ *
+ * Call at the bottom of every peripheral ISR (paired with ISR_enter).
+ */
+void SCHEDULER_ISR_exit(void);
 
 #endif /* SIMPLE_SCHEDULER_H */

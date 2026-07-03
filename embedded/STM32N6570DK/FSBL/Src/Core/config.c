@@ -54,7 +54,7 @@ const GPIO_cfg_TypeDef GPIO_TS_RST_cfg = {
 const GPIO_cfg_TypeDef GPIO_TS_INT_cfg = {
 		.mode	= GPIO_MODE_INPUT,
 		.otyp	= GPIO_OTYPE_PP,
-		.pupdr	= GPIO_PUPD_NONE,
+		.pupdr	= GPIO_PUPD_UP,
 		.af		= GPIO_AF_NONE,
 		.speed	= GPIO_SPEED_LOW
 };
@@ -68,7 +68,7 @@ const Debug_log_cfg_TypeDef dbg_cfg = {
 		.af = GPIO_AF_USART,
 		.speed = GPIO_SPEED_VERY_HIGH
     },
-    .baudrate = 9600,
+    .baudrate = 921600,
     .enabled = 1
 };
 

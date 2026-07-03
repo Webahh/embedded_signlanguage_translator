@@ -1,5 +1,5 @@
 /**
- * @file    simple_scheduler.h
+ * @file    simple_scheduler.c
  * @author  Gross
  * @date    05.06.2026
  * @brief   Priority preemptive scheduler driver source
@@ -56,6 +56,31 @@ static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
 static int					_current_task = 0;
 
+static volatile int			_scheduler_running = 0;
+
+typedef struct {
+	uint32_t					total_cycles;
+	uint32_t					total_preempts;
+	uint32_t					total_invocations;
+	uint32_t					min_cycles;
+	uint32_t					max_cycles;
+	uint32_t					last_start_cycle;
+} Scheduler_Task_Stats_TypeDef;
+
+static Scheduler_Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
+static uint32_t						_last_stats_print_cycle;
+static volatile int					_stats_pending;
+
+// ISR cycle tracking (written by ISR_enter/exit, consumed by PendSV and PrintStats)
+static volatile uint32_t			_isr_total_cycles;
+static volatile int					_isr_nest;
+static volatile uint32_t			_isr_entry_cycle;
+static volatile int					_isr_owner_task;
+static volatile uint32_t			_task_isr_cycles[SCHEDULER_MAX_TASKS];
+
+// Diagnostic: counts how many times WFI returns per stats window
+static uint32_t						_idle_wakeups;
+
 static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE] __attribute__((aligned(8)));
 
 _Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,"SCHEDULER_STACK_SIZE_BYTES mismatch");
@@ -68,6 +93,7 @@ static int SCHEDULER_SelectNextTask(void);
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
 void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason);
 void SCHEDULER_StartTick(void);
+static void SCHEDULER_PrintStats(void);
 
 void UsageFault_Handler(void);
 void HardFault_Handler(void);
@@ -116,6 +142,12 @@ static void SCHEDULER_InitTaskStack(int i){
  */
 __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
+		if (_stats_pending) {
+			_stats_pending = 0;
+			SCHEDULER_PrintStats();
+			_idle_wakeups = 0;
+		}
+		_idle_wakeups++;
 		__WFI();
 	}
 }
@@ -179,6 +211,37 @@ static int SCHEDULER_SelectNextTask(void){
 
 	if (best < 0) {
 		best = SCHEDULER_IDLE_TASK_INDEX;
+	}
+
+	if (_scheduler_running) {
+
+		// Record stat data
+		uint32_t now = DWT->CYCCNT;
+		int prev = _current_task;
+		Scheduler_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
+
+		uint32_t raw = now - previous_stats->last_start_cycle;
+		uint32_t isr_part = _task_isr_cycles[prev];
+		_task_isr_cycles[prev] = 0;
+		uint32_t active = (raw > isr_part) ? (raw - isr_part) : 0;
+
+		previous_stats->total_cycles += active;
+
+		if (best != prev) {
+			// Min, Max
+			if (active < previous_stats->min_cycles) previous_stats->min_cycles = active;
+			if (active > previous_stats->max_cycles) previous_stats->max_cycles = active;
+
+			if (_tasks[prev].ready && prev != SCHEDULER_IDLE_TASK_INDEX) {
+				previous_stats->total_preempts++;
+			}
+
+			Scheduler_Task_Stats_TypeDef *next_stats = &_task_stats[best];
+			next_stats->last_start_cycle = now;
+			next_stats->total_invocations++;
+		} else {
+			previous_stats->last_start_cycle = now;
+		}
 	}
 
 	return best;
@@ -337,6 +400,144 @@ void SCHEDULER_StartTick(void){
 	NVIC_ClearPendingIRQ(TIM7_IRQn);
 	NVIC_EnableIRQ(TIM7_IRQn);
 	TIMER_Start(TIM7);
+	_scheduler_running = 1;
+}
+
+// -------------------------------------------------------------------------
+// Scheduler statistics
+// -------------------------------------------------------------------------
+
+static uint32_t _last_print_tick = 0;
+static uint32_t _last_stats_tick = 0;
+
+/**
+ * @brief Mark ISR entry for cycle tracking.
+ *
+ * Call at the very top of any peripheral ISR to measure its CPU cycle
+ * contribution.  Nested ISRs are handled correctly — only the outermost
+ * entry/exit pair records the full ISR burst.
+ *
+ * Every cycle spent in ISR context is subtracted from the interrupted
+ * task's cycle total and accumulated in a separate ISR counter,
+ * ensuring per-task %ACT reflects pure application time.
+ *
+ * Usage (place at top and bottom of every peripheral ISR):
+ * @code{.c}
+ * void XXX_IRQHandler(void){
+ *     SCHEDULER_ISR_enter();
+ *     // ... handler body ...
+ *     SCHEDULER_ISR_exit();
+ * }
+ * @endcode
+ */
+void SCHEDULER_ISR_enter(void){
+	if (_isr_nest == 0) {
+		_isr_entry_cycle = DWT->CYCCNT;
+		_isr_owner_task = _current_task;
+	}
+	_isr_nest++;
+}
+
+/**
+ * @brief Mark ISR exit for cycle tracking (see SCHEDULER_ISR_enter).
+ */
+void SCHEDULER_ISR_exit(void){
+	_isr_nest--;
+	if (_isr_nest == 0) {
+		uint32_t isr_cycles = DWT->CYCCNT - _isr_entry_cycle;
+		_isr_total_cycles += isr_cycles;
+		if (_isr_owner_task >= 0 && _isr_owner_task < SCHEDULER_MAX_TASKS) {
+			_task_isr_cycles[_isr_owner_task] += isr_cycles;
+		}
+	}
+}
+
+static void SCHEDULER_PrintStats(void){
+	__disable_irq();
+
+	uint32_t total = 0;
+
+	// Snapshot struct
+	struct {
+		uint32_t cycles;
+		uint32_t min_cycles;
+		uint32_t max_cycles;
+		uint32_t preempts;
+		uint32_t invocs;
+		const char* name;
+	} snap[SCHEDULER_MAX_TASKS];
+	int snap_n = 0;
+
+	uint32_t now = DWT->CYCCNT;
+	uint32_t elapsed = now - _last_stats_print_cycle;
+	_last_stats_print_cycle = now;
+
+	uint32_t now_tick = _sys_tick_ms;
+	uint32_t elapsed_ms = now_tick - _last_stats_tick;
+	_last_stats_tick = now_tick;
+
+	// Fill stat snapshots with data
+	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
+		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
+		if (_tasks[i].active && _tasks[i].function) {
+			Scheduler_Task_Stats_TypeDef *s = &_task_stats[i];
+			snap[snap_n].cycles = s->total_cycles;
+			snap[snap_n].min_cycles = (s->min_cycles == 0xFFFFFFFF) ? 0 : s->min_cycles;
+			snap[snap_n].max_cycles = s->max_cycles;
+			snap[snap_n].preempts = s->total_preempts;
+			snap[snap_n].invocs = s->total_invocations;
+			snap[snap_n].name = _tasks[i].pcName ? _tasks[i].pcName : "?";
+			total += s->total_cycles;
+			s->total_cycles = 0;
+			s->total_preempts = 0;
+			s->total_invocations = 0;
+			s->min_cycles = 0xFFFFFFFF;
+			s->max_cycles = 0;
+			s->last_start_cycle = now;
+			snap_n++;
+		}
+	}
+
+	uint32_t isr_snapshot = _isr_total_cycles;
+	_isr_total_cycles = 0;
+	uint32_t idle = (elapsed > (total + isr_snapshot)) ? (elapsed - total - isr_snapshot) : 0;
+	__enable_irq();
+
+	if (elapsed == 0) {
+		return;
+	}
+
+	DEBUG_PRINTF("\r\n");
+	DEBUG_PRINTF("%-14.14s %-10s %-10s %-10s %-10s %-7s %-9s %-8s\r\n",
+		"Name", "cycle", "min", "max", "avg", "%ACT", "Prempt", "Invoc");
+	DEBUG_PRINTF("---------------------------------------------------------------------------------------\r\n");
+
+	for (int i = 0; i < snap_n; i++) {
+		uint32_t avg = snap[i].invocs ? (snap[i].cycles / snap[i].invocs) : 0;
+		DEBUG_PRINTF("%-14.14s %10lu %10lu %10lu %10lu %6.2f%% %9lu %8lu\r\n",
+			snap[i].name,
+			snap[i].cycles,
+			snap[i].min_cycles,
+			snap[i].max_cycles,
+			avg,
+			(float)snap[i].cycles * 100.0f / (float)elapsed,
+			snap[i].preempts,
+			snap[i].invocs);
+	}
+
+	DEBUG_PRINTF("%-14.14s %10s %10s %10s %10s %6.2f%% %9s %8s\r\n",
+		"Idle", "0", "0", "0", "0",
+		(float)idle * 100.0f / (float)elapsed, "0", "0");
+
+	DEBUG_PRINTF("%-14.14s %10lu %10s %10s %10s %6.2f%% %9s %8s\r\n",
+		"ISR", isr_snapshot, "-", "-", "-",
+		(float)isr_snapshot * 100.0f / (float)elapsed, "-", "-");
+
+	float cpu_util = (float)(total + isr_snapshot) * 100.0f / (float)elapsed;
+	float wake_rate = (float)_idle_wakeups / (float)elapsed_ms;
+	DEBUG_PRINTF("\r\nCPU Util: %6.2f%% (wall %lu ms, active %lu cyc, %lu WFI/s)\r\n",
+		cpu_util, elapsed_ms, elapsed, (uint32_t)(wake_rate * 1000.0f));
+	DEBUG_PRINTF("=======================================================================================\r\n");
 }
 
 /**
@@ -346,6 +547,7 @@ void SCHEDULER_StartTick(void){
  * their period has elapsed, then pends PendSV for context switch.
  */
 void TIM7_IRQHandler(void){
+	SCHEDULER_ISR_enter();
 	uint32_t tim_flag;
 	TIMER_GetFlag(TIM7, TIM_SR_UIF, &tim_flag);
 	if (tim_flag) {
@@ -364,7 +566,14 @@ void TIM7_IRQHandler(void){
 		}
 
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+
+		if (_scheduler_running
+			&& (_sys_tick_ms - _last_print_tick >= 1000)) {
+			_last_print_tick = _sys_tick_ms;
+			_stats_pending = 1;
+		}
 	}
+	SCHEDULER_ISR_exit();
 }
 
 // -------------------------------------------------------------------------
@@ -423,8 +632,19 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 }
 
 void SCHEDULER_System_init(void){
-	TIMER_Config(TIM7, 200, 999, 0);
+	TIMER_Config(TIM7, 400, 999, 0);
 	TIMER_EnableIT(TIM7);
+
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	uint32_t cnt = DWT->CYCCNT;
+	_last_stats_print_cycle = cnt;
+	_last_stats_tick = 0;
+	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
+		_task_stats[i].last_start_cycle = cnt;
+		_task_stats[i].min_cycles = 0xFFFFFFFF;
+		_task_stats[i].max_cycles = 0;
+	}
 }
 
 SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
@@ -448,6 +668,7 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
 
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);
