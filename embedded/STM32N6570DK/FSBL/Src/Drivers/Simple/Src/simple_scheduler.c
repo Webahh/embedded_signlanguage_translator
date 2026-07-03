@@ -65,9 +65,9 @@ typedef struct {
 	uint32_t					min_cycles;
 	uint32_t					max_cycles;
 	uint32_t					last_start_cycle;
-} SchedulerTaskStats_TypeDef;
+} Scheduler_Task_Stats_TypeDef;
 
-static SchedulerTaskStats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
+static Scheduler_Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
 static uint32_t						_last_stats_print_cycle;
 static volatile int					_stats_pending;
 
@@ -214,30 +214,33 @@ static int SCHEDULER_SelectNextTask(void){
 	}
 
 	if (_scheduler_running) {
+
+		// Record stat data
 		uint32_t now = DWT->CYCCNT;
 		int prev = _current_task;
-		SchedulerTaskStats_TypeDef *ps = &_task_stats[prev];
+		Scheduler_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
 
-		uint32_t raw = now - ps->last_start_cycle;
+		uint32_t raw = now - previous_stats->last_start_cycle;
 		uint32_t isr_part = _task_isr_cycles[prev];
 		_task_isr_cycles[prev] = 0;
 		uint32_t active = (raw > isr_part) ? (raw - isr_part) : 0;
 
-		ps->total_cycles += active;
+		previous_stats->total_cycles += active;
 
 		if (best != prev) {
-			if (active < ps->min_cycles) ps->min_cycles = active;
-			if (active > ps->max_cycles) ps->max_cycles = active;
+			// Min, Max
+			if (active < previous_stats->min_cycles) previous_stats->min_cycles = active;
+			if (active > previous_stats->max_cycles) previous_stats->max_cycles = active;
 
 			if (_tasks[prev].ready && prev != SCHEDULER_IDLE_TASK_INDEX) {
-				ps->total_preempts++;
+				previous_stats->total_preempts++;
 			}
 
-			SchedulerTaskStats_TypeDef *ns = &_task_stats[best];
-			ns->last_start_cycle = now;
-			ns->total_invocations++;
+			Scheduler_Task_Stats_TypeDef *next_stats = &_task_stats[best];
+			next_stats->last_start_cycle = now;
+			next_stats->total_invocations++;
 		} else {
-			ps->last_start_cycle = now;
+			previous_stats->last_start_cycle = now;
 		}
 	}
 
@@ -450,8 +453,11 @@ void SCHEDULER_ISR_exit(void){
 }
 
 static void SCHEDULER_PrintStats(void){
+	__disable_irq();
+
 	uint32_t total = 0;
 
+	// Snapshot struct
 	struct {
 		uint32_t cycles;
 		uint32_t min_cycles;
@@ -462,7 +468,6 @@ static void SCHEDULER_PrintStats(void){
 	} snap[SCHEDULER_MAX_TASKS];
 	int snap_n = 0;
 
-	__disable_irq();
 	uint32_t now = DWT->CYCCNT;
 	uint32_t elapsed = now - _last_stats_print_cycle;
 	_last_stats_print_cycle = now;
@@ -471,10 +476,11 @@ static void SCHEDULER_PrintStats(void){
 	uint32_t elapsed_ms = now_tick - _last_stats_tick;
 	_last_stats_tick = now_tick;
 
+	// Fill stat snapshots with data
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
 		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
 		if (_tasks[i].active && _tasks[i].function) {
-			SchedulerTaskStats_TypeDef *s = &_task_stats[i];
+			Scheduler_Task_Stats_TypeDef *s = &_task_stats[i];
 			snap[snap_n].cycles = s->total_cycles;
 			snap[snap_n].min_cycles = (s->min_cycles == 0xFFFFFFFF) ? 0 : s->min_cycles;
 			snap[snap_n].max_cycles = s->max_cycles;
@@ -626,7 +632,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 }
 
 void SCHEDULER_System_init(void){
-	TIMER_Config(TIM7, 200, 999, 0);
+	TIMER_Config(TIM7, 400, 999, 0);
 	TIMER_EnableIT(TIM7);
 
 	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;

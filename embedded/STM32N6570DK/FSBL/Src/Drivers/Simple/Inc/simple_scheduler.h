@@ -56,10 +56,6 @@
  * Total cycles for the window = avg * invoc (printed in "cycle" column).
  * Idle %ACT is time spent in the idle loop with no ISR active.
  *
- * A separate "CPU Util" line reports wall-clock utilisation:
- * DWT_elapsed / (elapsed_ms * 800 MHz), showing what fraction of real
- * time the CPU was active (not in WFI sleep).
- *
  * Usage
  * -----
  * 1. SCHEDULER_System_init()  – configures TIM7 (1 ms tick) and DWT
