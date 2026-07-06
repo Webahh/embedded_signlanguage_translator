@@ -84,8 +84,7 @@
 // For debugging on Fault
 #define SCHED_MAGIC						0x53434448u
 
-typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
-
+typedef void (*SCHEDULER_Task_Function_TypeDef)(void);
 typedef enum {
 	SCHEDULER_OK				=  0,
 	SCHEDULER_ERR_FULL			= -1,
@@ -162,7 +161,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
  * @retval SCHEDULER_OK       on success
  * @retval SCHEDULER_ERR_FULL if no slot available
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_TaskFunction_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint8_t* taskIndex);
+SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint8_t* taskIndex);
 
 /**
  * @brief  Remove a task from the scheduler
