@@ -57,7 +57,11 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
         LTDC_Layer_Address_Set(&LTDC_Layer1Config);
 
-        ltdc_layer_bg_buffer_ai_idx   = next_disp_idx;
+        int ai_idx =
+            (next_disp_idx + LTDC_LAYER_AI_LOOKAHEAD_FRAMES) %
+            LTDC_LAYER_DISPLAY_BUFFER_NB;
+
+        ltdc_layer_bg_buffer_ai_idx   = ai_idx;
         ltdc_layer_bg_buffer_disp_idx = next_disp_idx;
         ltdc_layer_bg_buffer_capt_idx = next_capt_idx;
 
@@ -185,6 +189,9 @@ typedef enum {
 #define PALM_SEARCH_INTERVAL_MS      200U
 #define FINGERALPHABET_INTERVAL_MS   1500U
 #define LANDMARK_TRACK_INTERVAL_MS   0U
+#define LANDMARK_OVERLAY_TIMEOUT_MS  300U
+
+static uint32_t last_valid_landmark_output_tick = 0U;
 
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
 static AIPipelineStage_TypeDef ai_stage = AI_STAGE_IDLE;
@@ -203,6 +210,128 @@ static uint32_t _palm_start_tick;
 static uint32_t _landmark_start_tick;
 static uint32_t _fingeralphabet_start_tick;
 
+#define LANDMARK_PREDICTION_TIME_MS     45.0f
+#define LANDMARK_PREDICTION_MAX_DELTA   0.08f
+#define LANDMARK_SMOOTHING_ALPHA        0.75f
+
+static LandmarkPoint_TypeDef previous_landmark_points[LANDMARK_POINT_COUNT];
+static LandmarkPoint_TypeDef smoothed_landmark_points[LANDMARK_POINT_COUNT];
+static LandmarkPoint_TypeDef predicted_landmark_points[LANDMARK_POINT_COUNT];
+
+static uint8_t previous_landmarks_valid = 0U;
+static uint32_t previous_landmark_tick = 0U;
+
+static uint8_t predicted_overlay_valid = 0U;
+static LandmarkPoint_TypeDef last_current_landmark_points[LANDMARK_POINT_COUNT];
+
+#define LANDMARK_OVERLAY_REDRAW_INTERVAL_MS  30U
+static uint32_t last_overlay_redraw_tick = 0U;
+
+static float _clampf(float value, float min_value, float max_value)
+{
+    if (value < min_value) return min_value;
+    if (value > max_value) return max_value;
+    return value;
+}
+
+static void _predictLandmarksTimed(
+    const LandmarkPoint_TypeDef current[LANDMARK_POINT_COUNT],
+    LandmarkPoint_TypeDef predicted[LANDMARK_POINT_COUNT]
+)
+{
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
+
+    if ((current == NULL) || (predicted == NULL)) {
+        return;
+    }
+
+    if (previous_landmarks_valid == 0U) {
+        memcpy(previous_landmark_points, current, sizeof(previous_landmark_points));
+        memcpy(smoothed_landmark_points, current, sizeof(smoothed_landmark_points));
+        memcpy(predicted, current, sizeof(predicted_landmark_points));
+
+        previous_landmark_tick = now;
+        previous_landmarks_valid = 1U;
+        return;
+    }
+
+    uint32_t dt_ms_u32 = now - previous_landmark_tick;
+    previous_landmark_tick = now;
+
+    if (dt_ms_u32 == 0U) {
+        dt_ms_u32 = 1U;
+    }
+
+    float dt_ms = (float)dt_ms_u32;
+    float prediction_factor = LANDMARK_PREDICTION_TIME_MS / dt_ms;
+
+    prediction_factor = _clampf(prediction_factor, 0.0f, 1.5f);
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        float dx = current[i].x - previous_landmark_points[i].x;
+        float dy = current[i].y - previous_landmark_points[i].y;
+
+        dx = _clampf(dx, -LANDMARK_PREDICTION_MAX_DELTA, LANDMARK_PREDICTION_MAX_DELTA);
+        dy = _clampf(dy, -LANDMARK_PREDICTION_MAX_DELTA, LANDMARK_PREDICTION_MAX_DELTA);
+
+        float px = current[i].x + dx * prediction_factor;
+        float py = current[i].y + dy * prediction_factor;
+
+        px = _clampf(px, 0.0f, 1.0f);
+        py = _clampf(py, 0.0f, 1.0f);
+
+        smoothed_landmark_points[i].x =
+            LANDMARK_SMOOTHING_ALPHA * px +
+            (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].x;
+
+        smoothed_landmark_points[i].y =
+            LANDMARK_SMOOTHING_ALPHA * py +
+            (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].y;
+
+        smoothed_landmark_points[i].z = current[i].z;
+
+        predicted[i] = smoothed_landmark_points[i];
+    }
+
+    memcpy(previous_landmark_points, current, sizeof(previous_landmark_points));
+}
+
+static void _clearPredictedOverlay(void)
+{
+    predicted_overlay_valid = 0U;
+    previous_landmarks_valid = 0U;
+    last_overlay_redraw_tick = 0U;
+
+    LTDC_Layer_Draw_LandmarksClearPrevious();
+}
+
+static void _redrawPredictedOverlayFromLastMeasurement(void)
+{
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
+
+    if (!predicted_overlay_valid) {
+        return;
+    }
+
+    if ((now - last_valid_landmark_output_tick) > LANDMARK_OVERLAY_TIMEOUT_MS) {
+        _clearPredictedOverlay();
+        return;
+    }
+
+    if ((now - last_overlay_redraw_tick) < LANDMARK_OVERLAY_REDRAW_INTERVAL_MS) {
+        return;
+    }
+
+    last_overlay_redraw_tick = now;
+
+    _predictLandmarksTimed(last_current_landmark_points, predicted_landmark_points);
+
+    LTDC_Layer_Draw_LandmarksClearPrevious();
+    LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
+}
+
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 {
     if (output == NULL) {
@@ -219,8 +348,7 @@ static void _resetTracking(void)
 
     landmark_lost_count = 0U;
 
-    //LTDC_Layer_Draw_ROIClearPrevious();
-    LTDC_Layer_Draw_LandmarksClearPrevious();
+    _clearPredictedOverlay();
 }
 
 static bool _startLandmark(uint8_t camera_buffer_idx, AIPipelineStage_TypeDef next_stage)
@@ -310,6 +438,8 @@ void vAIPipelineTask(void)
     uint32_t now;
     SCHEDULER_Tick_get(&now);
 
+    _redrawPredictedOverlayFromLastMeasurement();
+
     if (ai_stage == AI_STAGE_WAIT_PALM) {
         AI_RunStepStatus_TypeDef palm_status = PALM_RunStep(&palm_output);
 
@@ -334,15 +464,13 @@ void vAIPipelineTask(void)
 
         if (!palm_valid) {
             if (!palm_filter.detected) {
-                //LTDC_Layer_Draw_ROIClearPrevious();
-                LTDC_Layer_Draw_LandmarksClearPrevious();
+            	_clearPredictedOverlay();
             }
             return;
         }
 
         if (!palm_filter.detected) {
-            //LTDC_Layer_Draw_ROIClearPrevious();
-            LTDC_Layer_Draw_LandmarksClearPrevious();
+        	_clearPredictedOverlay();
             return;
         }
 
@@ -351,9 +479,6 @@ void vAIPipelineTask(void)
             _resetTracking();
             return;
         }
-
-        //LTDC_Layer_Draw_ROIClearPrevious();
-        //LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
         if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_FROM_PALM)) {
             _resetTracking();
@@ -385,6 +510,7 @@ void vAIPipelineTask(void)
         }
 
         if (!_isLandmarkValid(&landmark_output)) {
+        	_clearPredictedOverlay();
             if (finished_stage == AI_STAGE_WAIT_LANDMARK_TRACKING) {
                 _handleInvalidLandmark();
             }
@@ -394,8 +520,15 @@ void vAIPipelineTask(void)
 
         landmark_lost_count = 0U;
         LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
+
+        memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
+        predicted_overlay_valid = 1U;
+        SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
+
+        _predictLandmarksTimed(landmark_points, predicted_landmark_points);
+
         LTDC_Layer_Draw_LandmarksClearPrevious();
-        LTDC_Layer_Draw_Landmarks(landmark_points);
+        LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
 
         if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
         						LTDC_Layer1Config.height, &landmark_roi)) {
@@ -407,6 +540,7 @@ void vAIPipelineTask(void)
         //LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
         if (finished_stage == AI_STAGE_WAIT_LANDMARK_FROM_PALM) {
+        	previous_landmarks_valid = 0U;
             hand_state = HAND_STATE_LANDMARK_TRACKING;
             last_landmark_tick = now;
 
