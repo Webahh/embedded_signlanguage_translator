@@ -22,6 +22,7 @@ static float *palm_regressions_buffer;
 
 static bool palm_initialized = false;
 static bool palm_has_run = false;
+static bool palm_running = false;
 
 AI_Status_TypeDef PALM_Init(void)
 {
@@ -53,6 +54,52 @@ uint8_t *PALM_GetInputBuffer(void)
     }
 
     return palm_input_buffer;
+}
+
+bool PALM_Start(void)
+{
+    if (!palm_initialized || (palm_input_buffer == NULL) || palm_running) {
+        return false;
+    }
+
+    if (palm_has_run) {
+        LL_ATON_RT_Reset_Network(&NN_Instance_palm_detection_model_v3);
+    }
+
+    LL_ATON_Cache_MCU_Clean_Range((uintptr_t)palm_input_buffer, PALM_INPUT_SIZE);
+
+    palm_running = true;
+    return true;
+}
+
+AI_RunStepStatus_TypeDef PALM_RunStep(PalmNetworkOutput_TypeDef *output)
+{
+    if (!palm_initialized || !palm_running || (output == NULL)) {
+        return AI_RUN_ERROR;
+    }
+
+    const AI_RunStepStatus_TypeDef status = AI_RuntimeRunNetworkStep(&NN_Instance_palm_detection_model_v3);
+
+    if (status == AI_RUN_BUSY) {
+        return AI_RUN_BUSY;
+    }
+
+    if (status == AI_RUN_ERROR) {
+        palm_running = false;
+        return AI_RUN_ERROR;
+    }
+
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)palm_scores_buffer, PALM_SCORE_BUFFER_SIZE);
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)palm_regressions_buffer, PALM_REGRESSION_BUFFER_SIZE);
+
+    output->scores = palm_scores_buffer;
+    output->regressions = palm_regressions_buffer;
+    output->detection_count = PALM_DETECTION_COUNT;
+    output->regression_size = PALM_REGRESSION_SIZE;
+
+    palm_running = false;
+    palm_has_run = true;
+    return AI_RUN_DONE;
 }
 
 bool PALM_Run(PalmNetworkOutput_TypeDef *output)
