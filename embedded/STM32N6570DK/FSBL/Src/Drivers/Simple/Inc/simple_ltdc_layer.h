@@ -29,7 +29,8 @@
 #define LTDC_LAYER_FG_WIDTH  800
 #define LTDC_LAYER_FG_HEIGHT 480
 
-#define LTDC_LAYER_DISPLAY_BUFFER_NB    2
+#define LTDC_LAYER_DISPLAY_DELAY        2U
+#define LTDC_LAYER_DISPLAY_BUFFER_NB    (LTDC_LAYER_DISPLAY_DELAY + 2U)
 #define LTDC_LAYER_DISPLAY_BPP          3
 
 #define LTDC_LAYER_NN_BUFFER_NB    2
@@ -104,7 +105,9 @@ typedef enum {
 extern volatile uint8_t     ltdc_layer_bg_buffer[LTDC_LAYER_DISPLAY_BUFFER_NB][LTDC_LAYER_BG_WIDTH * LTDC_LAYER_BG_HEIGHT * LTDC_LAYER_DISPLAY_BPP];
 extern volatile uint8_t     ltdc_layer_fg_buffer[2][LTDC_LAYER_FG_WIDTH * LTDC_LAYER_FG_HEIGHT * LTDC_LAYER_NN_BPP];
 extern volatile uint8_t     ltdc_layer_nn_raw_buffer[2][LTDC_LAYER_NN_RAW_SIZE];
-extern volatile int         ltdc_layer_bg_buffer_disp_idx;
+extern volatile int ltdc_layer_bg_buffer_disp_idx;
+extern volatile int ltdc_layer_bg_buffer_capt_idx;
+extern volatile int ltdc_layer_bg_buffer_ai_idx;
 
 /**
  * @brief Configure an LTDC layer from a configuration struct

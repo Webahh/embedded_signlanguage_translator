@@ -221,8 +221,11 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     *ppcr = (*ppcr & ~DCMIPP_P1PPCR_FORMAT_Msk)
           | (conf->output_format << DCMIPP_P1PPCR_FORMAT_Pos);
-    if (conf->enable_dbm)
+    if (conf->enable_dbm){
         *ppcr |= DCMIPP_P1PPCR_DBM;
+    } else {
+    	*ppcr &= ~DCMIPP_P1PPCR_DBM;
+    }
     *ppm0pr = pitch;
     *fctcr = (*fctcr & ~DCMIPP_P1FCTCR_FRATE_Msk) | 0;
 
@@ -230,7 +233,7 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
 
     if (pipe == DCMIPP_PIPE1) {
         DCMIPP->P1PPM0AR1 = (uint32_t)&ltdc_layer_bg_buffer[0];
-        DCMIPP->P1PPM0AR2 = (uint32_t)&ltdc_layer_bg_buffer[1];
+        DCMIPP->P1PPM0AR2 = 0U;
     } else if (pipe == DCMIPP_PIPE2) {
         DCMIPP->P2PPM0AR1 = (uint32_t)&ltdc_layer_nn_raw_buffer[0];
         DCMIPP->P2PPM0AR2 = (uint32_t)&ltdc_layer_nn_raw_buffer[1];

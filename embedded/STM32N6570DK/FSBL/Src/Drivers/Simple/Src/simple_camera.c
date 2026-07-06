@@ -131,12 +131,15 @@ CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
 }
 
 CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h){
-    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, 0, 0);
-
+    ltdc_layer_bg_buffer_capt_idx = 0;
     ltdc_layer_bg_buffer_disp_idx = 1;
+    ltdc_layer_bg_buffer_ai_idx   = 0;
+
     LTDC_Layer1Config.pixel_format = LTDC_PF_RGB888;
     LTDC_Layer1Config.fb = &ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_disp_idx];
     LTDC_Layer_Layer1_Config();
+
+    DCMIPP_Pipe_Start(CAM_PIPE_DISPLAY, (uint32_t)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_capt_idx], 0);
 
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }

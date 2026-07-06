@@ -41,19 +41,34 @@ static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
 static volatile uint8_t camera_frame_ready = 0U;
 
-void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe){
+void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
+{
     if (pipe == DCMIPP_PIPE1) {
-    	AE_OnFrameStats();
-        ltdc_layer_bg_buffer_disp_idx ^= 1;
-        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_disp_idx];
+        AE_OnFrameStats();
+
+        int next_disp_idx = (ltdc_layer_bg_buffer_disp_idx + 1) % LTDC_LAYER_DISPLAY_BUFFER_NB;
+        int next_capt_idx = (ltdc_layer_bg_buffer_capt_idx + 1) % LTDC_LAYER_DISPLAY_BUFFER_NB;
+
+        DCMIPP_Pipe_UpdateBufAddr(
+            CAM_PIPE_DISPLAY,
+            (uint32_t)&ltdc_layer_bg_buffer[next_capt_idx]
+        );
+
+        LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
         LTDC_Layer_Address_Set(&LTDC_Layer1Config);
-        camera_frame_ready = 1;
+
+        ltdc_layer_bg_buffer_ai_idx   = next_disp_idx;
+        ltdc_layer_bg_buffer_disp_idx = next_disp_idx;
+        ltdc_layer_bg_buffer_capt_idx = next_capt_idx;
+
+        camera_frame_ready = 1U;
 
     } else if (pipe == DCMIPP_PIPE2) {
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
         nn_frame_ready = 1U;
     }
 }
+
 
 static const uint8_t bg_colors[BG_NUM_COLORS][3] = {
     {255, 0, 0},    /* Red   */
@@ -120,7 +135,7 @@ void vTouchTask(void){
         // Paint touch feedback dot on the camera layer
         if (data.pressed)
         {
-            int next_idx = ltdc_layer_bg_buffer_disp_idx ^ 1;
+        	int next_idx = ltdc_layer_bg_buffer_disp_idx;
             LTDC_Layer_Config_TypeDef tmp = LTDC_Layer1Config;
             tmp.fb = (void *)&ltdc_layer_bg_buffer[next_idx];
             LTDC_Layer_Draw_Circle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
@@ -168,8 +183,8 @@ typedef enum {
 #define LANDMARK_PRESENCE_THRESHOLD  0.5f
 #define LANDMARK_LOST_FRAME_COUNT    3U
 #define PALM_SEARCH_INTERVAL_MS      200U
-#define FINGERALPHABET_INTERVAL_MS   100U
-#define LANDMARK_TRACK_INTERVAL_MS   33U
+#define FINGERALPHABET_INTERVAL_MS   1500U
+#define LANDMARK_TRACK_INTERVAL_MS   0U
 
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
 static AIPipelineStage_TypeDef ai_stage = AI_STAGE_IDLE;
@@ -204,7 +219,7 @@ static void _resetTracking(void)
 
     landmark_lost_count = 0U;
 
-    LTDC_Layer_Draw_ROIClearPrevious();
+    //LTDC_Layer_Draw_ROIClearPrevious();
     LTDC_Layer_Draw_LandmarksClearPrevious();
 }
 
@@ -319,14 +334,14 @@ void vAIPipelineTask(void)
 
         if (!palm_valid) {
             if (!palm_filter.detected) {
-                LTDC_Layer_Draw_ROIClearPrevious();
+                //LTDC_Layer_Draw_ROIClearPrevious();
                 LTDC_Layer_Draw_LandmarksClearPrevious();
             }
             return;
         }
 
         if (!palm_filter.detected) {
-            LTDC_Layer_Draw_ROIClearPrevious();
+            //LTDC_Layer_Draw_ROIClearPrevious();
             LTDC_Layer_Draw_LandmarksClearPrevious();
             return;
         }
@@ -337,8 +352,8 @@ void vAIPipelineTask(void)
             return;
         }
 
-        LTDC_Layer_Draw_ROIClearPrevious();
-        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+        //LTDC_Layer_Draw_ROIClearPrevious();
+        //LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
         if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_FROM_PALM)) {
             _resetTracking();
@@ -389,7 +404,7 @@ void vAIPipelineTask(void)
         }
 
         LTDC_Layer_Draw_ROIClearPrevious();
-        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+        //LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
 
         if (finished_stage == AI_STAGE_WAIT_LANDMARK_FROM_PALM) {
             hand_state = HAND_STATE_LANDMARK_TRACKING;
@@ -454,7 +469,7 @@ void vAIPipelineTask(void)
         camera_frame_ready = 0U;
     }
 
-    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
+    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
     const uint8_t completed_idx = nn_completed_buffer_idx;
 
     switch (hand_state) {

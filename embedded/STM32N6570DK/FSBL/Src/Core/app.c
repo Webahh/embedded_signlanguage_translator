@@ -123,9 +123,9 @@ void app_init(){
 
 	SCHEDULER_Task_add(vTouchTask, "Touch", 20, 2, &task_idx);
 	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 1, &task_idx);
-	SCHEDULER_Task_add(vAETask, "AETask", 50, 2, &task_idx);
+	SCHEDULER_Task_add(vAETask, "AETask", 300, 2, &task_idx);
 //	SCHEDULER_Task_add(vRecursionTestTask, "Test", 10, 10, &task_idx);
-	SCHEDULER_Task_add(vAIPipelineTask,"AIPipeline", 10, 1, &task_idx);
+	SCHEDULER_Task_add(vAIPipelineTask,"AIPipeline", 5, 1, &task_idx);
 }
 
 void app_run(){

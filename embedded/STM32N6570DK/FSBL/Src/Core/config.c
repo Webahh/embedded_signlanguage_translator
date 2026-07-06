@@ -179,7 +179,7 @@ const DCMIPP_Pipe_cfg_TypeDef DCMIPP_display_pipe_cfg = {
 		.enable_downsize 	= 1,
 		.enable_swap		= 0,
 		.enable_gamma		= 1,
-		.enable_dbm			= 1
+		.enable_dbm			= 0
 };
 
 const DCMIPP_Pipe_cfg_TypeDef DCMIPP_nn_pipe_cfg = {
