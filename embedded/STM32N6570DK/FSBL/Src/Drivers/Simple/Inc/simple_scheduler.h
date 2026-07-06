@@ -207,6 +207,20 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex);
 SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex);
 
 /**
+ * @brief  Suspend the currently running task.
+ *
+ * Caller must hold IRQs disabled (__disable_irq()) for a race-free
+ * check-then-suspend pattern.  This function sets the current task's
+ * state to TaskSuspended and pends PendSV so the scheduler can
+ * switch to another ready task.
+ *
+ * @note   The caller should follow with __enable_irq() and a WFI
+ *         loop that waits for the condition that will trigger a
+ *         SCHEDULER_Task_resume() call (e.g. from a peripheral ISR).
+ */
+void SCHEDULER_Task_suspend_self(void);
+
+/**
  * @brief  Mark ISR entry for cycle tracking
  *
  * Call at the top of every peripheral ISR.  See simple_scheduler.c for

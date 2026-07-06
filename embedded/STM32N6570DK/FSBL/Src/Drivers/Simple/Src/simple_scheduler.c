@@ -658,11 +658,16 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
 
 	__disable_irq();
 	_tasks[taskIndex].state = TaskReady;
-	_tasks[taskIndex].last_run_ms = _sys_tick_ms;
+	_tasks[taskIndex].last_run_ms = _sys_tick_ms - _tasks[taskIndex].period_ms; // Make Sure it can be executed Immediately
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	__enable_irq();
 
 	return SCHEDULER_OK;
+}
+
+void SCHEDULER_Task_suspend_self(void){
+	_tasks[_current_task].state = TaskSuspended;
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 
 void SCHEDULER_Tasks_run(void){
@@ -673,9 +678,9 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);

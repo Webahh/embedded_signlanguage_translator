@@ -26,71 +26,76 @@ void DMA2D_Init(DMA2D_Handle_TypeDef *h){
 }
 
 DMA2D_Status_TypeDef DMA2D_Transfer(DMA2D_Handle_TypeDef *h){
-    if (!h) return DMA2D_ERROR_PARAM;
-    if (_busy) return DMA2D_ERROR_BUSY;
+	if (!h) return DMA2D_ERROR_PARAM;
+	if (_busy) return DMA2D_ERROR_BUSY;
 
-    _busy = 1;
-    h->completed = 0;
+	_busy = 1;
+	h->completed = 0;
 
-    DMA2D->FGMAR  = h->cfg.src.address;
-    DMA2D->FGOR   = h->cfg.src.line_offset;
+	// Save owning task BEFORE starting the HW (ISR may fire immediately)
+	int task_idx;
+	SCHEDULER_GetCurrentTask(&task_idx);
+	h->task_owner = (uint8_t)task_idx;
 
-    DMA2D->FGPFCCR = (uint32_t)h->cfg.src.format << DMA2D_FGPFCCR_CM_Pos;
+	DMA2D->FGMAR  = h->cfg.src.address;
+	DMA2D->FGOR   = h->cfg.src.line_offset;
 
-    DMA2D->OMAR    = h->cfg.dst.address;
-    DMA2D->OOR     = h->cfg.dst.line_offset;
-    DMA2D->OPFCCR  = (uint32_t)h->cfg.dst.format << DMA2D_OPFCCR_CM_Pos;
+	DMA2D->FGPFCCR = (uint32_t)h->cfg.src.format << DMA2D_FGPFCCR_CM_Pos;
 
-    DMA2D->NLR = (h->cfg.height_lines << DMA2D_NLR_NL_Pos)
-               | (h->cfg.width_pixels << DMA2D_NLR_PL_Pos);
+	DMA2D->OMAR    = h->cfg.dst.address;
+	DMA2D->OOR     = h->cfg.dst.line_offset;
+	DMA2D->OPFCCR  = (uint32_t)h->cfg.dst.format << DMA2D_OPFCCR_CM_Pos;
 
-    DMA2D->IFCR = DMA2D_IFCR_CTCIF
-                | DMA2D_IFCR_CTEIF
-                | DMA2D_IFCR_CCEIF;
+	DMA2D->NLR = (h->cfg.height_lines << DMA2D_NLR_NL_Pos)
+	           | (h->cfg.width_pixels << DMA2D_NLR_PL_Pos);
 
-    DMA2D->CR = ((uint32_t)h->cfg.mode << DMA2D_CR_MODE_Pos)
-              | DMA2D_CR_TCIE
-              | DMA2D_CR_START;
+	DMA2D->IFCR = DMA2D_IFCR_CTCIF
+	            | DMA2D_IFCR_CTEIF
+	            | DMA2D_IFCR_CCEIF;
 
-    uint32_t deadline = 0;
-    SCHEDULER_Tick_get(&deadline);
-    deadline += DMA2D_TIMEOUT_MS;
+	DMA2D->CR = ((uint32_t)h->cfg.mode << DMA2D_CR_MODE_Pos)
+	          | DMA2D_CR_TCIE
+	          | DMA2D_CR_START;
 
-    while (!h->completed) {
-        uint32_t now;
-        SCHEDULER_Tick_get(&now);
-        if (now >= deadline) {
-            DMA2D->CR = 0;
-            _busy = 0;
-            return DMA2D_ERROR_HW;
-        }
-        __WFI();
-    }
+	// Atomically check for early completion and suspend
+	__disable_irq();
+	if (!h->completed) {
+		SCHEDULER_Task_suspend_self();
+		// After DMA2D ISR resumes us: execution continues here
+	}
+	__enable_irq();
 
-    _busy = 0;
-    return DMA2D_OK;
+	_busy = 0;
+	return DMA2D_OK;
 }
 
 void DMA2D_IRQHandler(void){
-    DMA2D_Handle_TypeDef *h = _active_handle;
-    if (!h) return;
+	DMA2D_Handle_TypeDef *h = _active_handle;
+	if (!h) return;
 
-    uint32_t isr = DMA2D->ISR;
+	uint32_t isr = DMA2D->ISR;
 
-    if (isr & DMA2D_ISR_TCIF) {
-        DMA2D->IFCR = DMA2D_IFCR_CTCIF;
-        h->completed = 1;
-    }
+	if (isr & DMA2D_ISR_TCIF) {
+		DMA2D->IFCR = DMA2D_IFCR_CTCIF;
+		h->completed = 1;
+		SCHEDULER_Task_resume(h->task_owner);
+	}
 
-    if (isr & DMA2D_ISR_TEIF) {
-        DMA2D->IFCR = DMA2D_IFCR_CTEIF;
-    }
+	if (isr & DMA2D_ISR_TEIF) {
+		DMA2D->IFCR = DMA2D_IFCR_CTEIF;
+		h->completed = 1;
+		SCHEDULER_Task_resume(h->task_owner);
+	}
 
-    if (isr & DMA2D_ISR_CEIF) {
-        DMA2D->IFCR = DMA2D_IFCR_CCEIF;
-    }
+	if (isr & DMA2D_ISR_CEIF) {
+		DMA2D->IFCR = DMA2D_IFCR_CCEIF;
+		h->completed = 1;
+		SCHEDULER_Task_resume(h->task_owner);
+	}
 
-    if (isr & DMA2D_ISR_CAEIF) {
-        DMA2D->IFCR = DMA2D_IFCR_CAECIF;
-    }
+	if (isr & DMA2D_ISR_CAEIF) {
+		DMA2D->IFCR = DMA2D_IFCR_CAECIF;
+		h->completed = 1;
+		SCHEDULER_Task_resume(h->task_owner);
+	}
 }

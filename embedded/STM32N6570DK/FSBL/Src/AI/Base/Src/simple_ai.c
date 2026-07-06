@@ -55,6 +55,7 @@ bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
     }
 
     do {
+
         status = LL_ATON_RT_RunEpochBlock(network);
 
         if (status == LL_ATON_RT_WFE) {
