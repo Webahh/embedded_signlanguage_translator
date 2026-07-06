@@ -24,8 +24,8 @@ static float *landmark_image_buffer;
 static float *landmark_world_buffer;
 
 static bool hand_landmark_initialized = false;
+static bool landmark_running = false;
 static bool landmark_has_run = false;
-
 
 AI_Status_TypeDef LANDMARK_Init(void)
 {
@@ -49,6 +49,7 @@ AI_Status_TypeDef LANDMARK_Init(void)
     }
 
     landmark_has_run = false;
+    landmark_running = false;
     hand_landmark_initialized = true;
 
     return AI_STATUS_OK;
@@ -59,33 +60,64 @@ uint8_t *LANDMARK_GetInputBuffer(void){
     return landmark_input_buffer;
 }
 
-bool LANDMARK_Run(const uint8_t input[LANDMARK_INPUT_SIZE], LandmarkNetworkOutput_TypeDef *output)
+bool LANDMARK_Start(const uint8_t input[LANDMARK_INPUT_SIZE])
 {
-	if(!hand_landmark_initialized ||
-	  (output == NULL)		      ||
-	  (landmark_input_buffer == NULL)){
-		return false;
-	}
+    if ((!hand_landmark_initialized) ||
+        (landmark_input_buffer == NULL) ||
+        landmark_running) {
 
-	if(landmark_has_run){
-        LL_ATON_RT_Reset_Network(&NN_Instance_hand_landmark_model_v3);
-	}
-
-	if (input != NULL) {
-		memcpy(landmark_input_buffer, input, LANDMARK_INPUT_SIZE);
-	}
-
-	LL_ATON_Cache_MCU_Clean_Range((uintptr_t)landmark_input_buffer, LANDMARK_INPUT_SIZE);
-
-    if (!AI_RuntimeRunNetwork(&NN_Instance_hand_landmark_model_v3)) {
         return false;
     }
 
+    if (landmark_has_run) {
+        LL_ATON_RT_Reset_Network(&NN_Instance_hand_landmark_model_v3);
+    }
+
+    if (input != NULL) {
+        memcpy(landmark_input_buffer, input, LANDMARK_INPUT_SIZE);
+    }
+
+    LL_ATON_Cache_MCU_Clean_Range((uintptr_t)landmark_input_buffer, LANDMARK_INPUT_SIZE);
+
+    landmark_running = true;
+
+    return true;
+}
+
+LandmarkRunStatus_TypeDef LANDMARK_RunStep(LandmarkNetworkOutput_TypeDef *output)
+{
+    if ((!hand_landmark_initialized) ||
+        (!landmark_running) ||
+        (output == NULL)) {
+
+        return LANDMARK_RUN_ERROR;
+    }
+
+    const AI_RunStepStatus_TypeDef status = AI_RuntimeRunNetworkStep(&NN_Instance_hand_landmark_model_v3);
+
+    if (status == AI_RUN_BUSY) {
+        return LANDMARK_RUN_BUSY;
+    }
+
+    if (status == AI_RUN_ERROR) {
+        landmark_running = false;
+        return LANDMARK_RUN_ERROR;
+    }
+
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_handedness_buffer, sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_presence_buffer, sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_image_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range( (uintptr_t)landmark_world_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+
     output->presence = landmark_presence_buffer[0];
     output->handedness = landmark_handedness_buffer[0];
+
     memcpy(output->landmarks, landmark_image_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
     memcpy(output->world_landmarks, landmark_world_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
 
-	landmark_has_run = true;
-	return true;
+    landmark_running = false;
+    landmark_has_run = true;
+
+    return LANDMARK_RUN_DONE;
 }
+
