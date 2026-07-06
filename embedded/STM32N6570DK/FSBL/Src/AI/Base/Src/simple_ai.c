@@ -12,6 +12,7 @@
 #include "npu_cache.h"
 #include "stm32n6xx_hal.h"
 #include "ll_aton_runtime.h"
+#include "ai_runtime_internal.h"
 
 #include "palm_detection.h"
 #include "hand_landmark.h"
@@ -46,6 +47,28 @@ static void AI_EnableNpuRam(void)
     (void)RCC->AHB5ENR;
 }
 
+AI_RunStepStatus_TypeDef AI_RuntimeRunNetworkStep(NN_Instance_TypeDef *network)
+{
+    LL_ATON_RT_RetValues_t status;
+
+    if (network == NULL) {
+        return AI_RUN_ERROR;
+    }
+
+    status = LL_ATON_RT_RunEpochBlock(network);
+
+    if ((status == LL_ATON_RT_WFE) ||
+        (status == LL_ATON_RT_NO_WFE)) {
+        return AI_RUN_BUSY;
+    }
+
+    if (status == LL_ATON_RT_DONE) {
+        return AI_RUN_DONE;
+    }
+
+    return AI_RUN_ERROR;
+}
+
 bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
 {
     LL_ATON_RT_RetValues_t status;
@@ -60,6 +83,9 @@ bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
 
         if (status == LL_ATON_RT_WFE) {
             LL_ATON_OSAL_WFE();
+        }
+        else if (status == LL_ATON_RT_NO_WFE) {
+        	__WFI();
         }
 
     } while ((status == LL_ATON_RT_WFE) ||
