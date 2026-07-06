@@ -43,15 +43,15 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 
 void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 {
+	static uint8_t systeminfo_id;
 	(void)idx;
 	(void)ctx;
-	if(val){
-
+	if (val) {
+		SCHEDULER_Task_add(vSystemInfoTask, "Sys Systeminfo", 100, 1, &systeminfo_id);
 	} else {
-
+		SCHEDULER_Task_remove(systeminfo_id);
+		LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
 	}
-
-	DEBUG_PRINTF("[UI] SystemInfo: %u\r\n", val);
 }
 
 

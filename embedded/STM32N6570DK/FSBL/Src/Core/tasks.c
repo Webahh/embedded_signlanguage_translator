@@ -181,6 +181,13 @@ static uint32_t last_fingeralphabet_tick = 0U;
 
 static uint8_t _saved_camera_buffer_idx;
 
+static uint32_t _palm_duration_ms;
+static uint32_t _landmark_duration_ms;
+static uint32_t _fingeralphabet_duration_ms;
+static uint32_t _palm_start_tick;
+static uint32_t _landmark_start_tick;
+static uint32_t _fingeralphabet_start_tick;
+
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 {
     if (output == NULL) {
@@ -240,6 +247,7 @@ static bool _startLandmark(uint8_t camera_buffer_idx, AIPipelineStage_TypeDef ne
         return false;
     }
 
+    SCHEDULER_Tick_get(&_landmark_start_tick);
     ai_stage = next_stage;
 
     return true;
@@ -278,6 +286,7 @@ static void _runFingeralphabetIfDue(void)
         return;
     }
 
+    SCHEDULER_Tick_get(&_fingeralphabet_start_tick);
     ai_stage = AI_STAGE_WAIT_FINGERALPHABET;
 }
 
@@ -297,6 +306,12 @@ void vAIPipelineTask(void)
 
         if (palm_status == AI_RUN_ERROR) {
             return;
+        }
+
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _palm_duration_ms = now - _palm_start_tick;
         }
 
         const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
@@ -348,6 +363,12 @@ void vAIPipelineTask(void)
             return;
         }
 
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _landmark_duration_ms = now - _landmark_start_tick;
+        }
+
         if (!_isLandmarkValid(&landmark_output)) {
             if (finished_stage == AI_STAGE_WAIT_LANDMARK_TRACKING) {
                 _handleInvalidLandmark();
@@ -395,6 +416,12 @@ void vAIPipelineTask(void)
         if (fa_status == AI_RUN_ERROR) {
             DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
             return;
+        }
+
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
         }
 
         fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
@@ -457,6 +484,7 @@ void vAIPipelineTask(void)
             return;
         }
 
+        SCHEDULER_Tick_get(&_palm_start_tick);
         if (!PALM_Start()) {
             return;
         }
@@ -478,4 +506,20 @@ void vAIPipelineTask(void)
         _resetTracking();
         return;
     }
+}
+
+void vSystemInfoTask(void)
+{
+    char buf[12];
+
+    LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "P:%lums", (unsigned long)_palm_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "H:%lums", (unsigned long)_landmark_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
 }

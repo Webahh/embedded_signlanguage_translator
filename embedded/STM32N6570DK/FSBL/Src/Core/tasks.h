@@ -22,5 +22,6 @@ void vBackgroundTask(void);
 void vAETask(void);
 void vTouchTask(void);
 void vAIPipelineTask(void);
+void vSystemInfoTask(void);
 
 #endif /* TASKS_H */
