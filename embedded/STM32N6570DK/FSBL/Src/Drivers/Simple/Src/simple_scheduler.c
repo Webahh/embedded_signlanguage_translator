@@ -25,13 +25,10 @@ typedef struct {
 	uint32_t						last_run_ms;		//  8
 	uint8_t							priority;			// 12
 	uint8_t							state;				// 13 (_Task_State_TypeDef)
-	uint8_t							reserved1;			// 14
-	uint8_t							reserved2;			// 15
-	uint8_t							stack_overflow;		// 16
-	uint32_t						saved_sp;			// 20 (aligned)
-	uint32_t						saved_exc_return;	// 24
-	const char*						pcName;				// 28
-} _Task_Handle_TypeDef;							// 32 bytes
+	uint32_t						saved_sp;			// 16 (4-byte aligned)
+	uint32_t						saved_exc_return;	// 20
+	const char*						pcName;				// 24
+} _Task_Handle_TypeDef;							// 28 bytes
 
 typedef enum {
 	TaskDeleted   = 0,  // Slot free / task removed
@@ -41,9 +38,13 @@ typedef enum {
 } _Task_State_TypeDef;
 
 // TCB = Task Control Block
-#define _TCB_SIZE		32
-#define _TCB_SAVED_SP	20
-#define _TCB_EXC_RETURN	24
+#define _TCB_SIZE           28    // sizeof(_Task_Handle_TypeDef)
+#define _TCB_SAVED_SP       16
+#define _TCB_EXC_RETURN     20
+
+// Stack frame in words: S16-S31(16) + R4-R11(8) + exception frame(8)
+// Must remain 32 regardless of _TCB_SIZE — ARM hardware exception frame is 8 words.
+#define _STACK_FRAME_WORDS  32
 
 // Stringify helper for inline assembly
 #define _STR_HELPER(x) #x
@@ -123,15 +124,15 @@ static void SCHEDULER_InitTaskStack(int i){
 	}
 
 	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i] + sizeof(_task_stacks[i])) & ~7U);
-	uint32_t *sp = stack_end - _TCB_SIZE;
+	uint32_t *sp = stack_end - _STACK_FRAME_WORDS;
 
 	// sp[0..15]  S16-S31  (FPU callee-saved)
 	// sp[16..23] R4-R11   (core callee-saved)
 	// sp[24..31] exception frame: R0-R3, R12, LR, PC, xPSR
 
-	sp[_TCB_SIZE - 3] = (uint32_t)SCHEDULER_Task_exit; // LR on task return
-	sp[_TCB_SIZE - 2] = (uint32_t)_tasks[i].function;  // PC
-	sp[_TCB_SIZE - 1] = 0x01000000UL;                  // xPSR (thumb bit)
+	sp[_STACK_FRAME_WORDS - 3] = (uint32_t)SCHEDULER_Task_exit; // LR on task return
+	sp[_STACK_FRAME_WORDS - 2] = (uint32_t)_tasks[i].function;  // PC
+	sp[_STACK_FRAME_WORDS - 1] = 0x01000000UL;                  // xPSR (thumb bit)
 
 	_tasks[i].saved_sp         = (uint32_t)&sp[16];
 	_tasks[i].saved_exc_return = 0xFFFFFFFDUL;
@@ -582,9 +583,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].function	    = pvTaskCode;
 	_tasks[slot].period_ms	    = period_ms;
 	_tasks[slot].last_run_ms    = _sys_tick_ms;
-	_tasks[slot].priority	    = priority;
-	_tasks[slot].stack_overflow = 0;
-	_tasks[slot].pcName         = pcName;
+	_tasks[slot].priority      = priority;
+	_tasks[slot].pcName        = pcName;
 
 	SCHEDULER_InitTaskStack(slot);
 
@@ -766,10 +766,6 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 	g_sched_fault.psplim  = __get_PSPLIM();
 	g_sched_fault.control = __get_CONTROL();
 	g_sched_fault.exc_return = exc_return;
-
-	if (reason == 4 && (SCB->CFSR & SCB_CFSR_STKOF_Msk)) {
-		_tasks[_current_task].stack_overflow = 1;
-	}
 
 	if (frame) {
 		g_sched_fault.r0  = frame[0];

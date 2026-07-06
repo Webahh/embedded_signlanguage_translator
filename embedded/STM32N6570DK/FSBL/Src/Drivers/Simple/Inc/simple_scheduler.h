@@ -128,17 +128,6 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
 SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(volatile const Scheduler_Fault_Dump_TypeDef** dump);
 
 /**
- * @brief  Get the free stack space for a task
- *
- * @param [in]  task | Task index
- * @param [out] free | Pointer to store free stack bytes
- *
- * @retval SCHEDULER_OK          on success
- * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid
- */
-SCHEDULER_Status_TypeDef SCHEDULER_GetTaskStackFree(uint8_t task, uint32_t* free);
-
-/**
  * @brief  Get the name of a task
  *
  * @param [in]  task | Task index
