@@ -20,39 +20,46 @@
 // -------------------------------------------------------------------------
 
 typedef struct {
-	SCHEDULER_TaskFunction_TypeDef	function;			//  0
+	SCHEDULER_Task_Function_TypeDef	function;			//  0
 	uint32_t						period_ms;			//  4
 	uint32_t						last_run_ms;		//  8
 	uint8_t							priority;			// 12
-	uint8_t							ready;				// 13
-	uint8_t							active;				// 14
-	uint8_t							needs_init;			// 15
-	uint8_t							stack_overflow;		// 16
-	uint32_t						saved_sp;			// 20 (aligned)
-	uint32_t						saved_exc_return;	// 24
-	const char*						pcName;				// 28
-} _TaskHandle_TypeDef;							// 32 bytes
+	uint8_t							state;				// 13 (_Task_State_TypeDef)
+	uint32_t						saved_sp;			// 16 (4-byte aligned)
+	uint32_t						saved_exc_return;	// 20
+	const char*						pcName;				// 24
+} _Task_Handle_TypeDef;							// 28 bytes
+
+typedef enum {
+	TaskDeleted   = 0,  // Slot free / task removed
+	TaskBlocked   = 1,  // Waiting for period to expire / task returned
+	TaskReady     = 2,  // Period has expired, ready to be scheduled
+	TaskSuspended = 3   // Explicitly suspended
+} _Task_State_TypeDef;
 
 // TCB = Task Control Block
-#define _TCB_SIZE		32
-#define _TCB_SAVED_SP	20
-#define _TCB_EXC_RETURN	24
-#define _TCB_NEEDS_INIT	15
+#define _TCB_SIZE           28    // sizeof(_Task_Handle_TypeDef)
+#define _TCB_SAVED_SP       16
+#define _TCB_EXC_RETURN     20
+
+// Stack frame in words: S16-S31(16) + R4-R11(8) + exception frame(8)
+// Must remain 32 regardless of _TCB_SIZE — ARM hardware exception frame is 8 words.
+#define _STACK_FRAME_WORDS  32
 
 // Stringify helper for inline assembly
 #define _STR_HELPER(x) #x
 #define _STR(x)        _STR_HELPER(x)
 
-_Static_assert(offsetof(_TaskHandle_TypeDef, saved_sp) == _TCB_SAVED_SP, "TCB saved_sp offset mismatch with assembly");
-_Static_assert(offsetof(_TaskHandle_TypeDef, saved_exc_return) == _TCB_EXC_RETURN, "TCB saved_exc_return offset mismatch with assembly");
-_Static_assert(offsetof(_TaskHandle_TypeDef, needs_init) == _TCB_NEEDS_INIT, "TCB needs_init offset mismatch with assembly");
-_Static_assert(sizeof(_TaskHandle_TypeDef) == _TCB_SIZE, "TCB size mismatch with assembly");
+_Static_assert(offsetof(_Task_Handle_TypeDef, saved_sp) == _TCB_SAVED_SP, "TCB saved_sp offset mismatch with assembly");
+_Static_assert(offsetof(_Task_Handle_TypeDef, saved_exc_return) == _TCB_EXC_RETURN, "TCB saved_exc_return offset mismatch with assembly");
+
+_Static_assert(sizeof(_Task_Handle_TypeDef) == _TCB_SIZE, "TCB size mismatch with assembly");
 
 // -------------------------------------------------------------------------
 // Private data
 // -------------------------------------------------------------------------
 
-static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
+static _Task_Handle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
 static int					_current_task = 0;
 
@@ -65,11 +72,11 @@ typedef struct {
 	uint32_t					min_cycles;
 	uint32_t					max_cycles;
 	uint32_t					last_start_cycle;
-} Scheduler_Task_Stats_TypeDef;
+} _Task_Stats_TypeDef;
 
-static Scheduler_Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
-static uint32_t						_last_stats_print_cycle;
-static volatile int					_stats_pending;
+static _Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
+static uint32_t				_last_stats_print_cycle;
+static volatile int			_stats_pending;
 
 // ISR cycle tracking (written by ISR_enter/exit, consumed by PendSV and PrintStats)
 static volatile uint32_t			_isr_total_cycles;
@@ -90,7 +97,6 @@ volatile Scheduler_Fault_Dump_TypeDef g_sched_fault;
 // Forward declarations (called from assembly)
 void SCHEDULER_Task_exit(void);
 static int SCHEDULER_SelectNextTask(void);
-void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr);
 void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason);
 void SCHEDULER_StartTick(void);
 static void SCHEDULER_PrintStats(void);
@@ -118,19 +124,18 @@ static void SCHEDULER_InitTaskStack(int i){
 	}
 
 	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i] + sizeof(_task_stacks[i])) & ~7U);
-	uint32_t *sp = stack_end - 32;
+	uint32_t *sp = stack_end - _STACK_FRAME_WORDS;
 
 	// sp[0..15]  S16-S31  (FPU callee-saved)
 	// sp[16..23] R4-R11   (core callee-saved)
 	// sp[24..31] exception frame: R0-R3, R12, LR, PC, xPSR
 
-	sp[29] = (uint32_t)SCHEDULER_Task_exit; // LR on task return
-	sp[30] = (uint32_t)_tasks[i].function;  // PC
-	sp[31] = 0x01000000UL;                  // xPSR (thumb bit)
+	sp[_STACK_FRAME_WORDS - 3] = (uint32_t)SCHEDULER_Task_exit; // LR on task return
+	sp[_STACK_FRAME_WORDS - 2] = (uint32_t)_tasks[i].function;  // PC
+	sp[_STACK_FRAME_WORDS - 1] = 0x01000000UL;                  // xPSR (thumb bit)
 
 	_tasks[i].saved_sp         = (uint32_t)&sp[16];
 	_tasks[i].saved_exc_return = 0xFFFFFFFDUL;
-	_tasks[i].needs_init       = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -161,8 +166,7 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
  */
 void SCHEDULER_Task_exit(void){
 	__disable_irq();
-	_tasks[_current_task].ready      = 0;
-	_tasks[_current_task].needs_init = 1;
+	_tasks[_current_task].state = TaskBlocked;
 
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	__enable_irq();
@@ -201,7 +205,7 @@ static int SCHEDULER_SelectNextTask(void){
 			i -= SCHEDULER_IDLE_TASK_INDEX;
 		}
 
-		if (_tasks[i].active && _tasks[i].ready) {
+		if (_tasks[i].state == TaskReady) {
 			if (_tasks[i].priority < best_prio) {
 				best_prio = _tasks[i].priority;
 				best = i;
@@ -218,7 +222,7 @@ static int SCHEDULER_SelectNextTask(void){
 		// Record stat data
 		uint32_t now = DWT->CYCCNT;
 		int prev = _current_task;
-		Scheduler_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
+		_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
 
 		uint32_t raw = now - previous_stats->last_start_cycle;
 		uint32_t isr_part = _task_isr_cycles[prev];
@@ -232,11 +236,11 @@ static int SCHEDULER_SelectNextTask(void){
 			if (active < previous_stats->min_cycles) previous_stats->min_cycles = active;
 			if (active > previous_stats->max_cycles) previous_stats->max_cycles = active;
 
-			if (_tasks[prev].ready && prev != SCHEDULER_IDLE_TASK_INDEX) {
+			if (_tasks[prev].state == TaskReady && prev != SCHEDULER_IDLE_TASK_INDEX) {
 				previous_stats->total_preempts++;
 			}
 
-			Scheduler_Task_Stats_TypeDef *next_stats = &_task_stats[best];
+			_Task_Stats_TypeDef *next_stats = &_task_stats[best];
 			next_stats->last_start_cycle = now;
 			next_stats->total_invocations++;
 		} else {
@@ -245,17 +249,6 @@ static int SCHEDULER_SelectNextTask(void){
 	}
 
 	return best;
-}
-
-/**
- * @brief Reinizializes Task
- *
- * @param [in] task_idx | Task index
- * @param [in] tcb_addr | TaskCodeBlock adress
- */
-void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
-	SCHEDULER_InitTaskStack(task_idx);
-	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -341,27 +334,6 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"mov	r5, #" _STR(_TCB_SIZE) "\n"
 		"mul	r0, r0, r5\n"
 		"add	r4, r4, r0\n"
-
-		"ldrb	r1, [r4, #" _STR(_TCB_NEEDS_INIT) "]\n"
-		"cmp	r1, #0\n"
-		"beq	1f\n"
-
-		"push	{r1, lr}\n"
-		"mov	r0, r4\n"
-		"ldr	r1, =_tasks\n"
-		"sub	r0, r0, r1\n"
-		"mov	r1, #" _STR(_TCB_SIZE) "\n"
-		"udiv	r0, r0, r1\n"
-		"mov	r1, r4\n"
-		"bl		SCHEDULER_ReinitTask\n"
-		"pop	{r1, lr}\n"
-
-		"ldr	r4, =_tasks\n"
-		"ldr	r2, =_current_task\n"
-		"ldr	r3, [r2]\n"
-		"mov	r5, #" _STR(_TCB_SIZE) "\n"
-		"mul	r3, r3, r5\n"
-		"add	r4, r4, r3\n"
 
 		"1:\n"
 		"ldr	r0, =_task_stacks\n"
@@ -479,8 +451,8 @@ static void SCHEDULER_PrintStats(void){
 	// Fill stat snapshots with data
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
 		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
-		if (_tasks[i].active && _tasks[i].function) {
-			Scheduler_Task_Stats_TypeDef *s = &_task_stats[i];
+		if (_tasks[i].state != TaskDeleted && _tasks[i].function) {
+			_Task_Stats_TypeDef *s = &_task_stats[i];
 			snap[snap_n].cycles = s->total_cycles;
 			snap[snap_n].min_cycles = (s->min_cycles == 0xFFFFFFFF) ? 0 : s->min_cycles;
 			snap[snap_n].max_cycles = s->max_cycles;
@@ -548,6 +520,7 @@ static void SCHEDULER_PrintStats(void){
  */
 void TIM7_IRQHandler(void){
 	SCHEDULER_ISR_enter();
+
 	uint32_t tim_flag;
 	TIMER_GetFlag(TIM7, TIM_SR_UIF, &tim_flag);
 	if (tim_flag) {
@@ -555,18 +528,25 @@ void TIM7_IRQHandler(void){
 
 		_sys_tick_ms++;
 
+		// Check which Tasks cycle time has expired
 		for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-			if (_tasks[i].active && _tasks[i].function != 0) {
+			if (_tasks[i].state != TaskDeleted && _tasks[i].state != TaskSuspended && _tasks[i].function != 0) {
 				if ((_sys_tick_ms - _tasks[i].last_run_ms)
 					>= _tasks[i].period_ms) {
 					_tasks[i].last_run_ms = _sys_tick_ms;
-					_tasks[i].ready       = 1;
+
+					if (_tasks[i].state == TaskBlocked) {
+						SCHEDULER_InitTaskStack(i);
+					}
+
+					_tasks[i].state = TaskReady;
 				}
 			}
 		}
 
 		SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 
+		// Look for stats to be printed
 		if (_scheduler_running
 			&& (_sys_tick_ms - _last_print_tick >= 1000)) {
 			_last_print_tick = _sys_tick_ms;
@@ -581,7 +561,7 @@ void TIM7_IRQHandler(void){
 // -------------------------------------------------------------------------
 
 SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
-	SCHEDULER_TaskFunction_TypeDef pvTaskCode,
+	SCHEDULER_Task_Function_TypeDef pvTaskCode,
 	const char* pcName,
 	uint32_t period_ms,
 	uint8_t priority,
@@ -592,7 +572,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 
 	int slot = -1;
 	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-		if (!_tasks[i].active) {
+		if (_tasks[i].state == TaskDeleted) {
 			slot = i;
 			break;
 		}
@@ -603,14 +583,12 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].function	    = pvTaskCode;
 	_tasks[slot].period_ms	    = period_ms;
 	_tasks[slot].last_run_ms    = _sys_tick_ms;
-	_tasks[slot].priority	    = priority;
-	_tasks[slot].stack_overflow = 0;
-	_tasks[slot].pcName         = pcName;
+	_tasks[slot].priority      = priority;
+	_tasks[slot].pcName        = pcName;
 
 	SCHEDULER_InitTaskStack(slot);
 
-	_tasks[slot].ready		    = 1;
-	_tasks[slot].active		    = 1;
+	_tasks[slot].state		    = TaskReady;
 
 	*taskIndex = (uint8_t)slot;
 
@@ -622,10 +600,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
 
-	_tasks[taskIndex].active     = 0;
+	_tasks[taskIndex].state      = TaskDeleted;
 	_tasks[taskIndex].function   = 0;
-	_tasks[taskIndex].ready      = 0;
-	_tasks[taskIndex].needs_init = 0;
 	_tasks[taskIndex].pcName     = 0;
 
 	return SCHEDULER_OK;
@@ -656,6 +632,44 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 	return SCHEDULER_OK;
 }
 
+SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+	if (_tasks[taskIndex].state == TaskDeleted) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+
+	__disable_irq();
+	_tasks[taskIndex].state = TaskSuspended;
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+	__enable_irq();
+
+	return SCHEDULER_OK;
+}
+
+SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+	if (_tasks[taskIndex].state != TaskSuspended) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+
+	__disable_irq();
+	_tasks[taskIndex].state = TaskReady;
+	_tasks[taskIndex].last_run_ms = _sys_tick_ms - _tasks[taskIndex].period_ms; // Make Sure it can be executed Immediately
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+	__enable_irq();
+
+	return SCHEDULER_OK;
+}
+
+void SCHEDULER_Task_suspend_self(void){
+	_tasks[_current_task].state = TaskSuspended;
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+}
+
 void SCHEDULER_Tasks_run(void){
 	__disable_irq();
 
@@ -663,12 +677,10 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].ready          = 1;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].active         = 1;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);
@@ -759,10 +771,6 @@ void SCHEDULER_FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 	g_sched_fault.psplim  = __get_PSPLIM();
 	g_sched_fault.control = __get_CONTROL();
 	g_sched_fault.exc_return = exc_return;
-
-	if (reason == 4 && (SCB->CFSR & SCB_CFSR_STKOF_Msk)) {
-		_tasks[_current_task].stack_overflow = 1;
-	}
 
 	if (frame) {
 		g_sched_fault.r0  = frame[0];

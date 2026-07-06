@@ -51,6 +51,7 @@ typedef struct {
 typedef struct {
     DMA2D_Config_TypeDef  cfg;
     volatile uint8_t      completed;
+    uint8_t               task_owner;
 } DMA2D_Handle_TypeDef;
 
 void     DMA2D_Init(DMA2D_Handle_TypeDef *h);

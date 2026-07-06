@@ -31,12 +31,11 @@
  * }
  * @endcode
  *
- * @note  A task that returns (run-to-completion) has its ready flag
- *        cleared by SCHEDULER_Task_exit and is re-marked ready by the
- *        TIM7 ISR only when its period elapses.  A while(1) task never
- *        returns, so its ready flag stays set; PendSV may still preempt
- *        it when a higher-priority task becomes ready, resuming it on
- *        the next tick
+ * @note  A task that returns (run-to-completion) transitions to
+ *        TaskBlocked via SCHEDULER_Task_exit and is moved back to
+ *        TaskReady by the TIM7 ISR when its period elapses.  A while(1)
+ *        task never returns, so it stays TaskReady; PendSV may still
+ *        preempt it when a higher-priority task becomes ready.
  *
  * Task Statistics
  * ---------------
@@ -85,9 +84,7 @@
 // For debugging on Fault
 #define SCHED_MAGIC						0x53434448u
 
-
-typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
-
+typedef void (*SCHEDULER_Task_Function_TypeDef)(void);
 typedef enum {
 	SCHEDULER_OK				=  0,
 	SCHEDULER_ERR_FULL			= -1,
@@ -131,17 +128,6 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
 SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(volatile const Scheduler_Fault_Dump_TypeDef** dump);
 
 /**
- * @brief  Get the free stack space for a task
- *
- * @param [in]  task | Task index
- * @param [out] free | Pointer to store free stack bytes
- *
- * @retval SCHEDULER_OK          on success
- * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid
- */
-SCHEDULER_Status_TypeDef SCHEDULER_GetTaskStackFree(uint8_t task, uint32_t* free);
-
-/**
  * @brief  Get the name of a task
  *
  * @param [in]  task | Task index
@@ -164,7 +150,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
  * @retval SCHEDULER_OK       on success
  * @retval SCHEDULER_ERR_FULL if no slot available
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_TaskFunction_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint8_t* taskIndex);
+SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint8_t* taskIndex);
 
 /**
  * @brief  Remove a task from the scheduler
@@ -199,6 +185,40 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
  * This function never returns.
  */
 void SCHEDULER_Tasks_run(void);
+
+/**
+ * @brief  Suspend a task (prevents it from being scheduled)
+ *
+ * @param [in] taskIndex | Task slot to suspend
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid or slot free
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex);
+
+/**
+ * @brief  Resume a suspended task (moves it to the ready state)
+ *
+ * @param [in] taskIndex | Task slot to resume
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid or not suspended
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex);
+
+/**
+ * @brief  Suspend the currently running task.
+ *
+ * Caller must hold IRQs disabled (__disable_irq()) for a race-free
+ * check-then-suspend pattern.  This function sets the current task's
+ * state to TaskSuspended and pends PendSV so the scheduler can
+ * switch to another ready task.
+ *
+ * @note   The caller should follow with __enable_irq() and a WFI
+ *         loop that waits for the condition that will trigger a
+ *         SCHEDULER_Task_resume() call (e.g. from a peripheral ISR).
+ */
+void SCHEDULER_Task_suspend_self(void);
 
 /**
  * @brief  Mark ISR entry for cycle tracking

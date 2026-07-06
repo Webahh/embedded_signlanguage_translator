@@ -24,6 +24,7 @@
 #include "simple_timer.h"
 #include "simple_text.h"
 #include "simple_touch.h"
+#include "palm_detection.h"
 #include "hand_landmark.h"
 #include "hand_landmark_preprocessing.h"
 #include "hand_landmark_postprocessing.h"
@@ -158,8 +159,10 @@ typedef enum {
 
 typedef enum {
     AI_STAGE_IDLE = 0,
+    AI_STAGE_WAIT_PALM,
     AI_STAGE_WAIT_LANDMARK_FROM_PALM,
-    AI_STAGE_WAIT_LANDMARK_TRACKING
+    AI_STAGE_WAIT_LANDMARK_TRACKING,
+    AI_STAGE_WAIT_FINGERALPHABET
 } AIPipelineStage_TypeDef;
 
 #define LANDMARK_PRESENCE_THRESHOLD  0.5f
@@ -175,6 +178,15 @@ static uint8_t landmark_lost_count = 0U;
 static uint32_t last_palm_search_tick = 0U;
 static uint32_t last_landmark_tick = 0U;
 static uint32_t last_fingeralphabet_tick = 0U;
+
+static uint8_t _saved_camera_buffer_idx;
+
+static uint32_t _palm_duration_ms;
+static uint32_t _landmark_duration_ms;
+static uint32_t _fingeralphabet_duration_ms;
+static uint32_t _palm_start_tick;
+static uint32_t _landmark_start_tick;
+static uint32_t _fingeralphabet_start_tick;
 
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 {
@@ -235,6 +247,7 @@ static bool _startLandmark(uint8_t camera_buffer_idx, AIPipelineStage_TypeDef ne
         return false;
     }
 
+    SCHEDULER_Tick_get(&_landmark_start_tick);
     ai_stage = next_stage;
 
     return true;
@@ -268,19 +281,70 @@ static void _runFingeralphabetIfDue(void)
         return;
     }
 
-    if (!FINGERALPHABET_Run(fingeralphabet_input, fingeralphabet_output)) {
-        DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
+    if (!FINGERALPHABET_Start(fingeralphabet_input)) {
+        DEBUG_PRINTF("Fingeralphabet start failed\r\n");
         return;
     }
 
-    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
-    DEBUG_PRINTF( "Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
+    SCHEDULER_Tick_get(&_fingeralphabet_start_tick);
+    ai_stage = AI_STAGE_WAIT_FINGERALPHABET;
 }
 
 void vAIPipelineTask(void)
 {
     uint32_t now;
     SCHEDULER_Tick_get(&now);
+
+    if (ai_stage == AI_STAGE_WAIT_PALM) {
+        AI_RunStepStatus_TypeDef palm_status = PALM_RunStep(&palm_output);
+
+        if (palm_status == AI_RUN_BUSY) {
+            return;
+        }
+
+        ai_stage = AI_STAGE_IDLE;
+
+        if (palm_status == AI_RUN_ERROR) {
+            return;
+        }
+
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _palm_duration_ms = now - _palm_start_tick;
+        }
+
+        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
+
+        if (!palm_valid) {
+            if (!palm_filter.detected) {
+                LTDC_Layer_Draw_ROIClearPrevious();
+                LTDC_Layer_Draw_LandmarksClearPrevious();
+            }
+            return;
+        }
+
+        if (!palm_filter.detected) {
+            LTDC_Layer_Draw_ROIClearPrevious();
+            LTDC_Layer_Draw_LandmarksClearPrevious();
+            return;
+        }
+
+        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
+                                    LTDC_Layer1Config.height, &landmark_roi)) {
+            _resetTracking();
+            return;
+        }
+
+        LTDC_Layer_Draw_ROIClearPrevious();
+        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
+
+        if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_FROM_PALM)) {
+            _resetTracking();
+        }
+        return;
+    }
 
     if ((ai_stage == AI_STAGE_WAIT_LANDMARK_FROM_PALM) ||
         (ai_stage == AI_STAGE_WAIT_LANDMARK_TRACKING)) {
@@ -297,6 +361,12 @@ void vAIPipelineTask(void)
         if (landmark_status == LANDMARK_RUN_ERROR) {
             _resetTracking();
             return;
+        }
+
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _landmark_duration_ms = now - _landmark_start_tick;
         }
 
         if (!_isLandmarkValid(&landmark_output)) {
@@ -334,6 +404,31 @@ void vAIPipelineTask(void)
         return;
     }
 
+    if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
+        AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
+
+        if (fa_status == AI_RUN_BUSY) {
+            return;
+        }
+
+        ai_stage = AI_STAGE_IDLE;
+
+        if (fa_status == AI_RUN_ERROR) {
+            DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
+            return;
+        }
+
+        {
+            uint32_t now;
+            SCHEDULER_Tick_get(&now);
+            _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
+        }
+
+        fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
+        DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
+        return;
+    }
+
     if (hand_state == HAND_STATE_PALM_SEARCH) {
         if (nn_frame_ready == 0U) {
             return;
@@ -359,8 +454,8 @@ void vAIPipelineTask(void)
         camera_frame_ready = 0U;
     }
 
+    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
     const uint8_t completed_idx = nn_completed_buffer_idx;
-    const uint8_t camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_disp_idx;
 
     switch (hand_state) {
     case HAND_STATE_PALM_SEARCH:
@@ -389,48 +484,18 @@ void vAIPipelineTask(void)
             return;
         }
 
-        if (!PALM_Run(&palm_output)) {
+        SCHEDULER_Tick_get(&_palm_start_tick);
+        if (!PALM_Start()) {
             return;
         }
 
-        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
-        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
-
-        if (!palm_valid) {
-            if (!palm_filter.detected) {
-                LTDC_Layer_Draw_ROIClearPrevious();
-                LTDC_Layer_Draw_LandmarksClearPrevious();
-            }
-
-            return;
-        }
-
-        if (!palm_filter.detected) {
-            LTDC_Layer_Draw_ROIClearPrevious();
-            LTDC_Layer_Draw_LandmarksClearPrevious();
-            return;
-        }
-
-        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
-        							LTDC_Layer1Config.height, &landmark_roi)) {
-            _resetTracking();
-            return;
-        }
-
-        LTDC_Layer_Draw_ROIClearPrevious();
-        LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
-
-        if (!_startLandmark(camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_FROM_PALM)) {
-            _resetTracking();
-            return;
-        }
-
+        ai_stage = AI_STAGE_WAIT_PALM;
         return;
     }
 
     case HAND_STATE_LANDMARK_TRACKING:
     {
-        if (!_startLandmark(camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_TRACKING)) {
+        if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_TRACKING)) {
             _handleInvalidLandmark();
             return;
         }
@@ -441,4 +506,20 @@ void vAIPipelineTask(void)
         _resetTracking();
         return;
     }
+}
+
+void vSystemInfoTask(void)
+{
+    char buf[12];
+
+    LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "P:%lums", (unsigned long)_palm_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "H:%lums", (unsigned long)_landmark_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    snprintf(buf, sizeof(buf), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
+    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
 }
