@@ -24,14 +24,21 @@ typedef struct {
 	uint32_t						period_ms;			//  4
 	uint32_t						last_run_ms;		//  8
 	uint8_t							priority;			// 12
-	uint8_t							ready;				// 13
-	uint8_t							active;				// 14
+	uint8_t							state;				// 13 (_Task_State_TypeDef)
+	uint8_t							reserved;			// 14
 	uint8_t							needs_init;			// 15
 	uint8_t							stack_overflow;		// 16
 	uint32_t						saved_sp;			// 20 (aligned)
 	uint32_t						saved_exc_return;	// 24
 	const char*						pcName;				// 28
-} _TaskHandle_TypeDef;							// 32 bytes
+} _Task_Handle_TypeDef;							// 32 bytes
+
+typedef enum {
+	TaskDeleted   = 0,  // Slot free / task removed
+	TaskBlocked   = 1,  // Waiting for period to expire / task returned
+	TaskReady     = 2,  // Period has expired, ready to be scheduled
+	TaskSuspended = 3   // Explicitly suspended
+} _Task_State_TypeDef;
 
 // TCB = Task Control Block
 #define _TCB_SIZE		32
@@ -43,16 +50,16 @@ typedef struct {
 #define _STR_HELPER(x) #x
 #define _STR(x)        _STR_HELPER(x)
 
-_Static_assert(offsetof(_TaskHandle_TypeDef, saved_sp) == _TCB_SAVED_SP, "TCB saved_sp offset mismatch with assembly");
-_Static_assert(offsetof(_TaskHandle_TypeDef, saved_exc_return) == _TCB_EXC_RETURN, "TCB saved_exc_return offset mismatch with assembly");
-_Static_assert(offsetof(_TaskHandle_TypeDef, needs_init) == _TCB_NEEDS_INIT, "TCB needs_init offset mismatch with assembly");
-_Static_assert(sizeof(_TaskHandle_TypeDef) == _TCB_SIZE, "TCB size mismatch with assembly");
+_Static_assert(offsetof(_Task_Handle_TypeDef, saved_sp) == _TCB_SAVED_SP, "TCB saved_sp offset mismatch with assembly");
+_Static_assert(offsetof(_Task_Handle_TypeDef, saved_exc_return) == _TCB_EXC_RETURN, "TCB saved_exc_return offset mismatch with assembly");
+_Static_assert(offsetof(_Task_Handle_TypeDef, needs_init) == _TCB_NEEDS_INIT, "TCB needs_init offset mismatch with assembly");
+_Static_assert(sizeof(_Task_Handle_TypeDef) == _TCB_SIZE, "TCB size mismatch with assembly");
 
 // -------------------------------------------------------------------------
 // Private data
 // -------------------------------------------------------------------------
 
-static _TaskHandle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
+static _Task_Handle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
 static int					_current_task = 0;
 
@@ -65,11 +72,11 @@ typedef struct {
 	uint32_t					min_cycles;
 	uint32_t					max_cycles;
 	uint32_t					last_start_cycle;
-} Scheduler_Task_Stats_TypeDef;
+} _Task_Stats_TypeDef;
 
-static Scheduler_Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
-static uint32_t						_last_stats_print_cycle;
-static volatile int					_stats_pending;
+static _Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
+static uint32_t				_last_stats_print_cycle;
+static volatile int			_stats_pending;
 
 // ISR cycle tracking (written by ISR_enter/exit, consumed by PendSV and PrintStats)
 static volatile uint32_t			_isr_total_cycles;
@@ -161,7 +168,7 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
  */
 void SCHEDULER_Task_exit(void){
 	__disable_irq();
-	_tasks[_current_task].ready      = 0;
+	_tasks[_current_task].state      = TaskBlocked;
 	_tasks[_current_task].needs_init = 1;
 
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
@@ -201,7 +208,7 @@ static int SCHEDULER_SelectNextTask(void){
 			i -= SCHEDULER_IDLE_TASK_INDEX;
 		}
 
-		if (_tasks[i].active && _tasks[i].ready) {
+		if (_tasks[i].state == TaskReady) {
 			if (_tasks[i].priority < best_prio) {
 				best_prio = _tasks[i].priority;
 				best = i;
@@ -218,7 +225,7 @@ static int SCHEDULER_SelectNextTask(void){
 		// Record stat data
 		uint32_t now = DWT->CYCCNT;
 		int prev = _current_task;
-		Scheduler_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
+		_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
 
 		uint32_t raw = now - previous_stats->last_start_cycle;
 		uint32_t isr_part = _task_isr_cycles[prev];
@@ -232,11 +239,11 @@ static int SCHEDULER_SelectNextTask(void){
 			if (active < previous_stats->min_cycles) previous_stats->min_cycles = active;
 			if (active > previous_stats->max_cycles) previous_stats->max_cycles = active;
 
-			if (_tasks[prev].ready && prev != SCHEDULER_IDLE_TASK_INDEX) {
+			if (_tasks[prev].state == TaskReady && prev != SCHEDULER_IDLE_TASK_INDEX) {
 				previous_stats->total_preempts++;
 			}
 
-			Scheduler_Task_Stats_TypeDef *next_stats = &_task_stats[best];
+			_Task_Stats_TypeDef *next_stats = &_task_stats[best];
 			next_stats->last_start_cycle = now;
 			next_stats->total_invocations++;
 		} else {
@@ -255,7 +262,7 @@ static int SCHEDULER_SelectNextTask(void){
  */
 void SCHEDULER_ReinitTask(int task_idx, uint32_t tcb_addr){
 	SCHEDULER_InitTaskStack(task_idx);
-	((_TaskHandle_TypeDef*)tcb_addr)->needs_init = 0;
+	((_Task_Handle_TypeDef*)tcb_addr)->needs_init = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -479,8 +486,8 @@ static void SCHEDULER_PrintStats(void){
 	// Fill stat snapshots with data
 	for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
 		if (i == SCHEDULER_IDLE_TASK_INDEX) continue;
-		if (_tasks[i].active && _tasks[i].function) {
-			Scheduler_Task_Stats_TypeDef *s = &_task_stats[i];
+		if (_tasks[i].state != TaskDeleted && _tasks[i].function) {
+			_Task_Stats_TypeDef *s = &_task_stats[i];
 			snap[snap_n].cycles = s->total_cycles;
 			snap[snap_n].min_cycles = (s->min_cycles == 0xFFFFFFFF) ? 0 : s->min_cycles;
 			snap[snap_n].max_cycles = s->max_cycles;
@@ -556,11 +563,11 @@ void TIM7_IRQHandler(void){
 		_sys_tick_ms++;
 
 		for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-			if (_tasks[i].active && _tasks[i].function != 0) {
+			if (_tasks[i].state != TaskDeleted && _tasks[i].state != TaskSuspended && _tasks[i].function != 0) {
 				if ((_sys_tick_ms - _tasks[i].last_run_ms)
 					>= _tasks[i].period_ms) {
 					_tasks[i].last_run_ms = _sys_tick_ms;
-					_tasks[i].ready       = 1;
+					_tasks[i].state       = TaskReady;
 				}
 			}
 		}
@@ -592,7 +599,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 
 	int slot = -1;
 	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-		if (!_tasks[i].active) {
+		if (_tasks[i].state == TaskDeleted) {
 			slot = i;
 			break;
 		}
@@ -609,8 +616,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 
 	SCHEDULER_InitTaskStack(slot);
 
-	_tasks[slot].ready		    = 1;
-	_tasks[slot].active		    = 1;
+	_tasks[slot].state		    = TaskReady;
 
 	*taskIndex = (uint8_t)slot;
 
@@ -622,9 +628,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
 
-	_tasks[taskIndex].active     = 0;
+	_tasks[taskIndex].state      = TaskDeleted;
 	_tasks[taskIndex].function   = 0;
-	_tasks[taskIndex].ready      = 0;
 	_tasks[taskIndex].needs_init = 0;
 	_tasks[taskIndex].pcName     = 0;
 
@@ -656,6 +661,39 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
 	return SCHEDULER_OK;
 }
 
+SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+	if (_tasks[taskIndex].state == TaskDeleted) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+
+	__disable_irq();
+	_tasks[taskIndex].state = TaskSuspended;
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+	__enable_irq();
+
+	return SCHEDULER_OK;
+}
+
+SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+	if (_tasks[taskIndex].state != TaskSuspended) {
+		return SCHEDULER_ERR_NOT_FOUND;
+	}
+
+	__disable_irq();
+	_tasks[taskIndex].state = TaskReady;
+	_tasks[taskIndex].last_run_ms = _sys_tick_ms;
+	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+	__enable_irq();
+
+	return SCHEDULER_OK;
+}
+
 void SCHEDULER_Tasks_run(void){
 	__disable_irq();
 
@@ -663,8 +701,7 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].ready          = 1;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].active         = 1;
+	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].needs_init     = 0;
 
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);

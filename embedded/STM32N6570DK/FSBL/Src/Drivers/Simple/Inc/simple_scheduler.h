@@ -31,12 +31,11 @@
  * }
  * @endcode
  *
- * @note  A task that returns (run-to-completion) has its ready flag
- *        cleared by SCHEDULER_Task_exit and is re-marked ready by the
- *        TIM7 ISR only when its period elapses.  A while(1) task never
- *        returns, so its ready flag stays set; PendSV may still preempt
- *        it when a higher-priority task becomes ready, resuming it on
- *        the next tick
+ * @note  A task that returns (run-to-completion) transitions to
+ *        TaskBlocked via SCHEDULER_Task_exit and is moved back to
+ *        TaskReady by the TIM7 ISR when its period elapses.  A while(1)
+ *        task never returns, so it stays TaskReady; PendSV may still
+ *        preempt it when a higher-priority task becomes ready.
  *
  * Task Statistics
  * ---------------
@@ -84,7 +83,6 @@
 
 // For debugging on Fault
 #define SCHED_MAGIC						0x53434448u
-
 
 typedef void (*SCHEDULER_TaskFunction_TypeDef)(void);
 
@@ -199,6 +197,26 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
  * This function never returns.
  */
 void SCHEDULER_Tasks_run(void);
+
+/**
+ * @brief  Suspend a task (prevents it from being scheduled)
+ *
+ * @param [in] taskIndex | Task slot to suspend
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid or slot free
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex);
+
+/**
+ * @brief  Resume a suspended task (moves it to the ready state)
+ *
+ * @param [in] taskIndex | Task slot to resume
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid or not suspended
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex);
 
 /**
  * @brief  Mark ISR entry for cycle tracking
