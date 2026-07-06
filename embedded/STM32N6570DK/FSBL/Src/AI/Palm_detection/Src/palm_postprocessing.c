@@ -27,9 +27,14 @@ typedef struct {
     uint16_t anchor_index;
 } PalmCandidate_TypeDef;
 
-static float PALM_Sigmoid(float value)
+static float PALM_Sigmoid(float x)
 {
-    return 1.0f / (1.0f + expf(-value));
+	if (x < -8.0f) return 0.0f;
+	if (x > 8.0f) return 1.0f;
+
+	// Pade Approcimation - good for ~1e-3
+	float x2 = x * x;
+	return (0.5f + 0.25f * x) / (1.0f - 0.25f * x + 0.125f * x2);
 }
 
 static int PALM_CompareCandidates(const void *candidate_a, const void *candidate_b)
