@@ -29,16 +29,8 @@ typedef struct {
     float world_landmarks[LANDMARK_VALUE_COUNT];
 } LandmarkNetworkOutput_TypeDef;
 
-typedef enum {
-    LANDMARK_RUN_ERROR = 0,
-    LANDMARK_RUN_BUSY,
-    LANDMARK_RUN_DONE
-} LandmarkRunStatus_TypeDef;
-
 AI_Status_TypeDef LANDMARK_Init(void);
 uint8_t *LANDMARK_GetInputBuffer(void);
-bool LANDMARK_Start(const uint8_t input[LANDMARK_INPUT_SIZE]);
-LandmarkRunStatus_TypeDef LANDMARK_RunStep(LandmarkNetworkOutput_TypeDef *output);
 bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output);
 
 #endif /* HAND_LANDMARK_H */

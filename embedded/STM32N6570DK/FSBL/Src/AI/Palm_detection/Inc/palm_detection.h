@@ -12,7 +12,6 @@
 #include <stdint.h>
 
 #include "simple_ai.h"
-#include "ai_runtime_internal.h"
 
 #define PALM_INPUT_WIDTH       192U
 #define PALM_INPUT_HEIGHT      192U
@@ -38,7 +37,5 @@ AI_Status_TypeDef PALM_Init(void);
 uint8_t *PALM_GetInputBuffer(void);
 
 bool PALM_Run(PalmNetworkOutput_TypeDef *output);
-bool PALM_Start(void);
-AI_RunStepStatus_TypeDef PALM_RunStep(PalmNetworkOutput_TypeDef *output);
 
 #endif

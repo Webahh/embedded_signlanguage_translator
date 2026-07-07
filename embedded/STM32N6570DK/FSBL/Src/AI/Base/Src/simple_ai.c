@@ -47,28 +47,6 @@ static void AI_EnableNpuRam(void)
     (void)RCC->AHB5ENR;
 }
 
-AI_RunStepStatus_TypeDef AI_RuntimeRunNetworkStep(NN_Instance_TypeDef *network)
-{
-    LL_ATON_RT_RetValues_t status;
-
-    if (network == NULL) {
-        return AI_RUN_ERROR;
-    }
-
-    status = LL_ATON_RT_RunEpochBlock(network);
-
-    if ((status == LL_ATON_RT_WFE) ||
-        (status == LL_ATON_RT_NO_WFE)) {
-        return AI_RUN_BUSY;
-    }
-
-    if (status == LL_ATON_RT_DONE) {
-        return AI_RUN_DONE;
-    }
-
-    return AI_RUN_ERROR;
-}
-
 bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
 {
     LL_ATON_RT_RetValues_t status;
@@ -93,6 +71,29 @@ bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
 
     return status == LL_ATON_RT_DONE;
 }
+
+AI_RunStepStatus_TypeDef AI_RuntimeRunNetworkStep(NN_Instance_TypeDef *network)
+{
+    LL_ATON_RT_RetValues_t status;
+
+    if (network == NULL) {
+        return AI_RUN_ERROR;
+    }
+
+    status = LL_ATON_RT_RunEpochBlock(network);
+
+    if ((status == LL_ATON_RT_WFE) ||
+        (status == LL_ATON_RT_NO_WFE)) {
+        return AI_RUN_BUSY;
+    }
+
+    if (status == LL_ATON_RT_DONE) {
+        return AI_RUN_DONE;
+    }
+
+    return AI_RUN_ERROR;
+}
+
 
 bool AI_IsInitialized(void)
 {
