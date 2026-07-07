@@ -151,7 +151,7 @@ static void SCHEDULER_InitTaskStack(int i){
 /**
  * @brief Idle task - waits for the next interrupt
  */
-__attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
+__attribute__((noreturn)) static void _Task_Idle(void){
 	while (1) {
 		if (_stats_pending) {
 			_stats_pending = 0;
@@ -264,22 +264,22 @@ static int SCHEDULER_SelectNextTask(void){
 // -------------------------------------------------------------------------
 
 static void _compute_psplim(int slot) {
-    uint32_t bytes = _task_stack_sizes[slot] * 4;
-    uint32_t guard = bytes / 4;
-    if (guard < 64) guard = 64;
-    if (guard > 512) guard = 512;
+	uint32_t bytes = _task_stack_sizes[slot] * 4;
+	uint32_t guard = bytes / 4;
+	if (guard < 64) guard = 64;
+	if (guard > 512) guard = 512;
 
-    uint32_t psp_limit = (uint32_t)_task_stack_bases[slot] + guard + SCHEDULER_EXCEPTION_FRAME_BYTES;
-    uint32_t stack_end = (uint32_t)_task_stack_bases[slot] + bytes;
+	uint32_t psp_limit = (uint32_t)_task_stack_bases[slot] + guard + SCHEDULER_EXCEPTION_FRAME_BYTES;
+	uint32_t stack_end = (uint32_t)_task_stack_bases[slot] + bytes;
 
-    if (psp_limit > stack_end - _STACK_FRAME_WORDS * 4) {
-        psp_limit = stack_end - _STACK_FRAME_WORDS * 4;
-    }
-    if (psp_limit < (uint32_t)_task_stack_bases[slot]) {
-        psp_limit = (uint32_t)_task_stack_bases[slot];
-    }
+	if (psp_limit > stack_end - _STACK_FRAME_WORDS * 4) {
+		psp_limit = stack_end - _STACK_FRAME_WORDS * 4;
+	}
+	if (psp_limit < (uint32_t)_task_stack_bases[slot]) {
+		psp_limit = (uint32_t)_task_stack_bases[slot];
+	}
 
-    _task_psplims[slot] = psp_limit;
+	_task_psplims[slot] = psp_limit;
 }
 
 // -------------------------------------------------------------------------
@@ -409,26 +409,6 @@ void SCHEDULER_StartTick(void){
 static uint32_t _last_print_tick = 0;
 static uint32_t _last_stats_tick = 0;
 
-/**
- * @brief Mark ISR entry for cycle tracking.
- *
- * Call at the very top of any peripheral ISR to measure its CPU cycle
- * contribution.  Nested ISRs are handled correctly — only the outermost
- * entry/exit pair records the full ISR burst.
- *
- * Every cycle spent in ISR context is subtracted from the interrupted
- * task's cycle total and accumulated in a separate ISR counter,
- * ensuring per-task %ACT reflects pure application time.
- *
- * Usage (place at top and bottom of every peripheral ISR):
- * @code{.c}
- * void XXX_IRQHandler(void){
- *     SCHEDULER_ISR_enter();
- *     // ... handler body ...
- *     SCHEDULER_ISR_exit();
- * }
- * @endcode
- */
 void SCHEDULER_ISR_enter(void){
 	if (_isr_nest == 0) {
 		_isr_entry_cycle = DWT->CYCCNT;
@@ -437,9 +417,6 @@ void SCHEDULER_ISR_enter(void){
 	_isr_nest++;
 }
 
-/**
- * @brief Mark ISR exit for cycle tracking (see SCHEDULER_ISR_enter).
- */
 void SCHEDULER_ISR_exit(void){
 	_isr_nest--;
 	if (_isr_nest == 0) {
@@ -605,11 +582,23 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 		stack_size_words = SCHEDULER_STACK_SIZE_WORDS;
 	}
 
-	int slot = -1;
-	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
-		if (_tasks[i].state == TaskDeleted) {
-			slot = i;
-			break;
+	int slot;
+	if (*taskIndex != 0xFF) {
+		slot = *taskIndex;
+		if (slot < 0 || slot >= SCHEDULER_MAX_TASKS
+			|| _tasks[slot].state != TaskDeleted) {
+			slot = -1;
+		}
+	} else {
+		slot = -1;
+	}
+
+	if (slot < 0) {
+		for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
+			if (_tasks[i].state == TaskDeleted) {
+				slot = i;
+				break;
+			}
 		}
 	}
 
@@ -627,21 +616,9 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].pcName        = pcName;
 
 	// Allocate or reuse stack
-	if (_task_stack_bases[slot] == NULL) {
-		if (_stack_pool_offset + stack_size_words > SCHEDULER_STACK_POOL_SIZE_WORDS) {
-			DEBUG_PRINTF("[SCHED] Task \"%s\" NOT added — stack pool full "
-				"(%u + %u > %u)\r\n",
-				pcName ? pcName : "?",
-				_stack_pool_offset, stack_size_words,
-				SCHEDULER_STACK_POOL_SIZE_WORDS);
-			*taskIndex = 0xFF;
-			return SCHEDULER_ERR_FULL;
-		}
-		_task_stack_bases[slot] = &_stack_pool[_stack_pool_offset];
-		_task_stack_sizes[slot] = stack_size_words;
-		_stack_pool_offset += stack_size_words;
-	} else if (stack_size_words > _task_stack_sizes[slot]) {
-		// Reuse slot but old stack too small — allocate fresh, leave hole
+	int need_new = (_task_stack_bases[slot] == NULL)
+				|| (stack_size_words > _task_stack_sizes[slot]);
+	if (need_new) {
 		if (_stack_pool_offset + stack_size_words > SCHEDULER_STACK_POOL_SIZE_WORDS) {
 			DEBUG_PRINTF("[SCHED] Task \"%s\" NOT added — stack pool full "
 				"(%u + %u > %u)\r\n",
@@ -745,26 +722,11 @@ void SCHEDULER_Task_suspend_self(void){
 void SCHEDULER_Tasks_run(void){
 	__disable_irq();
 
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].function       = SCHEDULER_IdleTask;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].period_ms      = 0;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].last_run_ms    = 0;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].priority       = 0xFF;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
-	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
-
-	if (_stack_pool_offset + 512 > SCHEDULER_STACK_POOL_SIZE_WORDS) {
-		DEBUG_PRINTF("[SCHED] FATAL: stack pool too small for idle task "
-			"(%u + 512 > %u)\r\n",
-			_stack_pool_offset, SCHEDULER_STACK_POOL_SIZE_WORDS);
+	uint8_t idle_slot = SCHEDULER_IDLE_TASK_INDEX;
+	if (SCHEDULER_Task_add(_Task_Idle, "Idle", 0, 0xFF, 512, &idle_slot)
+		!= SCHEDULER_OK) {
 		while (1) { __WFI(); }
 	}
-	_task_stack_bases[SCHEDULER_IDLE_TASK_INDEX] = &_stack_pool[_stack_pool_offset];
-	_task_stack_sizes[SCHEDULER_IDLE_TASK_INDEX] = 512;
-	_stack_pool_offset += 512;
-
-	_compute_psplim(SCHEDULER_IDLE_TASK_INDEX);
-
-	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);
@@ -830,14 +792,6 @@ uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex){
 SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex){
 	if (taskIndex == 0) { return SCHEDULER_ERR_NOT_FOUND; }
 	*taskIndex = _current_task;
-	return SCHEDULER_OK;
-}
-
-SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(
-	volatile const Scheduler_Fault_Dump_TypeDef** dump){
-
-	if (dump == 0) { return SCHEDULER_ERR_NOT_FOUND; }
-	*dump = &g_sched_fault;
 	return SCHEDULER_OK;
 }
 

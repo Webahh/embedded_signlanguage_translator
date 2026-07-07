@@ -76,17 +76,11 @@
 #define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
 
 #define SCHEDULER_STACK_SIZE_WORDS      2048U
-#define SCHEDULER_STACK_SIZE_BYTES      (SCHEDULER_STACK_SIZE_WORDS * 4)
-// Guard band: ensures headroom for PendSV save (R4-R11 + S16-S31 if FP active,
-// up to 24 words = 96 bytes) plus generous reserve.
-#define SCHEDULER_STACK_GUARD_BYTES     512U
-
 // Exception frame reserved: hardware auto-push on exception entry.
 // With ASPEN+LSPEN enabled (see SCHEDULER_Tasks_run()), non-FPU ISRs
 // push only the basic 8-word frame (32 B) onto the task's PSP.
 // The ISR body itself runs on MSP, not the task stack.
-#define SCHEDULER_EXCEPTION_FRAME_WORDS 8
-#define SCHEDULER_EXCEPTION_FRAME_BYTES (SCHEDULER_EXCEPTION_FRAME_WORDS * 4)
+#define SCHEDULER_EXCEPTION_FRAME_BYTES (8 * 4)
 
 #define SCHEDULER_STACK_POOL_SIZE_WORDS 8192
 
@@ -115,7 +109,7 @@ typedef struct {
 	uint32_t	r0, r1, r2, r3, r12, lr, pc, xpsr;
 } Scheduler_Fault_Dump_TypeDef;
 
-// ── Mutable runtime state ──
+// --- Mutable runtime state ---
 extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
 
 /**
@@ -126,15 +120,6 @@ extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
  * @retval SCHEDULER_OK on success
  */
 SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
-
-/**
- * @brief  Get the last fault dump
- *
- * @param [out] dump | Pointer to store the fault-dump address
- *
- * @retval SCHEDULER_OK on success
- */
-SCHEDULER_Status_TypeDef SCHEDULER_GetLastFault(volatile const Scheduler_Fault_Dump_TypeDef** dump);
 
 /**
  * @brief  Get the name of a task
@@ -252,10 +237,24 @@ uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex);
 uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex);
 
 /**
- * @brief  Mark ISR entry for cycle tracking
+ * @brief Mark ISR entry for cycle tracking.
  *
- * Call at the top of every peripheral ISR.  See simple_scheduler.c for
- * full documentation.
+ * Call at the very top of any peripheral ISR to measure its CPU cycle
+ * contribution.  Nested ISRs are handled correctly — only the outermost
+ * entry/exit pair records the full ISR burst.
+ *
+ * Every cycle spent in ISR context is subtracted from the interrupted
+ * task's cycle total and accumulated in a separate ISR counter,
+ * ensuring per-task %ACT reflects pure application time.
+ *
+ * Usage (place at top and bottom of every peripheral ISR):
+ * @code{.c}
+ * void XXX_IRQHandler(void){
+ *     SCHEDULER_ISR_enter();
+ *     // ... handler body ...
+ *     SCHEDULER_ISR_exit();
+ * }
+ * @endcode
  */
 void SCHEDULER_ISR_enter(void);
 

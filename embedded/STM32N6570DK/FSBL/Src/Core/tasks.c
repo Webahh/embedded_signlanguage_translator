@@ -33,9 +33,6 @@
 #include "simple_dma2d.h"
 #include "ui.h"
 
-#define LED2_PIN 10
-#define BG_NUM_COLORS 3
-
 static volatile int ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
