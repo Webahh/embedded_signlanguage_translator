@@ -193,9 +193,10 @@ TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h) {
 }
 
 void TOUCH_GetPending(uint8_t *p) {
-	*p = _touch_pending;
-	if (p)
+	if (p) {
+		*p = _touch_pending;
 		_touch_pending = 0;
+	}
 }
 
 TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,

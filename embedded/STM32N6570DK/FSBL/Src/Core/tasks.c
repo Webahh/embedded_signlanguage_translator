@@ -119,14 +119,15 @@ void vAETask(void){
 
 // Poll touch, dispatch to drawer, draw a blue dot on press
 void vTouchTask(void){
-	uint8_t pending = 0;
-	TOUCH_GetPending(&pending);
+    static uint32_t last_ms;
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
+    if (now - last_ms < 30) return;
+
+    uint8_t pending = 0;
+    TOUCH_GetPending(&pending);
     if (pending)
     {
-        static uint32_t last_ms;
-        uint32_t now;
-        SCHEDULER_Tick_get(&now);
-        if (now - last_ms < 30) return;
         last_ms = now;
 
         TOUCH_Data_TypeDef data;
@@ -136,7 +137,7 @@ void vTouchTask(void){
         UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed,
             &LTDC_Layer2Config, NULL);
 
-        // Paint touch feedback dot on the camera layer
+        // Paint touch feedbac
         if (data.pressed)
         {
         	int next_idx = ltdc_layer_bg_buffer_disp_idx;
@@ -657,6 +658,25 @@ void vAIPipelineTask(void)
     }
 }
 
+static void _printStackUsage(void)
+{
+    static uint32_t last_print = 0;
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
+    if (now - last_print < 3000) return;
+    last_print = now;
+
+    DEBUG_PRINTF("\r\n--- Stack Usage (words) ---\r\n");
+    for (int i = 0; i < SCHEDULER_MAX_TASKS; i++) {
+        const char *name;
+        if (SCHEDULER_GetTaskName((uint8_t)i, &name) != SCHEDULER_OK) name = "?";
+        uint32_t used = SCHEDULER_GetTaskStackUsed((uint8_t)i);
+        DEBUG_PRINTF("  [%d] %-16s %4u / %u\r\n",
+            i, name, used, SCHEDULER_DEFAULT_STACK_SIZE);
+    }
+    DEBUG_PRINTF("--------------------------\r\n");
+}
+
 void vSystemInfoTask(void)
 {
     char buf[12];
@@ -671,4 +691,6 @@ void vSystemInfoTask(void)
 
     snprintf(buf, sizeof(buf), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
     TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    _printStackUsage();
 }

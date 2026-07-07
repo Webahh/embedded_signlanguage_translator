@@ -578,7 +578,12 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 		}
 	}
 
-	if (slot < 0) { return SCHEDULER_ERR_FULL; }
+	if (slot < 0) {
+		DEBUG_PRINTF("[SCHED] Task \"%s\" NOT added — no free slot (max %u)\r\n",
+			pcName ? pcName : "?", SCHEDULER_MAX_TASKS);
+		*taskIndex = 0xFF;
+		return SCHEDULER_ERR_FULL;
+	}
 
 	_tasks[slot].function	    = pvTaskCode;
 	_tasks[slot].period_ms	    = period_ms;
@@ -706,6 +711,26 @@ void SCHEDULER_Tasks_run(void){
 	while (1) {
 		__WFI();
 	}
+}
+
+// -------------------------------------------------------------------------
+// Stack measurement
+// -------------------------------------------------------------------------
+
+uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_MAX_TASKS) {
+		return 0;
+	}
+
+	uint32_t *base = (uint32_t *)((uint32_t)_task_stacks[taskIndex] & ~7U);
+
+	for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+		if (base[j] != 0xA5A5A5A5) {
+			return SCHEDULER_DEFAULT_STACK_SIZE - j;
+		}
+	}
+
+	return 0;
 }
 
 // -------------------------------------------------------------------------

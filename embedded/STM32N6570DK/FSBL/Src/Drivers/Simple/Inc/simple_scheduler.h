@@ -221,6 +221,18 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex);
 void SCHEDULER_Task_suspend_self(void);
 
 /**
+ * @brief  Get the stack usage (high-water mark) for a task
+ *
+ * Scans from the stack base upward counting words that have been
+ * overwritten (no longer equal to the initial 0xA5A5A5A5 pattern).
+ *
+ * @param [in] taskIndex | Task slot index
+ *
+ * @return Number of 32-bit words used (0 if invalid index)
+ */
+uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex);
+
+/**
  * @brief  Mark ISR entry for cycle tracking
  *
  * Call at the top of every peripheral ISR.  See simple_scheduler.c for

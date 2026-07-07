@@ -30,7 +30,7 @@ void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx)
 
 void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 {
-	static uint8_t systemtime_id;
+	static uint8_t systemtime_id = 0xFF;
 	(void)idx;
 	(void)ctx;
 	if (val) {
@@ -43,7 +43,7 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 
 void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 {
-	static uint8_t systeminfo_id;
+	static uint8_t systeminfo_id = 0xFF;
 	(void)idx;
 	(void)ctx;
 	if (val) {
