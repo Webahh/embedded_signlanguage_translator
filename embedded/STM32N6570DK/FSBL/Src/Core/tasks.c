@@ -671,8 +671,9 @@ static void _printStackUsage(void)
         const char *name;
         if (SCHEDULER_GetTaskName((uint8_t)i, &name) != SCHEDULER_OK) name = "?";
         uint32_t used = SCHEDULER_GetTaskStackUsed((uint8_t)i);
+        uint32_t size = SCHEDULER_GetTaskStackSize((uint8_t)i);
         DEBUG_PRINTF("  [%d] %-16s %4u / %u\r\n",
-            i, name, used, SCHEDULER_DEFAULT_STACK_SIZE);
+            i, name, used, size);
     }
     DEBUG_PRINTF("--------------------------\r\n");
 }

@@ -70,8 +70,13 @@ DMA2D_Status_TypeDef DMA2D_Transfer(DMA2D_Handle_TypeDef *h){
 }
 
 void DMA2D_IRQHandler(void){
+	SCHEDULER_ISR_enter();
+
 	DMA2D_Handle_TypeDef *h = _active_handle;
-	if (!h) return;
+	if (!h) {
+		SCHEDULER_ISR_exit();
+		return;
+	}
 
 	uint32_t isr = DMA2D->ISR;
 
@@ -98,4 +103,6 @@ void DMA2D_IRQHandler(void){
 		h->completed = 1;
 		SCHEDULER_Task_resume(h->task_owner);
 	}
+
+	SCHEDULER_ISR_exit();
 }

@@ -34,7 +34,7 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 	(void)idx;
 	(void)ctx;
 	if (val) {
-		SCHEDULER_Task_add(vSystemTimeTask, "Sys Systemtime", 100, 1, &systemtime_id);
+		SCHEDULER_Task_add(vSystemTimeTask, "Sys Systemtime", 100, 1, 256, &systemtime_id);
 	} else {
 		SCHEDULER_Task_remove(systemtime_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
@@ -47,7 +47,7 @@ void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 	(void)idx;
 	(void)ctx;
 	if (val) {
-		SCHEDULER_Task_add(vSystemInfoTask, "Sys Systeminfo", 100, 1, &systeminfo_id);
+		SCHEDULER_Task_add(vSystemInfoTask, "Sys Systeminfo", 100, 1, 256, &systeminfo_id);
 	} else {
 		SCHEDULER_Task_remove(systeminfo_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);

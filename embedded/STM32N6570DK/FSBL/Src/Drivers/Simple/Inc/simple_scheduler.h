@@ -23,7 +23,7 @@
  * void app_init(void){
  *     SCHEDULER_System_init();
  *     uint8_t idx;
- *     SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, &idx);
+ *     SCHEDULER_Task_add(vLEDTask, "LED", 500, 2, 128, &idx);
  * }
  *
  * void app_run(void){
@@ -77,9 +77,20 @@
 #define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
 
 #define SCHEDULER_STACK_SIZE_WORDS      4096U
-#define SCHEDULER_STACK_SIZE_BYTES      16384U
+#define SCHEDULER_STACK_SIZE_BYTES      (SCHEDULER_STACK_SIZE_WORDS * 4)
+// Guard band: ensures headroom for PendSV save (R4-R11 + S16-S31 if FP active,
+// up to 24 words = 96 bytes) plus generous reserve.
 #define SCHEDULER_STACK_GUARD_BYTES     512U
+
+// Exception frame reserved: hardware auto-push on exception entry.
+// With ASPEN+LSPEN enabled (see SCHEDULER_Tasks_run()), non-FPU ISRs
+// push only the basic 8-word frame (32 B) onto the task's PSP.
+// The ISR body itself runs on MSP, not the task stack.
+#define SCHEDULER_EXCEPTION_FRAME_WORDS 8
+#define SCHEDULER_EXCEPTION_FRAME_BYTES (SCHEDULER_EXCEPTION_FRAME_WORDS * 4)
+
 #define SCHEDULER_DEFAULT_STACK_SIZE    SCHEDULER_STACK_SIZE_WORDS
+#define SCHEDULER_STACK_POOL_SIZE_WORDS (SCHEDULER_MAX_TASKS * SCHEDULER_STACK_SIZE_WORDS)
 
 // For debugging on Fault
 #define SCHED_MAGIC						0x53434448u
@@ -141,16 +152,17 @@ SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
 /**
  * @brief  Register a periodic task with the scheduler
  *
- * @param [in]  pvTaskCode | Pointer to the task function
- * @param [in]  pcName     | Human-readable task name
- * @param [in]  period_ms  | Task period in milliseconds
- * @param [in]  priority   | Scheduling priority (0 = highest, 255 = lowest)
- * @param [out] taskIndex  | Assigned task slot index
+ * @param [in]  pvTaskCode      | Pointer to the task function
+ * @param [in]  pcName          | Human-readable task name
+ * @param [in]  period_ms       | Task period in milliseconds
+ * @param [in]  priority        | Scheduling priority (0 = highest, 255 = lowest)
+ * @param [in]  stack_size_words| Stack size in 32-bit words
+ * @param [out] taskIndex       | Assigned task slot index
  *
  * @retval SCHEDULER_OK       on success
  * @retval SCHEDULER_ERR_FULL if no slot available
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint8_t* taskIndex);
+SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint32_t stack_size_words, uint8_t* taskIndex);
 
 /**
  * @brief  Remove a task from the scheduler
@@ -231,6 +243,15 @@ void SCHEDULER_Task_suspend_self(void);
  * @return Number of 32-bit words used (0 if invalid index)
  */
 uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex);
+
+/**
+ * @brief  Get the allocated stack size for a task
+ *
+ * @param [in] taskIndex | Task slot index
+ *
+ * @return Stack size in 32-bit words (0 if invalid index)
+ */
+uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex);
 
 /**
  * @brief  Mark ISR entry for cycle tracking

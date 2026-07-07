@@ -88,9 +88,13 @@ static volatile uint32_t			_task_isr_cycles[SCHEDULER_MAX_TASKS];
 // Diagnostic: counts how many times WFI returns per stats window
 static uint32_t						_idle_wakeups;
 
-static uint32_t _task_stacks[SCHEDULER_MAX_TASKS][SCHEDULER_DEFAULT_STACK_SIZE] __attribute__((aligned(8)));
+static uint32_t _stack_pool[SCHEDULER_STACK_POOL_SIZE_WORDS] __attribute__((aligned(8)));
+static uint32_t* _task_stack_bases[SCHEDULER_MAX_TASKS];
+static uint32_t  _task_stack_sizes[SCHEDULER_MAX_TASKS];
+static uint32_t  _task_psplims[SCHEDULER_MAX_TASKS];
+static uint32_t  _stack_pool_offset = 0;
 
-_Static_assert(sizeof(_task_stacks[0]) == SCHEDULER_STACK_SIZE_BYTES,"SCHEDULER_STACK_SIZE_BYTES mismatch");
+_Static_assert(sizeof(_stack_pool) >= SCHEDULER_STACK_POOL_SIZE_WORDS * 4, "SCHEDULER_STACK_POOL_SIZE_WORDS mismatch");
 
 volatile Scheduler_Fault_Dump_TypeDef g_sched_fault;
 
@@ -117,13 +121,14 @@ void NMI_Handler(void);
  * @param i | task index
  */
 static void SCHEDULER_InitTaskStack(int i){
-	uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stacks[i] & ~7U);
+	uint32_t words = _task_stack_sizes[i];
+	uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stack_bases[i] & ~7U);
 
-	for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+	for (uint32_t j = 0; j < words; j++) {
 		stack_base[j] = 0xA5A5A5A5;
 	}
 
-	uint32_t *stack_end = (uint32_t *)(((uint32_t)_task_stacks[i] + sizeof(_task_stacks[i])) & ~7U);
+	uint32_t *stack_end = (uint32_t *)((uint32_t)stack_base + words * 4);
 	uint32_t *sp = stack_end - _STACK_FRAME_WORDS;
 
 	// sp[0..15]  S16-S31  (FPU callee-saved)
@@ -149,7 +154,7 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
 		if (_stats_pending) {
 			_stats_pending = 0;
-			SCHEDULER_PrintStats();
+//			SCHEDULER_PrintStats();
 			_idle_wakeups = 0;
 		}
 		_idle_wakeups++;
@@ -252,6 +257,29 @@ static int SCHEDULER_SelectNextTask(void){
 }
 
 // -------------------------------------------------------------------------
+// PSPLIM computation
+// -------------------------------------------------------------------------
+
+static void _compute_psplim(int slot) {
+    uint32_t bytes = _task_stack_sizes[slot] * 4;
+    uint32_t guard = bytes / 4;
+    if (guard < 64) guard = 64;
+    if (guard > 512) guard = 512;
+
+    uint32_t psp_limit = (uint32_t)_task_stack_bases[slot] + guard + SCHEDULER_EXCEPTION_FRAME_BYTES;
+    uint32_t stack_end = (uint32_t)_task_stack_bases[slot] + bytes;
+
+    if (psp_limit > stack_end - _STACK_FRAME_WORDS * 4) {
+        psp_limit = stack_end - _STACK_FRAME_WORDS * 4;
+    }
+    if (psp_limit < (uint32_t)_task_stack_bases[slot]) {
+        psp_limit = (uint32_t)_task_stack_bases[slot];
+    }
+
+    _task_psplims[slot] = psp_limit;
+}
+
+// -------------------------------------------------------------------------
 // Context switch - SVC (first-task bootstrap)
 // -------------------------------------------------------------------------
 
@@ -268,11 +296,9 @@ __attribute__((naked)) void SVC_Handler(void){
 		"mul    r0, r3, r1                          \n"
 		"add    r2, r2, r0                          \n"
 
-		"ldr    r1, =_task_stacks                   \n"
-		"ldr    r0, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-		"mul    r0, r3, r0                          \n"
-		"add    r0, r1, r0                          \n"
-		"add    r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
+		"ldr    r0, =_task_psplims                  \n"
+		"lsl    r1, r3, #2                          \n"
+		"ldr    r0, [r0, r1]                        \n"
 		"msr    psplim, r0                          \n"
 		"isb                                        \n"
 
@@ -336,13 +362,11 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"add	r4, r4, r0\n"
 
 		"1:\n"
-		"ldr	r0, =_task_stacks\n"
+		"ldr	r0, =_task_psplims\n"
 		"ldr	r2, =_current_task\n"
 		"ldr	r3, [r2]\n"
-		"ldr	r2, =" _STR(SCHEDULER_STACK_SIZE_BYTES) "\n"
-		"mul	r3, r3, r2\n"
-		"add	r0, r0, r3\n"
-		"add	r0, r0, #" _STR(SCHEDULER_STACK_GUARD_BYTES) "\n"
+		"lsl	r3, r3, #2\n"
+		"ldr	r0, [r0, r3]\n"
 		"msr	psplim, r0\n"
 		"isb\n"
 
@@ -565,10 +589,18 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	const char* pcName,
 	uint32_t period_ms,
 	uint8_t priority,
+	uint32_t stack_size_words,
 	uint8_t* taskIndex){
 
 	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND;  }
 	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }
+
+	if (stack_size_words < (_STACK_FRAME_WORDS + 16)) {
+		stack_size_words = _STACK_FRAME_WORDS + 16;
+	}
+	if (stack_size_words > SCHEDULER_STACK_SIZE_WORDS) {
+		stack_size_words = SCHEDULER_STACK_SIZE_WORDS;
+	}
 
 	int slot = -1;
 	for (int i = 0; i < SCHEDULER_IDLE_TASK_INDEX; i++) {
@@ -590,6 +622,15 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	_tasks[slot].last_run_ms    = _sys_tick_ms;
 	_tasks[slot].priority      = priority;
 	_tasks[slot].pcName        = pcName;
+
+	// Allocate or reuse stack
+	if (_task_stack_bases[slot] == NULL) {
+		_task_stack_bases[slot] = &_stack_pool[_stack_pool_offset];
+		_task_stack_sizes[slot] = stack_size_words;
+		_stack_pool_offset += stack_size_words;
+	}
+
+	_compute_psplim(slot);
 
 	SCHEDULER_InitTaskStack(slot);
 
@@ -685,13 +726,22 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
+	_task_stack_bases[SCHEDULER_IDLE_TASK_INDEX] = &_stack_pool[_stack_pool_offset];
+	_task_stack_sizes[SCHEDULER_IDLE_TASK_INDEX] = 64;
+	_stack_pool_offset += 64;
+
+	_compute_psplim(SCHEDULER_IDLE_TASK_INDEX);
+
 	SCHEDULER_InitTaskStack(SCHEDULER_IDLE_TASK_INDEX);
 
 	NVIC_SetPriority(PendSV_IRQn, 0xFF);
 	NVIC_SetPriority(SVCall_IRQn, 0x00);
 	NVIC_SetPriority(TIM7_IRQn, 0x80);
 
-	FPU->FPCCR &= ~FPU_FPCCR_LSPEN_Msk;
+	// Enable auto FPU context save (ASPEN) and lazy stacking (LSPEN)
+	// This ensures proper FPU context management across context switches.
+	// With LSPEN=1, exception frame is 8 words (no FPU push) for non-FPU ISRs.
+	FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk;
 
 	_current_task = SCHEDULER_SelectNextTask();
 
@@ -717,16 +767,24 @@ void SCHEDULER_Tasks_run(void){
 // Stack measurement
 // -------------------------------------------------------------------------
 
+uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex){
+	if (taskIndex >= SCHEDULER_MAX_TASKS) { return 0; }
+	return _task_stack_sizes[taskIndex];
+}
+
 uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex){
 	if (taskIndex >= SCHEDULER_MAX_TASKS) {
 		return 0;
 	}
 
-	uint32_t *base = (uint32_t *)((uint32_t)_task_stacks[taskIndex] & ~7U);
+	uint32_t words = _task_stack_sizes[taskIndex];
+	if (words == 0) { return 0; }
 
-	for (uint32_t j = 0; j < SCHEDULER_DEFAULT_STACK_SIZE; j++) {
+	uint32_t *base = (uint32_t *)((uint32_t)_task_stack_bases[taskIndex] & ~7U);
+
+	for (uint32_t j = 0; j < words; j++) {
 		if (base[j] != 0xA5A5A5A5) {
-			return SCHEDULER_DEFAULT_STACK_SIZE - j;
+			return words - j;
 		}
 	}
 

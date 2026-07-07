@@ -45,8 +45,6 @@ void USART_Config(USART_TypeDef* USARTX, int baudrate, int use_irq, GPIO_cfg_Typ
 
 	if (use_irq){
 		USARTX->CR1 |= USART_CR1_RXNEIE;
-        NVIC_SetPriority(USART1_IRQn, 2);
-        NVIC_EnableIRQ(USART1_IRQn);
 	}
 
 	USARTX-> CR1 |= USART_CR1_UE;
