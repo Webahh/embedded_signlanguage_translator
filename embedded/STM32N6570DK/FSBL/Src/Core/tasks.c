@@ -176,9 +176,6 @@ typedef enum {
 
 typedef enum {
     AI_STAGE_IDLE = 0,
-    AI_STAGE_WAIT_PALM,
-    AI_STAGE_WAIT_LANDMARK_FROM_PALM,
-    AI_STAGE_WAIT_LANDMARK_TRACKING,
     AI_STAGE_WAIT_FINGERALPHABET
 } AIPipelineStage_TypeDef;
 
@@ -349,7 +346,7 @@ static void _resetTracking(void)
     _clearPredictedOverlay();
 }
 
-static bool _startLandmark(uint8_t camera_buffer_idx, AIPipelineStage_TypeDef next_stage)
+static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
 {
     const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
     													 LTDC_Layer1Config.width,
@@ -384,12 +381,10 @@ static bool _startLandmark(uint8_t camera_buffer_idx, AIPipelineStage_TypeDef ne
         return false;
     }
 
-    if (!LANDMARK_Start(NULL)) {
+    SCHEDULER_Tick_get(&_landmark_start_tick);
+    if (!LANDMARK_Run(&landmark_output)) {
         return false;
     }
-
-    SCHEDULER_Tick_get(&_landmark_start_tick);
-    ai_stage = next_stage;
 
     return true;
 }
@@ -438,119 +433,6 @@ void vAIPipelineTask(void)
 
     _redrawPredictedOverlayFromLastMeasurement();
 
-    if (ai_stage == AI_STAGE_WAIT_PALM) {
-        AI_RunStepStatus_TypeDef palm_status = PALM_RunStep(&palm_output);
-
-        if (palm_status == AI_RUN_BUSY) {
-            return;
-        }
-
-        ai_stage = AI_STAGE_IDLE;
-
-        if (palm_status == AI_RUN_ERROR) {
-            return;
-        }
-
-        {
-            uint32_t now;
-            SCHEDULER_Tick_get(&now);
-            _palm_duration_ms = now - _palm_start_tick;
-        }
-
-        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
-        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
-
-        if (!palm_valid) {
-            if (!palm_filter.detected) {
-            	_clearPredictedOverlay();
-            }
-            return;
-        }
-
-        if (!palm_filter.detected) {
-        	_clearPredictedOverlay();
-            return;
-        }
-
-        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
-                                    LTDC_Layer1Config.height, &landmark_roi)) {
-            _resetTracking();
-            return;
-        }
-
-        if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_FROM_PALM)) {
-            _resetTracking();
-        }
-        return;
-    }
-
-    if ((ai_stage == AI_STAGE_WAIT_LANDMARK_FROM_PALM) ||
-        (ai_stage == AI_STAGE_WAIT_LANDMARK_TRACKING)) {
-
-        const AIPipelineStage_TypeDef finished_stage = ai_stage;
-        LandmarkRunStatus_TypeDef landmark_status = LANDMARK_RunStep(&landmark_output);
-
-        if (landmark_status == LANDMARK_RUN_BUSY) {
-            return;
-        }
-
-        ai_stage = AI_STAGE_IDLE;
-
-        if (landmark_status == LANDMARK_RUN_ERROR) {
-            _resetTracking();
-            return;
-        }
-
-        {
-            uint32_t now;
-            SCHEDULER_Tick_get(&now);
-            _landmark_duration_ms = now - _landmark_start_tick;
-        }
-
-        if (!_isLandmarkValid(&landmark_output)) {
-        	_clearPredictedOverlay();
-            if (finished_stage == AI_STAGE_WAIT_LANDMARK_TRACKING) {
-                _handleInvalidLandmark();
-            }
-
-            return;
-        }
-
-        landmark_lost_count = 0U;
-        LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
-
-        memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
-        predicted_overlay_valid = 1U;
-        SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
-
-        _predictLandmarksTimed(landmark_points, predicted_landmark_points);
-
-        LTDC_Layer_Draw_LandmarksClearPrevious();
-        LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
-
-        if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
-        						LTDC_Layer1Config.height, &landmark_roi)) {
-        	_resetTracking();
-            return;
-        }
-
-        LTDC_Layer_Draw_ROIClearPrevious();
-        //LTDC_Layer_Draw_ROILandmark(&landmark_roi, LTDC_LAYER_COLOR_GREEN);
-
-        if (finished_stage == AI_STAGE_WAIT_LANDMARK_FROM_PALM) {
-        	previous_landmarks_valid = 0U;
-            hand_state = HAND_STATE_LANDMARK_TRACKING;
-            last_landmark_tick = now;
-
-            DEBUG_PRINTF("AI state: LANDMARK_TRACKING\r\n");
-            return;
-        }
-
-        _runFingeralphabetIfDue();
-
-        return;
-    }
-
     if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
         AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
 
@@ -577,80 +459,107 @@ void vAIPipelineTask(void)
     }
 
     if (hand_state == HAND_STATE_PALM_SEARCH) {
-        if (nn_frame_ready == 0U) {
-            return;
-        }
-
-        if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) {
-            return;
-        }
+        if (nn_frame_ready == 0U) return;
+        if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) return;
 
         last_palm_search_tick = now;
         nn_frame_ready = 0U;
-    }
-    else {
-        if (camera_frame_ready == 0U) {
-            return;
-        }
 
-        if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) {
-            return;
-        }
+        _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
+        const uint8_t completed_idx = nn_completed_buffer_idx;
 
-        last_landmark_tick = now;
-        camera_frame_ready = 0U;
-    }
-
-    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
-    const uint8_t completed_idx = nn_completed_buffer_idx;
-
-    switch (hand_state) {
-    case HAND_STATE_PALM_SEARCH:
-    {
         uint8_t *palm_input = PALM_GetInputBuffer();
-
-        if (palm_input == NULL) {
-            return;
-        }
+        if (palm_input == NULL) return;
 
         DMA2D_EnsureInit();
-
         _dma2d.cfg.src.address = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
         _dma2d.cfg.src.line_offset = 0;
         _dma2d.cfg.src.format = DMA2D_FORMAT_RGB888;
         _dma2d.cfg.dst.address = (uint32_t)palm_input;
-
         _dma2d.cfg.dst.line_offset = 0;
         _dma2d.cfg.dst.format = DMA2D_FORMAT_RGB888;
-
         _dma2d.cfg.width_pixels = PALM_INPUT_WIDTH;
         _dma2d.cfg.height_lines = PALM_INPUT_HEIGHT;
         _dma2d.cfg.mode = DMA2D_MODE_MEM_TO_MEM;
-
-        if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) {
-            return;
-        }
+        if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) return;
 
         SCHEDULER_Tick_get(&_palm_start_tick);
-        if (!PALM_Start()) {
+        if (!PALM_Run(&palm_output)) return;
+        SCHEDULER_Tick_get(&now);
+        _palm_duration_ms = now - _palm_start_tick;
+
+        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
+
+        if (!palm_valid || !palm_filter.detected) {
+            if (!palm_filter.detected) _clearPredictedOverlay();
             return;
         }
 
-        ai_stage = AI_STAGE_WAIT_PALM;
-        return;
-    }
-
-    case HAND_STATE_LANDMARK_TRACKING:
-    {
-        if (!_startLandmark(_saved_camera_buffer_idx, AI_STAGE_WAIT_LANDMARK_TRACKING)) {
-            _handleInvalidLandmark();
+        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
+                                    LTDC_Layer1Config.height, &landmark_roi)) {
+            _resetTracking();
             return;
         }
-        return;
     }
 
-    default:
-        _resetTracking();
+    if (hand_state == HAND_STATE_LANDMARK_TRACKING) {
+        if (camera_frame_ready == 0U) return;
+        if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) return;
+
+        last_landmark_tick = now;
+        camera_frame_ready = 0U;
+
+        _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
+    }
+
+    if ((hand_state == HAND_STATE_PALM_SEARCH) ||
+        (hand_state == HAND_STATE_LANDMARK_TRACKING)) {
+
+        const bool from_palm = (hand_state == HAND_STATE_PALM_SEARCH);
+
+        if (!_runLandmarkBlocking(_saved_camera_buffer_idx)) {
+            _resetTracking();
+            return;
+        }
+        SCHEDULER_Tick_get(&now);
+        _landmark_duration_ms = now - _landmark_start_tick;
+
+        if (!_isLandmarkValid(&landmark_output)) {
+            _clearPredictedOverlay();
+            if (!from_palm) _handleInvalidLandmark();
+            return;
+        }
+
+        landmark_lost_count = 0U;
+        LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
+
+        memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
+        predicted_overlay_valid = 1U;
+        SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
+
+        _predictLandmarksTimed(landmark_points, predicted_landmark_points);
+
+        LTDC_Layer_Draw_LandmarksClearPrevious();
+        LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
+
+        if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
+                                LTDC_Layer1Config.height, &landmark_roi)) {
+            _resetTracking();
+            return;
+        }
+
+        LTDC_Layer_Draw_ROIClearPrevious();
+
+        if (from_palm) {
+            previous_landmarks_valid = 0U;
+            hand_state = HAND_STATE_LANDMARK_TRACKING;
+            last_landmark_tick = now;
+            DEBUG_PRINTF("AI state: LANDMARK_TRACKING\r\n");
+            return;
+        }
+
+        _runFingeralphabetIfDue();
         return;
     }
 }

@@ -121,3 +121,37 @@ LandmarkRunStatus_TypeDef LANDMARK_RunStep(LandmarkNetworkOutput_TypeDef *output
     return LANDMARK_RUN_DONE;
 }
 
+bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output)
+{
+    if (!hand_landmark_initialized ||
+        (output == NULL) ||
+        (landmark_input_buffer == NULL)) {
+        return false;
+    }
+
+    if (landmark_has_run) {
+        LL_ATON_RT_Reset_Network(&NN_Instance_hand_landmark_model_v3);
+    }
+
+    LL_ATON_Cache_MCU_Clean_Range((uintptr_t)landmark_input_buffer, LANDMARK_INPUT_SIZE);
+
+    if (!AI_RuntimeRunNetwork(&NN_Instance_hand_landmark_model_v3)) {
+        landmark_running = false;
+        return false;
+    }
+
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_handedness_buffer, sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_presence_buffer, sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_image_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_world_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+
+    output->presence = landmark_presence_buffer[0];
+    output->handedness = landmark_handedness_buffer[0];
+    memcpy(output->landmarks, landmark_image_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+    memcpy(output->world_landmarks, landmark_world_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
+
+    landmark_has_run = true;
+    landmark_running = false;
+    return true;
+}
+

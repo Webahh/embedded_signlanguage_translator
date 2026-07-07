@@ -39,5 +39,6 @@ AI_Status_TypeDef LANDMARK_Init(void);
 uint8_t *LANDMARK_GetInputBuffer(void);
 bool LANDMARK_Start(const uint8_t input[LANDMARK_INPUT_SIZE]);
 LandmarkRunStatus_TypeDef LANDMARK_RunStep(LandmarkNetworkOutput_TypeDef *output);
+bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output);
 
 #endif /* HAND_LANDMARK_H */
