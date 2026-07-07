@@ -44,6 +44,12 @@ void app_init(){
 	RCC_config_PWR();
 	RCC_config_SleepModeLPEN();
 	RCC_BoardClock_Config();
+
+	MEMSYSCTL->MSCR |= MEMSYSCTL_MSCR_ICACTIVE_Msk;
+	MEMSYSCTL->MSCR |= MEMSYSCTL_MSCR_DCACTIVE_Msk;
+	SCB_EnableICache();
+	SCB_EnableDCache();
+
 	debug_init(dbg_cfg);
 	TIMER_Delay_init();
 	DEBUG_PRINTF("Lets debug!\r\n");
