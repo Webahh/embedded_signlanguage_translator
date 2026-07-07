@@ -96,7 +96,7 @@ void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void 
 void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color);
 
 /**
- * @brief Draw a hand ROI bounding box
+ * @brief Draw hand ROI bounding box
  *
  * @param [in] roi   Hand ROI data
  * @param [in] color ARGB border colour
@@ -119,5 +119,22 @@ void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT
  * @brief Clear the previously drawn hand landmarks
  */
 void LTDC_Layer_Draw_LandmarksClearPrevious(void);
+
+/**
+ * @brief Draw hand landmarks directly onto a layer config
+ *
+ * @param [in] cfg    Target layer configuration
+ * @param [in] points Array of landmark points
+ */
+void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+
+/**
+ * @brief Draw a hand ROI bounding box directly onto a layer config
+ *
+ * @param [in] cfg   Target layer configuration
+ * @param [in] roi   Hand ROI data
+ * @param [in] color ARGB border colour
+ */
+void LTDC_Layer_Draw_ROIDirect(const LTDC_Layer_Config_TypeDef *cfg, const HandROI_TypeDef *roi, uint32_t color);
 
 #endif /* SIMPLE_LTDC_LAYER_DRAW_H */

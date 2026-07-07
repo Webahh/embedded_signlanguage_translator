@@ -29,9 +29,8 @@
 #define LTDC_LAYER_FG_WIDTH  800
 #define LTDC_LAYER_FG_HEIGHT 480
 
-#define LTDC_LAYER_DISPLAY_DELAY              4U
-#define LTDC_LAYER_AI_LOOKAHEAD_FRAMES        4U
-#define LTDC_LAYER_DISPLAY_BUFFER_NB          (LTDC_LAYER_DISPLAY_DELAY + 2U)
+#define LTDC_LAYER_AI_LOOKAHEAD_FRAMES        2U
+#define LTDC_LAYER_DISPLAY_BUFFER_NB          4U
 #define LTDC_LAYER_DISPLAY_BPP                3
 
 #define LTDC_LAYER_NN_BUFFER_NB    2
@@ -109,6 +108,7 @@ extern volatile uint8_t     ltdc_layer_nn_raw_buffer[2][LTDC_LAYER_NN_RAW_SIZE];
 extern volatile int ltdc_layer_bg_buffer_disp_idx;
 extern volatile int ltdc_layer_bg_buffer_capt_idx;
 extern volatile int ltdc_layer_bg_buffer_ai_idx;
+extern volatile int ltdc_layer_bg_buffer_draw_idx;
 
 /**
  * @brief Configure an LTDC layer from a configuration struct

@@ -26,6 +26,7 @@ volatile uint8_t ltdc_layer_nn_raw_buffer[2][LTDC_LAYER_NN_RAW_SIZE] __attribute
 volatile int ltdc_layer_bg_buffer_disp_idx = 1;
 volatile int ltdc_layer_bg_buffer_capt_idx = 0;
 volatile int ltdc_layer_bg_buffer_ai_idx   = 0;
+volatile int ltdc_layer_bg_buffer_draw_idx = 0;
 
 
 // ====================================

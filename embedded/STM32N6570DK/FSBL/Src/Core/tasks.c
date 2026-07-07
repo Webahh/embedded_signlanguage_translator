@@ -58,9 +58,12 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
             (next_disp_idx + LTDC_LAYER_AI_LOOKAHEAD_FRAMES) %
             LTDC_LAYER_DISPLAY_BUFFER_NB;
 
+        int draw_idx = (next_disp_idx + 1U) % LTDC_LAYER_DISPLAY_BUFFER_NB;
+
         ltdc_layer_bg_buffer_ai_idx   = ai_idx;
         ltdc_layer_bg_buffer_disp_idx = next_disp_idx;
         ltdc_layer_bg_buffer_capt_idx = next_capt_idx;
+        ltdc_layer_bg_buffer_draw_idx = draw_idx;
 
         camera_frame_ready = 1U;
 
@@ -184,8 +187,6 @@ typedef enum {
 #define PALM_SEARCH_INTERVAL_MS      200U
 #define FINGERALPHABET_INTERVAL_MS   1500U
 #define LANDMARK_TRACK_INTERVAL_MS   0U
-#define LANDMARK_OVERLAY_TIMEOUT_MS  300U
-
 static uint32_t last_valid_landmark_output_tick = 0U;
 
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
@@ -216,11 +217,7 @@ static LandmarkPoint_TypeDef predicted_landmark_points[LANDMARK_POINT_COUNT];
 static uint8_t previous_landmarks_valid = 0U;
 static uint32_t previous_landmark_tick = 0U;
 
-static uint8_t predicted_overlay_valid = 0U;
 static LandmarkPoint_TypeDef last_current_landmark_points[LANDMARK_POINT_COUNT];
-
-#define LANDMARK_OVERLAY_REDRAW_INTERVAL_MS  30U
-static uint32_t last_overlay_redraw_tick = 0U;
 
 static float _clampf(float value, float min_value, float max_value)
 {
@@ -294,37 +291,7 @@ static void _predictLandmarksTimed(
 
 static void _clearPredictedOverlay(void)
 {
-    predicted_overlay_valid = 0U;
     previous_landmarks_valid = 0U;
-    last_overlay_redraw_tick = 0U;
-
-    LTDC_Layer_Draw_LandmarksClearPrevious();
-}
-
-static void _redrawPredictedOverlayFromLastMeasurement(void)
-{
-    uint32_t now;
-    SCHEDULER_Tick_get(&now);
-
-    if (!predicted_overlay_valid) {
-        return;
-    }
-
-    if ((now - last_valid_landmark_output_tick) > LANDMARK_OVERLAY_TIMEOUT_MS) {
-        _clearPredictedOverlay();
-        return;
-    }
-
-    if ((now - last_overlay_redraw_tick) < LANDMARK_OVERLAY_REDRAW_INTERVAL_MS) {
-        return;
-    }
-
-    last_overlay_redraw_tick = now;
-
-    _predictLandmarksTimed(last_current_landmark_points, predicted_landmark_points);
-
-    LTDC_Layer_Draw_LandmarksClearPrevious();
-    LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
 }
 
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
@@ -431,8 +398,6 @@ void vAIPipelineTask(void)
     uint32_t now;
     SCHEDULER_Tick_get(&now);
 
-    _redrawPredictedOverlayFromLastMeasurement();
-
     if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
         AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
 
@@ -535,21 +500,22 @@ void vAIPipelineTask(void)
         LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
 
         memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
-        predicted_overlay_valid = 1U;
         SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
 
         _predictLandmarksTimed(landmark_points, predicted_landmark_points);
 
-        LTDC_Layer_Draw_LandmarksClearPrevious();
-        LTDC_Layer_Draw_Landmarks(predicted_landmark_points);
+        {
+            LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
+            draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
+            LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
+            LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+        }
 
         if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
                                 LTDC_Layer1Config.height, &landmark_roi)) {
             _resetTracking();
             return;
         }
-
-        LTDC_Layer_Draw_ROIClearPrevious();
 
         if (from_palm) {
             previous_landmarks_valid = 0U;

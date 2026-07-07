@@ -733,3 +733,65 @@ void LTDC_Layer_Draw_ROIClearPrevious(void)
     _roi_drawn = false;
 }
 
+// ====================================
+// Direct Drawing (no tracking/clearing)
+// ====================================
+
+void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
+{
+    if (cfg == NULL || points == NULL) {
+        return;
+    }
+
+    int32_t px[LANDMARK_POINT_COUNT];
+    int32_t py[LANDMARK_POINT_COUNT];
+    uint8_t valid[LANDMARK_POINT_COUNT];
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        px[i] = (int32_t)(points[i].x * (float)cfg->width);
+        py[i] = (int32_t)(points[i].y * (float)cfg->height);
+        valid[i] = 1U;
+
+        if (px[i] < 0 || py[i] < 0 || px[i] >= (int32_t)cfg->width || py[i] >= (int32_t)cfg->height) {
+            valid[i] = 0U;
+        }
+    }
+
+    for (uint32_t i = 0U; i < _HAND_CONNECTION_COUNT; i++) {
+        const uint32_t a = _hand_connections[i].a;
+        const uint32_t b = _hand_connections[i].b;
+
+        if (a >= LANDMARK_POINT_COUNT || b >= LANDMARK_POINT_COUNT) continue;
+        if (valid[a] == 0U || valid[b] == 0U) continue;
+        if (!_isLinePlausible(px[a], py[a], px[b], py[b])) continue;
+
+        _drawLineThick(cfg, px[a], py[a], px[b], py[b], LTDC_LAYER_COLOR_GREEN);
+    }
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        if (valid[i] == 0U) continue;
+
+        LTDC_Layer_Draw_Circle(cfg, (uint16_t)px[i], (uint16_t)py[i], _LANDMARK_DRAW_RADIUS, LTDC_LAYER_COLOR_RED);
+    }
+}
+
+void LTDC_Layer_Draw_ROIDirect(const LTDC_Layer_Config_TypeDef *cfg, const HandROI_TypeDef *roi, uint32_t color)
+{
+    if (cfg == NULL || roi == NULL) {
+        return;
+    }
+
+    int32_t x0 = (int32_t)(roi->corners[0][0] * cfg->width);
+    int32_t y0 = (int32_t)(roi->corners[0][1] * cfg->height);
+    int32_t x1 = (int32_t)(roi->corners[2][0] * cfg->width);
+    int32_t y1 = (int32_t)(roi->corners[2][1] * cfg->height);
+
+    if (x0 < 0) x0 = 0;
+    if (y0 < 0) y0 = 0;
+    if (x1 >= (int32_t)cfg->width) x1 = (int32_t)cfg->width - 1;
+    if (y1 >= (int32_t)cfg->height) y1 = (int32_t)cfg->height - 1;
+    if (x1 <= x0 || y1 <= y0) return;
+
+    LTDC_Layer_Draw_RectBorder(cfg, (uint16_t)x0, (uint16_t)y0, (uint16_t)(x1 - x0), (uint16_t)(y1 - y0), color);
+}
+
