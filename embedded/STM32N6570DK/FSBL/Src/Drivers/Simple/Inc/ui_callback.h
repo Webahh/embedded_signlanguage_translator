@@ -8,6 +8,8 @@
 #ifndef UI_CALLBACK_H
 #define UI_CALLBACK_H
 
+extern volatile uint8_t UI_Callback_Info_Active;
+
 void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx);
 void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx);
 void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx);

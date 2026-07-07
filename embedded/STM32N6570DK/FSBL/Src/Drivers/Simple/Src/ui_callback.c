@@ -7,10 +7,13 @@
 
 #include "ui.h"
 #include "config.h"
+#include "ui_callback.h"
 #include "simple_debug_log.h"
 #include "tasks.h"
 #include "simple_scheduler.h"
 #include "simple_ltdc_layer_draw.h"
+
+volatile uint8_t UI_Callback_Info_Active = 0;
 
 void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx)
 {
@@ -48,9 +51,11 @@ void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 	(void)ctx;
 	if (val) {
 		SCHEDULER_Task_add(vSystemInfoTask, "Sys Systeminfo", 100, 1, 256, &systeminfo_id);
+		UI_Callback_Info_Active = 1;
 	} else {
 		SCHEDULER_Task_remove(systeminfo_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
+		UI_Callback_Info_Active = 0;
 	}
 }
 

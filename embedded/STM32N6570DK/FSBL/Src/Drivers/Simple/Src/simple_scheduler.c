@@ -14,6 +14,7 @@
 #include "simple_timer.h"
 #include "simple_debug_log.h"
 #include "config.h"
+#include "ui_callback.h"
 
 // -------------------------------------------------------------------------
 // Private defines / datatypes
@@ -154,7 +155,9 @@ __attribute__((noreturn)) static void SCHEDULER_IdleTask(void){
 	while (1) {
 		if (_stats_pending) {
 			_stats_pending = 0;
-//			SCHEDULER_PrintStats();
+			if (UI_Callback_Info_Active) {
+				SCHEDULER_PrintStats();
+			}
 			_idle_wakeups = 0;
 		}
 		_idle_wakeups++;
@@ -625,6 +628,29 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 
 	// Allocate or reuse stack
 	if (_task_stack_bases[slot] == NULL) {
+		if (_stack_pool_offset + stack_size_words > SCHEDULER_STACK_POOL_SIZE_WORDS) {
+			DEBUG_PRINTF("[SCHED] Task \"%s\" NOT added — stack pool full "
+				"(%u + %u > %u)\r\n",
+				pcName ? pcName : "?",
+				_stack_pool_offset, stack_size_words,
+				SCHEDULER_STACK_POOL_SIZE_WORDS);
+			*taskIndex = 0xFF;
+			return SCHEDULER_ERR_FULL;
+		}
+		_task_stack_bases[slot] = &_stack_pool[_stack_pool_offset];
+		_task_stack_sizes[slot] = stack_size_words;
+		_stack_pool_offset += stack_size_words;
+	} else if (stack_size_words > _task_stack_sizes[slot]) {
+		// Reuse slot but old stack too small — allocate fresh, leave hole
+		if (_stack_pool_offset + stack_size_words > SCHEDULER_STACK_POOL_SIZE_WORDS) {
+			DEBUG_PRINTF("[SCHED] Task \"%s\" NOT added — stack pool full "
+				"(%u + %u > %u)\r\n",
+				pcName ? pcName : "?",
+				_stack_pool_offset, stack_size_words,
+				SCHEDULER_STACK_POOL_SIZE_WORDS);
+			*taskIndex = 0xFF;
+			return SCHEDULER_ERR_FULL;
+		}
 		_task_stack_bases[slot] = &_stack_pool[_stack_pool_offset];
 		_task_stack_sizes[slot] = stack_size_words;
 		_stack_pool_offset += stack_size_words;
@@ -726,9 +752,15 @@ void SCHEDULER_Tasks_run(void){
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].state          = TaskReady;
 	_tasks[SCHEDULER_IDLE_TASK_INDEX].pcName = "Idle";
 
+	if (_stack_pool_offset + 512 > SCHEDULER_STACK_POOL_SIZE_WORDS) {
+		DEBUG_PRINTF("[SCHED] FATAL: stack pool too small for idle task "
+			"(%u + 512 > %u)\r\n",
+			_stack_pool_offset, SCHEDULER_STACK_POOL_SIZE_WORDS);
+		while (1) { __WFI(); }
+	}
 	_task_stack_bases[SCHEDULER_IDLE_TASK_INDEX] = &_stack_pool[_stack_pool_offset];
-	_task_stack_sizes[SCHEDULER_IDLE_TASK_INDEX] = 64;
-	_stack_pool_offset += 64;
+	_task_stack_sizes[SCHEDULER_IDLE_TASK_INDEX] = 512;
+	_stack_pool_offset += 512;
 
 	_compute_psplim(SCHEDULER_IDLE_TASK_INDEX);
 
