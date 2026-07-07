@@ -398,7 +398,16 @@ void vAIPipelineTask(void)
     uint32_t now;
     SCHEDULER_Tick_get(&now);
 
+    const uint8_t ai_mode = _drawer.items[0].value;
+    const uint8_t palm_vis = _drawer.items[1].composite.visible;
+    const uint8_t hand_vis = _drawer.items[2].composite.visible;
+    const uint8_t sign_vis = _drawer.items[3].composite.visible;
+
     if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
+        if (ai_mode < 2) {
+            ai_stage = AI_STAGE_IDLE;
+            return;
+        }
         AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
 
         if (fa_status == AI_RUN_BUSY) {
@@ -419,7 +428,9 @@ void vAIPipelineTask(void)
         }
 
         fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
-        DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
+        if (sign_vis) {
+            DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
+        }
         return;
     }
 
@@ -466,9 +477,22 @@ void vAIPipelineTask(void)
             _resetTracking();
             return;
         }
+
+        if (ai_mode == 0) {
+            if (palm_vis) {
+                LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
+                draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
+                LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+            }
+            return;
+        }
     }
 
     if (hand_state == HAND_STATE_LANDMARK_TRACKING) {
+        if (ai_mode < 1) {
+            _resetTracking();
+            return;
+        }
         if (camera_frame_ready == 0U) return;
         if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) return;
 
@@ -507,8 +531,12 @@ void vAIPipelineTask(void)
         {
             LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
             draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
-            LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
-            LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+            if (hand_vis) {
+                LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
+            }
+            if (palm_vis) {
+                LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+            }
         }
 
         if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
@@ -525,7 +553,9 @@ void vAIPipelineTask(void)
             return;
         }
 
-        _runFingeralphabetIfDue();
+        if (ai_mode >= 2) {
+            _runFingeralphabetIfDue();
+        }
         return;
     }
 }
