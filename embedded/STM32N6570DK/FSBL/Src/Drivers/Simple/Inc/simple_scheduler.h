@@ -4,8 +4,9 @@
  * @date    05.06.2026
  * @brief   Priority preemptive scheduler driver header
  *
- *          Tick source: TIM7 (1 ms period).  Tasks preempt via PendSV.
- *          Lower priority values = higher priority.
+ *          Tick source: TIM7 (1 ms period)
+ *          Tasks preempt via PendSV
+ *          Lower priority values = higher priority
  *
  * Usage
  * -----
@@ -43,10 +44,10 @@
  * counter at core clock frequency).  Every 1 second the idle task prints
  * a table with per-window counters, reset each cycle:
  *
- *   - min / max / avg  – min, max, and average cycles per invocation
- *   - %ACT             – share of active (non-WFI) CPU time
- *   - Prempt           – number of times preempted
- *   - Invoc            – invocation count
+ *   - min / max / avg  -- min, max, and average cycles per invocation
+ *   - %ACT             -- share of active (non-WFI) CPU time
+ *   - Prempt           -- number of times preempted
+ *   - Invoc            -- invocation count
  *
  * ISR cycles are tracked via SCHEDULER_ISR_enter()/exit() and subtracted
  * from the interrupted task's totals, so %ACT reflects pure application-
@@ -54,13 +55,6 @@
  *
  * Total cycles for the window = avg * invoc (printed in "cycle" column).
  * Idle %ACT is time spent in the idle loop with no ISR active.
- *
- * Usage
- * -----
- * 1. SCHEDULER_System_init()  – configures TIM7 (1 ms tick) and DWT
- * 2. SCHEDULER_Task_add()     – register tasks (period, priority)
- * 3. SCHEDULER_Tasks_run()    – start scheduler (never returns)
- *
  */
 
 #ifndef SIMPLE_SCHEDULER_H
@@ -70,10 +64,12 @@
 
 #include "stm32n657xx.h"
 
+// ---- Configuration ---------------------------------------------------------
+
 #define SCHEDULER_MAX_TASKS				9
 
 // Idle task occupies the last slot
-#define SCHEDULER_IDLE_TASK_INDEX	(SCHEDULER_MAX_TASKS - 1)
+#define SCHEDULER_IDLE_TASK_INDEX		(SCHEDULER_MAX_TASKS - 1)
 
 #define SCHEDULER_STACK_SIZE_WORDS      2048U
 // Exception frame reserved: hardware auto-push on exception entry.
@@ -86,6 +82,8 @@
 
 // For debugging on Fault
 #define SCHED_MAGIC						0x53434448u
+
+// ---- Typedefs --------------------------------------------------------------
 
 typedef void (*SCHEDULER_Task_Function_TypeDef)(void);
 typedef enum {
@@ -109,41 +107,67 @@ typedef struct {
 	uint32_t	r0, r1, r2, r3, r12, lr, pc, xpsr;
 } Scheduler_Fault_Dump_TypeDef;
 
-// --- Mutable runtime state ---
+// ---- Extern variables ------------------------------------------------------
+
 extern volatile Scheduler_Fault_Dump_TypeDef	g_sched_fault;
 
-/**
- * @brief  Get the index of the currently running task
- *
- * @param [out] taskIndex | Pointer to store the task index
- *
- * @retval SCHEDULER_OK on success
- */
-SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
+// ---- ISR cycle tracking ----------------------------------------------------
 
 /**
- * @brief  Get the name of a task
+ * @brief Mark ISR entry for cycle tracking.
  *
- * @param [in]  task | Task index
- * @param [out] name | Pointer to store the task name pointer
+ * Call at the very top of any peripheral ISR to measure its CPU cycle
+ * contribution.  Nested ISRs are handled correctly -- only the outermost
+ * entry/exit pair records the full ISR burst.
  *
- * @retval SCHEDULER_OK          on success
- * @retval SCHEDULER_ERR_NOT_FOUND if task index invalid
+ * Every cycle spent in ISR context is subtracted from the interrupted
+ * task's cycle total and accumulated in a separate ISR counter,
+ * ensuring per-task %ACT reflects pure application time.
+ *
+ * Usage (place at top and bottom of every peripheral ISR):
+ * @code{.c}
+ * void XXX_IRQHandler(void){
+ *     SCHEDULER_ISR_enter();
+ *     // ... handler body ...
+ *     SCHEDULER_ISR_exit();
+ * }
+ * @endcode
  */
-SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
+void SCHEDULER_ISR_enter(void);
 
 /**
- * @brief  Register a periodic task with the scheduler
+ * @brief  Mark ISR exit for cycle tracking
  *
- * @param [in]  pvTaskCode      | Pointer to the task function
- * @param [in]  pcName          | Human-readable task name
- * @param [in]  period_ms       | Task period in milliseconds
- * @param [in]  priority        | Scheduling priority (0 = highest, 255 = lowest)
- * @param [in]  stack_size_words| Stack size in 32-bit words
- * @param [out] taskIndex       | Assigned task slot index
+ * Call at the bottom of every peripheral ISR (paired with ISR_enter).
+ */
+void SCHEDULER_ISR_exit(void);
+
+// ---- Task lifecycle --------------------------------------------------------
+
+/**
+ * @brief Register a new task with the scheduler
  *
- * @retval SCHEDULER_OK       on success
- * @retval SCHEDULER_ERR_FULL if no slot available
+ * If *taskIndex is 0xFF, a free slot is auto-selected.  Otherwise
+ * the value is treated as a slot hint: if that slot is free
+ * (state == TaskDeleted) it is reused; if busy a free slot is
+ * auto-searched.
+ *
+ * The stack is allocated from a fixed-size pool.  If the requested
+ * size exceeds the per-task ceiling it is clamped. if below the
+ * minimum it is raised.  On re-add with a larger stack the old
+ * allocation is abandoned (leaving a hole) and a fresh block is
+ * taken from the pool.
+ *
+ * @param [in]  pvTaskCode       Task entry function
+ * @param [in]  pcName           Human-readable name (may be NULL)
+ * @param [in]  period_ms        Reschedule period in ms (0 = one-shot)
+ * @param [in]  priority         0 = highest, 0xFF = lowest
+ * @param [in]  stack_size_words Stack size in 32-bit words
+ * @param [out] taskIndex        Assigned slot index, or 0xFF on error
+ *
+ * @retval SCHEDULER_OK          Task registered successfully
+ * @retval SCHEDULER_ERR_FULL    No free slot or insufficient pool space
+ * @retval SCHEDULER_ERR_TASK_INVALID  pvTaskCode is NULL
  */
 SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTaskCode, const char* pcName, uint32_t period_ms, uint8_t priority, uint32_t stack_size_words, uint8_t* taskIndex);
 
@@ -156,30 +180,6 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(SCHEDULER_Task_Function_TypeDef pvTa
  * @retval SCHEDULER_ERR_NOT_FOUND on invalid index
  */
 SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex);
-
-/**
- * @brief  Initialise the scheduler hardware (TIM7, NVIC)
- *
- * @note   Must be called once before SCHEDULER_Tasks_run()
- */
-void SCHEDULER_System_init(void);
-
-/**
- * @brief  Read the current system tick counter
- *
- * @param [out] tick | Tick value (ms since scheduler start)
- *
- * @retval SCHEDULER_OK          on success
- * @retval SCHEDULER_ERR_NOT_FOUND if tick is NULL
- */
-SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
-
-/**
- * @brief  Start the preemptive scheduler
- *
- * This function never returns.
- */
-void SCHEDULER_Tasks_run(void);
 
 /**
  * @brief  Suspend a task (prevents it from being scheduled)
@@ -215,6 +215,43 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex);
  */
 void SCHEDULER_Task_suspend_self(void);
 
+// ---- System lifecycle ------------------------------------------------------
+
+/**
+ * @brief  Initialise the scheduler hardware (TIM7, NVIC)
+ *
+ * @note   Must be called once before SCHEDULER_Tasks_run()
+ */
+void SCHEDULER_System_init(void);
+
+/**
+ * @brief  Read the current system tick counter
+ *
+ * @param [out] tick | Tick value (ms since scheduler start)
+ *
+ * @retval SCHEDULER_OK          on success
+ * @retval SCHEDULER_ERR_NOT_FOUND if tick is NULL
+ */
+SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick);
+
+/**
+ * @brief  Start the preemptive scheduler
+ *
+ * This function never returns.
+ */
+void SCHEDULER_Tasks_run(void);
+
+// ---- Stack measurement -----------------------------------------------------
+
+/**
+ * @brief  Get the allocated stack size for a task
+ *
+ * @param [in] taskIndex | Task slot index
+ *
+ * @return Stack size in 32-bit words (0 if invalid index)
+ */
+uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex);
+
 /**
  * @brief  Get the stack usage (high-water mark) for a task
  *
@@ -227,42 +264,27 @@ void SCHEDULER_Task_suspend_self(void);
  */
 uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex);
 
-/**
- * @brief  Get the allocated stack size for a task
- *
- * @param [in] taskIndex | Task slot index
- *
- * @return Stack size in 32-bit words (0 if invalid index)
- */
-uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex);
+// ---- Debug API -------------------------------------------------------------
 
 /**
- * @brief Mark ISR entry for cycle tracking.
+ * @brief Get the slot index of the currently running task
  *
- * Call at the very top of any peripheral ISR to measure its CPU cycle
- * contribution.  Nested ISRs are handled correctly — only the outermost
- * entry/exit pair records the full ISR burst.
+ * @param [out] taskIndex  Current task slot
  *
- * Every cycle spent in ISR context is subtracted from the interrupted
- * task's cycle total and accumulated in a separate ISR counter,
- * ensuring per-task %ACT reflects pure application time.
- *
- * Usage (place at top and bottom of every peripheral ISR):
- * @code{.c}
- * void XXX_IRQHandler(void){
- *     SCHEDULER_ISR_enter();
- *     // ... handler body ...
- *     SCHEDULER_ISR_exit();
- * }
- * @endcode
+ * @retval SCHEDULER_OK            Success
+ * @retval SCHEDULER_ERR_NOT_FOUND taskIndex is NULL
  */
-void SCHEDULER_ISR_enter(void);
+SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex);
 
 /**
- * @brief  Mark ISR exit for cycle tracking
+ * @brief Get the name of a registered task
  *
- * Call at the bottom of every peripheral ISR (paired with ISR_enter).
+ * @param [in]  task  Task slot index
+ * @param [out] name  Task name pointer
+ *
+ * @retval SCHEDULER_OK            Success
+ * @retval SCHEDULER_ERR_NOT_FOUND Invalid index or NULL pointer
  */
-void SCHEDULER_ISR_exit(void);
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name);
 
 #endif /* SIMPLE_SCHEDULER_H */
