@@ -16,7 +16,7 @@
 #include "config.h"
 
 #define _XSPI_TIMEOUT                   1000000
-#define _XSPI_FIFO_THRESHOLD            7
+#define _XSPI_FIFO_THRESHOLD            0
 #define _XSPI_CLEAR_ADDRESS             0
 
 #define _XSPI_FMODE_INDIRECT_WRITE   	0

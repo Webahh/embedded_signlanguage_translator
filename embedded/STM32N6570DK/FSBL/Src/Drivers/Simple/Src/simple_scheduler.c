@@ -76,7 +76,7 @@ _Static_assert(sizeof(_Task_Handle_TypeDef) == _TCB_SIZE, "TCB size mismatch wit
 
 static _Task_Handle_TypeDef	_tasks[SCHEDULER_MAX_TASKS];
 static volatile uint32_t	_sys_tick_ms = 0;
-static int					_current_task = 0;
+static int					_task_current = 0;
 static volatile int			_scheduler_running = 0;
 
 static _Task_Stats_TypeDef	_task_stats[SCHEDULER_MAX_TASKS];
@@ -190,7 +190,7 @@ static void _Task_Stack_init(int i){
  */
 static void _Task_exit(void){
 	__disable_irq();
-	_tasks[_current_task].state = TaskBlocked;
+	_tasks[_task_current].state = TaskBlocked;
 
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 	__enable_irq();
@@ -229,7 +229,7 @@ static int _Task_SelectNext(void){
 	int best = -1;
 	uint8_t best_prio = 0xFF;
 
-	int start = _current_task + 1;
+	int start = _task_current + 1;
 	if (start >= SCHEDULER_IDLE_TASK_INDEX) {
 		start = 0;
 	}
@@ -255,7 +255,7 @@ static int _Task_SelectNext(void){
 	if (_scheduler_running) {
 
 		uint32_t now = DWT->CYCCNT;
-		int prev = _current_task;
+		int prev = _task_current;
 		_Task_Stats_TypeDef *previous_stats = &_task_stats[prev];
 
 		uint32_t raw = now - previous_stats->last_start_cycle;
@@ -280,6 +280,8 @@ static int _Task_SelectNext(void){
 			previous_stats->last_start_cycle = now;
 		}
 	}
+
+//	DEBUG_PRINTF("[SCHEDULER] NextTask: %s\r\n", _tasks[_task_current].pcName);
 
 	return best;
 }
@@ -385,7 +387,7 @@ static void _PrintStats(void){
  */
 __attribute__((naked)) void SVC_Handler(void){
 	__asm volatile (
-		"ldr    r0, =_current_task                  \n"
+		"ldr    r0, =_task_current                  \n"
 		"ldr    r3, [r0]                            \n"
 
 		"ldr    r2, =_tasks                         \n"
@@ -436,7 +438,7 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"it		eq\n"
 		"vstmdbeq r0!, {s16-s31}\n"
 
-		"ldr	r2, =_current_task\n"
+		"ldr	r2, =_task_current\n"
 		"ldr	r3, [r2]\n"
 		"ldr	r4, =_tasks\n"
 
@@ -450,7 +452,7 @@ __attribute__((naked)) void PendSV_Handler(void){
 		"bl		_Task_SelectNext\n"
 		"pop	{r1, lr}\n"
 
-		"ldr	r2, =_current_task\n"
+		"ldr	r2, =_task_current\n"
 		"str	r0, [r2]\n"
 
 		"ldr	r4, =_tasks\n"
@@ -460,7 +462,7 @@ __attribute__((naked)) void PendSV_Handler(void){
 
 		"1:\n"
 		"ldr	r0, =_task_psplims\n"
-		"ldr	r2, =_current_task\n"
+		"ldr	r2, =_task_current\n"
 		"ldr	r3, [r2]\n"
 		"lsl	r3, r3, #2\n"
 		"ldr	r0, [r0, r3]\n"
@@ -780,7 +782,7 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
  * @brief Suspend the currently running task
  */
 void SCHEDULER_Task_suspend_self(void){
-	_tasks[_current_task].state = TaskSuspended;
+	_tasks[_task_current].state = TaskSuspended;
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 
@@ -852,7 +854,7 @@ void SCHEDULER_Tasks_run(void){
 
 	FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk;
 
-	_current_task = _Task_SelectNext();
+	_task_current = _Task_SelectNext();
 
 	SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk
 				| SCB_SHCSR_BUSFAULTENA_Msk
@@ -874,7 +876,7 @@ void SCHEDULER_Tasks_run(void){
 void SCHEDULER_ISR_enter(void){
 	if (_isr_nest == 0) {
 		_isr_entry_cycle = DWT->CYCCNT;
-		_isr_owner_task = _current_task;
+		_isr_owner_task = _task_current;
 	}
 	_isr_nest++;
 }
@@ -952,7 +954,7 @@ static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 
 	g_sched_fault.magic   = SCHED_MAGIC;
 	g_sched_fault.reason  = reason;
-	g_sched_fault.task    = (uint32_t)_current_task;
+	g_sched_fault.task    = (uint32_t)_task_current;
 	g_sched_fault.tick    = _sys_tick_ms;
 
 	g_sched_fault.cfsr    = SCB->CFSR;
@@ -1007,8 +1009,8 @@ static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 	DEBUG_PRINTF("\r\n===== SCHEDULER FAULT =====\r\n");
 	DEBUG_PRINTF("Reason:%s Task:\"%s\"(%lu) Tick:%lu\r\n",
 			reason_str,
-			_tasks[_current_task].pcName ? _tasks[_current_task].pcName : "?",
-			(uint32_t)_current_task,
+			_tasks[_task_current].pcName ? _tasks[_task_current].pcName : "?",
+			(uint32_t)_task_current,
 			_sys_tick_ms);
 	DEBUG_PRINTF("CFSR:0x%lx HFSR:0x%lx\r\n", g_sched_fault.cfsr, g_sched_fault.hfsr);
 	DEBUG_PRINTF("DFSR:0x%lx AFSR:0x%lx\r\n", g_sched_fault.dfsr, g_sched_fault.afsr);
@@ -1038,7 +1040,7 @@ static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 
 SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex){
 	if (taskIndex == 0) { return SCHEDULER_ERR_NOT_FOUND; }
-	*taskIndex = _current_task;
+	*taskIndex = _task_current;
 	return SCHEDULER_OK;
 }
 

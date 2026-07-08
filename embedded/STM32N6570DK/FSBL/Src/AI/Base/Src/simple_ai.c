@@ -63,7 +63,6 @@ bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network)
             LL_ATON_OSAL_WFE();
         }
         else if (status == LL_ATON_RT_NO_WFE) {
-        	__WFI();
         }
 
     } while ((status == LL_ATON_RT_WFE) ||
