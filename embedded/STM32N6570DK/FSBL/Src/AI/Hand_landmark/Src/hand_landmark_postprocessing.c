@@ -10,132 +10,191 @@
 
 #include "hand_landmark.h"
 
-#define LANDMARK_TRACKING_ROI_SCALE       1.8f
-#define LANDMARK_TRACKING_ROI_SHIFT_Y    -0.05f
-#define LANDMARK_TRACKING_ROI_SMOOTHING   0.35f
-#define LANDMARK_TRACKING_MIN_SIZE_PX     32.0f
+#ifndef AI_PI
+#define AI_PI 3.14159265358979323846f
+#endif
 
-static void LANDMARK_UpdateROICorners(HandROI_TypeDef *roi)
+static float ROI_NormalizeAngle(float angle)
 {
-    const float half_width = roi->width * 0.5f;
+    while (angle >= AI_PI) {
+        angle -= 2.0f * AI_PI;
+    }
+
+    while (angle < -AI_PI) {
+        angle += 2.0f * AI_PI;
+    }
+
+    return angle;
+}
+
+static void ROI_UpdateRotatedCorners(HandROI_TypeDef *roi)
+{
+    const float half_width  = roi->width  * 0.5f;
     const float half_height = roi->height * 0.5f;
 
-    roi->corners[0][0] = roi->center_x - half_width;
-    roi->corners[0][1] = roi->center_y - half_height;
+    const float c = cosf(roi->rotation);
+    const float s = sinf(roi->rotation);
 
-    roi->corners[1][0] = roi->center_x + half_width;
-    roi->corners[1][1] = roi->center_y - half_height;
+    const float local[4][2] = {
+        { -half_width, -half_height },
+        {  half_width, -half_height },
+        {  half_width,  half_height },
+        { -half_width,  half_height }
+    };
 
-    roi->corners[2][0] = roi->center_x + half_width;
-    roi->corners[2][1] = roi->center_y + half_height;
+    for (uint32_t i = 0U; i < 4U; i++) {
+        const float x = local[i][0];
+        const float y = local[i][1];
 
-    roi->corners[3][0] = roi->center_x - half_width;
-    roi->corners[3][1] = roi->center_y + half_height;
+        roi->corners[i][0] = roi->center_x + x * c - y * s;
+        roi->corners[i][1] = roi->center_y + x * s + y * c;
+    }
+}
+
+static void ROI_ShiftAndScale(HandROI_TypeDef *roi, float shift_x,
+							  float shift_y, float scale_x, float scale_y)
+{
+    const float c = cosf(roi->rotation);
+    const float s = sinf(roi->rotation);
+
+    const float sx = roi->width * shift_x * c - roi->height * shift_y * s;
+    const float sy = roi->width * shift_x * s + roi->height * shift_y * c;
+
+    roi->center_x += sx;
+    roi->center_y += sy;
+
+    const float long_side = fmaxf(roi->width, roi->height);
+
+    roi->width  = long_side * scale_x;
+    roi->height = long_side * scale_y;
 }
 
 AI_Status_TypeDef LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *roi,
-									  LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
+                                      uint32_t frame_width, uint32_t frame_height, LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
 {
-    if ((output == NULL) ||
-        (roi == NULL) 	 ||
-        (points == NULL)) {
+    if ((output == NULL)      ||
+        (roi == NULL)         ||
+        (points == NULL)      ||
+        (frame_width == 0U)   ||
+        (frame_height == 0U)) {
         return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    const float roi_left = roi->center_x - roi->width * 0.5f;
-    const float roi_top  = roi->center_y - roi->height * 0.5f;
+    const float c = cosf(roi->rotation);
+    const float s = sinf(roi->rotation);
+
+    const float roi_cx_px = roi->center_x;
+    const float roi_cy_px = roi->center_y;
+    const float roi_w_px  = roi->width;
+    const float roi_h_px  = roi->height;
 
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+
         const float crop_x = output->landmarks[i * 3U + 0U];
         const float crop_y = output->landmarks[i * 3U + 1U];
         const float crop_z = output->landmarks[i * 3U + 2U];
 
-        points[i].x = roi_left + (crop_x / (float)LANDMARK_INPUT_WIDTH)  * roi->width;
-        points[i].y = roi_top  + (crop_y / (float)LANDMARK_INPUT_HEIGHT) * roi->height;
+        const float lm_x = (crop_x / (float)LANDMARK_INPUT_WIDTH)  - 0.5f;
+        const float lm_y = (crop_y / (float)LANDMARK_INPUT_WIDTH)  - 0.5f;
+
+        const float local_x_px = lm_x * roi_w_px;
+        const float local_y_px = lm_y * roi_h_px;
+
+        const float frame_x_px = roi_cx_px + local_x_px * c - local_y_px * s;
+        const float frame_y_px = roi_cy_px + local_x_px * s + local_y_px * c;
+
+        points[i].x = frame_x_px / (float)frame_width;
+        points[i].y = frame_y_px / (float)frame_height;
         points[i].z = crop_z;
     }
 
     return AI_STATUS_OK;
 }
 
-AI_Status_TypeDef LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t frame_width,
-					    uint32_t frame_height, HandROI_TypeDef *roi)
+AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(const LandmarkNetworkOutput_TypeDef *output,
+													  const HandROI_TypeDef *current_roi, HandROI_TypeDef *next_roi)
 {
-    if ((points == NULL) ||
-        (roi == NULL) ||
-        (frame_width == 0U) ||
-        (frame_height == 0U)) {
+    if ((output == NULL) 	  ||
+        (current_roi == NULL) ||
+        (next_roi == NULL)) {
         return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    float min_x = 1.0f;
-    float min_y = 1.0f;
-    float max_x = 0.0f;
-    float max_y = 0.0f;
+    static const uint8_t indices[] = {
+        0U, 1U, 2U, 3U,
+        5U, 6U,
+        9U, 10U,
+        13U, 14U,
+        17U, 18U
+    };
+
+    LandmarkPoint_TypeDef decoded[LANDMARK_POINT_COUNT];
+
+    const float c = cosf(current_roi->rotation);
+    const float s = sinf(current_roi->rotation);
 
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        const float x = points[i].x;
-        const float y = points[i].y;
+        const float crop_x = output->landmarks[i * 3U + 0U] / (float)LANDMARK_INPUT_WIDTH;
+        const float crop_y = output->landmarks[i * 3U + 1U] / (float)LANDMARK_INPUT_HEIGHT;
+        const float local_x = (crop_x - 0.5f) * current_roi->width;
+        const float local_y = (crop_y - 0.5f) * current_roi->height;
 
-        if (!isfinite(x) || !isfinite(y)) {
+        decoded[i].x = current_roi->center_x + local_x * c - local_y * s;
+        decoded[i].y = current_roi->center_y + local_x * s + local_y * c;
+        decoded[i].z = output->landmarks[i * 3U + 2U];
+    }
+
+    const float palm_center_x =
+        (decoded[5].x +
+         decoded[9].x +
+         decoded[13].x +
+         decoded[17].x) * 0.25f;
+
+    const float palm_center_y =
+        (decoded[5].y +
+         decoded[9].y +
+         decoded[13].y +
+         decoded[17].y) * 0.25f;
+
+    const float dx = palm_center_x - decoded[0].x;
+    const float dy = palm_center_y - decoded[0].y;
+
+    if (isfinite(dx) && isfinite(dy) && ((dx * dx + dy * dy) > 0.000001f)) {
+        next_roi->rotation = ROI_NormalizeAngle((AI_PI * 0.5f) - atan2f(-dy, dx));
+    }
+    else {
+        next_roi->rotation = current_roi->rotation;
+    }
+
+    float min_x =  1000000.0f;
+    float min_y =  1000000.0f;
+    float max_x = -1000000.0f;
+    float max_y = -1000000.0f;
+
+    for (uint32_t n = 0U; n < sizeof(indices); n++) {
+        const uint32_t i = indices[n];
+
+        if (!isfinite(decoded[i].x) || !isfinite(decoded[i].y)) {
             return AI_STATUS_POSTPROCESS_ERROR;
         }
 
-        if (x < min_x) {
-            min_x = x;
-        }
-
-        if (x > max_x) {
-            max_x = x;
-        }
-
-        if (y < min_y) {
-            min_y = y;
-        }
-
-        if (y > max_y) {
-            max_y = y;
-        }
+        if (decoded[i].x < min_x) { min_x = decoded[i].x; }
+        if (decoded[i].x > max_x) { max_x = decoded[i].x; }
+        if (decoded[i].y < min_y) { min_y = decoded[i].y; }
+        if (decoded[i].y > max_y) { max_y = decoded[i].y; }
     }
 
-    const float box_width_px = (max_x - min_x) * (float)frame_width;
-    const float box_height_px = (max_y - min_y) * (float)frame_height;
-    float target_size_px = fmaxf(box_width_px, box_height_px) * LANDMARK_TRACKING_ROI_SCALE;
+    next_roi->center_x = (max_x + min_x) * 0.5f;
+    next_roi->center_y = (max_y + min_y) * 0.5f;
+    next_roi->width    = max_x - min_x;
+    next_roi->height   = max_y - min_y;
 
-    const float previous_size_px = roi->width * (float)frame_width;
-    const float minimum_size_from_previous = previous_size_px * 0.92f;
-
-    if (target_size_px < minimum_size_from_previous) {
-        target_size_px = minimum_size_from_previous;
+    if ((next_roi->width <= 0.0f) || (next_roi->height <= 0.0f)) {
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    if (target_size_px < LANDMARK_TRACKING_MIN_SIZE_PX) {
-        target_size_px = LANDMARK_TRACKING_MIN_SIZE_PX;
-    }
-
-    const float maximum_size_from_previous = previous_size_px * 1.20f;
-
-    if (target_size_px > maximum_size_from_previous) {
-        target_size_px = maximum_size_from_previous;
-    }
-
-    float target_center_x = (min_x + max_x) * 0.5f;
-    float target_center_y = (min_y + max_y) * 0.5f;
-
-    target_center_y += (target_size_px * LANDMARK_TRACKING_ROI_SHIFT_Y) / (float)frame_height;
-
-    const float target_width  = target_size_px / (float)frame_width;
-    const float target_height = target_size_px / (float)frame_height;
-
-    const float alpha = LANDMARK_TRACKING_ROI_SMOOTHING;
-
-    roi->center_x += alpha * (target_center_x - roi->center_x);
-    roi->center_y += alpha * (target_center_y - roi->center_y);
-    roi->width    += alpha * (target_width - roi->width);
-    roi->height   += alpha * (target_height - roi->height);
-    roi->rotation = 0.0f;
-
-    LANDMARK_UpdateROICorners(roi);
+    ROI_ShiftAndScale(next_roi, 0.0f, -0.1f, 2.0f, 2.0f);
+    ROI_UpdateRotatedCorners(next_roi);
 
     return AI_STATUS_OK;
 }

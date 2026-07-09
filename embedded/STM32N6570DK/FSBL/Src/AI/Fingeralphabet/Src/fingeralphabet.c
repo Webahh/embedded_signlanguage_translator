@@ -112,11 +112,9 @@ AI_RunStepStatus_TypeDef FINGERALPHABET_RunStep(uint8_t output[FINGERALPHABET_OU
         return AI_RUN_ERROR;
     }
 
+    SCB_InvalidateDCache_by_Addr((uint32_t *)fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
     memcpy(output, fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
-    SCB_InvalidateDCache_by_Addr(
-        (uint32_t *)fingeralphabet_output_buffer,
-        FINGERALPHABET_OUTPUT_SIZE
-    );
+
 
 
     fingeralphabet_running = false;

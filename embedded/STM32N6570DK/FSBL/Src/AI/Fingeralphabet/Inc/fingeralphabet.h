@@ -22,8 +22,8 @@ typedef struct {
 } FingeralphabetResult_TypeDef;
 
 AI_Status_TypeDef FINGERALPHABET_Init(void);
-AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
-											float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE]);
+AI_Status_TypeDef FINGERALPHABET_PreprocessFromLandmarkOutput(const LandmarkNetworkOutput_TypeDef *landmark_output,
+															  uint8_t output[FINGERALPHABET_INPUT_SIZE]);
 
 AI_Status_TypeDef FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE]);
 

@@ -22,10 +22,7 @@
 #define PALM_REGRESSION_SIZE    		18U
 #define PALM_SCORE_BUFFER_SIZE 			(PALM_DETECTION_COUNT * sizeof(float))
 #define PALM_REGRESSION_BUFFER_SIZE 	(PALM_DETECTION_COUNT * PALM_REGRESSION_SIZE * sizeof(float))
-
 #define PALM_KEYPOINT_COUNT           	7U
-#define PALM_REGRESSION_SIZE         	18U
-#define PALM_DETECTION_COUNT       		2016U
 
 #define PALM_PP_CONFIDENCE_THRESHOLD 	0.3f
 #define PALM_PP_IOU_THRESHOLD        	0.4f
@@ -62,6 +59,10 @@ typedef struct {
 } PalmDetectionFilter_TypeDef;
 
 typedef struct {
+    /*
+     * Pixel coordinates in display/camera coordinate system.
+     * Not normalized.
+     */
     float center_x;
     float center_y;
     float width;
