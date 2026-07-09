@@ -41,6 +41,8 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 	} else {
 		SCHEDULER_Task_remove(systemtime_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+		uint32_t _fb_addr = (uint32_t)LTDC_Layer2Config.fb;
+		SCB_CleanDCache_by_Addr((void*)(_fb_addr + 720UL * 2U), 80U * 16U * 2U);
 	}
 }
 
@@ -55,6 +57,8 @@ void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 	} else {
 		SCHEDULER_Task_remove(systeminfo_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
+		{ uint32_t _pix_off = LTDC_Layer1Config.buf_width * 16UL + 720UL;
+		  SCB_CleanDCache_by_Addr((void*)((uint32_t)LTDC_Layer1Config.fb + _pix_off * 3U), 80U * 48U * 3U); }
 		UI_Callback_Info_Active = 0;
 	}
 }

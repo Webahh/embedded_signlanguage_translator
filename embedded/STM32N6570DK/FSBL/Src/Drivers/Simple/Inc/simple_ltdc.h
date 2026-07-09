@@ -44,6 +44,18 @@ void LTDC_Init(void);
  */
 void LTDC_BackgroundColor_Set(uint8_t r, uint8_t g, uint8_t b);
 
+/**
+ * @brief Blit RGB888 source data into an ARGB4444 layer buffer
+ *
+ * @param [in] cfg            Layer configuration (fb must point to ARGB4444 buffer)
+ * @param [in] source         Source RGB888 pixel data
+ * @param [in] source_width   Source image width (pixels)
+ * @param [in] source_height  Source image height (pixels)
+ * @param [in] destination_x  Destination X offset (pixels)
+ * @param [in] destination_y  Destination Y offset (pixels)
+ *
+ * @note D-cache: caller must clean the destination region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
 void LTDC_BlitRGB888ToARGB4444(
     const LTDC_Layer_Config_TypeDef *cfg,
     const uint8_t *source,

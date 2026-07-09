@@ -33,15 +33,21 @@
 #include "simple_dma2d.h"
 #include "ui.h"
 
-static volatile int ltdc_fg_disp_idx = 1;
+/* D-Cache coherency: LTDC and DMA2D read PSRAM directly (bypass D-cache),
+   so CPU-written data must be flushed to memory before DMA can see it,
+   and DMA-written data must be invalidated before CPU reads it.          */
+#define CACHE_CLEAN(addr, size)  SCB_CleanDCache_by_Addr((void*)(addr), (int32_t)(size))
+#define CACHE_INVAL(addr, size)  SCB_InvalidateDCache_by_Addr((void*)(addr), (int32_t)(size))
+
+/* ISR-safe copy of landmarks for per-frame redraw in DCMIPP frame callback */
+static volatile uint8_t 		_isr_landmark_valid = 0U;
+static LandmarkPoint_TypeDef 	_isr_landmark_points[LANDMARK_POINT_COUNT];
+static HandROI_TypeDef 			_isr_landmark_roi;
+
+static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
 static volatile uint8_t camera_frame_ready = 0U;
-
-// ISR-safe copy of predicted landmarks for flicker-free redraw in FrameInterrupt
-static volatile uint8_t _isr_landmark_valid = 0U;
-static LandmarkPoint_TypeDef _isr_landmark_points[LANDMARK_POINT_COUNT];
-static HandROI_TypeDef _isr_landmark_roi;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
 {
@@ -77,6 +83,9 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
             isr_draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
             LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
             LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
+
+            // Clean so LTDC sees the landmarks immediately
+            CACHE_CLEAN(&ltdc_layer_bg_buffer[next_disp_idx], sizeof(ltdc_layer_bg_buffer[0]));
         }
 
         camera_frame_ready = 1U;
@@ -121,6 +130,11 @@ void vSystemTimeTask(void) {
 	char str[11]; // + '\0'
 	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
 	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 720, 0, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+	{
+		uint32_t _byte_off = (0UL * LTDC_Layer1Config.buf_width + 720UL) * 3U;
+		  CACHE_CLEAN((void*)((uint32_t)LTDC_Layer1Config.fb + _byte_off), 80U * 16U * 3U);
+	}
 }
 
 void vLEDTask(void) {
@@ -151,13 +165,17 @@ void vTouchTask(void){
         UI_Drawer_HandleTouch(&_drawer, data.x, data.y, data.pressed,
             &LTDC_Layer2Config, NULL);
 
-        // Paint touch feedbac
+        // Paint touch feedback
         if (data.pressed)
         {
         	int next_idx = ltdc_layer_bg_buffer_disp_idx;
             LTDC_Layer_Config_TypeDef tmp = LTDC_Layer1Config;
             tmp.fb = (void *)&ltdc_layer_bg_buffer[next_idx];
             LTDC_Layer_Draw_Circle(&tmp, data.x, data.y, 5, LTDC_LAYER_COLOR_BLUE);
+            int32_t x0 = (data.x > 5) ? data.x - 5 : 0;
+            int32_t y0 = (data.y > 5) ? data.y - 5 : 0;
+            uint32_t fb = (uint32_t)&ltdc_layer_bg_buffer[next_idx];
+            CACHE_CLEAN(fb + ((uint32_t)y0 * LTDC_LAYER_BG_WIDTH + (uint32_t)x0) * 3U, 11U * 11U * 3U);
         }
     }
 }
@@ -336,6 +354,10 @@ static void _resetTracking(void)
 
 static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
 {
+    // Invalidate camera buffer before CPU reads it (camera/DMA wrote to it)
+    CACHE_INVAL(&ltdc_layer_bg_buffer[camera_buffer_idx],
+                sizeof(ltdc_layer_bg_buffer[0]));
+
     const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
     													 LTDC_Layer1Config.width,
 														 LTDC_Layer1Config.height,
@@ -364,6 +386,10 @@ static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
     _dma2d.cfg.width_pixels = LANDMARK_INPUT_WIDTH;
     _dma2d.cfg.height_lines = LANDMARK_INPUT_HEIGHT;
     _dma2d.cfg.mode = DMA2D_MODE_MEM_TO_MEM;
+
+    // Clean preprocessed input so DMA2D reads CPU-written data
+    CACHE_CLEAN((void*)(uint32_t)landmark_preprocessed_input,
+                LANDMARK_INPUT_WIDTH * LANDMARK_INPUT_HEIGHT * LANDMARK_INPUT_CHANNELS);
 
     if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) {
         return false;
@@ -457,7 +483,7 @@ void vAIPipelineTask(void)
 
     if (hand_state == HAND_STATE_PALM_SEARCH) {
         if (nn_frame_ready == 0U) return;
-        if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) return;
+//        if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) return;
 
         last_palm_search_tick = now;
         nn_frame_ready = 0U;
@@ -558,6 +584,8 @@ void vAIPipelineTask(void)
             if (palm_vis) {
                 LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
             }
+            CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
+                        sizeof(ltdc_layer_bg_buffer[0]));
         }
 
         if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
@@ -615,6 +643,9 @@ void vSystemInfoTask(void)
 
     snprintf(buf, sizeof(buf), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
     TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+
+    { uint32_t _byte_off = (16UL * LTDC_Layer1Config.buf_width + 720UL) * 3U;
+      CACHE_CLEAN((void*)((uint32_t)LTDC_Layer1Config.fb + _byte_off), 80U * 48U * 3U); }
 
     _printStackUsage();
 }
