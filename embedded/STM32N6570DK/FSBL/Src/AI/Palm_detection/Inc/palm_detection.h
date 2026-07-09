@@ -13,17 +13,15 @@
 
 #include "simple_ai.h"
 
-#define PALM_INPUT_WIDTH       192U
-#define PALM_INPUT_HEIGHT      192U
-#define PALM_INPUT_CHANNELS      3U
+#define PALM_INPUT_WIDTH       			192U
+#define PALM_INPUT_HEIGHT      			192U
+#define PALM_INPUT_CHANNELS      		3U
+#define PALM_INPUT_SIZE 				(PALM_INPUT_WIDTH * PALM_INPUT_HEIGHT * PALM_INPUT_CHANNELS)
 
-#define PALM_INPUT_SIZE (PALM_INPUT_WIDTH * PALM_INPUT_HEIGHT * PALM_INPUT_CHANNELS)
-
-#define PALM_DETECTION_COUNT  2016U
-#define PALM_REGRESSION_SIZE    18U
-
-#define PALM_SCORE_BUFFER_SIZE (PALM_DETECTION_COUNT * sizeof(float))
-#define PALM_REGRESSION_BUFFER_SIZE (PALM_DETECTION_COUNT * PALM_REGRESSION_SIZE * sizeof(float))
+#define PALM_DETECTION_COUNT  			2016U
+#define PALM_REGRESSION_SIZE    		18U
+#define PALM_SCORE_BUFFER_SIZE 			(PALM_DETECTION_COUNT * sizeof(float))
+#define PALM_REGRESSION_BUFFER_SIZE 	(PALM_DETECTION_COUNT * PALM_REGRESSION_SIZE * sizeof(float))
 
 #define PALM_KEYPOINT_COUNT           	7U
 #define PALM_REGRESSION_SIZE         	18U
@@ -69,7 +67,6 @@ typedef struct {
     float width;
     float height;
     float rotation;
-
     float corners[4][2]; // top left, top right, bottom right, bottom left
 } HandROI_TypeDef;
 
