@@ -22,12 +22,33 @@ void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx)
 	DEBUG_PRINTF("[UI] Mode: %u\r\n", val);
 }
 
-void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx)
+void _dr_cb_Palm(uint8_t idx, uint8_t val, void *ctx)
 {
+	(void)idx;
 	(void)val;
 	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
-	DEBUG_PRINTF("[UI] %s: visible=%u slider=%u\r\n",
-		drawer->items[idx].label, drawer->items[idx].composite.visible,
+	DEBUG_PRINTF("[UI] Palm (ROI draw): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+void _dr_cb_Hand(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] Hand (Landmark draw): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+void _dr_cb_Sign(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] Sign (result print): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
 		drawer->items[idx].composite.slider_value);
 }
 

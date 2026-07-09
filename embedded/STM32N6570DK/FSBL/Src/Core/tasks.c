@@ -44,6 +44,10 @@ static volatile uint8_t 		_isr_landmark_valid = 0U;
 static LandmarkPoint_TypeDef 	_isr_landmark_points[LANDMARK_POINT_COUNT];
 static HandROI_TypeDef 			_isr_landmark_roi;
 
+/* ISR-safe mirrors of UI visibility toggles (updated by AI pipeline task) */
+static volatile uint8_t _isr_palm_vis = 1U;
+static volatile uint8_t _isr_hand_vis = 1U;
+
 static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
@@ -81,9 +85,12 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         if (_isr_landmark_valid) {
             LTDC_Layer_Config_TypeDef isr_draw_cfg = LTDC_Layer1Config;
             isr_draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
-            LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
-            LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
-
+            if (_isr_hand_vis) {
+                LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
+            }
+            if (_isr_palm_vis) {
+                LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
+            }
             // Clean so LTDC sees the landmarks immediately
             CACHE_CLEAN(&ltdc_layer_bg_buffer[next_disp_idx], sizeof(ltdc_layer_bg_buffer[0]));
         }
@@ -150,7 +157,7 @@ void vTouchTask(void){
     static uint32_t last_ms;
     uint32_t now;
     SCHEDULER_Tick_get(&now);
-    if (now - last_ms < 30) return;
+//    if (now - last_ms < 30) return;
 
     uint8_t pending = 0;
     TOUCH_GetPending(&pending);
@@ -420,9 +427,9 @@ static void _runFingeralphabetIfDue(void)
     uint32_t now;
     SCHEDULER_Tick_get(&now);
 
-    if ((now - last_fingeralphabet_tick) < FINGERALPHABET_INTERVAL_MS) {
-        return;
-    }
+//    if ((now - last_fingeralphabet_tick) < FINGERALPHABET_INTERVAL_MS) {
+//        return;
+//    }
 
     last_fingeralphabet_tick = now;
 
@@ -449,6 +456,10 @@ void vAIPipelineTask(void)
     const uint8_t palm_vis = _drawer.items[1].composite.visible;
     const uint8_t hand_vis = _drawer.items[2].composite.visible;
     const uint8_t sign_vis = _drawer.items[3].composite.visible;
+
+    /* Mirror visibility toggles to ISR-safe copies for per-frame redraw */
+    _isr_palm_vis = palm_vis;
+    _isr_hand_vis = hand_vis;
 
     if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
         if (ai_mode < 2) {
@@ -546,7 +557,7 @@ void vAIPipelineTask(void)
             return;
         }
         if (camera_frame_ready == 0U) return;
-        if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) return;
+//        if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) return;
 
         last_landmark_tick = now;
         camera_frame_ready = 0U;
