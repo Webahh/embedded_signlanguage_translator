@@ -22,12 +22,33 @@ void _dr_cb_SystemMode(uint8_t idx, uint8_t val, void *ctx)
 	DEBUG_PRINTF("[UI] Mode: %u\r\n", val);
 }
 
-void _dr_cb_composite(uint8_t idx, uint8_t val, void *ctx)
+void _dr_cb_Palm(uint8_t idx, uint8_t val, void *ctx)
 {
+	(void)idx;
 	(void)val;
 	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
-	DEBUG_PRINTF("[UI] %s: visible=%u slider=%u\r\n",
-		drawer->items[idx].label, drawer->items[idx].composite.visible,
+	DEBUG_PRINTF("[UI] Palm (ROI draw): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+void _dr_cb_Hand(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] Hand (Landmark draw): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
+		drawer->items[idx].composite.slider_value);
+}
+
+void _dr_cb_Sign(uint8_t idx, uint8_t val, void *ctx)
+{
+	(void)idx;
+	(void)val;
+	UI_Drawer_TypeDef *drawer = (UI_Drawer_TypeDef *)ctx;
+	DEBUG_PRINTF("[UI] Sign (result print): visible=%u slider=%u\r\n",
+		drawer->items[idx].composite.visible,
 		drawer->items[idx].composite.slider_value);
 }
 
@@ -41,6 +62,8 @@ void _dr_cb_toggle_SystemTime(uint8_t idx, uint8_t val, void *ctx)
 	} else {
 		SCHEDULER_Task_remove(systemtime_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer2Config, 720, 0, 80, 16, 0x00000000);
+		uint32_t _fb_addr = (uint32_t)LTDC_Layer2Config.fb;
+		SCB_CleanDCache_by_Addr((void*)(_fb_addr + 720UL * 2U), 80U * 16U * 2U);
 	}
 }
 
@@ -55,6 +78,8 @@ void _dr_cb_toggle_SystemInfo(uint8_t idx, uint8_t val, void *ctx)
 	} else {
 		SCHEDULER_Task_remove(systeminfo_id);
 		LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
+		{ uint32_t _pix_off = LTDC_Layer1Config.buf_width * 16UL + 720UL;
+		  SCB_CleanDCache_by_Addr((void*)((uint32_t)LTDC_Layer1Config.fb + _pix_off * 3U), 80U * 48U * 3U); }
 		UI_Callback_Info_Active = 0;
 	}
 }

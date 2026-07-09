@@ -23,6 +23,8 @@
  *
  * @param [in] cfg   Layer configuration
  * @param [in] color ARGB fill colour
+ *
+ * @note D-cache: caller must clean the entire cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color);
 
@@ -32,6 +34,8 @@ void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color);
  * @param [in] cfg    Layer configuration
  * @param [in] color1 Left-side ARGB colour
  * @param [in] color2 Right-side ARGB colour
+ *
+ * @note D-cache: caller must clean cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color1, uint32_t color2);
 
@@ -43,6 +47,8 @@ void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t 
  * @param [in] pos_y  Circle center Y (pixels)
  * @param [in] radius Circle radius (pixels)
  * @param [in] color  ARGB fill colour
+ *
+ * @note D-cache: caller must clean the circle bounding box on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Circle(const LTDC_Layer_Config_TypeDef* cfg, uint16_t pos_x, uint16_t pos_y, uint16_t radius, uint32_t color);
 
@@ -55,6 +61,8 @@ void LTDC_Layer_Draw_Circle(const LTDC_Layer_Config_TypeDef* cfg, uint16_t pos_x
  * @param [in] w     Width (pixels)
  * @param [in] h     Height (pixels)
  * @param [in] color ARGB fill colour
+ *
+ * @note D-cache: caller must clean the rect on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Rect(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color);
 
@@ -67,6 +75,8 @@ void LTDC_Layer_Draw_Rect(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x, uint
  * @param [in] w     Width (pixels)
  * @param [in] h     Height (pixels)
  * @param [in] color ARGB border colour
+ *
+ * @note D-cache: caller must clean the border region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_RectBorder(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint32_t color);
 
@@ -79,6 +89,8 @@ void LTDC_Layer_Draw_RectBorder(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x
  * @param [in] img_h Source image height (pixels)
  * @param [in] dst_x Destination X offset (pixels)
  * @param [in] dst_y Destination Y offset (pixels)
+ *
+ * @note D-cache: caller must clean the destination region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y);
 
@@ -92,6 +104,8 @@ void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void 
  * @param [in] x1    End X (pixels)
  * @param [in] y1    End Y (pixels)
  * @param [in] color ARGB line colour
+ *
+ * @note D-cache: caller must clean the line bounding box on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color);
 
@@ -100,11 +114,15 @@ void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int3
  *
  * @param [in] roi   Hand ROI data
  * @param [in] color ARGB border colour
+ *
+ * @note D-cache: caller must clean the overlay buffer over the ROI area (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color);
 
 /**
  * @brief Clear the previously drawn ROI bounding box
+ *
+ * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_ROIClearPrevious(void);
 
@@ -112,11 +130,15 @@ void LTDC_Layer_Draw_ROIClearPrevious(void);
  * @brief Draw hand landmarks as filled circles
  *
  * @param [in] points Array of landmark points
+ *
+ * @note D-cache: caller must clean the overlay buffer over the landmark area (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
 
 /**
  * @brief Clear the previously drawn hand landmarks
+ *
+ * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_LandmarksClearPrevious(void);
 
@@ -125,6 +147,8 @@ void LTDC_Layer_Draw_LandmarksClearPrevious(void);
  *
  * @param [in] cfg    Target layer configuration
  * @param [in] points Array of landmark points
+ *
+ * @note D-cache: caller must clean the landmark region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
 
@@ -134,6 +158,8 @@ void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const
  * @param [in] cfg   Target layer configuration
  * @param [in] roi   Hand ROI data
  * @param [in] color ARGB border colour
+ *
+ * @note D-cache: caller must clean the ROI region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void LTDC_Layer_Draw_ROIDirect(const LTDC_Layer_Config_TypeDef *cfg, const HandROI_TypeDef *roi, uint32_t color);
 

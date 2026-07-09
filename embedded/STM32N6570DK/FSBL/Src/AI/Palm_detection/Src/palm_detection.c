@@ -58,7 +58,8 @@ AI_Status_TypeDef PALM_Run(PalmNetworkOutput_TypeDef *output)
         LL_ATON_RT_Reset_Network(&NN_Instance_palm_detection_model_v3);
     }
 
-    LL_ATON_Cache_MCU_Clean_Range((uintptr_t)palm_input_buffer, PALM_INPUT_SIZE);
+    // DMA2D wrote the input buffer. Discard stale D-cache so NPU reads fresh data
+    LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)palm_input_buffer, PALM_INPUT_SIZE);
 
     if (!AI_RuntimeRunNetwork(&NN_Instance_palm_detection_model_v3)) {
         return AI_STATUS_RUNTIME_ERROR;

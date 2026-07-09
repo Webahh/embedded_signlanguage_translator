@@ -585,6 +585,10 @@ void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer,
 	LTDC_Layer_Draw_RectBorder(cfg, drawer->x_pos, drawer->y_pos,
 		UI_DRAWER_BTN_SIZE, UI_DRAWER_BTN_SIZE, drawer->color_border);
 	_draw_hamburger(cfg, (int16_t)drawer->x_pos, (int16_t)drawer->y_pos, drawer->color_text);
+	// Clean drawer area on fg overlay so LTDC sees it
+	{ uint32_t _byte_off = ((uint32_t)drawer->y_pos * cfg->buf_width + (uint32_t)drawer->x_pos) * 2U;
+	  SCB_CleanDCache_by_Addr((void*)((uint32_t)cfg->fb + _byte_off),
+		  UI_DRAWER_WIDTH * ((uint32_t)cfg->height - (uint32_t)drawer->y_pos) * 2U); }
 }
 
 // Redraw the surface card + controls for a single item
@@ -604,4 +608,8 @@ void UI_Drawer_DrawItem(UI_Drawer_TypeDef *drawer,
 		UI_DRAWER_ITEM_HEIGHT, drawer->color_surface);
 
 	_draw_item(drawer, idx, cfg);
+	// Clean single item on fg overlay
+	{ uint32_t _byte_off = ((uint32_t)item_y * cfg->buf_width + (uint32_t)(drawer->x_pos + _SURFACE_MARGIN)) * 2U;
+	  uint32_t _pix_w = UI_DRAWER_WIDTH - _SURFACE_MARGIN * 2U;
+	  SCB_CleanDCache_by_Addr((void*)((uint32_t)cfg->fb + _byte_off), _pix_w * UI_DRAWER_ITEM_HEIGHT * 2U); }
 }
