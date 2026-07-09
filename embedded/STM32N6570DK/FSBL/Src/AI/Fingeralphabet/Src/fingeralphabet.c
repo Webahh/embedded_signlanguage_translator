@@ -142,11 +142,13 @@ bool FINGERALPHABET_Run(const uint8_t input[FINGERALPHABET_INPUT_SIZE], uint8_t 
     }
 
     memcpy(fingeralphabet_input_buffer, input, FINGERALPHABET_INPUT_SIZE);
+    SCB_CleanDCache_by_Addr(fingeralphabet_input_buffer, FINGERALPHABET_INPUT_SIZE);
 
     if (!AI_RuntimeRunNetwork(&NN_Instance_fingeralphabet_model_v3)) {
         return false;
     }
 
+    SCB_InvalidateDCache_by_Addr(fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
     memcpy(output, fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
 
     fingeralphabet_has_run = true;

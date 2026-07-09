@@ -495,6 +495,9 @@ void vAIPipelineTask(void)
         if (palm_input == NULL) return;
 
         DMA2D_EnsureInit();
+        // DCMIPP wrote this buffer directly (DMA to PSRAM). Discard any stale D-cache copy
+        CACHE_INVAL(&ltdc_layer_nn_raw_buffer[completed_idx],
+                    sizeof(ltdc_layer_nn_raw_buffer[0]));
         _dma2d.cfg.src.address = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
         _dma2d.cfg.src.line_offset = 0;
         _dma2d.cfg.src.format = DMA2D_FORMAT_RGB888;
@@ -530,6 +533,8 @@ void vAIPipelineTask(void)
                 LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
                 draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
                 LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+                CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
+                            sizeof(ltdc_layer_bg_buffer[0]));
             }
             return;
         }
