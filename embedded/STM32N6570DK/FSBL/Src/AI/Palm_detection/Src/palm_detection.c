@@ -16,6 +16,7 @@ LL_ATON_DECLARE_NAMED_NN_INSTANCE_AND_INTERFACE(palm_detection_model_v3);
 static const LL_Buffer_InfoTypeDef *palm_input_info;
 static const LL_Buffer_InfoTypeDef *palm_output_info;
 
+static uint8_t palm_input_mem[PALM_INPUT_SIZE] __attribute__((section(".psram_bss"), aligned(32)));
 static uint8_t *palm_input_buffer;
 static float *palm_scores_buffer;
 static float *palm_regressions_buffer;
@@ -26,6 +27,9 @@ static bool palm_has_run = false;
 AI_Status_TypeDef PALM_Init(void)
 {
     LL_ATON_RT_Init_Network(&NN_Instance_palm_detection_model_v3);
+
+    LL_ATON_Set_User_Input_Buffer(&NN_Instance_palm_detection_model_v3, 0,
+                                   palm_input_mem, PALM_INPUT_SIZE);
 
     palm_input_info = LL_ATON_Input_Buffers_Info(&NN_Instance_palm_detection_model_v3);
     palm_output_info = LL_ATON_Output_Buffers_Info(&NN_Instance_palm_detection_model_v3);

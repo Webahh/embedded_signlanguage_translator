@@ -47,6 +47,7 @@ MEMORY
   ROM         (xrw) : ORIGIN = 0x34180400, LENGTH = 255K
   RAM         (xrw) : ORIGIN = 0x341C0000, LENGTH = 256K
   EC_RUNTIME  (xrw) : ORIGIN = 0x34080000, LENGTH = 512K
+  EC_CONST    (xrw) : ORIGIN = 0x34100000, LENGTH = 512K
   PSRAM       (xrw) : ORIGIN = 0x91000000, LENGTH = 16M
   ECBLOBS     (rx)  : ORIGIN = 0x72000000, LENGTH = 8M
 }
@@ -201,13 +202,13 @@ SECTIONS
     . = ALIGN(32);
   } >PSRAM
   
-.ecblobs_const (NOLOAD) :
+.ecblobs_const :
 {
     . = ALIGN(64);
     KEEP(*(.ecblobs_const))
     KEEP(*(.ecblobs_const.*))
     . = ALIGN(64);
-} > ECBLOBS
+} > EC_CONST
 
 .ecblobs_runtime (NOLOAD) :
 {
