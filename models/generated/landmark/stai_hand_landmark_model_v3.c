@@ -628,7 +628,7 @@ static const stai_network_info __stai_hand_landmark_model_v3_network_info = {
     .n_weights = STAI_HAND_LANDMARK_MODEL_V3_WEIGHTS_NUM,
     .n_states = STAI_HAND_LANDMARK_MODEL_V3_STATES_NUM,
 
-    .c_model_datetime = "2026-07-09 19:53:41",
+    .c_model_datetime = "2026-07-09 20:26:41",
 
     .n_nodes = 294,
 

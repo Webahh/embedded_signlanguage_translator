@@ -12,7 +12,7 @@
         },
         "fingeralphabet_model_v3": {
             "memory_pool": "./my_mpools/fingeralphabet.mpool",
-            "options" : "--enable-epoch-controller -O2 --all-buffers-info --cache-maintenance --Oconv-split-kw --native-float --enable-virtual-mem-pools --Omax-ca-pipe 4 --Ocache-opt --Os"
+            "options" : "--enable-epoch-controller -O3 --all-buffers-info --cache-maintenance --Oconv-split-kw --native-float --enable-virtual-mem-pools --Omax-ca-pipe 4 --Ocache-opt --Os"
         }
     }
 }
