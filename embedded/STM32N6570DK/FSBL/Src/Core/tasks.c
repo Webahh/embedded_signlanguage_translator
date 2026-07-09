@@ -26,9 +26,7 @@
 #include "simple_touch.h"
 #include "palm_detection.h"
 #include "hand_landmark.h"
-#include "hand_landmark_preprocessing.h"
-#include "hand_landmark_postprocessing.h"
-#include "fingeralphabet_preprocessing.h"
+#include "fingeralphabet.h"
 #include "simple_text.h"
 #include "simple_dma2d.h"
 #include "ui.h"
@@ -102,16 +100,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         nn_frame_ready = 1U;
     }
 }
-
-
-static const uint8_t bg_colors[BG_NUM_COLORS][3] = {
-    {255, 0, 0},    /* Red   */
-    {0, 255, 0},    /* Green */
-    {0, 0, 255}     /* Blue  */
-};
-
-static uint8_t  bg_seg_idx    = 0;
-static uint32_t bg_blend_start = 0;
 
 __attribute__((noinline, optimize("O0"))) // No optimizations for better testing
 static int recursion(int n)
@@ -187,6 +175,36 @@ void vTouchTask(void){
     }
 }
 
+/* --------------------------------------------------------------------------
+ * AI Pipeline Defs & Helper
+ * -------------------------------------------------------------------------- */
+
+typedef enum {
+    HAND_STATE_PALM_SEARCH = 0,
+    HAND_STATE_LANDMARK_TRACKING
+} HandTrackingState_TypeDef;
+
+typedef enum {
+    AI_STAGE_IDLE = 0,
+    AI_STAGE_WAIT_FINGERALPHABET
+} AIPipelineStage_TypeDef;
+
+typedef struct {
+    uint8_t ai_mode;
+    uint8_t palm_vis;
+    uint8_t hand_vis;
+    uint8_t sign_vis;
+} AIPipelineUi_TypeDef;
+
+
+#define LANDMARK_PRESENCE_THRESHOLD  0.5f
+#define LANDMARK_LOST_FRAME_COUNT    3U
+#define PALM_SEARCH_INTERVAL_MS      200U
+#define FINGERALPHABET_INTERVAL_MS   1000U
+#define LANDMARK_TRACK_INTERVAL_MS   0U
+#define LANDMARK_PREDICTION_TIME_MS     45.0f
+#define LANDMARK_PREDICTION_MAX_DELTA   0.08f
+#define LANDMARK_SMOOTHING_ALPHA        0.75f
 
 static PalmNetworkOutput_TypeDef palm_output;
 static PalmDetection_TypeDef palm_detection;
@@ -204,50 +222,22 @@ static FingeralphabetResult_TypeDef fingeralphabet_result;
 static DMA2D_Handle_TypeDef _dma2d;
 static int _dma2d_initialized = 0;
 
-static void DMA2D_EnsureInit(void){
-    if (!_dma2d_initialized) {
-        DMA2D_Init(&_dma2d);
-        _dma2d_initialized = 1;
-    }
-}
-
-typedef enum {
-    HAND_STATE_PALM_SEARCH = 0,
-    HAND_STATE_LANDMARK_TRACKING
-} HandTrackingState_TypeDef;
-
-typedef enum {
-    AI_STAGE_IDLE = 0,
-    AI_STAGE_WAIT_FINGERALPHABET
-} AIPipelineStage_TypeDef;
-
-#define LANDMARK_PRESENCE_THRESHOLD  0.5f
-#define LANDMARK_LOST_FRAME_COUNT    3U
-#define PALM_SEARCH_INTERVAL_MS      200U
-#define FINGERALPHABET_INTERVAL_MS   1500U
-#define LANDMARK_TRACK_INTERVAL_MS   0U
-static uint32_t last_valid_landmark_output_tick = 0U;
-
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
 static AIPipelineStage_TypeDef ai_stage = AI_STAGE_IDLE;
 
+static uint32_t last_valid_landmark_output_tick = 0U;
 static uint8_t landmark_lost_count = 0U;
 static uint32_t last_palm_search_tick = 0U;
 static uint32_t last_landmark_tick = 0U;
 static uint32_t last_fingeralphabet_tick = 0U;
 
 static uint8_t _saved_camera_buffer_idx;
-
 static uint32_t _palm_duration_ms;
 static uint32_t _landmark_duration_ms;
 static uint32_t _fingeralphabet_duration_ms;
 static uint32_t _palm_start_tick;
 static uint32_t _landmark_start_tick;
 static uint32_t _fingeralphabet_start_tick;
-
-#define LANDMARK_PREDICTION_TIME_MS     45.0f
-#define LANDMARK_PREDICTION_MAX_DELTA   0.08f
-#define LANDMARK_SMOOTHING_ALPHA        0.75f
 
 static LandmarkPoint_TypeDef previous_landmark_points[LANDMARK_POINT_COUNT];
 static LandmarkPoint_TypeDef smoothed_landmark_points[LANDMARK_POINT_COUNT];
@@ -257,6 +247,13 @@ static uint8_t previous_landmarks_valid = 0U;
 static uint32_t previous_landmark_tick = 0U;
 
 static LandmarkPoint_TypeDef last_current_landmark_points[LANDMARK_POINT_COUNT];
+
+static void DMA2D_EnsureInit(void){
+    if (!_dma2d_initialized) {
+        DMA2D_Init(&_dma2d);
+        _dma2d_initialized = 1;
+    }
+}
 
 static float _clampf(float value, float min_value, float max_value)
 {
@@ -361,18 +358,18 @@ static void _resetTracking(void)
 
 static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
 {
+    AI_Status_TypeDef status = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
+			 	 	 	 	 	 	 	 	 	 	   LTDC_Layer1Config.width,
+													   LTDC_Layer1Config.height,
+													   LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
+													   &landmark_roi,
+													   landmark_preprocessed_input);
+
     // Invalidate camera buffer before CPU reads it (camera/DMA wrote to it)
-    CACHE_INVAL(&ltdc_layer_bg_buffer[camera_buffer_idx],
-                sizeof(ltdc_layer_bg_buffer[0]));
+    CACHE_INVAL(&ltdc_layer_bg_buffer[camera_buffer_idx], sizeof(ltdc_layer_bg_buffer[0]));
 
-    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
-    													 LTDC_Layer1Config.width,
-														 LTDC_Layer1Config.height,
-														 LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
-														 &landmark_roi,
-														 landmark_preprocessed_input);
 
-    if (!preprocessing_ok) {
+    if (status != AI_STATUS_OK) {
         return false;
     }
 
@@ -403,7 +400,7 @@ static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
     }
 
     SCHEDULER_Tick_get(&_landmark_start_tick);
-    if (!LANDMARK_Run(&landmark_output)) {
+    if (LANDMARK_Run(&landmark_output) != AI_STATUS_OK) {
         return false;
     }
 
@@ -427,18 +424,18 @@ static void _runFingeralphabetIfDue(void)
     uint32_t now;
     SCHEDULER_Tick_get(&now);
 
-//    if ((now - last_fingeralphabet_tick) < FINGERALPHABET_INTERVAL_MS) {
-//        return;
-//    }
+    if ((now - last_fingeralphabet_tick) < FINGERALPHABET_INTERVAL_MS) {
+        return;
+    }
 
     last_fingeralphabet_tick = now;
 
-    if (!FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input)) {
+    if (FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
         return;
     }
 
-    if (!FINGERALPHABET_Start(fingeralphabet_input)) {
+    if (FINGERALPHABET_Start(fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet start failed\r\n");
         return;
     }
@@ -447,181 +444,344 @@ static void _runFingeralphabetIfDue(void)
     ai_stage = AI_STAGE_WAIT_FINGERALPHABET;
 }
 
-void vAIPipelineTask(void)
-{
-    uint32_t now;
-    SCHEDULER_Tick_get(&now);
+/* --------------------------------------------------------------------------
+ * AI Pipeline State Machine
+ * -------------------------------------------------------------------------- */
 
-    const uint8_t ai_mode = _drawer.items[0].value;
-    const uint8_t palm_vis = _drawer.items[1].composite.visible;
-    const uint8_t hand_vis = _drawer.items[2].composite.visible;
-    const uint8_t sign_vis = _drawer.items[3].composite.visible;
+static void _aiUpdateUiContext(AIPipelineUi_TypeDef *ui)
+{
+    if (ui == NULL) {
+        return;
+    }
+
+    ui->ai_mode  = _drawer.items[0].value;
+    ui->palm_vis = _drawer.items[1].composite.visible;
+    ui->hand_vis = _drawer.items[2].composite.visible;
+    ui->sign_vis = _drawer.items[3].composite.visible;
 
     /* Mirror visibility toggles to ISR-safe copies for per-frame redraw */
-    _isr_palm_vis = palm_vis;
-    _isr_hand_vis = hand_vis;
+    _isr_palm_vis = ui->palm_vis;
+    _isr_hand_vis = ui->hand_vis;
+}
 
-    if (ai_stage == AI_STAGE_WAIT_FINGERALPHABET) {
-        if (ai_mode < 2) {
-            ai_stage = AI_STAGE_IDLE;
-            return;
-        }
-        AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
+static bool _aiHandleFingeralphabetStage(const AIPipelineUi_TypeDef *ui)
+{
+    if (ai_stage != AI_STAGE_WAIT_FINGERALPHABET) {
+        return false;
+    }
 
-        if (fa_status == AI_RUN_BUSY) {
-            return;
-        }
-
+    if ((ui == NULL) || (ui->ai_mode < 2U)) {
         ai_stage = AI_STAGE_IDLE;
-
-        if (fa_status == AI_RUN_ERROR) {
-            DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
-            return;
-        }
-
-        {
-            uint32_t now;
-            SCHEDULER_Tick_get(&now);
-            _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
-        }
-
-        fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
-        if (sign_vis) {
-            DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
-        }
-        return;
+        return true;
     }
 
-    if (hand_state == HAND_STATE_PALM_SEARCH) {
-        if (nn_frame_ready == 0U) return;
-//        if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) return;
+    AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
 
-        last_palm_search_tick = now;
-        nn_frame_ready = 0U;
+    if (fa_status == AI_RUN_BUSY) {
+        return true;
+    }
 
-        _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
-        const uint8_t completed_idx = nn_completed_buffer_idx;
+    ai_stage = AI_STAGE_IDLE;
 
-        uint8_t *palm_input = PALM_GetInputBuffer();
-        if (palm_input == NULL) return;
+    if (fa_status == AI_RUN_ERROR) {
+        DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
+        return true;
+    }
 
-        DMA2D_EnsureInit();
-        // DCMIPP wrote this buffer directly (DMA to PSRAM). Discard any stale D-cache copy
-        CACHE_INVAL(&ltdc_layer_nn_raw_buffer[completed_idx],
-                    sizeof(ltdc_layer_nn_raw_buffer[0]));
-        _dma2d.cfg.src.address = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
-        _dma2d.cfg.src.line_offset = 0;
-        _dma2d.cfg.src.format = DMA2D_FORMAT_RGB888;
-        _dma2d.cfg.dst.address = (uint32_t)palm_input;
-        _dma2d.cfg.dst.line_offset = 0;
-        _dma2d.cfg.dst.format = DMA2D_FORMAT_RGB888;
-        _dma2d.cfg.width_pixels = PALM_INPUT_WIDTH;
-        _dma2d.cfg.height_lines = PALM_INPUT_HEIGHT;
-        _dma2d.cfg.mode = DMA2D_MODE_MEM_TO_MEM;
-        if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) return;
-
-        SCHEDULER_Tick_get(&_palm_start_tick);
-        if (!PALM_Run(&palm_output)) return;
+    {
+        uint32_t now;
         SCHEDULER_Tick_get(&now);
-        _palm_duration_ms = now - _palm_start_tick;
-
-        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
-        PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
-
-        if (!palm_valid || !palm_filter.detected) {
-            if (!palm_filter.detected) _clearPredictedOverlay();
-            return;
-        }
-
-        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
-                                    LTDC_Layer1Config.height, &landmark_roi)) {
-            _resetTracking();
-            return;
-        }
-
-        if (ai_mode == 0) {
-            if (palm_vis) {
-                LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
-                draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
-                LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
-                CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
-                            sizeof(ltdc_layer_bg_buffer[0]));
-            }
-            return;
-        }
+        _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
     }
 
-    if (hand_state == HAND_STATE_LANDMARK_TRACKING) {
-        if (ai_mode < 1) {
-            _resetTracking();
-            return;
-        }
-        if (camera_frame_ready == 0U) return;
-//        if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) return;
+    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
 
-        last_landmark_tick = now;
-        camera_frame_ready = 0U;
-
-        _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
+    if (ui->sign_vis) {
+        DEBUG_PRINTF("Index: %d Result: %s\r\n",
+                     fingeralphabet_result.class_index,
+                     fingeralphabet_result.label);
     }
 
-    if ((hand_state == HAND_STATE_PALM_SEARCH) ||
-        (hand_state == HAND_STATE_LANDMARK_TRACKING)) {
+    return true;
+}
 
-        const bool from_palm = (hand_state == HAND_STATE_PALM_SEARCH);
+static bool _aiCopyPalmInputFromCamera(uint8_t completed_idx)
+{
+    uint8_t *palm_input = PALM_GetInputBuffer();
 
-        if (!_runLandmarkBlocking(_saved_camera_buffer_idx)) {
-            _resetTracking();
-            return;
-        }
-        SCHEDULER_Tick_get(&now);
-        _landmark_duration_ms = now - _landmark_start_tick;
+    if (palm_input == NULL) {
+        return false;
+    }
 
-        if (!_isLandmarkValid(&landmark_output)) {
+    DMA2D_EnsureInit();
+
+    /* DCMIPP wrote this buffer directly. Discard stale D-cache copy. */
+    CACHE_INVAL(&ltdc_layer_nn_raw_buffer[completed_idx],
+                sizeof(ltdc_layer_nn_raw_buffer[0]));
+
+    _dma2d.cfg.src.address = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
+    _dma2d.cfg.src.line_offset = 0;
+    _dma2d.cfg.src.format = DMA2D_FORMAT_RGB888;
+
+    _dma2d.cfg.dst.address = (uint32_t)palm_input;
+    _dma2d.cfg.dst.line_offset = 0;
+    _dma2d.cfg.dst.format = DMA2D_FORMAT_RGB888;
+
+    _dma2d.cfg.width_pixels = PALM_INPUT_WIDTH;
+    _dma2d.cfg.height_lines = PALM_INPUT_HEIGHT;
+    _dma2d.cfg.mode = DMA2D_MODE_MEM_TO_MEM;
+
+    return (DMA2D_Transfer(&_dma2d) == DMA2D_OK);
+}
+
+static bool _aiRunPalmDetection(uint8_t completed_idx)
+{
+    uint32_t now;
+
+    if (!_aiCopyPalmInputFromCamera(completed_idx)) {
+        return false;
+    }
+
+    SCHEDULER_Tick_get(&_palm_start_tick);
+
+    if (PALM_Run(&palm_output) != AI_STATUS_OK) {
+        return false;
+    }
+
+    SCHEDULER_Tick_get(&now);
+    _palm_duration_ms = now - _palm_start_tick;
+
+    const AI_Status_TypeDef palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+
+    PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
+
+    if ((palm_valid != AI_STATUS_OK) || (!palm_filter.detected)) {
+        if (!palm_filter.detected) {
             _clearPredictedOverlay();
-            if (!from_palm) _handleInvalidLandmark();
-            return;
         }
 
-        landmark_lost_count = 0U;
-        LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
+        return false;
+    }
 
-        memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
-        SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
+    if (PALM_CreateLandmarkROI(&palm_detection,
+                               LTDC_Layer1Config.width,
+                               LTDC_Layer1Config.height,
+                               &landmark_roi) != AI_STATUS_OK) {
+        _resetTracking();
+        return false;
+    }
 
-        _predictLandmarksTimed(landmark_points, predicted_landmark_points);
+    return true;
+}
 
-        {
-            LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
-            draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
-            if (hand_vis) {
-                LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
-            }
-            if (palm_vis) {
-                LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
-            }
-            CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
-                        sizeof(ltdc_layer_bg_buffer[0]));
-        }
+static void _aiDrawPalmOnly(void)
+{
+    LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
 
-        if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
-                                LTDC_Layer1Config.height, &landmark_roi)) {
-            _resetTracking();
-            return;
-        }
+    draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
 
-        if (from_palm) {
-            previous_landmarks_valid = 0U;
-            hand_state = HAND_STATE_LANDMARK_TRACKING;
-            last_landmark_tick = now;
-            DEBUG_PRINTF("AI state: LANDMARK_TRACKING\r\n");
-            return;
-        }
+    LTDC_Layer_Draw_ROIDirect(&draw_cfg,
+                              &landmark_roi,
+                              LTDC_LAYER_COLOR_BLUE);
 
-        if (ai_mode >= 2) {
-            _runFingeralphabetIfDue();
-        }
+    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
+                sizeof(ltdc_layer_bg_buffer[0]));
+}
+
+static void _aiDrawTrackingOverlay(const AIPipelineUi_TypeDef *ui)
+{
+    LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
+
+    if (ui == NULL) {
         return;
+    }
+
+    draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
+
+    if (ui->hand_vis) {
+        LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
+    }
+
+    if (ui->palm_vis) {
+        LTDC_Layer_Draw_ROIDirect(&draw_cfg,
+                                  &landmark_roi,
+                                  LTDC_LAYER_COLOR_BLUE);
+    }
+
+    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
+                sizeof(ltdc_layer_bg_buffer[0]));
+}
+
+static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
+{
+    uint32_t now;
+
+    if (!_runLandmarkBlocking(_saved_camera_buffer_idx)) {
+        _resetTracking();
+        return false;
+    }
+
+    SCHEDULER_Tick_get(&now);
+    _landmark_duration_ms = now - _landmark_start_tick;
+
+    if (!_isLandmarkValid(&landmark_output)) {
+        _clearPredictedOverlay();
+
+        if (!from_palm) {
+            _handleInvalidLandmark();
+        }
+
+        return false;
+    }
+
+    landmark_lost_count = 0U;
+
+    if (LANDMARK_MapToFrame(&landmark_output,
+                            &landmark_roi,
+                            landmark_points) != AI_STATUS_OK) {
+        DEBUG_PRINTF("Landmark postprocessing failed!\r\n");
+        return false;
+    }
+
+    memcpy(last_current_landmark_points,
+           landmark_points,
+           sizeof(last_current_landmark_points));
+
+    SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
+
+    _predictLandmarksTimed(landmark_points, predicted_landmark_points);
+
+    _aiDrawTrackingOverlay(ui);
+
+    if (LANDMARK_UpdateROI(landmark_points,
+                           LTDC_Layer1Config.width,
+                           LTDC_Layer1Config.height,
+                           &landmark_roi) != AI_STATUS_OK) {
+        _resetTracking();
+        return false;
+    }
+
+    if (from_palm) {
+        previous_landmarks_valid = 0U;
+        hand_state = HAND_STATE_LANDMARK_TRACKING;
+        last_landmark_tick = now;
+
+        DEBUG_PRINTF("AI state: LANDMARK_TRACKING\r\n");
+        return true;
+    }
+
+    if ((ui != NULL) && (ui->ai_mode >= 2U)) {
+        _runFingeralphabetIfDue();
+    }
+
+    return true;
+}
+
+static void _aiStatePalmSearch(const AIPipelineUi_TypeDef *ui)
+{
+    uint32_t now;
+
+    if (ui == NULL) {
+        return;
+    }
+
+    if (nn_frame_ready == 0U) {
+        return;
+    }
+
+    /*
+     * Optional, wenn Palm nicht jedes NN-Frame laufen soll:
+     *
+     * if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) {
+     *     return;
+     * }
+     */
+
+    SCHEDULER_Tick_get(&now);
+
+    last_palm_search_tick = now;
+    nn_frame_ready = 0U;
+
+    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
+
+    const uint8_t completed_idx = nn_completed_buffer_idx;
+
+    if (!_aiRunPalmDetection(completed_idx)) {
+        return;
+    }
+
+    if (ui->ai_mode == 0U) {
+        if (ui->palm_vis) {
+            _aiDrawPalmOnly();
+        }
+
+        return;
+    }
+
+    /*
+     * Direkt nach erfolgreicher Palm-Erkennung einmal Landmark laufen lassen.
+     * Dadurch bleibt das Verhalten wie vorher: Palm findet ROI -> Landmark validiert.
+     */
+    (void)_aiRunLandmarkPass(true, ui);
+}
+
+static void _aiStateLandmarkTracking(const AIPipelineUi_TypeDef *ui)
+{
+    uint32_t now;
+
+    if (ui == NULL) {
+        return;
+    }
+
+    if (ui->ai_mode < 1U) {
+        _resetTracking();
+        return;
+    }
+
+    if (camera_frame_ready == 0U) {
+        return;
+    }
+
+    /*
+     * Optional, wenn Landmark nicht jedes Kameraframe laufen soll:
+     *
+     * if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) {
+     *     return;
+     * }
+     */
+
+    SCHEDULER_Tick_get(&now);
+
+    last_landmark_tick = now;
+    camera_frame_ready = 0U;
+
+    _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
+
+    (void)_aiRunLandmarkPass(false, ui);
+}
+
+void vAIPipelineTask(void)
+{
+    AIPipelineUi_TypeDef ui;
+
+    _aiUpdateUiContext(&ui);
+
+    if (_aiHandleFingeralphabetStage(&ui)) {
+        return;
+    }
+
+    switch (hand_state) {
+        case HAND_STATE_PALM_SEARCH:
+            _aiStatePalmSearch(&ui);
+            break;
+
+        case HAND_STATE_LANDMARK_TRACKING:
+            _aiStateLandmarkTracking(&ui);
+            break;
+
+        default:
+            _resetTracking();
+            break;
     }
 }
 

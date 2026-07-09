@@ -15,8 +15,16 @@ typedef enum {
     AI_STATUS_NOT_INITIALIZED,
     AI_STATUS_CACHEAXI_ERROR,
     AI_STATUS_INVALID_BUFFER,
+	AI_STATUS_PREPROCESS_ERROR,
+	AI_STATUS_POSTPROCESS_ERROR,
     AI_STATUS_RUNTIME_ERROR
 } AI_Status_TypeDef;
+
+typedef enum {
+    AI_RUN_ERROR = 0,
+    AI_RUN_BUSY,
+    AI_RUN_DONE
+} AI_RunStepStatus_TypeDef;
 
 AI_Status_TypeDef AI_Init(void);
 bool AI_IsInitialized(void);

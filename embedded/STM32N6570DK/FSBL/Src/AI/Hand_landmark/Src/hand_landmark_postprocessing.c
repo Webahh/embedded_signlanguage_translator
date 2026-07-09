@@ -8,12 +8,12 @@
 #include <math.h>
 #include <stddef.h>
 
-#include "hand_landmark_postprocessing.h"
+#include "hand_landmark.h"
 
 #define LANDMARK_TRACKING_ROI_SCALE       1.8f
 #define LANDMARK_TRACKING_ROI_SHIFT_Y    -0.05f
 #define LANDMARK_TRACKING_ROI_SMOOTHING   0.35f
-#define LANDMARK_TRACKING_MIN_SIZE_PX    32.0f
+#define LANDMARK_TRACKING_MIN_SIZE_PX     32.0f
 
 static void LANDMARK_UpdateROICorners(HandROI_TypeDef *roi)
 {
@@ -33,13 +33,13 @@ static void LANDMARK_UpdateROICorners(HandROI_TypeDef *roi)
     roi->corners[3][1] = roi->center_y + half_height;
 }
 
-void LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *roi,
-						 LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
+AI_Status_TypeDef LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *roi,
+									  LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
 {
     if ((output == NULL) ||
-        (roi == NULL) ||
+        (roi == NULL) 	 ||
         (points == NULL)) {
-        return;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     const float roi_left = roi->center_x - roi->width * 0.5f;
@@ -48,23 +48,24 @@ void LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const Hand
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
         const float crop_x = output->landmarks[i * 3U + 0U];
         const float crop_y = output->landmarks[i * 3U + 1U];
-
         const float crop_z = output->landmarks[i * 3U + 2U];
 
         points[i].x = roi_left + (crop_x / (float)LANDMARK_INPUT_WIDTH)  * roi->width;
         points[i].y = roi_top  + (crop_y / (float)LANDMARK_INPUT_HEIGHT) * roi->height;
         points[i].z = crop_z;
     }
+
+    return AI_STATUS_OK;
 }
 
-bool LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t frame_width,
+AI_Status_TypeDef LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t frame_width,
 					    uint32_t frame_height, HandROI_TypeDef *roi)
 {
     if ((points == NULL) ||
         (roi == NULL) ||
         (frame_width == 0U) ||
         (frame_height == 0U)) {
-        return false;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     float min_x = 1.0f;
@@ -77,7 +78,7 @@ bool LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]
         const float y = points[i].y;
 
         if (!isfinite(x) || !isfinite(y)) {
-            return false;
+            return AI_STATUS_POSTPROCESS_ERROR;
         }
 
         if (x < min_x) {
@@ -136,6 +137,6 @@ bool LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]
 
     LANDMARK_UpdateROICorners(roi);
 
-    return true;
+    return AI_STATUS_OK;
 }
 

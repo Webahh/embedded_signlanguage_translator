@@ -11,12 +11,6 @@
 #include <stdbool.h>
 #include "ll_aton_runtime.h"
 
-typedef enum {
-    AI_RUN_ERROR = 0,
-    AI_RUN_BUSY,
-    AI_RUN_DONE
-} AI_RunStepStatus_TypeDef;
-
 bool AI_RuntimeRunNetwork(NN_Instance_TypeDef *network);
 AI_RunStepStatus_TypeDef AI_RuntimeRunNetworkStep(NN_Instance_TypeDef *network);
 
