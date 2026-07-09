@@ -290,23 +290,39 @@ static const LandmarkConnection_TypeDef _hand_connections[] = {
 #define _HAND_CONNECTION_COUNT \
     ((uint32_t)(sizeof(_hand_connections) / sizeof(_hand_connections[0])))
 
-static bool _landmarks_drawn = false;
+/**
+ * @brief Draw hand ROI bounding box
+ *
+ * @param [in] roi   Hand ROI data
+ * @param [in] color ARGB border colour
+ *
+ * @note D-cache: caller must clean the overlay buffer over the ROI area (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
+void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color);
 
-static uint16_t _previous_landmark_x[LANDMARK_POINT_COUNT];
-static uint16_t _previous_landmark_y[LANDMARK_POINT_COUNT];
-static uint8_t  _previous_landmark_valid[LANDMARK_POINT_COUNT];
+/**
+ * @brief Clear the previously drawn ROI bounding box
+ *
+ * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
+void LTDC_Layer_Draw_ROIClearPrevious(void);
 
-static uint16_t _previous_line_x0[_HAND_CONNECTION_COUNT];
-static uint16_t _previous_line_y0[_HAND_CONNECTION_COUNT];
-static uint16_t _previous_line_x1[_HAND_CONNECTION_COUNT];
-static uint16_t _previous_line_y1[_HAND_CONNECTION_COUNT];
-static uint8_t  _previous_line_valid[_HAND_CONNECTION_COUNT];
+/**
+ * @brief Draw hand landmarks as filled circles
+ *
+ * @param [in] points Array of landmark points
+ *
+ * @note D-cache: caller must clean the overlay buffer over the landmark area (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
+void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
 
-static bool _roi_drawn = false;
-static uint16_t _previous_roi_x;
-static uint16_t _previous_roi_y;
-static uint16_t _previous_roi_w;
-static uint16_t _previous_roi_h;
+/**
+ * @brief Clear the previously drawn hand landmarks
+ *
+ * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
+void LTDC_Layer_Draw_LandmarksClearPrevious(void);
+
 
 static int32_t _abs_i32(int32_t v)
 {
@@ -511,226 +527,6 @@ void LTDC_BlitRGB888ToARGB4444(
 }
 
 // ====================================
-// Landmark Drawing
-// ====================================
-
-void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
-{
-    if (points == NULL) {
-        return;
-    }
-
-    bool point_drawn = false;
-
-    int32_t px[LANDMARK_POINT_COUNT];
-    int32_t py[LANDMARK_POINT_COUNT];
-    uint8_t valid[LANDMARK_POINT_COUNT];
-
-    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        px[i] =
-            (int32_t)(points[i].x *
-                      (float)LTDC_Layer2Config.width);
-
-        py[i] =
-            (int32_t)(points[i].y *
-                      (float)LTDC_Layer2Config.height);
-
-        valid[i] = 0U;
-        _previous_landmark_valid[i] = 0U;
-
-        if ((px[i] < 0) ||
-            (py[i] < 0) ||
-            (px[i] >= (int32_t)LTDC_Layer2Config.width) ||
-            (py[i] >= (int32_t)LTDC_Layer2Config.height)) {
-            continue;
-        }
-
-        valid[i] = 1U;
-    }
-
-    for (uint32_t i = 0U; i < _HAND_CONNECTION_COUNT; i++) {
-        const uint32_t a = _hand_connections[i].a;
-        const uint32_t b = _hand_connections[i].b;
-
-        _previous_line_valid[i] = 0U;
-
-        if ((a >= LANDMARK_POINT_COUNT) ||
-            (b >= LANDMARK_POINT_COUNT)) {
-            continue;
-        }
-
-        if ((valid[a] == 0U) ||
-            (valid[b] == 0U)) {
-            continue;
-        }
-
-        if (!_isLinePlausible(px[a], py[a], px[b], py[b])) {
-            continue;
-        }
-
-        _drawLineThick(
-            &LTDC_Layer2Config,
-            px[a],
-            py[a],
-            px[b],
-            py[b],
-            LTDC_LAYER_COLOR_GREEN
-        );
-
-        _previous_line_x0[i] = (uint16_t)px[a];
-        _previous_line_y0[i] = (uint16_t)py[a];
-        _previous_line_x1[i] = (uint16_t)px[b];
-        _previous_line_y1[i] = (uint16_t)py[b];
-        _previous_line_valid[i] = 1U;
-    }
-
-    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        if (valid[i] == 0U) {
-            continue;
-        }
-
-        LTDC_Layer_Draw_Circle(
-            &LTDC_Layer2Config,
-            (uint16_t)px[i],
-            (uint16_t)py[i],
-            _LANDMARK_DRAW_RADIUS,
-            LTDC_LAYER_COLOR_RED
-        );
-
-        _previous_landmark_x[i] = (uint16_t)px[i];
-        _previous_landmark_y[i] = (uint16_t)py[i];
-        _previous_landmark_valid[i] = 1U;
-
-        point_drawn = true;
-    }
-
-    _landmarks_drawn = point_drawn;
-}
-
-void LTDC_Layer_Draw_LandmarksClearPrevious(void)
-{
-    if (!_landmarks_drawn) {
-        return;
-    }
-
-    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        if (_previous_landmark_valid[i] == 0U) {
-            continue;
-        }
-
-        LTDC_Layer_Draw_Circle(
-            &LTDC_Layer2Config,
-            _previous_landmark_x[i],
-            _previous_landmark_y[i],
-            _LANDMARK_DRAW_RADIUS,
-            0x00000000U
-        );
-
-        _previous_landmark_valid[i] = 0U;
-    }
-
-    for (uint32_t i = 0U; i < _HAND_CONNECTION_COUNT; i++) {
-        if (_previous_line_valid[i] == 0U) {
-            continue;
-        }
-
-        _drawLineThick(
-            &LTDC_Layer2Config,
-            _previous_line_x0[i],
-            _previous_line_y0[i],
-            _previous_line_x1[i],
-            _previous_line_y1[i],
-            0x00000000U
-        );
-
-        _previous_line_valid[i] = 0U;
-    }
-
-    _landmarks_drawn = false;
-}
-
-// ====================================
-// ROI Drawing
-// ====================================
-
-void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color)
-{
-    if (roi == NULL) {
-        return;
-    }
-
-    int32_t x0 =
-        (int32_t)(roi->corners[0][0] *
-                  LTDC_Layer2Config.width);
-
-    int32_t y0 =
-        (int32_t)(roi->corners[0][1] *
-                  LTDC_Layer2Config.height);
-
-    int32_t x1 =
-        (int32_t)(roi->corners[2][0] *
-                  LTDC_Layer2Config.width);
-
-    int32_t y1 =
-        (int32_t)(roi->corners[2][1] *
-                  LTDC_Layer2Config.height);
-
-    if (x0 < 0) {
-        x0 = 0;
-    }
-
-    if (y0 < 0) {
-        y0 = 0;
-    }
-
-    if (x1 >= (int32_t)LTDC_Layer2Config.width) {
-        x1 = (int32_t)LTDC_Layer2Config.width - 1;
-    }
-
-    if (y1 >= (int32_t)LTDC_Layer2Config.height) {
-        y1 = (int32_t)LTDC_Layer2Config.height - 1;
-    }
-
-    if ((x1 <= x0) || (y1 <= y0)) {
-        return;
-    }
-
-    LTDC_Layer_Draw_RectBorder(
-        &LTDC_Layer2Config,
-        (uint16_t)x0,
-        (uint16_t)y0,
-        (uint16_t)(x1 - x0),
-        (uint16_t)(y1 - y0),
-        color
-    );
-
-    _previous_roi_x = (uint16_t)x0;
-    _previous_roi_y = (uint16_t)y0;
-    _previous_roi_w = (uint16_t)(x1 - x0);
-    _previous_roi_h = (uint16_t)(y1 - y0);
-
-    _roi_drawn = true;
-}
-
-void LTDC_Layer_Draw_ROIClearPrevious(void)
-{
-    if (!_roi_drawn) {
-        return;
-    }
-
-    LTDC_Layer_Draw_RectBorder(
-        &LTDC_Layer2Config,
-        _previous_roi_x,
-        _previous_roi_y,
-        _previous_roi_w,
-        _previous_roi_h,
-        0x00000000U
-    );
-
-    _roi_drawn = false;
-}
-
-// ====================================
 // Direct Drawing (no tracking/clearing)
 // ====================================
 
@@ -772,23 +568,39 @@ void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const
     }
 }
 
-void LTDC_Layer_Draw_ROIDirect(const LTDC_Layer_Config_TypeDef *cfg, const HandROI_TypeDef *roi, uint32_t color)
+void LTDC_Layer_Draw_ROIDirect(const LTDC_Layer_Config_TypeDef *cfg,
+                               const HandROI_TypeDef *roi, uint32_t color)
 {
-    if (cfg == NULL || roi == NULL) {
+    if ((cfg == NULL) || (roi == NULL)) {
         return;
     }
 
-    int32_t x0 = (int32_t)(roi->corners[0][0] * cfg->width);
-    int32_t y0 = (int32_t)(roi->corners[0][1] * cfg->height);
-    int32_t x1 = (int32_t)(roi->corners[2][0] * cfg->width);
-    int32_t y1 = (int32_t)(roi->corners[2][1] * cfg->height);
+    int32_t x[4];
+    int32_t y[4];
 
-    if (x0 < 0) x0 = 0;
-    if (y0 < 0) y0 = 0;
-    if (x1 >= (int32_t)cfg->width) x1 = (int32_t)cfg->width - 1;
-    if (y1 >= (int32_t)cfg->height) y1 = (int32_t)cfg->height - 1;
-    if (x1 <= x0 || y1 <= y0) return;
+    for (uint32_t i = 0U; i < 4U; i++) {
+        x[i] = (int32_t)roi->corners[i][0];
+        y[i] = (int32_t)roi->corners[i][1];
 
-    LTDC_Layer_Draw_RectBorder(cfg, (uint16_t)x0, (uint16_t)y0, (uint16_t)(x1 - x0), (uint16_t)(y1 - y0), color);
+        if (x[i] < 0) {
+            x[i] = 0;
+        }
+        else if (x[i] >= (int32_t)cfg->width) {
+            x[i] = (int32_t)cfg->width - 1;
+        }
+
+        if (y[i] < 0) {
+            y[i] = 0;
+        }
+        else if (y[i] >= (int32_t)cfg->height) {
+            y[i] = (int32_t)cfg->height - 1;
+        }
+    }
+
+    for (uint32_t i = 0U; i < 4U; i++) {
+        const uint32_t j = (i + 1U) & 3U;
+
+        _drawLineThick(cfg, x[i], y[i], x[j], y[j], color);
+    }
 }
 

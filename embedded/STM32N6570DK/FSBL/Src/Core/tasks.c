@@ -189,11 +189,11 @@ typedef struct {
 } AIPipelineUi_TypeDef;
 
 
-#define LANDMARK_PRESENCE_THRESHOLD  0.5f
-#define LANDMARK_LOST_FRAME_COUNT    3U
-#define PALM_SEARCH_INTERVAL_MS      200U
-#define FINGERALPHABET_INTERVAL_MS   1000U
-#define LANDMARK_TRACK_INTERVAL_MS   0U
+#define LANDMARK_PRESENCE_THRESHOLD  	0.5f
+#define LANDMARK_LOST_FRAME_COUNT    	3U
+#define PALM_SEARCH_INTERVAL_MS      	200U
+#define FINGERALPHABET_INTERVAL_MS   	1000U
+#define LANDMARK_TRACK_INTERVAL_MS   	0U
 #define LANDMARK_PREDICTION_TIME_MS     45.0f
 #define LANDMARK_PREDICTION_MAX_DELTA   0.08f
 #define LANDMARK_SMOOTHING_ALPHA        0.75f
@@ -253,10 +253,8 @@ static float _clampf(float value, float min_value, float max_value)
     return value;
 }
 
-static void _predictLandmarksTimed(
-    const LandmarkPoint_TypeDef current[LANDMARK_POINT_COUNT],
-    LandmarkPoint_TypeDef predicted[LANDMARK_POINT_COUNT]
-)
+static void _predictLandmarksTimed(const LandmarkPoint_TypeDef current[LANDMARK_POINT_COUNT],
+								   LandmarkPoint_TypeDef predicted[LANDMARK_POINT_COUNT])
 {
     uint32_t now;
     SCHEDULER_Tick_get(&now);
@@ -300,13 +298,8 @@ static void _predictLandmarksTimed(
         px = _clampf(px, 0.0f, 1.0f);
         py = _clampf(py, 0.0f, 1.0f);
 
-        smoothed_landmark_points[i].x =
-            LANDMARK_SMOOTHING_ALPHA * px +
-            (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].x;
-
-        smoothed_landmark_points[i].y =
-            LANDMARK_SMOOTHING_ALPHA * py +
-            (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].y;
+        smoothed_landmark_points[i].x = LANDMARK_SMOOTHING_ALPHA * px + (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].x;
+        smoothed_landmark_points[i].y = LANDMARK_SMOOTHING_ALPHA * py + (1.0f - LANDMARK_SMOOTHING_ALPHA) * smoothed_landmark_points[i].y;
 
         smoothed_landmark_points[i].z = current[i].z;
 
@@ -348,17 +341,12 @@ static void _resetTracking(void)
 
 static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
 {
-    AI_Status_TypeDef status = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
-			 	 	 	 	 	 	 	 	 	 	   LTDC_Layer1Config.width,
-													   LTDC_Layer1Config.height,
-													   LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
-													   &landmark_roi,
-													   landmark_preprocessed_input);
-
     // Invalidate camera buffer before CPU reads it (camera/DMA wrote to it)
     CACHE_INVAL(&ltdc_layer_bg_buffer[camera_buffer_idx], sizeof(ltdc_layer_bg_buffer[0]));
-
-
+    AI_Status_TypeDef status = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
+			 	 	 	 	 	 	 	 	 	 	   LTDC_Layer1Config.width, LTDC_Layer1Config.height,
+													   LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
+													   &landmark_roi, landmark_preprocessed_input);
     if (status != AI_STATUS_OK) {
         return false;
     }
@@ -420,7 +408,7 @@ static void _runFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
 
     last_fingeralphabet_tick = now;
 
-    if (FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input) != AI_STATUS_OK) {
+    if (FINGERALPHABET_PreprocessFromLandmarkOutput(&landmark_output, fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
         return;
     }
@@ -478,8 +466,7 @@ static bool _aiCopyPalmInputFromCamera(uint8_t completed_idx)
     DMA2D_EnsureInit();
 
     /* DCMIPP wrote this buffer directly. Discard stale D-cache copy. */
-    CACHE_INVAL(&ltdc_layer_nn_raw_buffer[completed_idx],
-                sizeof(ltdc_layer_nn_raw_buffer[0]));
+    CACHE_INVAL(&ltdc_layer_nn_raw_buffer[completed_idx], sizeof(ltdc_layer_nn_raw_buffer[0]));
 
     _dma2d.cfg.src.address = (uint32_t)ltdc_layer_nn_raw_buffer[completed_idx];
     _dma2d.cfg.src.line_offset = 0;
@@ -513,11 +500,12 @@ static bool _aiRunPalmDetection(uint8_t completed_idx)
     SCHEDULER_Tick_get(&now);
     _palm_duration_ms = now - _palm_start_tick;
 
-    const AI_Status_TypeDef palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+    const AI_Status_TypeDef palm_status = PALM_Postprocess(&palm_output, &palm_detection);
+    const bool palm_valid = (palm_status == AI_STATUS_OK);
 
     PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
 
-    if ((palm_valid != AI_STATUS_OK) || (!palm_filter.detected)) {
+    if ((!palm_valid) || (!palm_filter.detected)) {
         if (!palm_filter.detected) {
             _clearPredictedOverlay();
         }
@@ -525,10 +513,8 @@ static bool _aiRunPalmDetection(uint8_t completed_idx)
         return false;
     }
 
-    if (PALM_CreateLandmarkROI(&palm_detection,
-                               LTDC_Layer1Config.width,
-                               LTDC_Layer1Config.height,
-                               &landmark_roi) != AI_STATUS_OK) {
+    if (PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
+                               LTDC_Layer1Config.height, &landmark_roi) != AI_STATUS_OK) {
         _resetTracking();
         return false;
     }
@@ -539,15 +525,10 @@ static bool _aiRunPalmDetection(uint8_t completed_idx)
 static void _aiDrawPalmOnly(void)
 {
     LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
-
     draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
 
-    LTDC_Layer_Draw_ROIDirect(&draw_cfg,
-                              &landmark_roi,
-                              LTDC_LAYER_COLOR_BLUE);
-
-    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
-                sizeof(ltdc_layer_bg_buffer[0]));
+    LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx], sizeof(ltdc_layer_bg_buffer[0]));
 }
 
 static void _aiDrawTrackingOverlay(const AIPipelineUi_TypeDef *ui)
@@ -565,13 +546,9 @@ static void _aiDrawTrackingOverlay(const AIPipelineUi_TypeDef *ui)
     }
 
     if (ui->palm_vis) {
-        LTDC_Layer_Draw_ROIDirect(&draw_cfg,
-                                  &landmark_roi,
-                                  LTDC_LAYER_COLOR_BLUE);
+        LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
     }
-
-    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx],
-                sizeof(ltdc_layer_bg_buffer[0]));
+    CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx], sizeof(ltdc_layer_bg_buffer[0]));
 }
 
 static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
@@ -598,30 +575,39 @@ static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
 
     landmark_lost_count = 0U;
 
-    if (LANDMARK_MapToFrame(&landmark_output,
-                            &landmark_roi,
-                            landmark_points) != AI_STATUS_OK) {
+    HandROI_TypeDef current_roi = landmark_roi;
+
+    if (LANDMARK_MapToFrame(&landmark_output, &current_roi, LTDC_Layer1Config.width,
+                            LTDC_Layer1Config.height, landmark_points) != AI_STATUS_OK) {
         DEBUG_PRINTF("Landmark postprocessing failed!\r\n");
         return false;
     }
 
-    memcpy(last_current_landmark_points,
-           landmark_points,
-           sizeof(last_current_landmark_points));
+    HandROI_TypeDef next_roi;
+
+    if (LANDMARK_UpdateROIFromNetworkOutput(&landmark_output, &current_roi,  &next_roi) != AI_STATUS_OK) {
+        _resetTracking();
+        return false;
+    }
+
+    memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
+
+    SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
+
+    landmark_roi = current_roi;
+
+    _predictLandmarksTimed(landmark_points, predicted_landmark_points);
+    _aiDrawTrackingOverlay(ui);
+
+    landmark_roi = next_roi;
+
+    memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
 
     SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
 
     _predictLandmarksTimed(landmark_points, predicted_landmark_points);
 
     _aiDrawTrackingOverlay(ui);
-
-    if (LANDMARK_UpdateROI(landmark_points,
-                           LTDC_Layer1Config.width,
-                           LTDC_Layer1Config.height,
-                           &landmark_roi) != AI_STATUS_OK) {
-        _resetTracking();
-        return false;
-    }
 
     if (from_palm) {
         previous_landmarks_valid = 0U;
@@ -652,8 +638,6 @@ static void _aiStatePalmSearch(const AIPipelineUi_TypeDef *ui)
     }
 
     /*
-     * Optional, wenn Palm nicht jedes NN-Frame laufen soll:
-     *
      * if ((now - last_palm_search_tick) < PALM_SEARCH_INTERVAL_MS) {
      *     return;
      * }
@@ -680,10 +664,6 @@ static void _aiStatePalmSearch(const AIPipelineUi_TypeDef *ui)
         return;
     }
 
-    /*
-     * Direkt nach erfolgreicher Palm-Erkennung einmal Landmark laufen lassen.
-     * Dadurch bleibt das Verhalten wie vorher: Palm findet ROI -> Landmark validiert.
-     */
     (void)_aiRunLandmarkPass(true, ui);
 }
 
