@@ -15,7 +15,7 @@
 
 #include "simple_ltdc_layer.h"
 #include "simple_ltdc_color.h"
-#include "palm_postprocessing.h"
+#include "palm_detection.h"
 #include "hand_landmark.h"
 
 /**

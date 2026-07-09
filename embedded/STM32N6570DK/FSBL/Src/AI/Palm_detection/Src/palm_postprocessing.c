@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "palm_postprocessing.h"
+#include "palm_detection.h"
 #include "pd_anchors.h"
 
 #define PALM_CONFIRM_FRAME_COUNT  2U
@@ -144,14 +144,14 @@ static void PALM_InsertCandidate(PalmCandidate_TypeDef candidates[PALM_PP_MAX_CA
     }
 }
 
-bool PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
-					  PalmDetection_TypeDef *detection)
+AI_Status_TypeDef PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
+					  	  	  	   PalmDetection_TypeDef *detection)
 {
     if ((network_output == NULL) ||
         (network_output->scores == NULL) ||
         (network_output->regressions == NULL) ||
         (detection == NULL)) {
-        return false;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     PalmCandidate_TypeDef candidates[PALM_PP_MAX_CANDIDATES];
@@ -168,7 +168,6 @@ bool PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
     const float score_threshold = -logf(1.0f / PALM_PP_CONFIDENCE_THRESHOLD - 1.0f);
 
     for (uint32_t i = 0U; i < PALM_DETECTION_COUNT; i++) {
-
         if (network_output->scores[i] < score_threshold) {
             continue;
         }
@@ -193,7 +192,7 @@ bool PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
     }
 
     if (candidate_count == 0U) {
-        return false;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     qsort(candidates, candidate_count, sizeof(PalmCandidate_TypeDef), PALM_CompareCandidates);
@@ -223,7 +222,7 @@ bool PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
     }
 
     if (filtered_count == 0U) {
-        return false;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     /*
@@ -242,10 +241,10 @@ bool PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_output,
         detection->keypoints[i][0] = best->keypoints[i][0];
         detection->keypoints[i][1] = best->keypoints[i][1];
     }
-    return true;
+    return AI_STATUS_OK;
 }
 
-void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, bool detection_valid)
+ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, bool detection_valid)
 {
     if (filter == NULL) {
         return;
@@ -275,14 +274,14 @@ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, bool detect
     }
 }
 
-bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t frame_width,
-							uint32_t frame_height, HandROI_TypeDef *roi)
+AI_Status_TypeDef PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t frame_width,
+										 uint32_t frame_height, HandROI_TypeDef *roi)
 {
     if ((detection    == NULL) ||
         (roi 	      == NULL) ||
         (frame_width  == 0)    ||
         (frame_height == 0)) {
-        return false;
+        return AI_STATUS_POSTPROCESS_ERROR;
     }
 
     const float shift_y = -0.5f;
@@ -314,6 +313,6 @@ bool PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t fra
     roi->corners[3][0] = roi->center_x - half_width;
     roi->corners[3][1] = roi->center_y + half_height;
 
-    return true;
+    return AI_STATUS_OK;
 }
 

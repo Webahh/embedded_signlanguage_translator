@@ -46,21 +46,12 @@ AI_Status_TypeDef PALM_Init(void)
     return AI_STATUS_OK;
 }
 
-uint8_t *PALM_GetInputBuffer(void)
-{
-    if (!palm_initialized) {
-        return NULL;
-    }
-
-    return palm_input_buffer;
-}
-
-bool PALM_Run(PalmNetworkOutput_TypeDef *output)
+AI_Status_TypeDef PALM_Run(PalmNetworkOutput_TypeDef *output)
 {
     if (!palm_initialized ||
         (output == NULL)  ||
         (palm_input_buffer == NULL)) {
-        return false;
+        return AI_STATUS_RUNTIME_ERROR;
     }
 
     if (palm_has_run) {
@@ -70,7 +61,7 @@ bool PALM_Run(PalmNetworkOutput_TypeDef *output)
     LL_ATON_Cache_MCU_Clean_Range((uintptr_t)palm_input_buffer, PALM_INPUT_SIZE);
 
     if (!AI_RuntimeRunNetwork(&NN_Instance_palm_detection_model_v3)) {
-        return false;
+        return AI_STATUS_RUNTIME_ERROR;
     }
 
     LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)palm_scores_buffer, PALM_SCORE_BUFFER_SIZE);
@@ -82,5 +73,14 @@ bool PALM_Run(PalmNetworkOutput_TypeDef *output)
     output->regression_size = PALM_REGRESSION_SIZE;
 
     palm_has_run = true;
-    return true;
+    return AI_STATUS_OK;
+}
+
+uint8_t *PALM_GetInputBuffer(void)
+{
+    if (!palm_initialized) {
+        return NULL;
+    }
+
+    return palm_input_buffer;
 }

@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 #include "simple_ai.h"
-#include "palm_postprocessing.h"
+#include "palm_detection.h"
 
 #define LANDMARK_INPUT_WIDTH    224U
 #define LANDMARK_INPUT_HEIGHT   224U

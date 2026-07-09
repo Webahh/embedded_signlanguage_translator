@@ -15,8 +15,6 @@
 #include "simple_ltdc_color.h"
 #include "config.h"
 
-#include "palm_postprocessing.h"
-
 // ====================================
 // Private Functions
 // ====================================

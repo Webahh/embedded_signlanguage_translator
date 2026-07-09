@@ -479,20 +479,20 @@ void vAIPipelineTask(void)
         if (DMA2D_Transfer(&_dma2d) != DMA2D_OK) return;
 
         SCHEDULER_Tick_get(&_palm_start_tick);
-        if (!PALM_Run(&palm_output)) return;
+        if (PALM_Run(&palm_output) != AI_STATUS_OK) return;
         SCHEDULER_Tick_get(&now);
         _palm_duration_ms = now - _palm_start_tick;
 
-        const bool palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
+        const AI_Status_TypeDef palm_valid = PALM_Postprocess(&palm_output, &palm_detection);
         PALM_UpdateDetectionFilter(&palm_filter, palm_valid);
 
-        if (!palm_valid || !palm_filter.detected) {
+        if (palm_valid != AI_STATUS_OK || !palm_filter.detected) {
             if (!palm_filter.detected) _clearPredictedOverlay();
             return;
         }
 
-        if (!PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
-                                    LTDC_Layer1Config.height, &landmark_roi)) {
+        if (PALM_CreateLandmarkROI(&palm_detection, LTDC_Layer1Config.width,
+                                    LTDC_Layer1Config.height, &landmark_roi) != AI_STATUS_OK) {
             _resetTracking();
             return;
         }
