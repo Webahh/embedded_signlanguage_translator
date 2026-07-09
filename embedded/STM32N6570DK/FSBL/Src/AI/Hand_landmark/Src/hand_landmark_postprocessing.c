@@ -95,7 +95,7 @@ AI_Status_TypeDef LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *outpu
         const float crop_z = output->landmarks[i * 3U + 2U];
 
         const float lm_x = (crop_x / (float)LANDMARK_INPUT_WIDTH)  - 0.5f;
-        const float lm_y = (crop_y / (float)LANDMARK_INPUT_WIDTH)  - 0.5f;
+        const float lm_y = (crop_y / (float)LANDMARK_INPUT_HEIGHT) - 0.5f;
 
         const float local_x_px = lm_x * roi_w_px;
         const float local_y_px = lm_y * roi_h_px;
@@ -119,14 +119,6 @@ AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(const LandmarkNetworkOutpu
         (next_roi == NULL)) {
         return AI_STATUS_POSTPROCESS_ERROR;
     }
-
-    static const uint8_t indices[] = {
-        0U, 1U, 2U, 3U,
-        5U, 6U,
-        9U, 10U,
-        13U, 14U,
-        17U, 18U
-    };
 
     LandmarkPoint_TypeDef decoded[LANDMARK_POINT_COUNT];
 
@@ -171,17 +163,15 @@ AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(const LandmarkNetworkOutpu
     float max_x = -1000000.0f;
     float max_y = -1000000.0f;
 
-    for (uint32_t n = 0U; n < sizeof(indices); n++) {
-        const uint32_t i = indices[n];
-
-        if (!isfinite(decoded[i].x) || !isfinite(decoded[i].y)) {
+    for (uint32_t n = 0U; n < LANDMARK_POINT_COUNT; n++) {
+        if (!isfinite(decoded[n].x) || !isfinite(decoded[n].y)) {
             return AI_STATUS_POSTPROCESS_ERROR;
         }
 
-        if (decoded[i].x < min_x) { min_x = decoded[i].x; }
-        if (decoded[i].x > max_x) { max_x = decoded[i].x; }
-        if (decoded[i].y < min_y) { min_y = decoded[i].y; }
-        if (decoded[i].y > max_y) { max_y = decoded[i].y; }
+        if (decoded[n].x < min_x) { min_x = decoded[n].x; }
+        if (decoded[n].x > max_x) { max_x = decoded[n].x; }
+        if (decoded[n].y < min_y) { min_y = decoded[n].y; }
+        if (decoded[n].y > max_y) { max_y = decoded[n].y; }
     }
 
     next_roi->center_x = (max_x + min_x) * 0.5f;

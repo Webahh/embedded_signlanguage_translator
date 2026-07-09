@@ -12,6 +12,7 @@
 
 #include "palm_detection.h"
 #include "pd_anchors.h"
+#include "simple_camera.h"
 
 #define PALM_CONFIRM_FRAME_COUNT  2U
 #define PALM_LOST_FRAME_COUNT     3U
@@ -345,41 +346,53 @@ AI_Status_TypeDef PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection,
                                           uint32_t frame_height,
                                           HandROI_TypeDef *roi)
  {
-     (void)frame_height;
+      if ((detection == NULL) ||
+          (roi       == NULL) ||
+          (frame_width == 0U) ||
+          (frame_height == 0U)) {
+          return AI_STATUS_POSTPROCESS_ERROR;
+      }
 
-     if ((detection == NULL) ||
-         (roi 		== NULL) ||
-         (frame_width == 0U)) {
-         return AI_STATUS_POSTPROCESS_ERROR;
-     }
+      const float shift_x = 0.0f;
+      const float shift_y = -0.5f;
+      const float scale   = 2.6f;
 
-     const float shift_x = 0.0f;
-     const float shift_y = -0.5f;
-     const float scale   = 2.6f;
+      /*
+       * Palm detection runs on the NN pipe output (sensor squished to 192x192)
+       * The ROI is used on the display pipe output (center-cropped to 800x480)
+       *
+       * X mapping: both pipes span the full sensor width -> scale by frame_width
+       * Y mapping: NN pipe spans sensor height 0..1944, display pipe spans
+       *            sensor crop_y..crop_y+crop_height -> compute corrected scale
+       */
+      const float crop_height = (float)frame_height * (float)CAM_SENSOR_WIDTH / (float)frame_width;
+      const float crop_y      = ((float)CAM_SENSOR_HEIGHT - crop_height + 1.0f) * 0.5f;
+      const float y_scale     = (float)CAM_SENSOR_HEIGHT * (float)frame_height / crop_height;
+      const float y_offset    = -crop_y * (float)frame_height / crop_height;
 
-     roi->center_x = detection->center_x * (float)frame_width;
-     roi->center_y = detection->center_y * (float)frame_width;
-     roi->width    = detection->width    * (float)frame_width;
-     roi->height   = detection->height   * (float)frame_width;
+      roi->center_x = detection->center_x * (float)frame_width;
+      roi->center_y = detection->center_y * y_scale + y_offset;
+      roi->width    = detection->width    * (float)frame_width;
+      roi->height   = detection->height   * y_scale;
 
-     const float x0 = detection->keypoints[0][0] * (float)frame_width;
-     const float y0 = detection->keypoints[0][1] * (float)frame_width;
-     const float x1 = detection->keypoints[2][0] * (float)frame_width;
-     const float y1 = detection->keypoints[2][1] * (float)frame_width;
+      const float x0 = detection->keypoints[0][0] * (float)frame_width;
+      const float y0 = detection->keypoints[0][1] * y_scale + y_offset;
+      const float x1 = detection->keypoints[2][0] * (float)frame_width;
+      const float y1 = detection->keypoints[2][1] * y_scale + y_offset;
 
-     const float dx = x1 - x0;
-     const float dy = y1 - y0;
+      const float dx = x1 - x0;
+      const float dy = y1 - y0;
 
-     if (isfinite(dx) && isfinite(dy) && ((dx * dx + dy * dy) > 0.000001f)) {
-         roi->rotation = ROI_NormalizeAngle((AI_PI * 0.5f) - atan2f(-dy, dx));
-     }
-     else {
-         roi->rotation = 0.0f;
-     }
+      if (isfinite(dx) && isfinite(dy) && ((dx * dx + dy * dy) > 0.000001f)) {
+          roi->rotation = ROI_NormalizeAngle((AI_PI * 0.5f) - atan2f(-dy, dx));
+      }
+      else {
+          roi->rotation = 0.0f;
+      }
 
-     ROI_ShiftAndScale(roi, shift_x, shift_y, scale, scale);
-     ROI_UpdateRotatedCorners(roi);
+      ROI_ShiftAndScale(roi, shift_x, shift_y, scale, scale);
+      ROI_UpdateRotatedCorners(roi);
 
-     return AI_STATUS_OK;
- }
+      return AI_STATUS_OK;
+  }
 
