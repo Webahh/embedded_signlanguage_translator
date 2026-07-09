@@ -37,6 +37,8 @@
  * @param [in] x       | X position (top-left)
  * @param [in] y       | Y position (top-left)
  * @param [in] fg_color| Foreground colour in ARGB8888
+ *
+ * @note D-cache: caller must clean the char region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color);
 
@@ -48,6 +50,8 @@ void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int
  * @param [in] x       | Starting X position
  * @param [in] y       | Starting Y position
  * @param [in] fg_color| Foreground colour in ARGB8888
+ *
+ * @note D-cache: caller must clean the string region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color);
 
@@ -60,6 +64,8 @@ void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int
  * @param [in] y       | Starting Y position
  * @param [in] fg_color| Foreground colour in ARGB8888
  * @param [in] bg_color| Background colour in ARGB8888
+ *
+ * @note D-cache: caller must clean the string region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color);
 
@@ -72,6 +78,8 @@ void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, i
  * @param [in] y       | Starting Y position
  * @param [in] fg_color| Foreground colour in ARGB8888
  * @param [in] scale   | Scale factor (0/1 = unscaled, 2+ = scaled)
+ *
+ * @note D-cache: caller must clean the string region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
  */
 void TEXT_StringScaled_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale);
 

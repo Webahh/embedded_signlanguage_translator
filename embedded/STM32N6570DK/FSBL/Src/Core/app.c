@@ -103,9 +103,9 @@ void app_init(){
 	_drawer.items[mode_idx].seg_count = 3;
 
 	// Composite items: visibility eye + slider per gesture class
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", _dr_cb_composite, &_drawer, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", _dr_cb_composite, &_drawer, NULL);
-	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_composite, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Palm", _dr_cb_Palm, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Hand", _dr_cb_Hand, &_drawer, NULL);
+	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_COMPOSITE, "Sign", _dr_cb_Sign, &_drawer, NULL);
 
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Time", _dr_cb_toggle_SystemTime, NULL, NULL);
 	UI_Drawer_AddItem(&_drawer, UI_DRAWER_ITEM_TOGGLE, "System Info", _dr_cb_toggle_SystemInfo, NULL, NULL);
