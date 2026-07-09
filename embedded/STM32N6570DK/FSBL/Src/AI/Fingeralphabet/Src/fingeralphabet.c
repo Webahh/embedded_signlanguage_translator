@@ -94,11 +94,7 @@ AI_Status_TypeDef FINGERALPHABET_Run(const uint8_t input[FINGERALPHABET_INPUT_SI
         return AI_STATUS_RUNTIME_ERROR;
     }
 
-    SCB_InvalidateDCache_by_Addr(
-        (uint32_t *)fingeralphabet_output_buffer,
-        FINGERALPHABET_OUTPUT_SIZE
-    );
-
+    SCB_InvalidateDCache_by_Addr((uint32_t *)fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
     memcpy(output, fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
 
     fingeralphabet_has_run = true;

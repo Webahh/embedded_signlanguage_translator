@@ -68,8 +68,8 @@ static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
     return (uint8_t)quantized;
 }
 
-AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
-											float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
+static AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
+												   float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
 {
     if ((points == NULL) || (output == NULL)) {
         return AI_STATUS_PREPROCESS_ERROR;
@@ -119,4 +119,19 @@ AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[L
     return AI_STATUS_OK;
 }
 
+AI_Status_TypeDef FINGERALPHABET_PreprocessFromLandmarkOutput(const LandmarkNetworkOutput_TypeDef *landmark_output,
+															  uint8_t output[FINGERALPHABET_INPUT_SIZE])
+{
+    if ((landmark_output == NULL) || (output == NULL)) {
+        return AI_STATUS_PREPROCESS_ERROR;
+    }
 
+    LandmarkPoint_TypeDef canonical_points[LANDMARK_POINT_COUNT];
+
+    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
+        canonical_points[i].x = landmark_output->landmarks[i * 3U + 0U] / (float)LANDMARK_INPUT_WIDTH;
+        canonical_points[i].y = landmark_output->landmarks[i * 3U + 1U] / (float)LANDMARK_INPUT_HEIGHT;
+        canonical_points[i].z = landmark_output->landmarks[i * 3U + 2U];
+    }
+    return FINGERALPHABET_Preprocess(canonical_points, landmark_output->handedness, output);
+}

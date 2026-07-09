@@ -110,39 +110,6 @@ void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void 
 void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0, int32_t x1, int32_t y1, uint32_t color);
 
 /**
- * @brief Draw hand ROI bounding box
- *
- * @param [in] roi   Hand ROI data
- * @param [in] color ARGB border colour
- *
- * @note D-cache: caller must clean the overlay buffer over the ROI area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color);
-
-/**
- * @brief Clear the previously drawn ROI bounding box
- *
- * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_ROIClearPrevious(void);
-
-/**
- * @brief Draw hand landmarks as filled circles
- *
- * @param [in] points Array of landmark points
- *
- * @note D-cache: caller must clean the overlay buffer over the landmark area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
-
-/**
- * @brief Clear the previously drawn hand landmarks
- *
- * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_LandmarksClearPrevious(void);
-
-/**
  * @brief Draw hand landmarks directly onto a layer config
  *
  * @param [in] cfg    Target layer configuration
