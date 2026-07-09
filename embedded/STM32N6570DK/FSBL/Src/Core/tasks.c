@@ -49,7 +49,6 @@ static volatile uint8_t _isr_hand_vis = 1U;
 static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
-static volatile uint8_t camera_frame_ready = 0U;
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
 {
@@ -92,8 +91,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
             // Clean so LTDC sees the landmarks immediately
             CACHE_CLEAN(&ltdc_layer_bg_buffer[next_disp_idx], sizeof(ltdc_layer_bg_buffer[0]));
         }
-
-        camera_frame_ready = 1U;
 
     } else if (pipe == DCMIPP_PIPE2) {
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
@@ -184,11 +181,6 @@ typedef enum {
     HAND_STATE_LANDMARK_TRACKING
 } HandTrackingState_TypeDef;
 
-typedef enum {
-    AI_STAGE_IDLE = 0,
-    AI_STAGE_WAIT_FINGERALPHABET
-} AIPipelineStage_TypeDef;
-
 typedef struct {
     uint8_t ai_mode;
     uint8_t palm_vis;
@@ -223,7 +215,6 @@ static DMA2D_Handle_TypeDef _dma2d;
 static int _dma2d_initialized = 0;
 
 static HandTrackingState_TypeDef hand_state = HAND_STATE_PALM_SEARCH;
-static AIPipelineStage_TypeDef ai_stage = AI_STAGE_IDLE;
 
 static uint32_t last_valid_landmark_output_tick = 0U;
 static uint8_t landmark_lost_count = 0U;
@@ -342,7 +333,6 @@ static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 static void _resetTracking(void)
 {
     hand_state = HAND_STATE_PALM_SEARCH;
-    ai_stage = AI_STAGE_IDLE;
 
     landmark_lost_count = 0U;
 
@@ -407,7 +397,7 @@ static void _handleInvalidLandmark(void)
     }
 }
 
-static void _runFingeralphabetIfDue(void)
+static void _runFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
 {
     uint32_t now;
     SCHEDULER_Tick_get(&now);
@@ -423,13 +413,26 @@ static void _runFingeralphabetIfDue(void)
         return;
     }
 
-    if (FINGERALPHABET_Start(fingeralphabet_input) != AI_STATUS_OK) {
-        DEBUG_PRINTF("Fingeralphabet start failed\r\n");
+    SCHEDULER_Tick_get(&_fingeralphabet_start_tick);
+
+    if (FINGERALPHABET_Run(fingeralphabet_input, fingeralphabet_output) != AI_STATUS_OK) {
+        DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
         return;
     }
 
-    SCHEDULER_Tick_get(&_fingeralphabet_start_tick);
-    ai_stage = AI_STAGE_WAIT_FINGERALPHABET;
+    {
+        uint32_t now;
+        SCHEDULER_Tick_get(&now);
+        _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
+    }
+
+    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
+
+    if ((ui != NULL) && ui->sign_vis) {
+        DEBUG_PRINTF("Index: %d Result: %s\r\n",
+                     fingeralphabet_result.class_index,
+                     fingeralphabet_result.label);
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -450,42 +453,6 @@ static void _aiUpdateUiContext(AIPipelineUi_TypeDef *ui)
     /* Mirror visibility toggles to ISR-safe copies for per-frame redraw */
     _isr_palm_vis = ui->palm_vis;
     _isr_hand_vis = ui->hand_vis;
-}
-
-static bool _aiHandleFingeralphabetStage(const AIPipelineUi_TypeDef *ui)
-{
-    if (ai_stage != AI_STAGE_WAIT_FINGERALPHABET) {
-        return false;
-    }
-
-    if ((ui == NULL) || (ui->ai_mode < 2U)) {
-        ai_stage = AI_STAGE_IDLE;
-        return true;
-    }
-
-    AI_RunStepStatus_TypeDef fa_status = FINGERALPHABET_RunStep(fingeralphabet_output);
-
-    if (fa_status == AI_RUN_BUSY) {
-        return true;
-    }
-
-    ai_stage = AI_STAGE_IDLE;
-
-    if (fa_status == AI_RUN_ERROR) {
-        DEBUG_PRINTF("Fingeralphabet inference failed\r\n");
-        return true;
-    }
-
-    uint32_t now;
-    SCHEDULER_Tick_get(&now);
-    _fingeralphabet_duration_ms = now - _fingeralphabet_start_tick;
-
-    fingeralphabet_result = FINGERALPHABET_GetResult(fingeralphabet_output);
-
-    if (ui->sign_vis) {
-        DEBUG_PRINTF("Index: %d Result: %s\r\n", fingeralphabet_result.class_index, fingeralphabet_result.label);
-    }
-    return true;
 }
 
 static bool _aiCopyPalmInputFromCamera(uint8_t completed_idx)
@@ -652,7 +619,7 @@ static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
     }
 
     if ((ui != NULL) && (ui->ai_mode >= 2U)) {
-        _runFingeralphabetIfDue();
+        _runFingeralphabetIfDue(ui);
     }
 
     return true;
@@ -713,20 +680,14 @@ static void _aiStateLandmarkTracking(const AIPipelineUi_TypeDef *ui)
         return;
     }
 
-    if (camera_frame_ready == 0U) {
+    if (nn_frame_ready == 0U) {
         return;
     }
-
-    /*
-     * if ((now - last_landmark_tick) < LANDMARK_TRACK_INTERVAL_MS) {
-     *     return;
-     * }
-     */
 
     SCHEDULER_Tick_get(&now);
 
     last_landmark_tick = now;
-    camera_frame_ready = 0U;
+    nn_frame_ready = 0U;
 
     _saved_camera_buffer_idx = (uint8_t)ltdc_layer_bg_buffer_ai_idx;
 
@@ -738,10 +699,6 @@ void vAIPipelineTask(void)
     AIPipelineUi_TypeDef ui;
 
     _aiUpdateUiContext(&ui);
-
-    if (_aiHandleFingeralphabetStage(&ui)) {
-        return;
-    }
 
     switch (hand_state) {
         case HAND_STATE_PALM_SEARCH:
