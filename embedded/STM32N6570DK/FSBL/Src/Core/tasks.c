@@ -38,6 +38,11 @@ static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
 static volatile uint8_t camera_frame_ready = 0U;
 
+// ISR-safe copy of predicted landmarks for flicker-free redraw in FrameInterrupt
+static volatile uint8_t _isr_landmark_valid = 0U;
+static LandmarkPoint_TypeDef _isr_landmark_points[LANDMARK_POINT_COUNT];
+static HandROI_TypeDef _isr_landmark_roi;
+
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
 {
     if (pipe == DCMIPP_PIPE1) {
@@ -64,6 +69,15 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         ltdc_layer_bg_buffer_disp_idx = next_disp_idx;
         ltdc_layer_bg_buffer_capt_idx = next_capt_idx;
         ltdc_layer_bg_buffer_draw_idx = draw_idx;
+
+        // Redraw last known landmarks into the next-to-be-displayed buffer
+        // to prevent flicker when the AI pipeline misses a frame.
+        if (_isr_landmark_valid) {
+            LTDC_Layer_Config_TypeDef isr_draw_cfg = LTDC_Layer1Config;
+            isr_draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
+            LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
+            LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
+        }
 
         camera_frame_ready = 1U;
 
@@ -287,11 +301,18 @@ static void _predictLandmarksTimed(
     }
 
     memcpy(previous_landmark_points, current, sizeof(previous_landmark_points));
+
+    // Mirror to ISR-safe copy for flicker-free redraw
+    _isr_landmark_valid = 0U;
+    memcpy((void *)_isr_landmark_points, predicted, sizeof(_isr_landmark_points));
+    memcpy((void *)&_isr_landmark_roi, (const void *)&landmark_roi, sizeof(_isr_landmark_roi));
+    _isr_landmark_valid = 1U;
 }
 
 static void _clearPredictedOverlay(void)
 {
     previous_landmarks_valid = 0U;
+    _isr_landmark_valid = 0U;
 }
 
 static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
