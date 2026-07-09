@@ -87,6 +87,10 @@ bool FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE])
     }
 
     memcpy(fingeralphabet_input_buffer, input, FINGERALPHABET_INPUT_SIZE);
+    SCB_CleanDCache_by_Addr(
+        (uint32_t *)fingeralphabet_input_buffer,
+        FINGERALPHABET_INPUT_SIZE
+    );
 
     fingeralphabet_running = true;
     return true;
@@ -112,6 +116,11 @@ AI_RunStepStatus_TypeDef FINGERALPHABET_RunStep(uint8_t output[FINGERALPHABET_OU
     }
 
     memcpy(output, fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
+    SCB_InvalidateDCache_by_Addr(
+        (uint32_t *)fingeralphabet_output_buffer,
+        FINGERALPHABET_OUTPUT_SIZE
+    );
+
 
     fingeralphabet_running = false;
     fingeralphabet_has_run = true;
