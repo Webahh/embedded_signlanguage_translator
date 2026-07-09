@@ -25,9 +25,8 @@ AI_Status_TypeDef FINGERALPHABET_Init(void);
 AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
 											float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE]);
 
-AI_Status_TypeDef FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE]);
-
-AI_RunStepStatus_TypeDef FINGERALPHABET_RunStep(uint8_t output[FINGERALPHABET_OUTPUT_SIZE]);
+AI_Status_TypeDef FINGERALPHABET_Run(const uint8_t input[FINGERALPHABET_INPUT_SIZE],
+                                     uint8_t output[FINGERALPHABET_OUTPUT_SIZE]);
 FingeralphabetResult_TypeDef FINGERALPHABET_GetResult(const uint8_t output[FINGERALPHABET_OUTPUT_SIZE]);
 
 #endif /* FINGERALPHABET_H */
