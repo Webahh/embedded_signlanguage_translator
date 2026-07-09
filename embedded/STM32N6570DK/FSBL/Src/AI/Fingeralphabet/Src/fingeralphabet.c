@@ -73,13 +73,13 @@ AI_Status_TypeDef FINGERALPHABET_Init(void)
 	return AI_STATUS_OK;
 }
 
-bool FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE])
+AI_Status_TypeDef FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE])
 {
-    if (!fingeralphabet_initialized ||
-        (input == NULL) ||
+    if (!fingeralphabet_initialized 	      ||
+        (input == NULL) 					  ||
         (fingeralphabet_input_buffer == NULL) ||
         fingeralphabet_running) {
-        return false;
+        return AI_STATUS_RUNTIME_ERROR;
     }
 
     if (fingeralphabet_has_run) {
@@ -87,19 +87,16 @@ bool FINGERALPHABET_Start(const uint8_t input[FINGERALPHABET_INPUT_SIZE])
     }
 
     memcpy(fingeralphabet_input_buffer, input, FINGERALPHABET_INPUT_SIZE);
-    SCB_CleanDCache_by_Addr(
-        (uint32_t *)fingeralphabet_input_buffer,
-        FINGERALPHABET_INPUT_SIZE
-    );
+    SCB_CleanDCache_by_Addr((uint32_t *)fingeralphabet_input_buffer, FINGERALPHABET_INPUT_SIZE);
 
     fingeralphabet_running = true;
-    return true;
+    return AI_STATUS_OK;
 }
 
 AI_RunStepStatus_TypeDef FINGERALPHABET_RunStep(uint8_t output[FINGERALPHABET_OUTPUT_SIZE])
 {
     if (!fingeralphabet_initialized ||
-        !fingeralphabet_running ||
+        !fingeralphabet_running 	||
         (output == NULL)) {
         return AI_RUN_ERROR;
     }
@@ -125,33 +122,6 @@ AI_RunStepStatus_TypeDef FINGERALPHABET_RunStep(uint8_t output[FINGERALPHABET_OU
     fingeralphabet_running = false;
     fingeralphabet_has_run = true;
     return AI_RUN_DONE;
-}
-
-bool FINGERALPHABET_Run(const uint8_t input[FINGERALPHABET_INPUT_SIZE], uint8_t output[FINGERALPHABET_OUTPUT_SIZE])
-{
-    if (!fingeralphabet_initialized ||
-        (input == NULL) 			||
-        (output == NULL) 			||
-        (fingeralphabet_input_buffer  == NULL) ||
-        (fingeralphabet_output_buffer == NULL)) {
-        return false;
-    }
-
-    if (fingeralphabet_has_run) {
-        LL_ATON_RT_Reset_Network(&NN_Instance_fingeralphabet_model_v3);
-    }
-
-    memcpy(fingeralphabet_input_buffer, input, FINGERALPHABET_INPUT_SIZE);
-
-    if (!AI_RuntimeRunNetwork(&NN_Instance_fingeralphabet_model_v3)) {
-        return false;
-    }
-
-    memcpy(output, fingeralphabet_output_buffer, FINGERALPHABET_OUTPUT_SIZE);
-
-    fingeralphabet_has_run = true;
-
-    return true;
 }
 
 FingeralphabetResult_TypeDef FINGERALPHABET_GetResult(const uint8_t output[FINGERALPHABET_OUTPUT_SIZE])

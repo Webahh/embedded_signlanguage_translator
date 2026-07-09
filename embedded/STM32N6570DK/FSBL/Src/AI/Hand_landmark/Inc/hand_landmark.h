@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include "simple_ai.h"
+#include "palm_postprocessing.h"
 
 #define LANDMARK_INPUT_WIDTH    224U
 #define LANDMARK_INPUT_HEIGHT   224U
@@ -29,8 +30,23 @@ typedef struct {
     float world_landmarks[LANDMARK_VALUE_COUNT];
 } LandmarkNetworkOutput_TypeDef;
 
+typedef struct {
+    float x;
+    float y;
+    float z;
+} LandmarkPoint_TypeDef;
+
 AI_Status_TypeDef LANDMARK_Init(void);
+AI_Status_TypeDef LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output);
+AI_Status_TypeDef LANDMARK_PreprocessROI(const uint8_t *source, uint32_t source_width, uint32_t source_height,
+										 uint32_t source_stride_bytes, const HandROI_TypeDef *roi, uint8_t *destination);
+
+AI_Status_TypeDef LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *roi,
+						 	 	 	  LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
+
+AI_Status_TypeDef LANDMARK_UpdateROI(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t frame_width,
+									 uint32_t frame_height, HandROI_TypeDef *roi);
+
 uint8_t *LANDMARK_GetInputBuffer(void);
-bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output);
 
 #endif /* HAND_LANDMARK_H */

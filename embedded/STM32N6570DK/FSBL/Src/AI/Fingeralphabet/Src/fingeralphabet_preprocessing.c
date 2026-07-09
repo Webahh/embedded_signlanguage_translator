@@ -6,20 +6,16 @@
  */
 
 #include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
 
-#include "fingeralphabet_preprocessing.h"
+#include "fingeralphabet.h"
 
 #define FINGERALPHABET_POS_MAX               32767
-#define FINGERALPHABET_HAND_FEATURE_COUNT    44U
-
-#define FINGERALPHABET_LEFT_OFFSET           0U
-#define FINGERALPHABET_RIGHT_OFFSET          44U
+#define FINGERALPHABET_HAND_FEATURE_COUNT    44
+#define FINGERALPHABET_LEFT_OFFSET           0
+#define FINGERALPHABET_RIGHT_OFFSET          44
 
 #define FINGERALPHABET_INPUT_SCALE           0.007842f
 #define FINGERALPHABET_INPUT_ZERO_POINT      127.0f
-
 #define FINGERALPHABET_HANDEDNESS_THRESHOLD  0.5f
 
 static float FINGERALPHABET_MirrorNormalizedX(float x)
@@ -72,11 +68,11 @@ static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
     return (uint8_t)quantized;
 }
 
-bool FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], float handedness,
-							   uint8_t output[FINGERALPHABET_INPUT_SIZE])
+AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
+											float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
 {
     if ((points == NULL) || (output == NULL)) {
-        return false;
+        return AI_STATUS_PREPROCESS_ERROR;
     }
 
     int16_t features[FINGERALPHABET_INPUT_SIZE];
@@ -120,7 +116,7 @@ bool FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT
         output[i] = FINGERALPHABET_QuantizeFeature(features[i]);
     }
 
-    return true;
+    return AI_STATUS_OK;
 }
 
 

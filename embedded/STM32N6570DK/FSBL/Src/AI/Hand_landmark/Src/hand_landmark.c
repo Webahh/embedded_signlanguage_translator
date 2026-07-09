@@ -58,12 +58,12 @@ uint8_t *LANDMARK_GetInputBuffer(void){
     return landmark_input_buffer;
 }
 
-bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output)
+AI_Status_TypeDef LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output)
 {
     if (!hand_landmark_initialized ||
         (output == NULL) ||
         (landmark_input_buffer == NULL)) {
-        return false;
+        return AI_STATUS_RUNTIME_ERROR;
     }
 
     if (landmark_has_run) {
@@ -73,7 +73,7 @@ bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output)
     LL_ATON_Cache_MCU_Clean_Range((uintptr_t)landmark_input_buffer, LANDMARK_INPUT_SIZE);
 
     if (!AI_RuntimeRunNetwork(&NN_Instance_hand_landmark_model_v3)) {
-        return false;
+        return AI_STATUS_RUNTIME_ERROR;
     }
 
     LL_ATON_Cache_MCU_Invalidate_Range((uintptr_t)landmark_handedness_buffer, sizeof(float));
@@ -87,6 +87,6 @@ bool LANDMARK_Run(LandmarkNetworkOutput_TypeDef *output)
     memcpy(output->world_landmarks, landmark_world_buffer, LANDMARK_VALUE_COUNT * sizeof(float));
 
     landmark_has_run = true;
-    return true;
+    return AI_STATUS_OK;
 }
 

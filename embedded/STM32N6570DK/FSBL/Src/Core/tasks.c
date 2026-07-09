@@ -26,9 +26,7 @@
 #include "simple_touch.h"
 #include "palm_detection.h"
 #include "hand_landmark.h"
-#include "hand_landmark_preprocessing.h"
-#include "hand_landmark_postprocessing.h"
-#include "fingeralphabet_preprocessing.h"
+#include "fingeralphabet.h"
 #include "simple_text.h"
 #include "simple_dma2d.h"
 #include "ui.h"
@@ -336,14 +334,14 @@ static void _resetTracking(void)
 
 static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
 {
-    const bool preprocessing_ok = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
+    AI_Status_TypeDef status = LANDMARK_PreprocessROI((const uint8_t *)ltdc_layer_bg_buffer[camera_buffer_idx],
     													 LTDC_Layer1Config.width,
 														 LTDC_Layer1Config.height,
 														 LTDC_Layer1Config.buf_width * LANDMARK_INPUT_CHANNELS,
 														 &landmark_roi,
 														 landmark_preprocessed_input);
 
-    if (!preprocessing_ok) {
+    if (status != AI_STATUS_OK) {
         return false;
     }
 
@@ -370,7 +368,7 @@ static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
     }
 
     SCHEDULER_Tick_get(&_landmark_start_tick);
-    if (!LANDMARK_Run(&landmark_output)) {
+    if (LANDMARK_Run(&landmark_output) != AI_STATUS_OK) {
         return false;
     }
 
@@ -400,12 +398,12 @@ static void _runFingeralphabetIfDue(void)
 
     last_fingeralphabet_tick = now;
 
-    if (!FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input)) {
+    if (FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
         return;
     }
 
-    if (!FINGERALPHABET_Start(fingeralphabet_input)) {
+    if (FINGERALPHABET_Start(fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet start failed\r\n");
         return;
     }
@@ -542,7 +540,10 @@ void vAIPipelineTask(void)
         }
 
         landmark_lost_count = 0U;
-        LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points);
+        if(LANDMARK_MapToFrame(&landmark_output, &landmark_roi, landmark_points) != AI_STATUS_OK){
+        	DEBUG_PRINTF("Landmark postprocessing failed!");
+        	return;
+        }
 
         memcpy(last_current_landmark_points, landmark_points, sizeof(last_current_landmark_points));
         SCHEDULER_Tick_get(&last_valid_landmark_output_tick);
@@ -560,8 +561,8 @@ void vAIPipelineTask(void)
             }
         }
 
-        if (!LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
-                                LTDC_Layer1Config.height, &landmark_roi)) {
+        if (LANDMARK_UpdateROI(landmark_points, LTDC_Layer1Config.width,
+                                LTDC_Layer1Config.height, &landmark_roi) != AI_STATUS_OK) {
             _resetTracking();
             return;
         }
