@@ -19,7 +19,7 @@ if [ ! -f "$INSTALLER" ]; then
     echo "ERROR: '$INSTALLER' not found in current directory."
     echo ""
     echo "Download it from: https://www.st.com/en/development-tools/stedgeai-core.html"
-    echo "(ST registration required — free)"
+    echo "(ST registration required )"
     exit 1
 fi
 
