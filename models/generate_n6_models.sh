@@ -117,5 +117,41 @@ if command -v arm-none-eabi-objcopy &> /dev/null; then
 fi
 
 echo ""
+echo "=== Copying files to embedded project ==="
+COPY_SCRIPT="$SCRIPT_DIR/copy_n6_models.sh"
+if [ -f "$COPY_SCRIPT" ]; then
+    bash "$COPY_SCRIPT" --stai --weights
+    echo ""
+else
+    echo "WARNING: $COPY_SCRIPT not found — skipping copy step."
+    echo "Run manually:  ./models/copy_n6_models.sh --stai --weights"
+fi
+
+FW_DIR="$SCRIPT_DIR/../embedded/STM32N6570DK/FSBL"
+ASSETS_DIR="$FW_DIR/Assets/AI"
+
+if command -v arm-none-eabi-gcc &> /dev/null; then
+    echo "=== Rebuilding firmware (regenerates ecblobs.bin) ==="
+    make -C "$FW_DIR/Debug" -j"$(nproc)" 2>&1 | tail -5
+    echo ""
+
+    if [ -f "$FW_DIR/Debug/neural_art_ecblobs.bin" ]; then
+        cp "$FW_DIR/Debug/neural_art_ecblobs.bin" "$ASSETS_DIR/ecblobs.bin"
+        echo "  copied: ecblobs.bin ($(stat -c%s "$ASSETS_DIR/ecblobs.bin") bytes)"
+    fi
+
+    echo "=== Flashing all binaries to board ==="
+    if [ -f "$FW_DIR/flash_models.sh" ]; then
+        bash "$FW_DIR/flash_models.sh"
+    else
+        echo "WARNING: flash_models.sh not found — flash manually."
+    fi
+else
+    echo "=== Build toolchain not found ==="
+    echo "To complete the update:"
+    echo "  1. Rebuild firmware in STM32CubeIDE"
+    echo "  2. Run:  cd $FW_DIR && ./flash_models.sh"
+fi
+
+echo ""
 echo "=== Done ==="
-echo "Output: $SCRIPT_DIR/generated/{palm,landmark,finger}/"

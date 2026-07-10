@@ -25,11 +25,11 @@
  * Command Line options:
  * --load-mdesc-file = "/home/oliver/st/stedgeai/3.0/Utilities/configs/stm32n6"
  * --load-cdesc-file = "/home/oliver/st/stedgeai/3.0/Utilities/configs/cortex-m55"
- * --load-mpool-file = "/home/oliver/Documents/GitHub/embedded_signlanguage_translator/models/my_mpools/hand_landmark"
+ * --load-mpool-file = "/home/oliver/Dokumente/GitHub/embedded_signlanguage_translator/models/my_mpools/hand_landmark"
  * --cache-maintenance = true
  * --enable-virtual-mem-pools = true
  * --native-float = true
- * --json-quant-file = "/home/oliver/Documents/GitHub/embedded_signlanguage_translator/models/st_ai_output/033_hand_landmark_full_quant_pc_uf_handl_OE_3_3_1_Q.json"
+ * --json-quant-file = "/home/oliver/Dokumente/GitHub/embedded_signlanguage_translator/models/st_ai_output/033_hand_landmark_full_quant_pc_uf_handl_OE_3_3_1_Q.json"
  * --optimization = 2
  * --Os = true
  * --Oconv-split-kw = true
@@ -37,8 +37,8 @@
  * --Ocache-opt = true
  * --enable-epoch-controller = true
  * --output-info-file = "c_info"
- * --onnx-input = "/home/oliver/Documents/GitHub/embedded_signlanguage_translator/models/st_ai_output/033_hand_landmark_full_quant_pc_uf_handl_OE_3_3_1.onnx"
- * --out-dir-prefix = "/home/oliver/Documents/GitHub/embedded_signlanguage_translator/models/st_ai_ws/neural_art__hand_landmark_model_v3/"
+ * --onnx-input = "/home/oliver/Dokumente/GitHub/embedded_signlanguage_translator/models/st_ai_output/033_hand_landmark_full_quant_pc_uf_handl_OE_3_3_1.onnx"
+ * --out-dir-prefix = "/home/oliver/Dokumente/GitHub/embedded_signlanguage_translator/models/st_ai_ws/neural_art__hand_landmark_model_v3/"
  * --network-name = "hand_landmark_model_v3"
  * --all-buffers-info = true
  * --generate-stai = true

@@ -9,6 +9,7 @@
 #   ./copy_n6_models.sh --stai            # also copy stai_* wrappers
 #   ./copy_n6_models.sh --weights         # also copy model weight .bin files
 #   ./copy_n6_models.sh --stai --weights  # all files
+#   ./copy_n6_models.sh --all             # everything (shorthand)
 #   ./copy_n6_models.sh --dry-run         # preview only
 #   ./copy_n6_models.sh --help            # show full help
 
@@ -31,6 +32,7 @@ Usage: $(basename "$0") [OPTIONS]
 Copy generated model files into the embedded project tree.
 
 Options:
+  --all        Copy everything (--stai --weights).
   --dry-run    Print what would be copied without copying.
   --stai       Also copy the stai_* wrapper files.
   --weights    Also copy model weight .bin files to Assets/AI/.
@@ -41,6 +43,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --all)     COPY_STAI=true; COPY_WEIGHTS=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --stai)    COPY_STAI=true; shift ;;
         --weights) COPY_WEIGHTS=true; shift ;;

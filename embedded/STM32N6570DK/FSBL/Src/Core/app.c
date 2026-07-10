@@ -129,8 +129,8 @@ void app_init(){
 	uint8_t task_idx = 0xFF;
 
 	SCHEDULER_Task_add(vTouchTask, "Touch", 20, 2, 256, &task_idx);
-	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, 64, &task_idx);
-	SCHEDULER_Task_add(vAETask, "AETask", 10, 2, 128, &task_idx);
+	SCHEDULER_Task_add(vLEDTask, "LED", 5000, 2, 128, &task_idx);
+	SCHEDULER_Task_add(vAETask, "AETask", 10, 2, 256, &task_idx);
 	SCHEDULER_Task_add(vAIPipelineTask,"AIPipeline", 15, 1, 4096, &task_idx);
 }
 
