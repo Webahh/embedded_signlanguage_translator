@@ -71,14 +71,15 @@ void app_init(){
 
     LTDC_Layer_Draw_Fill(&LTDC_Layer1Config, LTDC_LAYER_COLOR_WHITE);
 
-    uint32_t error = 0;
     if(CAM_Init(&h_cam) == CAM_OK) {
     	if(CAM_DisplayPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
+        	DEBUG_PRINTF("[CAM] Pipe Display init Failed!\r\n");
     	}
     	if(CAM_NNPipe_Start(&h_cam) != CAM_OK) {
-    		error++;
+        	DEBUG_PRINTF("[CAM] Pipe NN init Failed!\r\n");
     	}
+    } else {
+    	DEBUG_PRINTF("[CAM] Init Failed!\r\n");
     }
 
     /* --- Touch --- */

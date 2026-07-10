@@ -30,6 +30,12 @@ ml_pipeline/.idea/
 *.swp
 *.cache
 
+# ST Edge AI intermediate build output
+models/st_ai_output/*
+!models/st_ai_output/.gitkeep
+models/st_ai_ws/*
+!models/st_ai_ws/.gitkeep
+
 # Executables / binaries
 *.exe
 *.out

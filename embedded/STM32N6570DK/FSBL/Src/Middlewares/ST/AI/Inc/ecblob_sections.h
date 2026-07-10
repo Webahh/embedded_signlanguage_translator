@@ -9,6 +9,9 @@
 #define ECBLOB_SECTIONS_H
 
 #define ECBLOB_CONST_SECTION \
-    __attribute__((section(".ecblobs"), aligned(8)))
+    __attribute__((section(".ecblobs_const"), aligned(64)))
+
+#define ECBLOB_RUNTIME_SECTION \
+    __attribute__((section(".ecblobs_runtime"), aligned(64)))
 
 #endif /* ECBLOB_SECTIONS_H */

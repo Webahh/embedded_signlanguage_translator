@@ -23,7 +23,6 @@ extern "C" {
 #include "ll_aton_caches_interface.h"
 
 #include <string.h>
-#include "ecblob_sections.h"
 
 #if !defined(ECBLOB_CONST_SECTION)
 #define ECBLOB_CONST_SECTION /* Empty */
