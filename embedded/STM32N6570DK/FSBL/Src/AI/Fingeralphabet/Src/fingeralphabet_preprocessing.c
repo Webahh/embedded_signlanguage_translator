@@ -6,6 +6,12 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
+#include <math.h>
+
+#ifndef AI_PI
+#define AI_PI 3.14159265358979323846f
+#endif
 
 #include "fingeralphabet.h"
 
@@ -52,6 +58,21 @@ static int16_t FINGERALPHABET_NormalizedToInt16(float value)
     return (int16_t)(value * (float)FINGERALPHABET_POS_MAX);
 }
 
+static int16_t FINGERALPHABET_RelativeToInt16(float value)
+{
+    const float scaled = value * (float)FINGERALPHABET_POS_MAX;
+
+    if (scaled > 32767.0f) {
+        return 32767;
+    }
+
+    if (scaled < -32768.0f) {
+        return -32768;
+    }
+
+    return (int16_t)scaled;
+}
+
 static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
 {
     const float normalized = (float)feature / (float)FINGERALPHABET_POS_MAX;
@@ -68,7 +89,7 @@ static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
     return (uint8_t)quantized;
 }
 
-static AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
+AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
 												   float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
 {
     if ((points == NULL) || (output == NULL)) {

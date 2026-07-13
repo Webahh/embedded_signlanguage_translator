@@ -194,7 +194,7 @@ typedef struct {
 #define PALM_SEARCH_INTERVAL_MS      	200U
 #define FINGERALPHABET_INTERVAL_MS   	1000U
 #define LANDMARK_TRACK_INTERVAL_MS   	0U
-#define LANDMARK_PREDICTION_TIME_MS     45.0f
+#define LANDMARK_PREDICTION_TIME_MS     25.0f
 #define LANDMARK_PREDICTION_MAX_DELTA   0.08f
 #define LANDMARK_SMOOTHING_ALPHA        0.75f
 
@@ -238,6 +238,7 @@ static uint8_t previous_landmarks_valid = 0U;
 static uint32_t previous_landmark_tick = 0U;
 
 static LandmarkPoint_TypeDef last_current_landmark_points[LANDMARK_POINT_COUNT];
+static float last_landmark_rotation = 0.0f;
 
 static void DMA2D_EnsureInit(void){
     if (!_dma2d_initialized) {
@@ -408,7 +409,7 @@ static void _runFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
 
     last_fingeralphabet_tick = now;
 
-    if (FINGERALPHABET_PreprocessFromLandmarkOutput(&landmark_output, fingeralphabet_input) != AI_STATUS_OK) {
+    if (FINGERALPHABET_Preprocess(landmark_points, landmark_output.handedness, fingeralphabet_input) != AI_STATUS_OK) {
         DEBUG_PRINTF("Fingeralphabet preprocessing failed\r\n");
         return;
     }
@@ -576,6 +577,7 @@ static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
     landmark_lost_count = 0U;
 
     HandROI_TypeDef current_roi = landmark_roi;
+    last_landmark_rotation = current_roi.rotation;
 
     if (LANDMARK_MapToFrame(&landmark_output, &current_roi, LTDC_Layer1Config.width,
                             LTDC_Layer1Config.height, landmark_points) != AI_STATUS_OK) {
