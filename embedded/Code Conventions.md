@@ -20,8 +20,7 @@
 ```
 
 - `@author`, `@date`, and `@brief` are mandatory.
-- The **Usage** section is mandatory and must list the functions that must be
-  called before others, in the required order
+- The **Usage** section is mandatory and must list the functions that must be called before others, in the required order
 
 ### Guard
 
@@ -45,9 +44,9 @@
 #include "simple_gpio.h"
 ```
 
-- **1. Standard library:**
-- **2. MCU header:**
-- **3. Own project first:**
+- First Standard library
+- Then MCU header
+- Lastly Own project first
 
 ### Defines / Macros
 
@@ -89,9 +88,7 @@ ReturnType func(param a, [...], param b);
 - `@note` and elaborate explanation are optional
 - No anonymous parameter types
 - `@return` for non-void methods
-- The return type of all module functions (except `void`) is the module's
-  status `_TypeDef` enum (e.g. `SCHEDULER_Status_TypeDef`)
-  Values are returned via pointer parameters - never via the return value
+- `@return` The return type of all module functions (except `void`) is the module's status `_TypeDef` enum (e.g. `SCHEDULER_Status_TypeDef`) Values are returned via pointer parameters - never via the return value
 - Function names follow the pattern `Module_SubPascalCase_action`:
   `RCC_Timer_enable()`, `SCHEDULER_Task_add()`, `GPIO_Pin_set()`.
   Top-level module in `UPPER_CASE`, any submodule / sub-part in
@@ -103,11 +100,11 @@ ReturnType func(param a, [...], param b);
 Group by category, one per line:
 
 ```c
-// ── Read-only config (defined in .c with designated initializers) ──
+// -- Read-only config (defined in .c with designated initializers) --
 extern const GPIO_cfg_TypeDef   GPIO_default_cfg;
 extern const RCC_PLL_cfg_TypeDef BOARD_PLL_cfg[4];
 
-// ── Mutable runtime handles / state ──
+// -- Mutable runtime handles / state --
 extern CAM_handle_TypeDef    CAM_handle_cfg;
 extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 ```
@@ -121,10 +118,9 @@ extern LCD_Layer_TypeDef     LCD_Layer1_cfg;
 
 ### Includes (order)
 
-1. Standard library: `#include <string.h>`
-2. Own header first: `#include "module.h"`
-3. Project drivers: `#include "simple_gpio.h"`
-
+- First - Standard library: `#include <string.h>`
+- Second - Own header first: `#include "module.h"`
+- Third - Project drivers: `#include "simple_gpio.h"`
 
 ### Defines / Macros
 
@@ -180,21 +176,21 @@ const GPIO_cfg_TypeDef GPIO_LTDC_cfg = {
 };
 ```
 
-- Always align `.param` and multiple assignments
+- Align `.param` and multiple assignments
 
 ### Comments
 
 - `//` for single-line / inline
 - `/* */` or `/** */` for block / Doxygen
 - Use `//` inline comments within complex methods to explain non-obvious steps, loop structure, or tricky logic
-- Two sections **Private** and **API** functions:
+- Section functions:
 
 ```c
 // -------------------------------------------------------------------------
-// Private / API
+// Sectionname
 // -------------------------------------------------------------------------
 ```
 
 ### Indentation
 
-- **Tabs** (no spaces) - align struct members and designated init values with tabs.
+- **Tabs** (no spaces) - align struct members and designated init values with tabs
