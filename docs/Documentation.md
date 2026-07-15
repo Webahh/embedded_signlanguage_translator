@@ -1,37 +1,73 @@
 ## Gliederung
 
-1. Einleitung/[[Lastenheft]]
+1. Einleitung
    - 1.1 Problemstellung
    - 1.2 Motivation und Zielsetzung
-2. Theoretische Grundlagen
+   - 1.3 Abgrenzung der Arbeit
+   - 1.4 Aufbau der Arbeit 
+2. Theoretische und technische Grundlagen
    - 2.1 Eingebettete Systeme
-   - 2.2 Maschinelles Lernen und Lernalgorithmen
-   - 2.3 Datensatz und Augmentationspipeline
-   - 2.4 Rekurrentes Neuronales Netz
-   - 2.5 KI on the Edge
+   - 2.2 Deutsches Fingeralphabet
+   - 2.3 Grundlagen des maschinellen Lernens
+   - 2.4 Neuronale Netze zur Klassifikation
+   - 2.5 Hand-detection und Handlandmarks
+   - 2.6 Datenaugmentation und Modellquantisierung
+   - 2.7 Edge AI und neuronale Beschleuniger
 3. Stand der Technik
-   - 3.1 Bestehende Ansätze
-   - 3.2 Aktuelle Embedded Lösungen
-   - 3.3 Einordnung der Arbeit
-4. Methodik
-   - 4.1 Vorgehensweise bei der Literaturrecherche
-   - 4.2 Methode zur Bearbeitung der Forschungsfrage
-   - 4.3 Evaluationskonzept
-5. Systemkonzept
-   - 5.1 Systemarchitektur
-   - 5.2 Blockdiagramm - Systemkonzept
-   - 5.3 Ablaufdiagramm - Datenfluss von Input bis Output
-6. Implementierung
-   - 6.1 Umsetzung der Hardware
-   - 6.2 Umsetzung der Software
-   - 6.3 Integration des Modells
-7. Optimierung und Anpassung
-8. Evaluation
-   - 8.1 Erkennungsgenauigkeit
-   - 8.2 Inferenzlatenz
-   - 8.3 Datendurchsatz
-   - 8.4 Ressourcenverbrauch
-9. Diskussion
-   - 9.1 Interpretation der Ergebnisse
-   - 9.2 Beitrag zum Forschungsfeld
-10. Fazit und Ausblick
+   - 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
+   - 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
+   - 3.3 Aktuelle Embedded-AI Lösungen
+   - 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
+4. Methodik und Entwicklungsprozess
+   - 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
+   - 4.2 Vorgehensmodell der Systementwicklung
+   - 4.3 Iterativer Entwicklungs- und Integrationsprozess
+   - 4.4 Vorgehen bei der Modellentwicklung
+   - 4.5 Verifikations- und Evaluationskonzept
+5. Anforderungsanalyse
+   - 5.1 Anwendungsszenario
+   - 5.2 Funktionale Anforderungen
+   - 5.3 Nichtfunktionale Anforderungen
+   - 5.4 Hardware- und Software-Randbedingungen
+   - 5.5 Abnahmekriterien
+6. Systementwurf
+   - 6.1 Systemkonzept
+   - 6.2 Hardwarekonzept
+   - 6.3 KI-Verarbeitungskette
+   - 6.4 Speicher- und Datenflusskonzept
+   - 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
+7. Entwicklung und Implementierung
+   - 7.1 Aufbau und Aufbereitung des Datensatzes
+   - 7.2 Augmentationspipeline
+   - 7.3 Entwicklung und Training des Klassifikationsmodells
+   - 7.4 Quantisierung und Konvertierung des Modells
+   - 7.5 Implementierung der Kamerapipeline
+   - 7.6 Handflächen- und Landmark-Erkennung
+   - 7.7 Region of Interest
+   - 7.8 Vor- und Nachverarbeitung der Datenpunkte
+   - 7.9 Integration der neuronalen Netze auf dem Embedded-System
+   - 7.10 Ablaufsteuerung und Software-Scheduler
+   - 7.11 Visualisierung und Benutzerausgabe
+8. Optimierung und Anpassung
+   - 8.1 Optimierung der Inferenzpipeline
+   - 8.2 Speicher- und Cache-Opimierung
+   - 8.3 Optimierung der Landmark-Stabilität 
+   - 8.4 Anpassung der Handregion und Rotationsbehandlung
+   - 8.5 Reduzierung von Latenzen und blockierenden Abläufen
+9. Evaluation und Validierung
+   - 9.1  Versuchsaufbau und Testbedingungen
+   - 9.2 Erkennungsgenauigkeit
+   - 9.3 Konfusionsmatrix und klassenbezogene Ergebnisse 
+   - 9.4 Einfluss von Beleuchtung und Hintergrund
+   - 9.5 Inferenzlatenz und Ende-zu-Ende-Latenz
+   - 9.6 Bildrate und Datendurchsatz
+   - 9.7 Speicher-und Ressourcenverbrauch
+   - 9.8 Abgleich mit den definierten Anforderungen
+1. Diskussion
+   - 10.1 Interpretation der Ergebnisse
+   - 10.2 Bewertung des entwickelten Gesamtsystems 
+   - 10.3 Grenzen und bekannte Einschränkungen
+   - 10.4 Technischer und praktischer Beitrag der Arbeit
+1. Fazit und Ausblick
+   - 11.1 Zusammenfassung und Zielerreichung
+   - 11.2 Ausblick
