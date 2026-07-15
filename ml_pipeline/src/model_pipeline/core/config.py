@@ -12,7 +12,7 @@ SCRIPT_DIR = os.path.dirname(
 MODEL_ROOT = os.path.abspath(
     os.path.join(
         SCRIPT_DIR,
-        "../../../../models",
+        "../../../../models/source",
     )
 )
 
