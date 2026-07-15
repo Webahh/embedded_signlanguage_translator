@@ -1,6 +1,6 @@
 ## Gliederung
 
-1. Einleitung
+1. Einleitung/Lastenheft
    - 1.1 Problemstellung
    - 1.2 Motivation und Zielsetzung
 2. Theoretische Grundlagen
