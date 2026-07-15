@@ -16,7 +16,7 @@
 3. Stand der Technik
    - 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
    - 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
-   - 3.3 Aktuelle Embedded-AI Lösungen
+   - 3.3 Aktuelle Embedded-AI-Lösungen
    - 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
 4. Methodik und Entwicklungsprozess
    - 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
@@ -44,13 +44,13 @@
    - 7.5 Implementierung der Kamerapipeline
    - 7.6 Handflächen- und Landmark-Erkennung
    - 7.7 Region of Interest
-   - 7.8 Vor- und Nachverarbeitung der Datenpunkte
+   - 7.8 Vor- und Nachverarbeitung der Handlandmarks
    - 7.9 Integration der neuronalen Netze auf dem Embedded-System
    - 7.10 Ablaufsteuerung und Software-Scheduler
    - 7.11 Visualisierung und Benutzerausgabe
 8. Optimierung und Anpassung
    - 8.1 Optimierung der Inferenzpipeline
-   - 8.2 Speicher- und Cache-Opimierung
+   - 8.2 Speicher- und Cache-Optimierung
    - 8.3 Optimierung der Landmark-Stabilität 
    - 8.4 Anpassung der Handregion und Rotationsbehandlung
    - 8.5 Reduzierung von Latenzen und blockierenden Abläufen
@@ -61,7 +61,7 @@
    - 9.4 Einfluss von Beleuchtung und Hintergrund
    - 9.5 Inferenzlatenz und Ende-zu-Ende-Latenz
    - 9.6 Bildrate und Datendurchsatz
-   - 9.7 Speicher-und Ressourcenverbrauch
+   - 9.7 Speicher- und Ressourcenverbrauch
    - 9.8 Abgleich mit den definierten Anforderungen
 1. Diskussion
    - 10.1 Interpretation der Ergebnisse
