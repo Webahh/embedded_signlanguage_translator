@@ -3,7 +3,9 @@
 1. [[Einleitung]]
    - 1.1 Problemstellung
    - 1.2 Motivation und Zielsetzung
-   - 1.3 Abgrenzung der Arbeit
+   - 1.3 Abgrenzung des Untersuchungsgegenstandes
+     - 1.3.1 Inhaltliche Abgrenzung
+     - 1.3.2 Personenspezifische Abgrenzung
    - 1.4 Aufbau der Arbeit 
 2. [[Theoretische und technische Grundlagen]]
    - 2.1 Eingebettete Systeme
@@ -70,4 +72,4 @@
    - 10.4 Technischer und praktischer Beitrag der Arbeit
 1. [[Fazit und Ausblick]]
    - 11.1 Zusammenfassung und Zielerreichung
-   - 11.2 Ausblick
+   - 11.2 Ausblic

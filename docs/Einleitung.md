@@ -1,27 +1,51 @@
 
 ## 1. Einleitung 
 
-Das deutsche Fingeralphabet ermöglicht es, einzelne Buchstaben durch festgelegte Handformen darzustellen. Es wird unter anderem verwendet, um Namen, Fachbegriffe oder Wörter zu bachstabieren, für die keine gebräuchliche Gebärde vorhanden ist. Für Personen, die das Fingeralphabet erlernen, ist eine unmittelbare Rückmeldung zur ausgeführten Handform hilfreich. Ein kamerabasiertes Trainingssystem kann die gezeigten Zeichen automatisch erkennen und dadurch das selbstständige Üben unterstützen.
+Das deutsche Fingeralphabet ermöglicht es,  Buchstaben und Buchstabenkombinationen durch festgelegte Handformen darzustellen. Es wird unter anderem verwendet, um Namen, Fachbegriffe oder Wörter zu buchstabieren, für die keine gebräuchliche Gebärde vorhanden ist. Für Personen, die das Fingeralphabet erlernen, ist eine unmittelbare Rückmeldung zur ausgeführten Handform hilfreich. Ein kamerabasiertes Trainingssystem kann die gezeigten Zeichen automatisch erkennen und dadurch das selbstständige Üben unterstützen.
 
-Im Rahmen dieser Arbeit wird die technische Grundlage für einen solchen Fingeralphabet-Trainer entwickelt. Das System erfasst die Hand über eine Kamera, bestimmt deren Position und charakteristische Landmarks und klassifiziert anschließend das dargestellte Zeichen. Die gesamte Verarbeitung soll lokal auf einem eingebetteten System erfolgen. Als Zielplattform wird ein STM32N6570-Mikrocontroller verwendet, der neben den üblichen Mikrocontroller-Funktionen über einen integrierten Beschleuniger für neuronale Netze verfügt.
-
-...
+Im Rahmen dieser Arbeit wird die technische Grundlage für einen solchen Fingeralphabet-Trainer entwickelt. Das System erfasst die Hand über eine Kamera, bestimmt deren Position und charakteristische Landmarks und klassifiziert anschließend das dargestellte Zeichen. Die gesamte Verarbeitung soll lokal auf einem eingebetteten System erfolgen. Als Zielplattform wird das STM32N6570-Discovery Kit verwendet, das neben den üblichen Mikrocontroller-Funktionen über einen integrierten Beschleuniger für neuronale Netze verfügt.
 
 ### 1.1 Problemstellung
 
-Die Ausführung einer vollständigen kamerabasierten Erkennungskette auf einem Mikrocontroller ist aufgrund der beschränkten Ressourcen anspruchsvoll Neben den neuronalen Netzen müssen auch die Kameraschnittstelle, die Bildspeicherung, die Vor- und Nachverarbeitung der Daten, die Ablaufsteuerung sowie die grafische Ausgabe berücksichtigt werden. Werden einzelne Verarbeitungsschritte blockierend oder ineffizient umgesetzt, können hohe Latenzen, eine geringe Bildrate oder instabile Erkennungsergebnisse entstehen.
+Die Ausführung einer vollständigen kamerabasierten Erkennungskette auf einem Mikrocontroller ist aufgrund der begrenzten Ressourcen anspruchsvoll .Neben den neuronalen Netzen müssen auch die Kameraschnittstelle, die Bildspeicherung, die Vor- und Nachverarbeitung der Daten, die Ablaufsteuerung sowie die grafische Ausgabe berücksichtigt werden. Werden einzelne Verarbeitungsschritte blockierend oder ineffizient umgesetzt, können hohe Latenzen, eine geringe Bildrate oder instabile Erkennungsergebnisse entstehen.
 
-...
+Eine weitere Herausforderung liegt in der zuverlässigen Klassifikation der Handzeichen. Einige Zeichen des deutschen Fingeralphabets unterscheiden sich nur durch geringe Veränderungen der Fingerstellung. Gleichzeitig können die Position, Orientierung und Größe der Hand im Kamerabild sowie unterschiedliche Lichtverhältnisse und individuelle Ausführungen der Handzeichen  variieren. Das Klassifikationsmodell muss daher ausreichend robust gegenüber diesen einflüssen sein, ohne die verfügbaren Ressourcen der Zielplattform zu überschreiten.
 
-Die zentrale Problemstellung dieser Arbeit besteht darin, eine mehrstufige Verarbeitungskette zur Erkennung des deutschen Fingeralphabets so auf einem ressourcenbeschränkten eingebetteten  System umzusetzen, dass eine hinreichen genaue, stabile und echtzeitfähige Verarbeitung erreicht wird.
+Damit die neuronalen Netze auf der eingebetteten Plattform ausgeführt werden können, müssen sie an deren technischen Anforderungen und Ressourcenbeschränkungen angepasst werden. Hierzu können unter anderem die Modellkomplexität reduziert und die verwendeten Zahlenformate quantisiert werden. Diese Optimierungen verringern den Speicherbedarf und den Rechenaufwand, können jedoch gleichzeitig zu einer Verschlechterung der Erkennungsgenauigkeit führen. Es muss daher ein geeigneter Kompromiss zwischen Modellgröße, Ausführungsgeschwinidkeit und Erkennungsleistung gefunden werden.
+
+Die zentrale Problemstellung dieser Arbeit besteht darin, eine mehrstufige Verarbeitungskette zur Erkennung des deutschen Fingeralphabets so auf einem ressourcenbeschränkten eingebetten System umzusetzen, dass eine hinreichend genaue, stabile und echtzeitnahe Verarbeitung erreicht wird.
 
 ### 1.2 Motivation und Zielsetzung
 
+Die Motivation für diese Arbeit ergibt sich aus dem Bedarf an einer kompakten und unmittelbaren nutzbaren Unterstützung beim Erlernen des deutschen Fingeralphabets. Ein lokal arbeitendes System kann ausgeführte Handzeichen direkt erfassen und bewerten, ohne das die Kamerabilder an einen externen Rechner oder einen Cloud-Dienst übertragen werden müssen. Dadurch kann der Fingeralphabet-Trainer unabhängig von einer Internetverbindung eingesetzt werden. Gleichzeitig bietet die lokale Verarbeitung Vorteile hinsichtlich der Reaktionszeit und des Schutzes der aufgenommenen Bilddaten.
 
+Ziel der Arbeit ist die Entwicklung und Integration eines prototypischen Systems, das statische Handzeichen des deutschen Fingeralphabets über eine Kamera erfasst und auf dem STM32n6570 Discovery Kit klassifiziert. Hierfür wird ein Machine-Learning-Modell entwickelt, das die zuvor ermittelten Handlandmarks verarbeitet und das dargestellte Zeichen einer definierten Klasse zuordnet. Dazu werden ein Datensatz erstellt und aufbereitet, Augmentationsverfahren umgesetzt und unterschiedliche Modellvarianten trainiert. bzw. evaluiert.
 
-### 1.3 Abgrenzung der Arbeit
+Das ausgewählte Klassifikationsmodell wird anschließend für die Ausführung auf der Zielplattform optimiert und gemeinsam mit den Modellen zur Handlokalisierung und Landmark-Erkennung in eine durchgängige Verarbeitungspipeline integriert. Darüber hinaus werden die erforderlichen Softwarekomponenten zur Ablaufsteuerung, Datenverarbeitung und grafische Darstellung der Inferenzergebnisse umgesetzt.
 
+Abschließend wird untersucht, inwieweit das entwickelte Gesamtsystem die definierten Handzeichen zuverlässig erkennt und eine für die interaktive Nutzung geeignete Verarbeitungsgeschwindigkeit erreicht. Das Ergebnis der Arbeit ist ein funktionsfähiger Prototyp, der die technische Umsetzbarkeit eines lokal arbeitenden Fingeralphabet-Trainers auf einer ressourcenbeschränkten eingebetteten Plattform demonstriert.
 
+### 1.3 Abgrenzung des Untersuchungsgegenstandes
+
+#### 1.3.1 Inhaltliche Abgrenzung
+
+Diese Arbeit beschreibt die Entwicklung eines prototypischen Systems zur Erkennung des deutschen Fingeralphabets auf einer eingebetteten Plattform. Im Mittelpunkt steht die Entwicklung eines funktionsfähigen Gesamtsystems, das kamerabasierte Bildverarbeitung und maschinelles Lernen miteinander verbindet.
+
+Ein wesentlicher Bestandteil ist die Entwicklung eines Machine-Learning-Modells zur Klassifikation ausgewählter Handzeichen des deutschen Einhand-Fingeralphabets. Dieses Modell wird gemeinsam mit zwei bereits bestehenden Modellen zur Handerkennung und zur Bestimmung von Handlandmarken in eine mehrstufige Verarbeitungspipeline integriert. Darüber hinaus umfasst die Arbeit die Überführung der Modelle auf die eingebettete Zielplattform.
+
+Nicht Gegenstand der Arbeit ist die Erkennung vollständiger Gebärdensprachen. Insbesondere werden keine dynamischen Gebärden, Bewegungsabläufe, Gesichtsausdrücke oder Körperhaltungen berücksichtigt. Das entwickelte System beschränkt sich auf die Erkennung statischer Handzeichen des deutschen Fingeralphabets unter den im Rahmen des Prototypes definierten Einsatzbedingungen.
+
+Darüber hinaus erfolgt keine linguistische oder semantische Betrachtung des Fingeralphabets. Ebenso ist auch auch kein groß angelegtes Training von Modellen mit umfangreichen Datensätzen vorgesehen. Stattdessen werden eigens erstellte aber begrenzte Datensätze verwendet, die dem prototypischen Nachweis der Funktionsfähigkeit dienen. Die Implementierung und Evaluation beschränken sich zudem auf eine spezifische Plattform.
+
+#### 1.3.2 Personenspezifische Abgrenzung
+
+Das Projekt wurde als Gruppenarbeit durchgeführt.  Daher ist eine klare inhaltliche Aufteilung der Aufgabenbereiche und der erbrachten Leistungen erforderlich. Die Arbeit lässt sich dabei in die Entwicklung des Machine-Learning-Modells, sowie die Umsetzung der Software und Hardware, auf der dieses Modell ausgeführt wird.
+
+Fabian Weber übernimmt überwiegend die Entwicklung des maschinellen Lernmodells. Dazu zählen insbesondere die Erstellung und Aufbereitung des Datensatzes, die Entwicklung der Datenpipeline einschließlich Augmentationsverfahren sowie das Training und die Optimierung des Modells.
+
+Oliver Groß ist für die Umsetzung der Hardware und Software verantwortlich. Dies umfasst vor allem den Aufbau und die Integration der notwendigen Camera-Pipeline, sowie die Implementierung  der Systemumgebung zur Ausführung des Modells.
+
+Gemeinsame Aufgaben betreffen insbesondere die Abstimmung der Systemarchitektur, sowie die Integration der einzelne Komponenten zu einem funktionsfähigen Gesamtsystems.
 
 ### 1.4 Aufbau der Arbeit
 
