@@ -1,0 +1,73 @@
+## Gliederung
+
+1. Einleitung
+   - [ ] 1.1 Problemstellung
+   - [ ] 1.2 Motivation und Zielsetzung
+   - [ ] 1.3 Abgrenzung der Arbeit
+   - [ ] 1.4 Aufbau der Arbeit 
+2. Theoretische und technische Grundlagen
+   - [ ] 2.1 Eingebettete Systeme
+   - [ ] 2.2 Deutsches Fingeralphabet
+   - [ ] 2.3 Grundlagen des maschinellen Lernens
+   - [ ] 2.4 Neuronale Netze zur Klassifikation
+   - [ ] 2.5 Handdetection und Handlandmarks
+   - [ ] 2.6 Datenaugmentation und Modellquantisierung
+   - [ ] 2.7 Edge AI und neuronale Beschleuniger
+3.  Stand der Technik
+   - [ ] 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
+   - [ ] 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
+   - [ ] 3.3 Aktuelle Embedded-AI-Lösungen
+   - [ ] 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
+4. Methodik und Entwicklungsprozess
+   - [ ] 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
+   - [ ] 4.2 Vorgehensmodell der Systementwicklung
+   - [ ] 4.3 Iterativer Entwicklungs- und Integrationsprozess
+   - [ ] 4.4 Vorgehen bei der Modellentwicklung
+   - [ ] 4.5 Verifikations- und Evaluationskonzept
+1. Anforderungsanalyse
+   - [ ] 5.1 Anwendungsszenario
+   - [ ] 5.2 Funktionale Anforderungen
+   - [ ] 5.3 Nichtfunktionale Anforderungen
+   - [ ] 5.4 Hardware- und Software-Randbedingungen
+   - [ ] 5.5 Abnahmekriterien
+6. Systementwurf
+   - [ ] 6.1 Systemkonzept
+   - [ ] 6.2 Hardwarekonzept
+   - [ ] 6.3 KI-Verarbeitungskette
+   - [ ] 6.4 Speicher-  und Datenflusskonzept
+   - [ ] 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
+7. Entwicklung und Implementierung
+   - [ ] 7.1 Aufbau und Aufbereitung des Datensatzes
+   - [ ] 7.2 Augmentationspipeline
+   - [ ] 7.3 Entwicklung und Training des Klassifikationsmodells
+   - [ ] 7.4 Quantisierung und Konvertierung des Modells
+   - [ ] 7.5 Implementierung der Kamerapipeline
+   - [ ] 7.6 Handflächen- und Landmark-Erkennung
+   - [ ] 7.7 Region of Interest
+   - [ ] 7.8 Vor- und Nachverarbeitung der Handlandmarks
+   - [ ] 7.9 Integration der neuronalen Netze auf dem Embedded-System
+   - [ ] 7.10 Ablaufsteuerung und Software-Scheduler
+   - [ ] 7.11 Visualisierung und Benutzerausgabe
+8. Optimierung und Anpassung
+   - [ ] 8.1 Optimierung der Inferenzpipeline
+   - [ ] 8.2 Speicher- und Cache-Optimierung
+   - [ ] 8.3 Optimierung der Landmark-Stabilität 
+   - [ ] 8.4 Anpassung der Handregion und Rotationsbehandlung
+   - [ ] 8.5 Reduzierung von Latenzen und blockierenden Abläufen
+9. Evaluation und Validierung
+   - [ ] 9.1  Versuchsaufbau und Testbedingungen
+   - [ ] 9.2 Erkennungsgenauigkeit
+   - [ ] 9.3 Konfusionsmatrix und klassenbezogene Ergebnisse 
+   - [ ] 9.4 Einfluss von Beleuchtung und Hintergrund
+   - [ ] 9.5 Inferenzlatenz und Ende-zu-Ende- Latenz
+   - [ ] 9.6 Bildrate und Datendurchsatz
+   - [ ] 9.7 Speicher- und Ressourcenverbrauch
+   - [ ] 9.8 Abgleich mit den definierten Anforderungen
+10. Diskussion
+   - [ ] 10.1 Interpretation der Ergebnisse
+   - [ ] 10.2 Bewertung des entwickelten Gesamtsystems 
+   - [ ] 10.3 Grenzen und bekannte Einschränkungen
+   - [ ] 10.4 Technischer und praktischer Beitrag der Arbeit
+11. Fazit und Ausblick
+   - [ ] 11.1 Zusammenfassung und Zielerreichung
+   - [ ] 11.2 Ausblick
