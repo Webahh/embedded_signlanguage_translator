@@ -5,15 +5,15 @@
    - [x] 1.2 Motivation und Zielsetzung
    - [x] 1.3 Abgrenzung der Arbeit
    - [x] 1.4 Aufbau der Arbeit 
-1. Theoretische und technische Grundlagen
-   - [ ] 2.1 Eingebettete Systeme
-   - [ ] 2.2 Deutsches Fingeralphabet
-   - [ ] 2.3 Grundlagen des maschinellen Lernens
-   - [ ] 2.4 Neuronale Netze zur Klassifikation
-   - [ ] 2.5 Handdetection und Handlandmarks
-   - [ ] 2.6 Datenaugmentation und Modellquantisierung
-   - [ ] 2.7 Edge AI und neuronale Beschleuniger
-3.  Stand der Technik
+1. Theoretische und technische Grundlagen (Quellen überarbeiten)
+   - [x] 2.1 Eingebettete Systeme
+   - [x] 2.2 Deutsches Fingeralphabet
+   - [x] 2.3 Grundlagen des maschinellen Lernens
+   - [x] 2.4 Neuronale Netze zur Klassifikation
+   - [x] 2.5 Handdetection und Handlandmarks
+   - [x] 2.6 Datenaugmentation und Modellquantisierung
+   - [x] 2.7 Edge AI und neuronale Beschleuniger
+1.  Stand der Technik
    - [ ] 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
    - [ ] 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
    - [ ] 3.3 Aktuelle Embedded-AI-Lösungen
