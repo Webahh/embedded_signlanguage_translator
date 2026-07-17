@@ -289,4 +289,94 @@ Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildau
 Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich um eine linke oder rechte Hand handelt.
 #### 2.5.4 ROI
 
+Eine ROI (Region of Interrest) ist ein rotiertes Rechteck im Pixel Raum, der genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
+Dies kann verwendet werden um Modelle selektiv/gezielt auszuführen.
 
+```
+┌───────────────────────────────────┐
+│         Original Frame            │
+│      ┌────────────────────┐       │
+│      │   ROI (rotated)    │       │
+│      │   ┌──────────┐     │       │
+│      │   │ landmark │     │       │
+│      │   │  crop    │     │       │
+│      │   └──────────┘     │       │
+│      │                    │       │
+│      └────────────────────┘       │
+└───────────────────────────────────┘
+```
+\[ROI - Visuelle Repräsentation| Eigene Darstellung] NOTE: Ersetze durch draw.io darstellung
+
+##### 2.5.4.1 Lifecycle
+
+Der Lifecycle einer ROI ist in Abbildung X dargestellt. Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und größe der initialen ROI berechnet. in den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. bei ausreichender Konfidenz werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI bestimmt. Dieser Vorgang wiederhohlt sich für jeden Frame. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
+
+---
+
+### 2.6 Datenaugmentation und Modellquantisierung
+
+#### 2.6.1 Datenaugmentation
+
+**Definition und Ziel:**
+Datenaugmentation bezeichnet die künstliche Vermehrung eines Trainingsdatensatzes durch Transformationen der vorhandenen Daten (Pattern Recognition and Machine Learning, n.d.). Der Zweck besteht darin, die Robustheit und Generalisierungsfähigkeit des Modells zu erhöhen, ohne additional Daten erfassen zu müssen. Für eingebettete Systeme mit begrenztem Speicher ist eine effiziente Datennutzung besonders relevant.
+
+**Transformationsverfahren:**
+Im vorliegenden Projekt werden folgende Augmentationen eingesetzt:
+
+- Spiegelung (Horizontal Flip): Die Hand wird horizontal gespiegelt. Dies simulierte Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
+- Zufällige Translation: Die Landmarks werden um einen zufälligen Betrag in x- und y-Richtung verschoben, um unterschiedliche Handpositionen im Kamerabild zu simulieren.
+- Zufälliger Zoom: Die Landmarks werden um einen Faktor zwischen 0,5× und 1,5× skaliert, um unterschiedliche Handgrößen und Abstände zur Kamera abzubilden.
+- Jitter: Zufälliges Rauschen wird zu den Koordinaten hinzugefügt, um natürliche Schwankungen in der Landmark-Erkennung zu simulieren.
+
+**Implementierung:**
+Die Augmentationspipeline (`AugmentationPipeline`) wendet diese Transformationen sequenziell auf die extrahierten Landmarks an und erzeugt pro Original-Datensatz mehrere Variationen. Dadurch wird der effektive Datensatz um einen Faktor von typisch 5-10× vermehrt.
+
+#### 2.6.2 Modellquantisierung
+
+**Warum Quantisierung?**
+Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten embedded Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
+
+**Float32 vs. INT8:**
+
+| Eigenschaft | Float32 | INT8 |
+|---|---|---|
+| Speicher pro Gewicht | 4 Byte | 1 Byte |
+| Speicherersparnis | - | 75 % |
+| Rechengeschwindigkeit | Normativ | Deutlich schneller (NPU-nativ) |
+| Genauigkeit | Hoch | Leicht reduziert (akzeptabel) |
+
+**Scale und Zero-Point:**
+Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab. Für die affine Quantisierung gilt (Post-Training Quantization | TensorFlow Model Optimization, n.d.):
+
+$$q = \text{round}\left(\frac{r}{s}\right) + z$$
+
+wobei $r$ den realen Float-Wert, $s$ den Skalierungsfaktor, $z$ den Zero-Point und $q$ den quantisierten Integer-Wert darstellt. Die Rückrechnung erfolgt über:
+
+$$r = s \cdot (q - z)$$
+
+**Post-Training-Quantisierung (PTQ):**
+Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training (Post-Training Quantization | TensorFlow Model Optimization, n.d.). Dafür wird ein Representative Dataset (Repräsentatives Datenset) verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
+
+**Genauigkeitsverluste:**
+Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Representative Dataset) jedoch gering (typisch < 2 % Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
+
+---
+
+### 2.7 Edge AI und neuronale Beschleuniger
+
+#### 2.7.1 Edge AI
+
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023). Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+
+- Geringe Latenz: Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essenziell.
+- Datenschutz: Biometrische Daten (Kamerabilder der Hand) verlassen das Gerät nicht.
+- Offline-Fähigkeit: Das System funktioniert ohne Internetverbindung.
+- Reduzierte Bandbreite: Es müssen keine Bilder übertragen werden.
+
+Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf embedded Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden (Abadade et al., 2023).
+
+#### 2.7.2 Neuronale Beschleuniger (NPU)
+
+Eine Neural Processing Unit (NPU) ist eine dedizierte Hardware-Einheit, die speziell für die Ausführung neuronaler Netze optimiert ist (Passold & da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen und Vektoroperationen mit hoher Parallelität aus.
+
+Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann. Die Modellbinaries werden aus dem externen NOR-Flash geladen und beim Systemstart in den AXISRAM kopiert.
