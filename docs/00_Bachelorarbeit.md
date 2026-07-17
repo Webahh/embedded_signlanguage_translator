@@ -80,4 +80,3 @@
 ## Abbildungsverzeichnis
 ## Tabellenverzeichnis
 ## Abkürzungsverzeichnis
-## Glossar
