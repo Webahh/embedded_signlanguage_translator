@@ -1,11 +1,11 @@
 ## Gliederung
 
 1. Einleitung
-   - [ ] 1.1 Problemstellung
-   - [ ] 1.2 Motivation und Zielsetzung
-   - [ ] 1.3 Abgrenzung der Arbeit
-   - [ ] 1.4 Aufbau der Arbeit 
-2. Theoretische und technische Grundlagen
+   - [x] 1.1 Problemstellung
+   - [x] 1.2 Motivation und Zielsetzung
+   - [x] 1.3 Abgrenzung der Arbeit
+   - [x] 1.4 Aufbau der Arbeit 
+1. Theoretische und technische Grundlagen
    - [ ] 2.1 Eingebettete Systeme
    - [ ] 2.2 Deutsches Fingeralphabet
    - [ ] 2.3 Grundlagen des maschinellen Lernens
@@ -19,11 +19,10 @@
    - [ ] 3.3 Aktuelle Embedded-AI-Lösungen
    - [ ] 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
 4. Methodik und Entwicklungsprozess
-   - [ ] 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
-   - [ ] 4.2 Vorgehensmodell der Systementwicklung
-   - [ ] 4.3 Iterativer Entwicklungs- und Integrationsprozess
-   - [ ] 4.4 Vorgehen bei der Modellentwicklung
-   - [ ] 4.5 Verifikations- und Evaluationskonzept
+   - [x] 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
+   - [x] 4.2 Iterativer Entwicklungs- und Integrationsprozess
+   - [x] 4.3 Vorgehen bei der Modellentwicklung
+   - [x] 4.4 Verifikations- und Evaluationskonzept
 1. Anforderungsanalyse
    - [ ] 5.1 Anwendungsszenario
    - [ ] 5.2 Funktionale Anforderungen

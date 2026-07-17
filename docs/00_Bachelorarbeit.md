@@ -1,13 +1,20 @@
+
+## Titelbild hier einfügen??
+
+## Abstract hier einfügen??
+
+## Unterschriften hier einfügen??
+
 ## Gliederung
 
-1. [[Einleitung]]
+1. [[01_Einleitung | Einleitung]]
    - 1.1 Problemstellung
    - 1.2 Motivation und Zielsetzung
    - 1.3 Abgrenzung des Untersuchungsgegenstandes
      - 1.3.1 Inhaltliche Abgrenzung
      - 1.3.2 Personenspezifische Abgrenzung
    - 1.4 Aufbau der Arbeit 
-2. [[Theoretische und technische Grundlagen]]
+1. [[Theoretische und technische Grundlagen | Theoretische und technische Grundlagen]]
    - 2.1 Eingebettete Systeme
    - 2.2 Deutsches Fingeralphabet
    - 2.3 Grundlagen des maschinellen Lernens
@@ -15,30 +22,29 @@
    - 2.5 Handdetection und Handlandmarks
    - 2.6 Datenaugmentation und Modellquantisierung
    - 2.7 Edge AI und neuronale Beschleuniger
-3. [[Stand der Technik]]
+1. [[03_Stand_der_Technik | Stand der Technik]]
    - 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
    - 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
    - 3.3 Aktuelle Embedded-AI-Lösungen
    - 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
-4. [[Methodik und Entwicklungsprozess]]
+1. [[04_Methodik_und_Entwicklungsprozess | Methodik und Entwicklungsprozess]]
    - 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
-   - 4.2 Vorgehensmodell der Systementwicklung
-   - 4.3 Iterativer Entwicklungs- und Integrationsprozess
-   - 4.4 Vorgehen bei der Modellentwicklung
-   - 4.5 Verifikations- und Evaluationskonzept
-5. [[Anforderungsanalyse]]
+   - 4.2 Iterativer Entwicklungs- und Integrationsprozess
+   - 4.3 Vorgehen bei der Modellentwicklung
+   - 4.4 Verifikations- und Evaluationskonzept
+1. [[05_Anforderungsanalyse | Anforderungsanalyse]]
    - 5.1 Anwendungsszenario
    - 5.2 Funktionale Anforderungen
    - 5.3 Nichtfunktionale Anforderungen
    - 5.4 Hardware- und Software-Randbedingungen
    - 5.5 Abnahmekriterien
-6. [[Systementwurf]]
+1. [[06_Systementwurf | Systementwurf]]
    - 6.1 Systemkonzept
    - 6.2 Hardwarekonzept
    - 6.3 KI-Verarbeitungskette
    - 6.4 Speicher- und Datenflusskonzept
    - 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
-7. [[Entwicklung und Implementierung]]
+1. [[07_Entwicklung_und_Implementierung | Entwicklung und Implementierung]]
    - 7.1 Aufbau und Aufbereitung des Datensatzes
    - 7.2 Augmentationspipeline
    - 7.3 Entwicklung und Training des Klassifikationsmodells
@@ -51,7 +57,7 @@
    - 7.10 Ablaufsteuerung und Software-Scheduler
    - 7.11 Visualisierung und Benutzerausgabe
    - 7.12 Optimierungen
-1. [[Evaluation und Validierung]]
+1. [[08_Evaluation_und_Validierung | Evaluation und Validierung]]
    - 9.1  Versuchsaufbau und Testbedingungen
    - 9.2 Erkennungsgenauigkeit
    - 9.3 Konfusionsmatrix und klassenbezogene Ergebnisse 
@@ -60,11 +66,18 @@
    - 9.6 Bildrate und Datendurchsatz
    - 9.7 Speicher- und Ressourcenverbrauch
    - 9.8 Abgleich mit den definierten Anforderungen
-1. [[Diskussion]]
+1. [[09_Diskussion | Diskussion]]
    - 10.1 Interpretation der Ergebnisse
    - 10.2 Bewertung des entwickelten Gesamtsystems 
    - 10.3 Grenzen und bekannte Einschränkungen
    - 10.4 Technischer und praktischer Beitrag der Arbeit
-1. [[Fazit und Ausblick]]
+1. [[10_Fazit_und_Ausblick | Fazit und Ausblick]]
    - 11.1 Zusammenfassung und Zielerreichung
-   - 11.2 Ausblic
+   - 11.2 Ausblick
+1. [[11_Literaturverzeichnis | Literaturverzeichnis]]
+
+
+## Abbildungsverzeichnis
+## Tabellenverzeichnis
+## Abkürzungsverzeichnis
+## Glossar
