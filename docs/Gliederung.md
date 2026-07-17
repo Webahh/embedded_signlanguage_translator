@@ -50,13 +50,8 @@
    - 7.9 Integration der neuronalen Netze auf dem Embedded-System
    - 7.10 Ablaufsteuerung und Software-Scheduler
    - 7.11 Visualisierung und Benutzerausgabe
-8. [[Optimierung und Anpassung]]
-   - 8.1 Optimierung der Inferenzpipeline
-   - 8.2 Speicher- und Cache-Optimierung
-   - 8.3 Optimierung der Landmark-Stabilität 
-   - 8.4 Anpassung der Handregion und Rotationsbehandlung
-   - 8.5 Reduzierung von Latenzen und blockierenden Abläufen
-9. [[Evaluation und Validierung]]
+   - 7.12 Optimierungen
+1. [[Evaluation und Validierung]]
    - 9.1  Versuchsaufbau und Testbedingungen
    - 9.2 Erkennungsgenauigkeit
    - 9.3 Konfusionsmatrix und klassenbezogene Ergebnisse 
