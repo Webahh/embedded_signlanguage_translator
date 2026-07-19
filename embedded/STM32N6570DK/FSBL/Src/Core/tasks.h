@@ -28,5 +28,6 @@ void vSystemInfoTask(void);
 
 extern volatile uint8_t isr_systime_vis;
 extern volatile uint8_t isr_sysinfo_vis;
+extern volatile uint8_t isr_sign_vis;
 
 #endif /* TASKS_H */
