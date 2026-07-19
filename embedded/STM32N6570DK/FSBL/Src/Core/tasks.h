@@ -12,6 +12,8 @@
 #ifndef TASKS_H
 #define TASKS_H
 
+#include <stdint.h>
+
 #define LED2_PIN 10
 #define BG_NUM_COLORS 3
 
@@ -23,5 +25,8 @@ void vAETask(void);
 void vTouchTask(void);
 void vAIPipelineTask(void);
 void vSystemInfoTask(void);
+
+extern volatile uint8_t isr_systime_vis;
+extern volatile uint8_t isr_sysinfo_vis;
 
 #endif /* TASKS_H */
