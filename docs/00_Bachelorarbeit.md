@@ -34,10 +34,12 @@
    - 4.4 Verifikations- und Evaluationskonzept
 1. [[05_Anforderungsanalyse | Anforderungsanalyse]]
    - 5.1 Anwendungsszenario
-   - 5.2 Funktionale Anforderungen
-   - 5.3 Nichtfunktionale Anforderungen
-   - 5.4 Hardware- und Software-Randbedingungen
-   - 5.5 Abnahmekriterien
+   - 5.2 Anforderungen und Randbedingungen
+	 -  5.2.1 Funktionale Anforderungen
+	 -  5.2.2 Nichtfunktionale Anforderungen
+	 -  5.2.3 Technische Anforderungen
+	 -  5.2.4 Randbedingungen
+   - 5.3 Abnahmekriterien
 1. [[06_Systementwurf | Systementwurf]]
    - 6.1 Systemkonzept
    - 6.2 Hardwarekonzept

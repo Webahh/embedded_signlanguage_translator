@@ -24,11 +24,9 @@
    - [x] 4.3 Vorgehen bei der Modellentwicklung
    - [x] 4.4 Verifikations- und Evaluationskonzept
 1. Anforderungsanalyse ---- Webus
-   - [ ] 5.1 Anwendungsszenario
-   - [ ] 5.2 Funktionale Anforderungen
-   - [ ] 5.3 Nichtfunktionale Anforderungen
-   - [ ] 5.4 Hardware- und Software-Randbedingungen
-   - [ ] 5.5 Abnahmekriterien
+   - [x] 5.1 Anwendungsszenario
+   - [x] 5.2 Anforderungen und Randbedingungen
+   - [x] 5.3 Abnahmekriterien
 1. Systementwurf ---- Webus
    - [ ] 6.1 Systemkonzept
    - [ ] 6.2 Hardwarekonzept
