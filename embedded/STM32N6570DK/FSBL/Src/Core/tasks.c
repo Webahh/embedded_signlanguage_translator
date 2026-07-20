@@ -45,6 +45,15 @@ static HandROI_TypeDef 			_isr_landmark_roi;
 /* ISR-safe mirrors of UI visibility toggles (updated by AI pipeline task) */
 static volatile uint8_t _isr_palm_vis = 1U;
 static volatile uint8_t _isr_hand_vis = 1U;
+volatile uint8_t isr_systime_vis = 0U;
+volatile uint8_t isr_sysinfo_vis = 0U;
+volatile uint8_t isr_sign_vis = 1U;
+static char _systime_str[11];
+static char _sysinfo_p[12];
+static char _sysinfo_h[12];
+static char _sysinfo_s[12];
+static char _sign_str[16];
+
 
 static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
@@ -77,20 +86,38 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         ltdc_layer_bg_buffer_capt_idx = next_capt_idx;
         ltdc_layer_bg_buffer_draw_idx = draw_idx;
 
+        LTDC_Layer_Config_TypeDef isr_draw_cfg = LTDC_Layer1Config;
+        isr_draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
+
         // Redraw last known landmarks into the next-to-be-displayed buffer
         // to prevent flicker when the AI pipeline misses a frame.
         if (_isr_landmark_valid) {
-            LTDC_Layer_Config_TypeDef isr_draw_cfg = LTDC_Layer1Config;
-            isr_draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
             if (_isr_hand_vis) {
                 LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
             }
             if (_isr_palm_vis) {
                 LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
             }
-            // Clean so LTDC sees the landmarks immediately
-            CACHE_CLEAN(&ltdc_layer_bg_buffer[next_disp_idx], sizeof(ltdc_layer_bg_buffer[0]));
         }
+
+        if (isr_systime_vis) {
+            TEXT_StringBg_draw(&isr_draw_cfg, _systime_str, 720, 0, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+        }
+
+        if (isr_sysinfo_vis) {
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 16, 80, 48, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_p, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_h, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_s, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+        }
+
+        if (isr_sign_vis) {
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 64, 80, 16, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 64, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+        }
+
+        // Clean so LTDC sees drawn content (Landmarks/Palm/Systemtime/Systeminfo/Sign)
+        CACHE_CLEAN(&ltdc_layer_bg_buffer[next_disp_idx], sizeof(ltdc_layer_bg_buffer[0]));
 
     } else if (pipe == DCMIPP_PIPE2) {
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
@@ -119,14 +146,8 @@ void vRecursionTestTask(void) {
 void vSystemTimeTask(void) {
     uint32_t now;
     SCHEDULER_Tick_get(&now); // MAX:     4294967296
-	char str[11]; // + '\0'
-	snprintf(str, sizeof(str), "%lu", (unsigned long)now);
-	TEXT_StringBg_draw(&LTDC_Layer1Config, str, 720, 0, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
-
-	{
-		uint32_t _byte_off = (0UL * LTDC_Layer1Config.buf_width + 720UL) * 3U;
-		  CACHE_CLEAN((void*)((uint32_t)LTDC_Layer1Config.fb + _byte_off), 80U * 16U * 3U);
-	}
+	snprintf(_systime_str, sizeof(_systime_str), "%lu", (unsigned long)now);
+	isr_systime_vis = 1U;
 }
 
 void vLEDTask(void) {
@@ -192,7 +213,7 @@ typedef struct {
 #define LANDMARK_PRESENCE_THRESHOLD  	0.5f
 #define LANDMARK_LOST_FRAME_COUNT    	3U
 #define PALM_SEARCH_INTERVAL_MS      	200U
-#define FINGERALPHABET_INTERVAL_MS   	1000U
+#define FINGERALPHABET_INTERVAL_MS   	0U
 #define LANDMARK_TRACK_INTERVAL_MS   	0U
 #define LANDMARK_PREDICTION_TIME_MS     25.0f
 #define LANDMARK_PREDICTION_MAX_DELTA   0.08f
@@ -209,7 +230,7 @@ static LandmarkPoint_TypeDef landmark_points[LANDMARK_POINT_COUNT];
 
 static uint8_t fingeralphabet_input[FINGERALPHABET_INPUT_SIZE];
 static uint8_t fingeralphabet_output[FINGERALPHABET_OUTPUT_SIZE];
-static FingeralphabetResult_TypeDef fingeralphabet_result;
+static FingeralphabetResult_TypeDef fingeralphabet_result = { .class_index = 0, .score = 0, .label = "NONE" };
 
 static DMA2D_Handle_TypeDef _dma2d;
 static int _dma2d_initialized = 0;
@@ -715,6 +736,17 @@ void vAIPipelineTask(void)
             _resetTracking();
             break;
     }
+
+    if (ui.ai_mode >= 2U) {
+        isr_sign_vis = 1U;
+        if (hand_state == HAND_STATE_PALM_SEARCH) {
+            snprintf(_sign_str, sizeof(_sign_str), "Searching Hand");
+        } else {
+            snprintf(_sign_str, sizeof(_sign_str), "%s", fingeralphabet_result.label);
+        }
+    } else {
+        isr_sign_vis = 0U;
+    }
 }
 
 static void _printStackUsage(void)
@@ -737,23 +769,10 @@ static void _printStackUsage(void)
     DEBUG_PRINTF("--------------------------\r\n");
 }
 
-void vSystemInfoTask(void)
-{
-    char buf[12];
-
-    LTDC_Layer_Draw_Rect(&LTDC_Layer1Config, 720, 16, 80, 48, 0x00000000U);
-
-    snprintf(buf, sizeof(buf), "P:%lums", (unsigned long)_palm_duration_ms);
-    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
-
-    snprintf(buf, sizeof(buf), "H:%lums", (unsigned long)_landmark_duration_ms);
-    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
-
-    snprintf(buf, sizeof(buf), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
-    TEXT_StringBg_draw(&LTDC_Layer1Config, buf, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
-
-    { uint32_t _byte_off = (16UL * LTDC_Layer1Config.buf_width + 720UL) * 3U;
-      CACHE_CLEAN((void*)((uint32_t)LTDC_Layer1Config.fb + _byte_off), 80U * 48U * 3U); }
-
+void vSystemInfoTask(void) {
+    snprintf(_sysinfo_p, sizeof(_sysinfo_p), "P:%lums", (unsigned long)_palm_duration_ms);
+    snprintf(_sysinfo_h, sizeof(_sysinfo_h), "H:%lums", (unsigned long)_landmark_duration_ms);
+    snprintf(_sysinfo_s, sizeof(_sysinfo_s), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
+    isr_sysinfo_vis = 1U;
     _printStackUsage();
 }
