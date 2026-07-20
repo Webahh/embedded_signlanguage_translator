@@ -17,8 +17,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-AI_DIR="$PROJECT_ROOT/embedded/STM32N6570DK/FSBL/Src/AI"
-ASSETS_DIR="$PROJECT_ROOT/embedded/STM32N6570DK/FSBL/Assets/AI"
+AI_DIR="$PROJECT_ROOT/embedded/Sign_Language_Translator/Src/AI"
+ASSETS_DIR="$PROJECT_ROOT/embedded/Sign_Language_Translator/Assets/AI"
 ST_AI_OUTPUT="$SCRIPT_DIR/st_ai_output"
 
 COPY_STAI=false

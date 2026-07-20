@@ -2,7 +2,7 @@
 # Flash FSBL binary and inference model binaries to STM32N6570-DK
 #
 # Standalone memory map (from STM32N657X0HXQ_AXISRAM2_fsbl.ld):
-#   Internal flash:  0x34000400  (FSBL binary — vector table + code)
+#   Internal flash:  0x34000400  (FSBL binary vector table + code)
 #   External xSPI2 NOR (OctoSPI):
 #     fingeralphabet   0x71000000
 #     palm_detection   0x71200000
