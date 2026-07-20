@@ -13,7 +13,7 @@
    - [x] 2.5 Handdetection und Handlandmarks
    - [x] 2.6 Datenaugmentation und Modellquantisierung
    - [x] 2.7 Edge AI und neuronale Beschleuniger
-1.  Stand der Technik  ----Olvus
+1.  Stand der Technik  ---- Olvus
    - [ ] 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
    - [ ] 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
    - [ ] 3.3 Aktuelle Embedded-AI-Lösungen

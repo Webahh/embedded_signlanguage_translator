@@ -1,10 +1,38 @@
 
 ## 3 Stand der Technik
 
+Dieses Kapitel befasst sich mit bereits bestehenden Ansätzen auf welche die Arbeit basiert oder fortführt. Es werden Bestehende Ansätze benannt und aktuelle Embedded-AI-Lösungen vorgestellt. Zudem wird die Abgrenzung des Projekts beschrieben.
+
 ### 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
+
+Die Forschung zur automatischen Erkennung und Übersetzung von Gebärdensprache verfolgt im Wesentlichen drei zentrale Ansätze, die sich in der Art der Datenerfassung unterscheiden: kamerabasierte Systeme, datenhandschuhbasierte Systeme und armbandbasierte Systeme (EMG/sEMG). Jeder Ansatz nutzt unterschiedliche Sensormodalitäten, um Handkonfigurationen und Bewegungen zu erfassen. Diese werden anschließend durch Machine-Learning-Modelle in Buchstaben, Wörter oder Sätze übersetzt (Rastgoo et al., 2021).
+
+Kamerabasierte Systeme gehören zu den am weitesten verbreiteten Ansätzen der Gebärdenspracherkennung. Eine RGB-Kamera erfasst eine Gebärdende Person, und mithilfe von Bildverarbeitung und Deep Learning werden die Hände, Finger und Gesichtszüge segmentiert und klassifiziert. Moderne Frameworks wie MediaPipe Hands ermöglichen eine präzise 3D-Handpunkterkennung auf Standardkameras (Lugaresi et al., n.d.). Darüber hinaus werden Tiefensensoren (z.B. Microsoft Kinect, Intel RealSense) eingesetzt, um zusätzliche Tiefeninformationen für eine robustere Erkennung zu gewinnen (Rastgoo et al., 2021).
+
+Datenhandschuh-basierte Systeme verwenden physische Handschuhe mit eingebetteten Sensoren, um die Bewegung und Position der Hände direkt zu messen. Typischerweise kommen Biegesensoren (Flex Sensors) zur Erfassung der Fingerkrümmung sowie inertielle Messeinheiten (IMU) zur Bestimmung der Handorientierung zum Einsatz. Zhou et al. (2020) entwickelten einen dehnbaren Sensoren-Handschuh auf Basis triboelektrischer Nanogeneratoren (TENG), der 660 amerikanische Gebärdensprachzeichen übersetzen kann.
+
+Armbandbasierte Systeme erfassen die elektrische Aktivität der Muskeln an dem Unterarm mittels Oberflächen-Elektromyographie (sEMG). Das verbreitetste Gerät in der Forschung ist das Myo-Armband von Thalmic Labs, das acht sEMG-Sensoren sowie eine inertielle Messeinheit (IMU) integriert. Kürzliche Arbeiten zeigen, dass sEMG-basierte Systeme in Kombination mit Deep-Learning-Verfahren wie Random Forest oder LSTM-Netzwerken Genauigkeiten von über 99% bei der Erkennung einzelner Gebärden erreichen können (Umut & Kumdereli, 2024).
 
 ### 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
 
+Kamerabasierte Erkennungssysteme verwenden meist ein nicht ressourcenbeschränktes System (z.B. PC oder Server), auf dem die Inferenz durchgeführt und das Ergebnis ausgegeben wird. Die Erkennungspipeline besteht typischerweise aus einer Verkettung von Machine-Learning-Modellen. Ein Palm-Detection-Modell erkennt die Handfläche im Bild. Ein Hand-Landmark-Modell bestimmt die Fingerpositionen. Ein abschließendes Sign-Language-Modell übersetzt die erkannten Handkonfigurationen in Buchstaben oder Wörter (Lugaresi et al., n.d.).
+
 ### 3.3 Aktuelle Embedded-AI-Lösungen
 
+Aktuelle Embedded-AI-Lösungen lassen sich grundsätzlich in zwei Kategorien einteilen: Single-Board Computer (SBC) und Mikrocontroller (MCU). Beide Plattformentypen werden für die Inferenz neuronaler Netze eingesetzt, unterscheiden sich jedoch hinsichtlich ihrer Ressourcenverfügbarkeit, Programmierumgebung und des Entwicklungsansatzes erheblich.
+
+**Single-Board Computer als dominierende Plattform:**
+Die verbreitetste Plattform in der Forschung zur eingebetteten Gebärdenspracherkennung ist der Raspberry Pi. Verschiedene Studien nutzten den Raspberry Pi 4 und 5 als Zielplattform für Echtzeitinferenz von CNN-basierten Modellen (Sharma et al., 2024; Mohalkar et al., 2025). Der Raspberry Pi bietet als Linux-basierter SBC eine umfangreiche Softwarebibliothek, native Kameraunterstützung (CSI-Schnittstelle) sowie Zugriff auf etablierte Frameworks wie TensorFlow Lite, PyTorch und ONNX. Ein wesentlicher Vorteil ist die Programmierung in Python, was die Entwicklung und Prototypisierung erheblich beschleunigt. Allerdings ist Python als interpretierte Sprache in Hinblick auf Speicherverbrauch und Ausführungsgeschwindigkeit limitiert, was bei ressourcenkritischen Inferenzpipelines zu Engpässen führen kann. Um dieses Defizit auszugleichen, werden zunehmend dedizierte Beschleuniger in Form von Zusatzmodulen eingesetzt. Der Raspberry Pi 5 AI HAT+ (Hailo-8L NPU) ergänzt den SBC um einen Neural Processing Unit mit 13 TOPS, sodass auch komplexere Modelle in Echtzeit betrieben werden können.
+
+**Mikrocontroller als Nische:**
+Mikrocontroller-basierte Ansätze sind in der Forschung zur Gebärdenspracherkennung selten. Der Grund liegt in der starken Ressourcenbeschränkung: MCUs verfügen über begrenzten SRAM (typisch 256 KB bis 1 MB), eine eingeschränkte Taktfrequenz und arbeiten ohne Betriebssystem (Bare-Metal). Klassische Plattformen wie der STM32H7 oder ESP32 bieten keine dedizierte Hardwarebeschleunigung für neuronale Netze, wodurch die Inferenz auf der CPU erfolgen muss und die Latenz/Laufzeit der auszuführenden Modelle erheblich steigt. In der Praxis werden MCU-Ansätze hauptsächlich für stark vereinfachte Modelle oder für die reine Datenerfassung genutzt, während die eigentliche Inferenz auf einem leistungsstärkeren System ausgelagert wird (Abadade et al., 2023).
+
+Eine Nische stellt die Verwendung von MCUs mit integriertem Neural Processing Unit (NPU) dar. Der STM32N6 von STMicroelectronics integriert einen dedizierten NPU (Neural-ART Accelerator) mit 6 GOPS und ermöglicht die Inferenz quantisierter INT8-Modelle auf einem Mikrocontroller. Damit schließt die Plattform die Lücke zwischen ressourcenbeschränkten MCUs und leistungsstarken SBCs. In der Forschung wird der STM32N6 jedoch bisher kaum eingesetzt, was zum Teil an der erstmaligen Verfügbarkeit seit 2024 sowie an der Komplexität der Bare-Metal-Programmierung liegt.
+
 ### 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit
+
+Die vorliegende Arbeit ordnet sich im Bereich kamerabasierter Embedded-AI-Lösungen ein. Einerseits wird die Zielplattform STM32N6570 Discovery Kit von STMicroelectronics Bare-Metal programmiert, andererseits wird ein Sign-Language-Modell entworfen, das Hand-Landmarks dem Fingeralphabet zuordnet.
+
+Die Machine-Learning-Grundlage der Arbeit bildet ein von MediaPipe bereitgestelltes Hand-Landmark- und Palm-Detection-Modell, das Bare-Metal auf der STM32N6570DK Plattform verwendet wird. Die bestehende Inferenzpipeline (Palm-, Hand-Landmark-Modell) wird um ein selbstentwickeltes Sign-Language-Modell erweitert, das die erkannten Handlandmarks dem Fingeralphabet zuordnet. Für das Sign-Language-Modell wird ein Datensatz erstellt. Aus dem Datensatz werden die Hand-Landmarks extrahiert und augmentiert. Die entstandenen Daten werden zum Training des Modells verwendet. Das Modell wird anschließend INT8-quantisiert und als Modellbinary auf der Zielplattform integriert.
+
+Hardwareseitig bilden NPU-Treiber und STEdgeAI CLI von STM die Grundlage für die weitere Entwicklung. Alle anderen Hardware-Treiber (LTDC, CSI, DCMIPP, DMA2D, etc.) werden Bare-Metal eigens entwickelt.

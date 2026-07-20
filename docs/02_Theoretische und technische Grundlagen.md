@@ -22,7 +22,7 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
 
 Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl. *Microcontroller Unit*). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
 
-- **CPU-Kern:** Recheneinheit mit Instruktionssatz (z.\,B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
+- **CPU-Kern:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
 - **Programmspeicher (Flash):** Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
 - **Arbeitsspeicher (SRAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte
 - **Taktgeber:** Interner Oszillator (HSI, engl. *High-Speed Internal*) oder externer Quarz (HSE, engl. *High-Speed External*) als Zeitbasis für die CPU und Peripherie
@@ -48,13 +48,13 @@ Zweidrahtiges, synchrones Kommunikationsprotokoll (SDA, SCL) mit Adressierung. E
 Hardware-Timer zählen Taktimpulse und können interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
 
 **Interrupts:**
-Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B. Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl. *Nested Vectored Interrupt Controller* bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
+Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.B. Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl. *Nested Vectored Interrupt Controller* bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
 
 **Direct Memory Access (DMA):**
-DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B. Kamerabilder) relevant, da es die CPU erheblich entlastet.
+DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.B. Kamerabilder) relevant, da es die CPU erheblich entlastet.
 
 **DMA2D (ChromART):**
-Eine spezielle DMA-Einheit für 2D-Blit-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten. Im Kontext dieses Projekts wird DMA2D für die Skalierung und den Transfer von Kamerabildern in die Eingabepuffer der neuronalen Netze genutzt, ohne die CPU zu blockieren.
+Eine spezielle DMA-Einheit für 2D-Blit-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten ohne die CPU zu blockieren (Erweiterung des DMA).
 
 #### 2.1.4 Speicherarchitektur
 
@@ -78,7 +78,7 @@ Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundam
 #### 2.1.6 Bare-Metal-Programmierung
 
 **Definition und Abgrenzung:**
-Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.\,B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchonisierung übernimmt.
+Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchonisierung übernimmt.
 
 **Startup und Systeminitialisierung:**
 Nach dem Einschalten oder Reset beginnt die CPU an einer durch den Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Der Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
@@ -97,7 +97,7 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 - **DMA2D:** Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
 - **NPU (Neural Processing Unit):** Dedizierter Beschleuniger für neuronale Netze. Der NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet der NPU mit einer Taktfrequenz von 1000 MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7). (STMicroelectronics, n.d.)
 
-#### 2.1.8 STM32N6570-DK als Zielplattform
+**STM32N6570-DK als Zielplattform:**
 
 Das vorliegende Projekt nutzt den STM32N6570 Discovery Kit als Zielplattform. Die wesentlichen technischen Daten sind:
 
@@ -112,6 +112,11 @@ Das vorliegende Projekt nutzt den STM32N6570 Discovery Kit als Zielplattform. Di
 | APB-Peripherie    | Alle bei 200 MHz (HCLK = AXI/2)                                                                    |
 
 Der Cortex-M85-Kern ist der leistungsstärkste Armv8.1-M-Prozessor und bietet unter anderem TrustZone-Sicherheit, Helium (M-Profile Vector Extension) und erweiterte Debug-Funktionen. Die Kombination aus leistungsstarker CPU, dediziertem NPU und umfangreicher Peripherie macht die Plattform geeignet für kamerabasierte KI-Anwendungen auf dem Embedded-Gerät. (STMicroelectronics, n.d.)
+
+#### 2.1.8 Edge AI
+
+**Begriffsdefinition:**
+Edge AI bezeichnet die Ausführung von Algorithmen des maschinellen Lernens direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Smalley, 2023). Die Mikrocontroller sammeln über Sensoren Daten und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile der lokalen Ausführung gegenüber einer Cloud-basierten Verarbeitung sind geringe Latenz, da keine Netzwerkübertragungszeit benötigt wird, der Schutz der Datenprivacy, da biometrische Daten das Gerät nicht verlassen müssen, sowie ein reduzierter Energieverbrauch. Ein Beispiel für eine Edge-AI-Anwendung sind autonom fahrende Fahrzeuge, die Kamerabilder in Echtzeit verarbeiten müssen. (Smalley, 2023)
 
 ---
 
@@ -176,7 +181,7 @@ Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bes
 
 Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009)
 
-##### Sparse Categorical Crossentropy
+##### 2.3.3.1 Sparse Categorical Crossentropy
 
 Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speicher effizient im Hintergrund durchführt. (Sparse Categorical Crossentropy vs. Categorical Crossentropy, 18:23:14+00:00)
 
@@ -235,13 +240,13 @@ Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen 
 Ein Multi-Layer Perceptron (MLP) ist ein Neuronales Netz mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen. 
 
 ![[ML - Schichten.drawio.png]]
-\[(Kim, 2016) | Eigene Darstellung]
+\[Allgemeine Struktur Neuronaler Netze (Kim, 2016) | Eigene Darstellung]
 #### 2.4.4 Backpropagation und Gradient Descent
 
 Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie *Stochastic Gradient Descent* (SGD) oder Varianten davon (Adam, RMSprop) (Kim, 2016; Raschka et al., 2022):
 
 1. Forward Pass: Die Eingabedaten durchlaufen das Netz, und die Vorhersage wird berechnet.
-2. Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.\,B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert.
+2. Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert.
 3. Backward Pass: Die Ableitungen des Loss nach den Gewichten werden über die Schichten zurückgerechnet (Kettenregel der Differentiation).
 4. Gewichts-Update: Die Gewichte werden in Richtung des negativen Gradienten angepasst, um den Loss zu minimieren.
 

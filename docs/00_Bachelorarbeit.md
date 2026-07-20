@@ -14,7 +14,7 @@
      - 1.3.1 Inhaltliche Abgrenzung
      - 1.3.2 Personenspezifische Abgrenzung
    - 1.4 Aufbau der Arbeit 
-1. [[Theoretische und technische Grundlagen | Theoretische und technische Grundlagen]]
+1. [[02_Theoretische und technische Grundlagen| Theoretische und technische Grundlagen]]
    - 2.1 Eingebettete Systeme
    - 2.2 Deutsches Fingeralphabet
    - 2.3 Grundlagen des maschinellen Lernens
