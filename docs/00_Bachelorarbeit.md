@@ -11,8 +11,8 @@
    - 1.1 Problemstellung
    - 1.2 Motivation und Zielsetzung
    - 1.3 Abgrenzung des Untersuchungsgegenstandes
-     - 1.3.1 Inhaltliche Abgrenzung
-     - 1.3.2 Personenspezifische Abgrenzung
+	   - 1.3.1 Inhaltliche Abgrenzung
+	   - 1.3.2 Personenspezifische Abgrenzung
    - 1.4 Aufbau der Arbeit 
 1. [[02_Theoretische und technische Grundlagen| Theoretische und technische Grundlagen]]
    - 2.1 Eingebettete Systeme
@@ -35,10 +35,10 @@
 1. [[05_Anforderungsanalyse | Anforderungsanalyse]]
    - 5.1 Anwendungsszenario
    - 5.2 Anforderungen und Randbedingungen
-	 -  5.2.1 Funktionale Anforderungen
-	 -  5.2.2 Nichtfunktionale Anforderungen
-	 -  5.2.3 Technische Anforderungen
-	 -  5.2.4 Randbedingungen
+	   - 5.2.1 Funktionale Anforderungen
+	   - 5.2.2 Nichtfunktionale Anforderungen
+	   - 5.2.3 Technische Anforderungen
+	   - 5.2.4 Randbedingungen
    - 5.3 Abnahmekriterien
 1. [[06_Systementwurf | Systementwurf]]
    - 6.1 Systemkonzept
@@ -54,7 +54,7 @@
    - 7.5 Implementierung der Kamerapipeline
    - 7.6 Handflächen- und Landmark-Erkennung
    - 7.7 Region of Interest
-   - 7.8 Vor- und Nachverarbeitung der Handlandmarks
+   - 7.8 Vor- und Nachverarbeitung in der 
    - 7.9 Integration der neuronalen Netze auf dem Embedded-System
    - 7.10 Ablaufsteuerung und Software-Scheduler
    - 7.11 Visualisierung und Benutzerausgabe

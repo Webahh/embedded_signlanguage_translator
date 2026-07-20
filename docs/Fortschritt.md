@@ -28,10 +28,10 @@
    - [x] 5.2 Anforderungen und Randbedingungen
    - [x] 5.3 Abnahmekriterien
 1. Systementwurf ---- Webus
-   - [ ] 6.1 Systemkonzept
-   - [ ] 6.2 Hardwarekonzept
-   - [ ] 6.3 KI-Verarbeitungskette
-   - [ ] 6.4 Speicher-  und Datenflusskonzept
+   - [x] 6.1 Systemkonzept
+   - [x] 6.2 Hardwarekonzept
+   - [x] 6.3 KI-Verarbeitungskette
+   - [x] 6.4 Speicher-  und Datenflusskonzept
    - [ ] 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
 1. Entwicklung und Implementierung ---- beide
    - [ ] 7.1 Aufbau und Aufbereitung des Datensatzes
