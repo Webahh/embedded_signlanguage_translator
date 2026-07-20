@@ -4,7 +4,7 @@ Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Gr
 
 ---
 
-### 2.1 Eingebettete Systeme
+### 2.1 Eingebettete Systeme & STM32N6570DK
 
 #### 2.1.1 Begriffsbildung und Merkmale
 
@@ -18,15 +18,18 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
 | Energieeffizienz       | Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt                                                                                                                            |
 | Spezialisierung        | Im Unterschied zu universellen Rechnern ist die Funktionalität eines eingebetteten Systems auf einen konkreten Anwendungsfall beschränkt                                                                                                                                           |
 
-#### 2.1.2 Mikrocontroller als Plattform
+#### 2.1.2 Mikrocontroller Architektur
 
 Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl. *Microcontroller Unit*). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
 
-- **CPU-Kern:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
+- **CPU:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
 - **Programmspeicher (Flash):** Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
 - **Arbeitsspeicher (SRAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte
 - **Taktgeber:** Interner Oszillator (HSI, engl. *High-Speed Internal*) oder externer Quarz (HSE, engl. *High-Speed External*) als Zeitbasis für die CPU und Peripherie
 - **Peripherie-Einheiten:** Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3)
+
+![[STM32N6 - Architecture.drawio.png]]
+\[STM32N6 - Architektur]
 
 #### 2.1.3 Peripherieschnittstellen
 
