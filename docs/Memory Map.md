@@ -156,10 +156,10 @@ _mem_pool_xSPI2_hand_landmark_model_v3  = 0x71600000;
 
 ## Flash Layout — `flash_models.sh`
 
-| Address | Binary | Size |
-|---------|--------|------|
-| `0x70000000` | *(FSBL firmware — not flashed by this script)* | — |
-| `0x71000000` | `fingeralphabet_model_v3_atonbuf.xSPI2.bin` | +16 MB |
-| `0x71200000` | `palm_detection_model_v3_atonbuf.xSPI2.bin` | +2 MB |
-| `0x71600000` | `hand_landmark_model_v3_atonbuf.xSPI2.bin` | +6 MB |
-| `0x72000000` | `ecblobs.bin` | +8 MB |
+| Address      | Binary                                         | Size      |
+| ------------ | ---------------------------------------------- | --------- |
+| `0x70000000` | *(FSBL firmware — not flashed by this script)* | —         |
+| `0x71000000` | `fingeralphabet_model_v3_atonbuf.xSPI2.bin`    | +2 MB     |
+| `0x71200000` | `palm_detection_model_v3_atonbuf.xSPI2.bin`    | +4 MB     |
+| `0x71600000` | `hand_landmark_model_v3_atonbuf.xSPI2.bin`     | +10 MB    |
+| `0x72000000` | `ecblobs.bin`                                  | Remainder |

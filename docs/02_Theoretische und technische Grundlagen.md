@@ -98,28 +98,7 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 
 - **DMA:** Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
 - **DMA2D:** Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
-- **NPU (Neural Processing Unit):** Dedizierter Beschleuniger für neuronale Netze. Der NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet der NPU mit einer Taktfrequenz von 1000 MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7). (STMicroelectronics, n.d.)
-
-**STM32N6570-DK als Zielplattform:**
-
-Das vorliegende Projekt nutzt den STM32N6570 Discovery Kit als Zielplattform. Die wesentlichen technischen Daten sind:
-
-| Komponente        | Spezifikation                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------- |
-| CPU               | Arm Cortex-M85 @ 800 MHz (PLL1, HSI 64 MHz)                                                        |
-| NPU               | Neural Processing Unit @ 1000 MHz (PLL2)                                                           |
-| NPU-Speicher      | AXISRAM3-6 @ 900 MHz (PLL3), 4 SRAM-Banken                                                         |
-| Kamera            | 5 MP Sensor (IMX335)<br>CSI-2 @ 20 MHz<br>DCMIPP (Digital Camera Memory Interface Pixel Processor) |
-| Display           | LTDC (LCD-TFT Display Controller) @ 25 MHz                                                         |
-| Externer Speicher | PSRAM<br>NOR-Flash via OctoSPI @ 200 MHz                                                           |
-| APB-Peripherie    | Alle bei 200 MHz (HCLK = AXI/2)                                                                    |
-
-Der Cortex-M85-Kern ist der leistungsstärkste Armv8.1-M-Prozessor und bietet unter anderem TrustZone-Sicherheit, Helium (M-Profile Vector Extension) und erweiterte Debug-Funktionen. Die Kombination aus leistungsstarker CPU, dediziertem NPU und umfangreicher Peripherie macht die Plattform geeignet für kamerabasierte KI-Anwendungen auf dem Embedded-Gerät. (STMicroelectronics, n.d.)
-
-#### 2.1.8 Edge AI
-
-**Begriffsdefinition:**
-Edge AI bezeichnet die Ausführung von Algorithmen des maschinellen Lernens direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Smalley, 2023). Die Mikrocontroller sammeln über Sensoren Daten und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile der lokalen Ausführung gegenüber einer Cloud-basierten Verarbeitung sind geringe Latenz, da keine Netzwerkübertragungszeit benötigt wird, der Schutz der Datenprivacy, da biometrische Daten das Gerät nicht verlassen müssen, sowie ein reduzierter Energieverbrauch. Ein Beispiel für eine Edge-AI-Anwendung sind autonom fahrende Fahrzeuge, die Kamerabilder in Echtzeit verarbeiten müssen. (Smalley, 2023)
+- **NPU (Neural Processing Unit):** Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000 MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7). (STMicroelectronics, n.d.)
 
 ---
 
@@ -341,8 +320,7 @@ Die Augmentationspipeline (`AugmentationPipeline`) wendet diese Transformationen
 
 #### 2.6.2 Modellquantisierung
 
-**Warum Quantisierung?**
-Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten embedded Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
+Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten embedded Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
 
 **Float32 vs. INT8:**
 
@@ -374,7 +352,7 @@ Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellge
 
 #### 2.7.1 Edge AI
 
-Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023). Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller sammeln über Sensoren Daten und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
 
 - Geringe Latenz: Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essenziell.
 - Datenschutz: Biometrische Daten (Kamerabilder der Hand) verlassen das Gerät nicht.
@@ -391,16 +369,17 @@ Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen
 
 #### 2.7.3 ST Edge Core CLI
 
-ST Edge Core ist ein Command Line Interface (CLI) welches genutzt wird um Convolutionary Neural Networks (CNN) im ONNX oder TF-Lite Format in ein für die NPU-Platform passendes Format zu bringen.
+ST Edge Core ist ein Command Line Interface (CLI) welches genutzt wird um Convolutionary Neural Networks (CNN) im ONNX (QDQ) oder TF-Lite Format in ein für die NPU-Platform passendes Format zu bringen. Der ST Neural-ART-Compiler ist als Back-End in die ST Edge Core CLI integriert und führt alle Optimierungen, Graph-Planung und Code-Generierung offline durch. Es wird keine interpretierende Engine auf dem embedded System ausgeführt.
 
 ![[NPU - TF-Lite ONNX Model harware executable conversion.png]]
 \[NPU - Quantized Model conversion to NPU executables | ]
 
-Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen passen:
+Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen passen. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX befehlen auf Epochen. Folgende Epochen werden Unterschieden:
 
-| Epochen-Typ    | Beschreibung                                                                    |
-| -------------- | ------------------------------------------------------------------------------- |
-| HW-Epochen     | Operatoren vollständig auf NPU-Hardware abgebildet                              |
-| SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung)                             |
-| Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen |
-| Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller        |
+| Epochen-Typ    | Beschreibung                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| HW-Epochen     | Operatoren vollständig auf NPU-Hardware abgebildet. Die MCU-Arbeitslast beträgt ca. 10-15% der Inferenzzeit |
+| SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung)                                                         |
+| Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen                             |
+| Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller                                    |
+Epochen werden als atomare Opterationen in fester Reihenfolge ausgeführt, um Datenabhängigkeiten zu gewährleisten. Zwischen Epochen wird kein interner NPU-Hardware-Zustand erhalten. Zwischenergebnisse werden im externen Speicher abgelegt
