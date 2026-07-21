@@ -22,13 +22,13 @@
             │   ┌───────────────────────────────────────────────────┐
             │   │ 0x70000000  Firmware / FSBL (loaded at boot)      │
             │   ├───────────────────────────────────────────────────┤
-            │   │ 0x71000000  Finger Alphabet model  (+16 MB)       │
+            │   │ 0x71000000  Finger Alphabet model  (+2 MB)        │
             │   ├───────────────────────────────────────────────────┤
-            │   │ 0x71200000  Palm Detection model   (+2 MB)        │
+            │   │ 0x71200000  Palm Detection model   (+4 MB)        │
             │   ├───────────────────────────────────────────────────┤
-            │   │ 0x71600000  Hand Landmark model    (+6 MB)        │
+            │   │ 0x71600000  Hand Landmark model    (+10 MB)       │
             │   ├───────────────────────────────────────────────────┤
-            │   │ 0x72000000  EC Blobs               (+8 MB)        │
+            │   │ 0x72000000  EC Blobs               (Remainder)    │
             │   │             ↓ copied to AXISRAM1 at init          │
             │   └───────────────────────────────────────────────────┘
             │   External: Macronix MX66UW1G45G (128 MB NOR)
@@ -108,10 +108,10 @@
   │ 0x72000000 EC Blobs │ ──── copy ──────→ │ 0x34080000 EC_RT    │
   │                     │                   │ 0x34100000 EC_CONST │
   └─────────────────────┘                   └─────────────────────┘
-           │                                           │
-           │ NPU AXI Cache                             │ NPU reads
-           │ streams weights                           │ EC instructions
-           ▼                                           ▼
+           │                                          │
+           │ NPU AXI Cache                            │ NPU reads
+           │ streams weights                          │ EC instructions
+           ▼                                          ▼
   ┌─────────────────────────────────────────────────────────────┐
   │                    Neural-ART NPU                           │
   │  STRENG (stream) → CONVACC (convolution) → POOL → ACTIV     │
@@ -121,13 +121,13 @@
            ▼                                     │
   ┌──────────────────┐              ┌──────────────────┐
   │ npuRAM4 0x3427.. │  camera in   │ npuRAM5 0x342E.. │  heatmaps
-  │ (448 KB)         │ ←── DCMIPP   │ (448 KB)          │ ──→ CPU
+  │ (448 KB)         │ ←── DCMIPP   │ (448 KB)         │ ──→ CPU
   └──────────────────┘              └──────────────────┘
 
   OctoSPI PSRAM (XSPI1)
   ┌─────────────────────────────────────────┐
-  │ 0x90000000  LCD frame buffers (32 MB)    │ ←── LTDC reads for display
-  │             800×480×2 bytes × 2 layers    │
+  │ 0x90000000  LCD frame buffers (32 MB)   │ ←── LTDC reads for display
+  │             800×480×2 bytes × 2 layers  │
   └─────────────────────────────────────────┘
 ```
 

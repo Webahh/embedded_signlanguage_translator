@@ -1,6 +1,6 @@
 ## 2 Theoretische und technische Grundlagen
 
-Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Folgen wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erwähnt.
+Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Im Anschluss wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erwähnt.
 
 ---
 
@@ -24,7 +24,7 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 
 - **CPU:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
 - **Programmspeicher (Flash):** Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
-- **Arbeitsspeicher (SRAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte
+- **Arbeitsspeicher (RAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte
 - **Taktgeber:** Interner Oszillator (HSI, engl. *High-Speed Internal*) oder externer Quarz (HSE, engl. *High-Speed External*) als Zeitbasis für die CPU und Peripherie
 - **Peripherie-Einheiten:** Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3)
 
@@ -39,25 +39,25 @@ Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der 
 GPIO-Pins sind die einfachste Form der digitalen Ein-/Ausgabe. Jeder Pin kann konfiguriert werden als Eingang (Lesen eines logischen Pegels: 0 oder 1) oder als Ausgang (Setzen eines Pegels). GPIO-Pins werden zum Ansteuern von LEDs, Auslesen von Tasten oder als Steuerleitungen für andere Peripherie module verwendet.
 
 **Universal Asynchronous Receiver/Transmitter (UART):**
-Serielles Kommunikationsprotokoll zur asynchronen Datenübertragung. Es wird für Debug-Ausgaben, die Kommunikation mit Host-PCs oder serielle Sensoren eingesetzt. Ein UART-Kanal verwendet zwei Leitungen: TX (Senden) und RX (Empfangen).
+Serielles Kommunikationsprotokoll zur asynchronen Datenübertragung. Es wird für Debug-Ausgaben, die Kommunikation mit Host-PCs oder seriellen Sensoren eingesetzt.
 
 **Serial Peripheral Interface (SPI):**
-Synchrones, vollduplexes Kommunikationsprotokoll mit Master-Slave-Architektur. Es bietet höhere Datenraten als UART und wird bevorzugt für externe Speicher (Flash, PSRAM), Display-Controller oder Sensoren verwendet. Ein SPI-Bus besteht typischerweise aus den Leitungen MOSI, MISO, SCK und einem Chip-Select (CS).
+Synchrones, vollduplexes Kommunikationsprotokoll mit Transmitter-Receiver-Architektur. Es bietet höhere Datenraten als UART und wird bevorzugt für externe Speicher (Flash, PSRAM), Display-Controller oder Sensoren verwendet. Ein SPI-Bus besteht typischerweise aus den Leitungen MOSI, MISO, SCK und einem Chip-Select (CS).
 
 **Inter-Integrated Circuit (I²C):**
 Zweidrahtiges, synchrones Kommunikationsprotokoll (SDA, SCL) mit Adressierung. Es ermöglicht den Anschluss mehrerer Slaves über denselben Bus und wird für Sensoren, Echtzeituhren (RTC) und kleinere EEPROMs verwendet.
 
 **Timer:**
-Hardware-Timer zählen Taktimpulse und können interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
-
-**Interrupts:**
-Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.B. Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl. *Nested Vectored Interrupt Controller* bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
+Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
 
 **Direct Memory Access (DMA):**
 DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.B. Kamerabilder) relevant, da es die CPU erheblich entlastet.
 
 **DMA2D (ChromART):**
 Eine spezielle DMA-Einheit für 2D-Blit-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten ohne die CPU zu blockieren (Erweiterung des DMA).
+
+**Interrupts:**
+Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.B. Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl. *Nested Vectored Interrupt Controller* bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
 
 #### 2.1.4 Speicherarchitektur
 
@@ -75,16 +75,16 @@ Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M85-Kerne
 Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers (STM32N6x7 - Documentation - STMicroelectronics, n.d.; Yiu, 2013)
 
 - **Oszillatoren:** Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16-64 MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
-- **PLL (Phase-Locked Loop):** Ein PLL multiplier die Taktfrequenz der Basisoszillatoren auf höhere Werte. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800 MHz), PLL2 für den NPU (1000 MHz), PLL3 für den NPU-Speicher (900 MHz) und PLL4 für Peripherietakte.
+- **PLL (Phase-Locked Loop):** Ein PLL multiplier die Taktfrequenz der Basisoszillatoren auf höhere taktfrequenzen bringt. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800 MHz), PLL2 für den NPU (1000 MHz), PLL3 für den NPU-Speicher (900 MHz) und PLL4 für Peripherietakte.
 - **Takthierarchie:** Der PLL-Ausgang wird über Teiler (Prescaler) auf verschiedene Busdomänen verteilt: AHB (High-Speed Bus), APB1/APB2 (Peripheral Buses). Peripherie-Einheiten erhalten ihren Takt von diesen Bussen.
 
 #### 2.1.6 Bare-Metal-Programmierung
 
 **Definition und Abgrenzung:**
-Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchonisierung übernimmt.
+Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
 
 **Startup und Systeminitialisierung:**
-Nach dem Einschalten oder Reset beginnt die CPU an einer durch den Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Der Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
+Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Der Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
 
 **Register-Level-Programmierung:**
 Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
@@ -119,7 +119,7 @@ Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache (AktionMens
 Das deutsche Einhand-Fingeralphabet umfasst 27 Zeichen (AktionMensch e.V., n.d.):
 
 - **26 Buchstaben:** A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü
-- **1 Sonderzeichen:** SCH (als Trigraph dargestellt, d.\,h. ein Zeichen für drei Buchstaben)
+- **1 Sonderzeichen:** SCH (als Trigraph dargestellt, d.h. ein Zeichen für drei Buchstaben)
 
 ![[aktion-mensch-deutsches-fingeralphabet.jpg]]
 
@@ -153,7 +153,7 @@ Beispielhafte Beschreibung einiger Zeichen:
 
 #### 2.3.1 Begriffsbildung
 
-Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, aus Daten zu lernen und Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdataset zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, aus Daten zu lernen und Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
 
 #### 2.3.2 Supervised Learning
 
@@ -165,7 +165,7 @@ Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem di
 
 ##### 2.3.3.1 Sparse Categorical Crossentropy
 
-Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speicher effizient im Hintergrund durchführt. (Sparse Categorical Crossentropy vs. Categorical Crossentropy, 18:23:14+00:00)
+Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speicher effizient im Hintergrund durchführt.
 
 | Kategorie | Index | One-Hot-Vektor   |
 | --------- | ----- | ---------------- |
@@ -276,27 +276,14 @@ Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildau
 Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich um eine linke oder rechte Hand handelt.
 #### 2.5.4 ROI
 
-Eine ROI (Region of Interrest) ist ein rotiertes Rechteck im Pixel Raum, der genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
-Dies kann verwendet werden um Modelle selektiv/gezielt auszuführen.
+Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
+Dies kann verwendet werden um Modelle gezielt auszuführen.
 
-```
-┌───────────────────────────────────┐
-│         Original Frame            │
-│      ┌────────────────────┐       │
-│      │   ROI (rotated)    │       │
-│      │   ┌──────────┐     │       │
-│      │   │ landmark │     │       │
-│      │   │  crop    │     │       │
-│      │   └──────────┘     │       │
-│      │                    │       │
-│      └────────────────────┘       │
-└───────────────────────────────────┘
-```
-\[ROI - Visuelle Repräsentation| Eigene Darstellung] NOTE: Ersetze durch draw.io darstellung
-
+![[ROI - Explaination.png]]
+\[ROI - Example | Eigene Darstellung]
 ##### 2.5.4.1 Lifecycle
 
-Der Lifecycle einer ROI ist in Abbildung X dargestellt. Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und größe der initialen ROI berechnet. in den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. bei ausreichender Konfidenz werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI bestimmt. Dieser Vorgang wiederhohlt sich für jeden Frame. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
+Der Lifecycle einer ROI ist in Abbildung X dargestellt. Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und Größe der initialen ROI berechnet. In den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. Bei ausreichender Konfidenz werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI bestimmt. Dieser Vorgang wird jeden Frame wiederholt. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
 
 ---
 
@@ -305,12 +292,12 @@ Der Lifecycle einer ROI ist in Abbildung X dargestellt. Eine ROI entsteht durch 
 #### 2.6.1 Datenaugmentation
 
 **Definition und Ziel:**
-Datenaugmentation bezeichnet die künstliche Vermehrung eines Trainingsdatensatzes durch Transformationen der vorhandenen Daten (Pattern Recognition and Machine Learning, n.d.). Der Zweck besteht darin, die Robustheit und Generalisierungsfähigkeit des Modells zu erhöhen, ohne additional Daten erfassen zu müssen. Für eingebettete Systeme mit begrenztem Speicher ist eine effiziente Datennutzung besonders relevant.
+Datenaugmentation bezeichnet die künstliche Vermehrung eines Trainingsdatensatzes durch Transformationen der vorhandenen Daten (Pattern Recognition and Machine Learning, n.d.). Der Zweck besteht darin, die Robustheit und Generalisierungsfähigkeit des Modells zu erhöhen, ohne zusätzliche Daten erfassen zu müssen. Für eingebettete Systeme mit begrenztem Speicher ist eine effiziente Datennutzung besonders relevant.
 
 **Transformationsverfahren:**
 Im vorliegenden Projekt werden folgende Augmentationen eingesetzt:
 
-- Spiegelung (Horizontal Flip): Die Hand wird horizontal gespiegelt. Dies simulierte Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
+- Spiegelung (Horizontal Flip): Die Hand wird horizontal gespiegelt. Dies simuliert Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
 - Zufällige Translation: Die Landmarks werden um einen zufälligen Betrag in x- und y-Richtung verschoben, um unterschiedliche Handpositionen im Kamerabild zu simulieren.
 - Zufälliger Zoom: Die Landmarks werden um einen Faktor zwischen 0,5× und 1,5× skaliert, um unterschiedliche Handgrößen und Abstände zur Kamera abzubilden.
 - Jitter: Zufälliges Rauschen wird zu den Koordinaten hinzugefügt, um natürliche Schwankungen in der Landmark-Erkennung zu simulieren.
@@ -320,7 +307,7 @@ Die Augmentationspipeline (`AugmentationPipeline`) wendet diese Transformationen
 
 #### 2.6.2 Modellquantisierung
 
-Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten embedded Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
+Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe Genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten eingebetteten Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
 
 **Float32 vs. INT8:**
 
@@ -328,8 +315,8 @@ Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommaza
 |---|---|---|
 | Speicher pro Gewicht | 4 Byte | 1 Byte |
 | Speicherersparnis | - | 75 % |
-| Rechengeschwindigkeit | Normativ | Deutlich schneller (NPU-nativ) |
-| Genauigkeit | Hoch | Leicht reduziert (akzeptabel) |
+| Rechengeschwindigkeit | Standard | Deutlich schneller (NPU-nativ) |
+| Genauigkeit | Hoch | Leicht reduziert (hinnehmbar) |
 
 **Scale und Zero-Point:**
 Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab. Für die affine Quantisierung gilt (Post-Training Quantization | TensorFlow Model Optimization, n.d.):
@@ -341,10 +328,10 @@ wobei $r$ den realen Float-Wert, $s$ den Skalierungsfaktor, $z$ den Zero-Point u
 $$r = s \cdot (q - z)$$
 
 **Post-Training-Quantisierung (PTQ):**
-Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training (Post-Training Quantization | TensorFlow Model Optimization, n.d.). Dafür wird ein Representative Dataset (Repräsentatives Datenset) verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
+Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training (Post-Training Quantization | TensorFlow Model Optimization, n.d.). Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
 
 **Genauigkeitsverluste:**
-Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Representative Dataset) jedoch gering (typisch < 2 % Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
+Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Repräsentativer Datensatz) jedoch gering (typisch < 2 % Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
 
 ---
 
@@ -352,29 +339,31 @@ Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellge
 
 #### 2.7.1 Edge AI
 
-Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller sammeln über Sensoren Daten und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl. *edge device*) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
 
-- Geringe Latenz: Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essenziell.
+- Geringe Latenz: Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essentiell.
 - Datenschutz: Biometrische Daten (Kamerabilder der Hand) verlassen das Gerät nicht.
 - Offline-Fähigkeit: Das System funktioniert ohne Internetverbindung.
 - Reduzierte Bandbreite: Es müssen keine Bilder übertragen werden.
 
-Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf embedded Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden (Abadade et al., 2023).
+Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf eingebetteten Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden (Abadade et al., 2023).
 
 #### 2.7.2 Neuronale Beschleuniger (NPU)
 
-Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit ist für die Inferenz quantisierter Convolutionary Neural Networks (CNN) (Passold & da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN instruktionen mit hoher Parallelität aus.
+Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit dient der Inferenz INT8 quantisierter Convolutional Neural Networks (CNN) (Passold & da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN instruktionen mit hoher Parallelität aus.
 
 Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann. \[Referenz auf -> STM32N6 - Architektur]
 
 #### 2.7.3 ST Edge Core CLI
 
-ST Edge Core ist ein Command Line Interface (CLI) welches genutzt wird um Convolutionary Neural Networks (CNN) im ONNX (QDQ) oder TF-Lite Format in ein für die NPU-Platform passendes Format zu bringen. Der ST Neural-ART-Compiler ist als Back-End in die ST Edge Core CLI integriert und führt alle Optimierungen, Graph-Planung und Code-Generierung offline durch. Es wird keine interpretierende Engine auf dem embedded System ausgeführt.
+ST Edge Core ist ein Command Line Interface (CLI) das genutzt wird, um Convolutional Neural Networks (CNN) im ONNX (QDQ) oder TF-Lite-Format in ein für die NPU-Platform passendes Format zu überführen. Der ST Neural-ART-Compiler ist als Back-End in die ST Edge Core CLI integriert und führt alle Optimierungen, Graph-Planung und Code-Generierung offline durch. Es wird keine interpretierende Engine auf dem eingebetteten System ausgeführt.
 
 ![[NPU - TF-Lite ONNX Model harware executable conversion.png]]
-\[NPU - Quantized Model conversion to NPU executables | ]
+![[NPU - Compilation.png]]
 
-Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen passen. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX befehlen auf Epochen. Folgende Epochen werden Unterschieden:
+\[NPU - Quantized Model conversion to NPU executables & Compilation | Quelle]
+
+Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen abbilden. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX-Befehlen auf Epochen. Folgende Epochen werden unterschieden:
 
 | Epochen-Typ    | Beschreibung                                                                                                |
 | -------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -382,4 +371,4 @@ Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressour
 | SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung)                                                         |
 | Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen                             |
 | Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller                                    |
-Epochen werden als atomare Opterationen in fester Reihenfolge ausgeführt, um Datenabhängigkeiten zu gewährleisten. Zwischen Epochen wird kein interner NPU-Hardware-Zustand erhalten. Zwischenergebnisse werden im externen Speicher abgelegt
+Epochen werden als atomare Operationen in fester Reihenfolge ausgeführt, um Datenabhängigkeiten zu gewährleisten. Zwischen Epochen wird kein interner NPU-Hardware-Zustand erhalten. Zwischenergebnisse werden im externen Speicher abgelegt.
