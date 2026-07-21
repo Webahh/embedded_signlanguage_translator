@@ -121,13 +121,13 @@
            ▼                                     │
   ┌──────────────────┐              ┌──────────────────┐
   │ npuRAM4 0x3427.. │  camera in   │ npuRAM5 0x342E.. │  heatmaps
-  │ (448 KB)         │ ←── DCMIPP   │ (448 KB)         │ ──→ CPU
+  │ (448 KB)         │ ←── DCMIPP   │ (448 KB)          │ ──→ CPU
   └──────────────────┘              └──────────────────┘
 
   OctoSPI PSRAM (XSPI1)
   ┌─────────────────────────────────────────┐
-  │ 0x90000000  LCD frame buffers (32 MB)   │ ←── LTDC reads for display
-  │             800×480×2 bytes × 2 layers  │
+  │ 0x90000000  LCD frame buffers (32 MB)    │ ←── LTDC reads for display
+  │             800×480×2 bytes × 2 layers    │
   └─────────────────────────────────────────┘
 ```
 
@@ -135,14 +135,14 @@
 
 ## Linker Regions (`STM32N657X0HXQ_AXISRAM2_fsbl.ld`)
 
-| Region | Address | Size | Description |
-|--------|---------|------|-------------|
-| ROM | `0x34180400` | 255 KB | `.isr_vector`, `.text`, `.rodata` |
-| RAM | `0x341C0000` | 256 KB | `.data`, `.bss`, stack |
-| EC_RUNTIME | `0x34080000` | 512 KB | `.ecblobs_runtime` (NPU working state) |
-| EC_CONST | `0x34100000` | 512 KB | `.ecblobs_const` (NPU microinstructions) |
-| PSRAM | `0x91000000` | 16 MB | `.psram_section` (LCD buffers) |
-| ECBLOBS | `0x72000000` | 8 MB | External flash (raw EC blob binary) |
+| Region     | Address      | Size   | Description                              |
+| ---------- | ------------ | ------ | ---------------------------------------- |
+| ROM        | `0x34180400` | 255 KB | `.isr_vector`, `.text`, `.rodata`        |
+| RAM        | `0x341C0000` | 256 KB | `.data`, `.bss`, stack                   |
+| EC_RUNTIME | `0x34080000` | 512 KB | `.ecblobs_runtime` (NPU working state)   |
+| EC_CONST   | `0x34100000` | 512 KB | `.ecblobs_const` (NPU microinstructions) |
+| PSRAM      | `0x91000000` | 16 MB  | `.psram_section` (LCD buffers)           |
+| ECBLOBS    | `0x72000000` | 8 MB   | External flash (raw EC blob binary)      |
 
 **Symbols exported by linker:**
 

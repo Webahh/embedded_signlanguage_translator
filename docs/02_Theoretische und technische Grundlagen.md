@@ -370,7 +370,7 @@ Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellge
 
 ---
 
-### 2.7 Edge AI und neuronale Beschleuniger
+### 2.7 Edge AI und Neuronale Beschleuniger (NPU)
 
 #### 2.7.1 Edge AI
 
@@ -385,6 +385,22 @@ Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechen
 
 #### 2.7.2 Neuronale Beschleuniger (NPU)
 
-Eine Neural Processing Unit (NPU) ist eine dedizierte Hardware-Einheit, die speziell für die Ausführung neuronaler Netze optimiert ist (Passold & da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen und Vektoroperationen mit hoher Parallelität aus.
+Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit ist für die Inferenz quantisierter Convolutionary Neural Networks (CNN) (Passold & da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN instruktionen mit hoher Parallelität aus.
 
-Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann. Die Modellbinaries werden aus dem externen NOR-Flash geladen und beim Systemstart in den AXISRAM kopiert.
+Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann. \[Referenz auf -> STM32N6 - Architektur]
+
+#### 2.7.3 ST Edge Core CLI
+
+ST Edge Core ist ein Command Line Interface (CLI) welches genutzt wird um Convolutionary Neural Networks (CNN) im ONNX oder TF-Lite Format in ein für die NPU-Platform passendes Format zu bringen.
+
+![[NPU - TF-Lite ONNX Model harware executable conversion.png]]
+\[NPU - Quantized Model conversion to NPU executables | ]
+
+Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen passen:
+
+| Epochen-Typ    | Beschreibung                                                                    |
+| -------------- | ------------------------------------------------------------------------------- |
+| HW-Epochen     | Operatoren vollständig auf NPU-Hardware abgebildet                              |
+| SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung)                             |
+| Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen |
+| Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller        |

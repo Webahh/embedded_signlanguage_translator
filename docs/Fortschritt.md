@@ -14,11 +14,11 @@
    - [x] 2.6 Datenaugmentation und Modellquantisierung
    - [x] 2.7 Edge AI und neuronale Beschleuniger
 1.  Stand der Technik  ---- Olvus
-   - [ ] 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
-   - [ ] 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
-   - [ ] 3.3 Aktuelle Embedded-AI-Lösungen
-   - [ ] 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
-4. Methodik und Entwicklungsprozess
+   - [x] 3.1 Bestehende Ansätze zur Erkennung von Handzeichen
+   - [x] 3.2 Kamerabasierte Fingeralphabet- und Gebärdenerkennung
+   - [x] 3.3 Aktuelle Embedded-AI-Lösungen
+   - [x] 3.4 Einordnung der Arbeit und Abgrenzung der eigenen Arbeit 
+1. Methodik und Entwicklungsprozess
    - [x] 4.1 Vorgehensweise bei der Literatur- und Technologierecherche
    - [x] 4.2 Iterativer Entwicklungs- und Integrationsprozess
    - [x] 4.3 Vorgehen bei der Modellentwicklung
