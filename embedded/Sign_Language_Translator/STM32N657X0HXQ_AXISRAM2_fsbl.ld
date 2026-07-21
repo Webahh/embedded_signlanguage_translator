@@ -1,12 +1,14 @@
 /*
 ******************************************************************************
 **
-** @file        : STM32N6XX_LRUN.ld
+** @file        : STM32N6XX_AXISRAM2_fsbl.ld
 **
 ** @author      : GPM Application Team
 **
 ** @brief       : Linker script for STM32N6XX Device from STM32N6 series
-**                      2048 KBytes RAM
+**                      2048 KBytes Flash, 2048 KBytes SRAM
+**
+**                Standalone build — no separate Application partition.
 **
 **                Set heap size, stack size and stack location according
 **                to application requirements.
@@ -39,19 +41,23 @@ _estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
 _sstack = _estack - _Min_Stack_Size;
 
 _Min_Heap_Size = 0x200; /* required amount of heap */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+_Min_Stack_Size = 0x8000; /* required amount of stack — 32 KB */
 
 /* Memories definition */
 MEMORY
 {
-  ROM    (xrw)    : ORIGIN = 0x34000400,   LENGTH = 511K
-  RAM    (xrw)    : ORIGIN = 0x34080000,   LENGTH = 1536K
+  ROM         (xrw) : ORIGIN = 0x34000400, LENGTH = 2047K
+  RAM         (xrw) : ORIGIN = 0x34180000, LENGTH = 512K
+  EC_RUNTIME  (xrw) : ORIGIN = 0x34080000, LENGTH = 512K
+  EC_CONST    (xrw) : ORIGIN = 0x34100000, LENGTH = 512K
+  PSRAM       (xrw) : ORIGIN = 0x91000000, LENGTH = 16M
+  ECBLOBS     (rx)  : ORIGIN = 0x72000000, LENGTH = 8M
 }
 
 /* Sections */
 SECTIONS
 {
-  /* The startup code into "Rom" Rom type memory */
+  /* The startup code into "ROM" Rom type memory */
   .isr_vector :
   {
     . = ALIGN(4);
@@ -87,13 +93,15 @@ SECTIONS
     . = ALIGN(4);
   } >ROM
 
-  .ARM.extab   : {
+  .ARM.extab   (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+   {
     . = ALIGN(4);
     *(.ARM.extab* .gnu.linkonce.armextab.*)
     . = ALIGN(4);
   } >ROM
 
-  .ARM : {
+  .ARM (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
+   {
     . = ALIGN(4);
     __exidx_start = .;
     *(.ARM.exidx*)
@@ -101,7 +109,7 @@ SECTIONS
     . = ALIGN(4);
   } >ROM
 
-  .preinit_array     :
+  .preinit_array     (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__preinit_array_start = .);
@@ -110,7 +118,7 @@ SECTIONS
     . = ALIGN(4);
   } >ROM
 
-  .init_array :
+  .init_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__init_array_start = .);
@@ -120,7 +128,7 @@ SECTIONS
     . = ALIGN(4);
   } >ROM
 
-  .fini_array :
+  .fini_array (READONLY) : /* The READONLY keyword is only supported in GCC11 and later, remove it if using GCC10 or earlier. */
   {
     . = ALIGN(4);
     PROVIDE_HIDDEN (__fini_array_start = .);
@@ -155,15 +163,6 @@ SECTIONS
     __enoncacheable = .;  /* create symbol for end of section */
   } > RAM
 
-  .gnu.sgstubs :
-  {
-    _sNSCVeneer = .;
-    . = ALIGN(4);
-    *(.gnu.sgstubs*)   /* Secure Gateway stubs */
-    . = ALIGN(4);
-  } >ROM
-  _eNSCVeneer = .;
-
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
   .bss :
@@ -191,6 +190,29 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
+  .psram_section (NOLOAD):
+  {
+     . = ALIGN(32);
+    *(.psram_bss)
+    . = ALIGN(32);
+  } >PSRAM
+  
+.ecblobs_const :
+{
+    . = ALIGN(64);
+    KEEP(*(.ecblobs_const))
+    KEEP(*(.ecblobs_const.*))
+    . = ALIGN(64);
+} > EC_CONST
+
+.ecblobs_runtime (NOLOAD) :
+{
+    . = ALIGN(64);
+    KEEP(*(.ecblobs_runtime))
+    KEEP(*(.ecblobs_runtime.*))
+    . = ALIGN(64);
+} > EC_RUNTIME
+
   /* Remove information from the compiler libraries */
   /DISCARD/ :
   {
@@ -201,3 +223,7 @@ SECTIONS
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
 }
+
+PROVIDE(_mem_pool_xSPI2_fingeralphabet_model_v3 = 0x71000000);
+PROVIDE(_mem_pool_xSPI2_palm_detection_model_v3 = 0x71200000);
+PROVIDE(_mem_pool_xSPI2_hand_landmark_model_v3 = 0x71600000);

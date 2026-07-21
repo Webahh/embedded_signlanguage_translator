@@ -628,7 +628,7 @@ static const stai_network_info __stai_palm_detection_model_v3_network_info = {
     .n_weights = STAI_PALM_DETECTION_MODEL_V3_WEIGHTS_NUM,
     .n_states = STAI_PALM_DETECTION_MODEL_V3_STATES_NUM,
 
-    .c_model_datetime = "2026-07-10 11:45:19",
+    .c_model_datetime = "2026-07-20 16:55:17",
 
     .n_nodes = 481,
 

@@ -127,7 +127,7 @@ else
     echo "Run manually:  ./models/copy_n6_models.sh --stai --weights"
 fi
 
-FW_DIR="$SCRIPT_DIR/../embedded/STM32N6570DK/FSBL"
+FW_DIR="$SCRIPT_DIR/../embedded/Sign_Language_Translator"
 ASSETS_DIR="$FW_DIR/Assets/AI"
 
 if command -v arm-none-eabi-gcc &> /dev/null; then
