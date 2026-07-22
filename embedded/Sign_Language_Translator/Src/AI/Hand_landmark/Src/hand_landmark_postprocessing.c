@@ -111,23 +111,15 @@ AI_Status_TypeDef LANDMARK_MapToFrame(const LandmarkNetworkOutput_TypeDef *outpu
     return AI_STATUS_OK;
 }
 
-AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(
-    const LandmarkNetworkOutput_TypeDef *output,
-    const HandROI_TypeDef *current_roi,
-    HandROI_TypeDef *next_roi)
+AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(const LandmarkNetworkOutput_TypeDef *output, const HandROI_TypeDef *current_roi,
+													  HandROI_TypeDef *next_roi)
 {
-    if ((output == NULL) ||
-        (current_roi == NULL) ||
-        (next_roi == NULL)) {
+
+    if ((output == NULL) || (current_roi == NULL) || (next_roi == NULL)) {
         return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    /*
-     * Wie Referenz:
-     * Für die Tracking-BBox nicht alle 21 Punkte verwenden.
-     * Fingerspitzen können bei Gesten stark ausschlagen und die ROI unnötig
-     * drehen/vergrößern.
-     */
+    // Do not use all 21 Landmarks for the Tracking-BoundaryBox
     static const uint8_t bbox_indices[] = {
         0U, 1U, 2U, 3U,
         5U, 6U,
@@ -141,45 +133,23 @@ AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(
     const float c = cosf(current_roi->rotation);
     const float s = sinf(current_roi->rotation);
 
-    /*
-     * Landmark-Ausgabe aus dem aktuellen 224x224-ROI-Crop zurück in das
-     * Frame-/Pixel-Koordinatensystem decodieren.
-     */
+    // Convert Landmark Output from the 224x224 ROI-Crop back into the pixel coordsystem
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        const float crop_x =
-            output->landmarks[i * 3U + 0U] /
-            (float)LANDMARK_INPUT_WIDTH;
+        const float crop_x = output->landmarks[i * 3U + 0U] / (float)LANDMARK_INPUT_WIDTH;
+        const float crop_y = output->landmarks[i * 3U + 1U] / (float)LANDMARK_INPUT_HEIGHT;
 
-        const float crop_y =
-            output->landmarks[i * 3U + 1U] /
-            (float)LANDMARK_INPUT_HEIGHT;
+        const float local_x = (crop_x - 0.5f) * current_roi->width;
+        const float local_y = (crop_y - 0.5f) * current_roi->height;
 
-        const float local_x =
-            (crop_x - 0.5f) * current_roi->width;
-
-        const float local_y =
-            (crop_y - 0.5f) * current_roi->height;
-
-        decoded[i].x =
-            current_roi->center_x + local_x * c - local_y * s;
-
-        decoded[i].y =
-            current_roi->center_y + local_x * s + local_y * c;
-
-        decoded[i].z =
-            output->landmarks[i * 3U + 2U];
+        decoded[i].x = current_roi->center_x + local_x * c - local_y * s;
+        decoded[i].y = current_roi->center_y + local_x * s + local_y * c;
+        decoded[i].z = output->landmarks[i * 3U + 2U];
 
         if (!isfinite(decoded[i].x) || !isfinite(decoded[i].y)) {
             return AI_STATUS_POSTPROCESS_ERROR;
         }
     }
 
-    /*
-     * BBox für die nächste Tracking-ROI.
-     * Nicht alle Punkte nehmen, sondern die stabileren Handflächen-/Fingerbasis-
-     * Punkte. Das verhindert, dass bestimmte Fingeralphabet-Stellungen die ROI
-     * unnötig verzerren.
-     */
     float min_x =  1000000.0f;
     float min_y =  1000000.0f;
     float max_x = -1000000.0f;
@@ -199,58 +169,26 @@ AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(
     next_roi->width    = max_x - min_x;
     next_roi->height   = max_y - min_y;
 
-    if ((next_roi->width <= 0.0f) ||
-        (next_roi->height <= 0.0f)) {
+    if ((next_roi->width <= 0.0f) || (next_roi->height <= 0.0f)) {
         return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    /*
-     * Rotation nicht aus einem einzelnen Landmark-Paar ableiten.
-     * Stattdessen robuste Handflächenachse:
-     *
-     * Wrist -> Mittelpunkt der MCPs:
-     * 5  = Index MCP
-     * 9  = Middle MCP
-     * 13 = Ring MCP
-     * 17 = Pinky MCP
-     *
-     * Das passt besser zu deiner Beobachtung und verhindert die 45°-Fehlrotation
-     * bei eigentlich gerader Hand.
-     */
-    const float palm_center_x =
-        (decoded[5].x +
-         decoded[9].x +
-         decoded[13].x +
-         decoded[17].x) * 0.25f;
-
-    const float palm_center_y =
-        (decoded[5].y +
-         decoded[9].y +
-         decoded[13].y +
-         decoded[17].y) * 0.25f;
+    const float palm_center_x = (decoded[5].x + decoded[9].x + decoded[13].x + decoded[17].x) * 0.25f;
+    const float palm_center_y = (decoded[5].y + decoded[9].y + decoded[13].y + decoded[17].y) * 0.25f;
 
     const float dx = palm_center_x - decoded[0].x;
     const float dy = palm_center_y - decoded[0].y;
 
     float target_rotation = current_roi->rotation;
 
-    if (isfinite(dx) &&
-        isfinite(dy) &&
-        ((dx * dx + dy * dy) > 0.000001f)) {
-        target_rotation =
-            ROI_NormalizeAngle((AI_PI * 0.5f) - atan2f(-dy, dx));
+    if (isfinite(dx) && isfinite(dy) && ((dx * dx + dy * dy) > 0.000001f)) {
+        target_rotation = ROI_NormalizeAngle((AI_PI * 0.5f) - atan2f(-dy, dx));
     }
 
-    /*
-     * Da dein Fingeralphabet-Modell ohne Rotation-Normalisierung trainiert wurde,
-     * sollte die Tracking-ROI nicht aggressiv jeder kleinen Haltungsänderung folgen.
-     * Daher Rotation nur langsam übernehmen.
-     */
     const float rotation_alpha = 0.20f;
     const float max_step_rad   = 0.08f;
 
-    float delta =
-        ROI_NormalizeAngle(target_rotation - current_roi->rotation);
+    float delta = ROI_NormalizeAngle(target_rotation - current_roi->rotation);
 
     delta *= rotation_alpha;
 
@@ -261,19 +199,10 @@ AI_Status_TypeDef LANDMARK_UpdateROIFromNetworkOutput(
         delta = -max_step_rad;
     }
 
-    next_roi->rotation =
-        ROI_NormalizeAngle(current_roi->rotation + delta);
+    next_roi->rotation = ROI_NormalizeAngle(current_roi->rotation + delta);
 
-    /*
-     * Wie Referenz:
-     * Tracking-ROI leicht in Richtung Finger verschieben und vergrößern.
-     */
-    ROI_ShiftAndScale(next_roi,
-                      0.0f,
-                     -0.1f,
-                      2.0f,
-                      2.0f);
-
+    // Scale Tracking ROI and move to finger
+    ROI_ShiftAndScale(next_roi, 0.0f, -0.1f, 2.0f,2.0f);
     ROI_UpdateRotatedCorners(next_roi);
 
     return AI_STATUS_OK;

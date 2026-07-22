@@ -59,6 +59,9 @@ const GPIO_cfg_TypeDef GPIO_TS_INT_cfg = {
 		.speed	= GPIO_SPEED_LOW
 };
 
+//=========================================
+// Debug-Logger(USART1)
+//=========================================
 const Debug_log_cfg_TypeDef dbg_cfg = {
     .usart = USART1,
     .gpio_cfg = {
@@ -72,6 +75,10 @@ const Debug_log_cfg_TypeDef dbg_cfg = {
     .enabled = 1
 };
 
+
+//=========================================
+// Clock Parameter
+//=========================================
 const RCC_PLL_cfg_TypeDef RCC_PLL_cfg[4] = {
     { .CFGR1 = 0x201900, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },
     { .CFGR1 = 0x807D00, .CFGR2 = 0x0, .CFGR3 = 0x49000005 },

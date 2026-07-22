@@ -38,7 +38,8 @@ static volatile TOUCH_Data_TypeDef _saved_data;
  * @param [in]  buf_len		| buffer length
  * @param [out] checksum	| resulting checksum
  */
-static void _calc_checksum(const uint8_t *buf, uint16_t buf_len, uint8_t *checksum) {
+static void _calc_checksum(const uint8_t *buf, uint16_t buf_len, uint8_t *checksum)
+{
 	uint8_t sum = 0;
 	for (uint16_t i = 0; i < buf_len; i++)
 		sum += buf[i];
@@ -50,7 +51,8 @@ static void _calc_checksum(const uint8_t *buf, uint16_t buf_len, uint8_t *checks
  *
  * @param [in] h |Touch handle
  */
-static TOUCH_Status_TypeDef _read_config(TOUCH_Handle_TypeDef *h) {
+static TOUCH_Status_TypeDef _read_config(TOUCH_Handle_TypeDef *h)
+{
 	if (I2C_Mem_read(h->i2c, h->addr, _CONFIG_START, _config_buf, _CONFIG_LEN) != I2C_OK) {
 		return TOUCH_ERROR;
 	}
@@ -62,14 +64,16 @@ static TOUCH_Status_TypeDef _read_config(TOUCH_Handle_TypeDef *h) {
  *
  * @param [in] h |Touch handle
  */
-static TOUCH_Status_TypeDef _write_config(TOUCH_Handle_TypeDef *h) {
+static TOUCH_Status_TypeDef _write_config(TOUCH_Handle_TypeDef *h)
+{
 	if (I2C_Mem_write(h->i2c, h->addr, _CONFIG_START, _config_buf, _CONFIG_LEN) != I2C_OK) {
 		return TOUCH_ERROR;
 	}
 	return TOUCH_OK;
 }
 
-void TOUCH_ConfigIO(void) {
+void TOUCH_ConfigIO(void)
+{
 	RCC_enable_GPIO(GPIOD);
 	RCC_enable_GPIO(GPIOE);
 	RCC_enable_GPIO(GPIOQ);
@@ -103,7 +107,8 @@ void TOUCH_ConfigIO(void) {
 	NVIC_EnableIRQ(EXTI4_IRQn);
 }
 
-TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c) {
+TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c)
+{
 	if (h == NULL || i2c == NULL)
 		return TOUCH_ERROR;
 
@@ -123,7 +128,8 @@ TOUCH_Status_TypeDef TOUCH_Probe(TOUCH_Handle_TypeDef *h, I2C_TypeDef *i2c) {
 	return TOUCH_ERROR;
 }
 
-TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h) {
+TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h)
+{
 	if (h == NULL || !h->initialized)
 		return TOUCH_ERROR;
 
@@ -192,15 +198,16 @@ TOUCH_Status_TypeDef TOUCH_Init(TOUCH_Handle_TypeDef *h) {
 	return TOUCH_OK;
 }
 
-void TOUCH_GetPending(uint8_t *p) {
+void TOUCH_GetPending(uint8_t *p)
+{
 	if (p) {
 		*p = _touch_pending;
 		_touch_pending = 0;
 	}
 }
 
-TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
-		TOUCH_Data_TypeDef *data) {
+TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h, TOUCH_Data_TypeDef *data)
+{
 	if (data == NULL)
 		return TOUCH_ERROR;
 
@@ -217,7 +224,8 @@ TOUCH_Status_TypeDef TOUCH_GetState(TOUCH_Handle_TypeDef *h,
 // Interrupt
 // -------------------------------------------------------------------------
 
-void EXTI4_IRQHandler(void) {
+void EXTI4_IRQHandler(void)
+{
 	SCHEDULER_ISR_enter();
 	if (EXTI->RPR1 & EXTI_RPR1_RPIF4) {
 		EXTI->RPR1 = EXTI_RPR1_RPIF4;

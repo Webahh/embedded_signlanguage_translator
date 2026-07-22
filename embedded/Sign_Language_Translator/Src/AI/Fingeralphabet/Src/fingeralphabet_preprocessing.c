@@ -58,21 +58,6 @@ static int16_t FINGERALPHABET_NormalizedToInt16(float value)
     return (int16_t)(value * (float)FINGERALPHABET_POS_MAX);
 }
 
-static int16_t FINGERALPHABET_RelativeToInt16(float value)
-{
-    const float scaled = value * (float)FINGERALPHABET_POS_MAX;
-
-    if (scaled > 32767.0f) {
-        return 32767;
-    }
-
-    if (scaled < -32768.0f) {
-        return -32768;
-    }
-
-    return (int16_t)scaled;
-}
-
 static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
 {
     const float normalized = (float)feature / (float)FINGERALPHABET_POS_MAX;
@@ -90,7 +75,7 @@ static uint8_t FINGERALPHABET_QuantizeFeature(int16_t feature)
 }
 
 AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT],
-												   float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
+										    float handedness, uint8_t output[FINGERALPHABET_INPUT_SIZE])
 {
     if ((points == NULL) || (output == NULL)) {
         return AI_STATUS_PREPROCESS_ERROR;
@@ -140,19 +125,4 @@ AI_Status_TypeDef FINGERALPHABET_Preprocess(const LandmarkPoint_TypeDef points[L
     return AI_STATUS_OK;
 }
 
-AI_Status_TypeDef FINGERALPHABET_PreprocessFromLandmarkOutput(const LandmarkNetworkOutput_TypeDef *landmark_output,
-															  uint8_t output[FINGERALPHABET_INPUT_SIZE])
-{
-    if ((landmark_output == NULL) || (output == NULL)) {
-        return AI_STATUS_PREPROCESS_ERROR;
-    }
 
-    LandmarkPoint_TypeDef canonical_points[LANDMARK_POINT_COUNT];
-
-    for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
-        canonical_points[i].x = landmark_output->landmarks[i * 3U + 0U] / (float)LANDMARK_INPUT_WIDTH;
-        canonical_points[i].y = landmark_output->landmarks[i * 3U + 1U] / (float)LANDMARK_INPUT_HEIGHT;
-        canonical_points[i].z = landmark_output->landmarks[i * 3U + 2U];
-    }
-    return FINGERALPHABET_Preprocess(canonical_points, landmark_output->handedness, output);
-}

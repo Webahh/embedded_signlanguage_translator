@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include "app.h"
 #include "config.h"
-#include "simple_gpio.h"
+
 #include "simple_timer.h"
 #include "simple_scheduler.h"
 
@@ -18,14 +18,13 @@
 #include "simple_ltdc_color.h"
 #include "simple_ltdc_layer.h"
 #include "simple_ltdc_layer_draw.h"
-
 #include "simple_text.h"
+
 #include "simple_xspi.h"
 #include "simple_rifsc.h"
 #include "simple_camera.h"
 #include "simple_dcmipp.h"
 #include "simple_ai.h"
-#include "image_bitmap.h"
 #include "simple_rcc.h"
 #include "simple_ae.h"
 #include "simple_touch.h"
@@ -52,19 +51,17 @@ void app_init(){
 
 	debug_init(dbg_cfg);
 	TIMER_Delay_init();
-	DEBUG_PRINTF("Lets debug!\r\n");
 
 	GPIO_Config(GPIOG, LED2_PIN, GPIO_default_cfg);
 
 	XSPI_Status_TypeDef xspi_status = XSPI_ERROR;
 	xspi_status = XSPI_PSRAM_init(XSPI_psram_cfg);
-	DEBUG_PRINTF("PSRAM INIT Status: %d\r\n", xspi_status);
+	DEBUG_PRINTF("[XSPI] PSRAM INIT Status: %d\r\n", xspi_status);
     xspi_status = XSPI_NOR_init(XSPI_nor_cfg);
-    DEBUG_PRINTF("NOR INIT Status: %d\r\n", xspi_status);
+    DEBUG_PRINTF("[XSPI] NOR INIT Status: %d\r\n", xspi_status);
 
     LTDC_Init();
-
-    TIMER_Delay_ms(10);
+    TIMER_Delay_ms(TIMER_TIMEOUT_10_MS);
 
     LTDC_Layer_Layer1_Config();
     LTDC_Layer_Layer2_Config();
@@ -84,14 +81,14 @@ void app_init(){
 
     /* --- Touch --- */
     TOUCH_ConfigIO();
-    TIMER_Delay_ms(50);
+    TIMER_Delay_ms(TIMER_TIMEOUT_50_MS);
 
     static TOUCH_Handle_TypeDef h_touch;
 
     if (TOUCH_Probe(&h_touch, TS_I2C) == TOUCH_OK) {
         TOUCH_Init(&h_touch);
     } else {
-        DEBUG_PRINTF("Touch: no controller found\r\n");
+        DEBUG_PRINTF("[Touch] No controller found\r\n");
     }
 
     /* --- UI --- */

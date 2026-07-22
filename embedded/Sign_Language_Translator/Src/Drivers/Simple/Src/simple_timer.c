@@ -36,7 +36,8 @@
  * @param [in] TIMX    Timer instance
  * @param [in] use_irq Enable NVIC interrupt if non-zero
  */
-static void _TIMER_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
+static void _TIMER_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq)
+{
 	RCC_enable_TIM(TIMX);
 
 	if (!use_irq) {
@@ -76,7 +77,8 @@ static void _TIMER_Enable_Clock_and_NVIC(TIM_TypeDef* TIMX, int use_irq){
  * @param [in] TIMX    Timer instance
  * @param [in] use_irq Enable update interrupt if non-zero
  */
-static void _TIMER_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
+static void _TIMER_Config_1kHz(TIM_TypeDef* TIMX, int use_irq)
+{
 	uint32_t prescaler = _TIMER_INPUT_CLK_HZ / _TIMER_1MHZ;
 
 	if (prescaler == 0U) {
@@ -98,7 +100,8 @@ static void _TIMER_Config_1kHz(TIM_TypeDef* TIMX, int use_irq){
  * @param [in] limit       Auto-reload value
  * @param [in] use_irq     Enable update interrupt if non-zero
  */
-void TIMER_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq){
+void TIMER_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq)
+{
 	if (preScaleVal <= 0) {
 		return;
 	}
@@ -120,19 +123,23 @@ void TIMER_Config(TIM_TypeDef* TIMX, int preScaleVal, int limit, int use_irq){
 	TIMX->SR &= ~TIM_SR_UIF;
 }
 
-void TIMER_Start(TIM_TypeDef* TIMX){
+void TIMER_Start(TIM_TypeDef* TIMX)
+{
 	TIMX->CR1 |= TIM_CR1_CEN;
 }
 
-void TIMER_Stop(TIM_TypeDef* TIMX){
+void TIMER_Stop(TIM_TypeDef* TIMX)
+{
 	TIMX->CR1 &= ~TIM_CR1_CEN;
 }
 
-void TIMER_ResetCounter(TIM_TypeDef* TIMX){
+void TIMER_ResetCounter(TIM_TypeDef* TIMX)
+{
 	TIMX->CNT = 0;
 }
 
-TIMER_Status_TypeDef TIMER_GetCounter(TIM_TypeDef* TIMX, int* counter){
+TIMER_Status_TypeDef TIMER_GetCounter(TIM_TypeDef* TIMX, int* counter)
+{
 	if (counter == NULL) {
 		return TIMER_ERROR;
 	}
@@ -141,7 +148,8 @@ TIMER_Status_TypeDef TIMER_GetCounter(TIM_TypeDef* TIMX, int* counter){
 	return TIMER_OK;
 }
 
-TIMER_Status_TypeDef TIMER_GetFlag(TIM_TypeDef* TIMX, uint32_t flag, uint32_t* result){
+TIMER_Status_TypeDef TIMER_GetFlag(TIM_TypeDef* TIMX, uint32_t flag, uint32_t* result)
+{
 	if (result == NULL) {
 		return TIMER_ERROR;
 	}
@@ -150,22 +158,26 @@ TIMER_Status_TypeDef TIMER_GetFlag(TIM_TypeDef* TIMX, uint32_t flag, uint32_t* r
 	return TIMER_OK;
 }
 
-void TIMER_ClearFlag(TIM_TypeDef* TIMX, uint32_t flag){
+void TIMER_ClearFlag(TIM_TypeDef* TIMX, uint32_t flag)
+{
 	TIMX->SR &= ~flag;
 }
 
-void TIMER_EnableIT(TIM_TypeDef* TIMX){
+void TIMER_EnableIT(TIM_TypeDef* TIMX)
+{
 	TIMX->DIER |= TIM_DIER_UIE;
 }
 
-void TIMER_DisableIT(TIM_TypeDef* TIMX){
+void TIMER_DisableIT(TIM_TypeDef* TIMX)
+{
 	TIMX->DIER &= ~TIM_DIER_UIE;
 }
 
 /**
  * @brief Initialise TIM6 as millisecond delay timer
  */
-void TIMER_Delay_init(void){
+void TIMER_Delay_init(void)
+{
 	_TIMER_Config_1kHz(TIM6, 0);
 }
 
@@ -174,7 +186,8 @@ void TIMER_Delay_init(void){
  *
  * @param [in] ms Delay time in milliseconds
  */
-void TIMER_Delay_ms(int ms){
+void TIMER_Delay_ms(int ms)
+{
 	uint32_t flag;
 
 	if (ms <= 0) {

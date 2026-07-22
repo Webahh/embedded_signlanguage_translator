@@ -39,7 +39,8 @@ volatile int ltdc_layer_bg_buffer_draw_idx = 0;
  * @param [in] argb ARGB8888 colour value
  * @return RGB565 pixel value
  */
-static uint16_t _ARGBtoRGB565(uint32_t argb) {
+static uint16_t _ARGBtoRGB565(uint32_t argb)
+{
     uint8_t r = (argb >> 16) & 0xFF;
     uint8_t g = (argb >> 8)  & 0xFF;
     uint8_t b = (argb)       & 0xFF;
@@ -52,7 +53,8 @@ static uint16_t _ARGBtoRGB565(uint32_t argb) {
  * @param [in] f Flexible pixel format descriptor
  * @return FPF0R register value
  */
-static uint32_t _FPF_EncodeFPF0R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
+static uint32_t _FPF_EncodeFPF0R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f)
+{
     return ((uint32_t)(f->red_len  & 0xF)  << LTDC_LxFPF0R_RLEN_Pos) |
            ((uint32_t)(f->red_pos  & 0x1F) << LTDC_LxFPF0R_RPOS_Pos) |
            ((uint32_t)(f->alpha_len & 0xF)  << LTDC_LxFPF0R_ALEN_Pos) |
@@ -65,7 +67,8 @@ static uint32_t _FPF_EncodeFPF0R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f
  * @param [in] f Flexible pixel format descriptor
  * @return FPF1R register value
  */
-static int32_t _FPF_EncodeFPF1R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
+static int32_t _FPF_EncodeFPF1R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f)
+{
     return ((uint32_t)(f->bytes_per_pixel & 0x7)  << LTDC_LxFPF1R_PSIZE_Pos) |
            ((uint32_t)(f->blue_len        & 0xF)  << LTDC_LxFPF1R_BLEN_Pos) |
            ((uint32_t)(f->blue_pos        & 0x1F) << LTDC_LxFPF1R_BPOS_Pos) |
@@ -80,7 +83,8 @@ static int32_t _FPF_EncodeFPF1R(const LTDC_Layer_FlexiblePixelFormat_TypeDef *f)
  * @param [in] f    Flexible pixel format descriptor
  * @return Pixel value encoded in the layer's flexible format
  */
-static uint32_t _ARGBtoFlexible(uint32_t argb, const LTDC_Layer_FlexiblePixelFormat_TypeDef *f) {
+static uint32_t _ARGBtoFlexible(uint32_t argb, const LTDC_Layer_FlexiblePixelFormat_TypeDef *f)
+{
     uint32_t pixel = 0;
     if (f->alpha_len) {
         uint32_t v = ((argb >> 24) & 0xFF) >> (8 - f->alpha_len);
@@ -106,7 +110,8 @@ static uint32_t _ARGBtoFlexible(uint32_t argb, const LTDC_Layer_FlexiblePixelFor
  *
  * @param [in] cfg Layer configuration
  */
-static void _PixelFormat_Set(const LTDC_Layer_Config_TypeDef *cfg){
+static void _PixelFormat_Set(const LTDC_Layer_Config_TypeDef *cfg)
+{
     if (cfg->pixel_format == LTDC_PF_Flexible) {
         if (cfg->flexible_fmt != NULL) {
             cfg->regs->PFCR  = 0b111;
@@ -125,7 +130,8 @@ static void _PixelFormat_Set(const LTDC_Layer_Config_TypeDef *cfg){
 // API
 // ====================================
 
-void LTDC_ConfigLayer(const LTDC_Layer_Config_TypeDef *cfg){
+void LTDC_ConfigLayer(const LTDC_Layer_Config_TypeDef *cfg)
+{
     uint32_t hsync = 4U, hbp = 4U, vsync = 4U, vbp = 4U;
     int bpp;
     LTDC_Layer_BytesPerPixel(cfg, &bpp);
@@ -191,20 +197,24 @@ void LTDC_ConfigLayer(const LTDC_Layer_Config_TypeDef *cfg){
     while (LTDC->SRCR & LTDC_SRCR_IMR);
 }
 
-void LTDC_Layer_Layer1_Config(void){
+void LTDC_Layer_Layer1_Config(void)
+{
     LTDC_ConfigLayer(&LTDC_Layer1Config);
 }
 
-void LTDC_Layer_Layer2_Config(void){
+void LTDC_Layer_Layer2_Config(void)
+{
     LTDC_ConfigLayer(&LTDC_Layer2Config);
 }
 
-void LTDC_Layer_Address_Set(const LTDC_Layer_Config_TypeDef *cfg){
+void LTDC_Layer_Address_Set(const LTDC_Layer_Config_TypeDef *cfg)
+{
     cfg->regs->CFBAR = (uint32_t)cfg->fb;
     LTDC->SRCR = LTDC_SRCR_VBR;
 }
 
-LTDC_Layer_Status_TypeDef LTDC_Layer_BytesPerPixel(const LTDC_Layer_Config_TypeDef *cfg, int *bpp) {
+LTDC_Layer_Status_TypeDef LTDC_Layer_BytesPerPixel(const LTDC_Layer_Config_TypeDef *cfg, int *bpp)
+{
     switch (cfg->pixel_format) {
         case LTDC_PF_ARGB8888:
         case LTDC_PF_ABGR8888:
@@ -234,7 +244,8 @@ LTDC_Layer_Status_TypeDef LTDC_Layer_BytesPerPixel(const LTDC_Layer_Config_TypeD
     }
 }
 
-LTDC_Layer_Status_TypeDef LTDC_Layer_ColorToPixel(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color, uint32_t *pixel) {
+LTDC_Layer_Status_TypeDef LTDC_Layer_ColorToPixel(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color, uint32_t *pixel)
+{
     if (cfg->pixel_format == LTDC_PF_Flexible && cfg->flexible_fmt != NULL) {
         *pixel = _ARGBtoFlexible(color, cfg->flexible_fmt);
         return LTDC_Layer_OK;

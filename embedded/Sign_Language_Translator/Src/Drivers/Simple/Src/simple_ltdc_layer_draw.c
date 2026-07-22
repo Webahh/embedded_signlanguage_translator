@@ -57,7 +57,8 @@ static void _plot4_32(volatile uint32_t *fb, int16_t cx, int16_t cy,
 // API
 // ====================================
 
-void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color){
+void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color)
+{
     uint32_t pixel;
     LTDC_Layer_ColorToPixel(cfg, color, &pixel);
     int bpp;
@@ -82,7 +83,8 @@ void LTDC_Layer_Draw_Fill(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color){
     }
 }
 
-void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color1, uint32_t color2) {
+void LTDC_Layer_Draw_Fill_2Sides(const LTDC_Layer_Config_TypeDef *cfg, uint32_t color1, uint32_t color2)
+{
     uint32_t p1;
     LTDC_Layer_ColorToPixel(cfg, color1, &p1);
     uint32_t p2;
@@ -172,7 +174,8 @@ void LTDC_Layer_Draw_Circle(const LTDC_Layer_Config_TypeDef *cfg, uint16_t pos_x
     }
 }
 
-void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y) {
+void LTDC_Layer_Draw_BlitImage(const LTDC_Layer_Config_TypeDef *cfg, const void *img, uint16_t img_w, uint16_t img_h, uint16_t dst_x, uint16_t dst_y)
+{
     int bpp;
     LTDC_Layer_BytesPerPixel(cfg, &bpp);
 
@@ -287,54 +290,14 @@ static const LandmarkConnection_TypeDef _hand_connections[] = {
     {5, 9}, {9, 13}, {13, 17}
 };
 
-#define _HAND_CONNECTION_COUNT \
-    ((uint32_t)(sizeof(_hand_connections) / sizeof(_hand_connections[0])))
-
-/**
- * @brief Draw hand ROI bounding box
- *
- * @param [in] roi   Hand ROI data
- * @param [in] color ARGB border colour
- *
- * @note D-cache: caller must clean the overlay buffer over the ROI area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_ROILandmark(const HandROI_TypeDef *roi, uint32_t color);
-
-/**
- * @brief Clear the previously drawn ROI bounding box
- *
- * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_ROIClearPrevious(void);
-
-/**
- * @brief Draw hand landmarks as filled circles
- *
- * @param [in] points Array of landmark points
- *
- * @note D-cache: caller must clean the overlay buffer over the landmark area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_Landmarks(const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
-
-/**
- * @brief Clear the previously drawn hand landmarks
- *
- * @note D-cache: caller must clean the overlay buffer over the cleared area (SCB_CleanDCache_by_Addr) before LTDC reads it.
- */
-void LTDC_Layer_Draw_LandmarksClearPrevious(void);
-
+#define _HAND_CONNECTION_COUNT 		   ((uint32_t)(sizeof(_hand_connections) / sizeof(_hand_connections[0])))
 
 static int32_t _abs_i32(int32_t v)
 {
     return (v < 0) ? -v : v;
 }
 
-static uint8_t _isLinePlausible(
-    int32_t x0,
-    int32_t y0,
-    int32_t x1,
-    int32_t y1
-)
+static uint8_t _isLinePlausible(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
 {
     int32_t dx = x1 - x0;
     int32_t dy = y1 - y0;
@@ -343,12 +306,7 @@ static uint8_t _isLinePlausible(
     return (dist_sq <= _LANDMARK_MAX_LINE_LEN_SQ) ? 1U : 0U;
 }
 
-static void _drawPixel(
-    const LTDC_Layer_Config_TypeDef *cfg,
-    uint16_t x,
-    uint16_t y,
-    uint32_t color
-)
+static void _drawPixel(const LTDC_Layer_Config_TypeDef *cfg, uint16_t x, uint16_t y, uint32_t color)
 {
     if ((cfg == NULL) || (cfg->fb == NULL)) {
         return;
@@ -382,14 +340,8 @@ static void _drawPixel(
     }
 }
 
-static void _drawLine(
-    const LTDC_Layer_Config_TypeDef *cfg,
-    int32_t x0,
-    int32_t y0,
-    int32_t x1,
-    int32_t y1,
-    uint32_t color
-)
+static void _drawLine(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0,
+					  int32_t x1, int32_t y1, uint32_t color)
 {
     if ((cfg == NULL) || (cfg->fb == NULL)) {
         return;
@@ -433,14 +385,8 @@ static void _drawLine(
     }
 }
 
-static void _drawLineThick(
-    const LTDC_Layer_Config_TypeDef *cfg,
-    int32_t x0,
-    int32_t y0,
-    int32_t x1,
-    int32_t y1,
-    uint32_t color
-)
+static void _drawLineThick(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int32_t y0,
+						   int32_t x1, int32_t y1, uint32_t color)
 {
     for (int32_t ox = -_LANDMARK_LINE_THICKNESS;
          ox <= _LANDMARK_LINE_THICKNESS;
@@ -466,13 +412,9 @@ static void _drawLineThick(
 // Image Conversion
 // ====================================
 
-void LTDC_BlitRGB888ToARGB4444(
-    const LTDC_Layer_Config_TypeDef *cfg,
-    const uint8_t *source,
-    uint16_t source_width,
-    uint16_t source_height,
-    uint16_t destination_x,
-    uint16_t destination_y)
+// only used for debugging!
+void LTDC_BlitRGB888ToARGB4444(const LTDC_Layer_Config_TypeDef *cfg, const uint8_t *source, uint16_t source_width,
+							   uint16_t source_height, uint16_t destination_x, uint16_t destination_y)
 {
     if ((cfg == NULL) ||
         (cfg->fb == NULL) ||

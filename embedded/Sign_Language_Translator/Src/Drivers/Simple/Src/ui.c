@@ -59,13 +59,15 @@
 // -------------------------------------------------------------------------
 
 // Y-offset of item idx below the hamburger button
-static uint16_t _item_y(const UI_Drawer_TypeDef *drawer, uint8_t idx) {
+static uint16_t _item_y(const UI_Drawer_TypeDef *drawer, uint8_t idx)
+{
 	return drawer->y_pos + UI_DRAWER_BTN_SIZE + _BTN_PAD_TOP
 		+ idx * (UI_DRAWER_ITEM_HEIGHT + UI_DRAWER_ITEM_GAP);
 }
 
 // Pixel width of a text string at fixed font width
-static uint8_t _label_w(const char *text) {
+static uint8_t _label_w(const char *text)
+{
 	uint8_t width = 0;
 	for (uint8_t i = 0; text[i]; i++) {
 		width += _FONT_W;
@@ -74,7 +76,8 @@ static uint8_t _label_w(const char *text) {
 }
 
 // Touch x -> 0-100 slider value, clamped
-static uint8_t _value_from_slider_touch(int16_t touch_x, uint16_t slider_start_x, uint16_t slider_width) {
+static uint8_t _value_from_slider_touch(int16_t touch_x, uint16_t slider_start_x, uint16_t slider_width)
+{
 	int16_t relative_pos;
 	if (touch_x < slider_start_x) {
 		relative_pos = 0;
@@ -96,13 +99,15 @@ static uint8_t _value_from_slider_touch(int16_t touch_x, uint16_t slider_start_x
 
 // Single-line label (no interactivity)
 static void _draw_label(const LTDC_Layer_Config_TypeDef *cfg,
-	uint16_t x, uint16_t y, const char *s, uint32_t color) {
+	uint16_t x, uint16_t y, const char *s, uint32_t color)
+{
 	TEXT_String_draw(cfg, s, x, y, color);
 }
 
 // On/off switch: label + coloured track + circular thumb
 static void _draw_toggle(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t item_y = _item_y(drawer, idx);
 	uint16_t label_x = drawer->x_pos + _PAD_L;
@@ -126,7 +131,8 @@ static void _draw_toggle(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Value bar: label + track + accent fill + thumb at current position
 static void _draw_slider(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t item_y = _item_y(drawer, idx);
 	uint16_t label_x = drawer->x_pos + _PAD_L;
@@ -154,7 +160,8 @@ static void _draw_slider(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Segmented control: highlights the active segment
 static void _draw_selector(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t item_y = _item_y(drawer, idx);
 	uint16_t start_x = drawer->x_pos + _PAD_L;
@@ -179,7 +186,8 @@ static void _draw_selector(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Visibility eye + opacity slider in one row
 static void _draw_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t item_y = _item_y(drawer, idx);
 	uint16_t content_x = drawer->x_pos + _PAD_L;
@@ -227,7 +235,8 @@ static void _draw_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Dispatch to the correct drawer function for this item type
 static void _draw_item(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 
 	if (_item_y(drawer, idx) + UI_DRAWER_ITEM_HEIGHT > cfg->height) {
 		return;
@@ -253,7 +262,8 @@ static void _draw_item(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Three horizontal bars stacked vertically
 static void _draw_hamburger(const LTDC_Layer_Config_TypeDef *cfg,
-	int16_t button_x, int16_t button_y, uint32_t color) {
+	int16_t button_x, int16_t button_y, uint32_t color)
+{
 	uint16_t center_x = (uint16_t)button_x + (UI_DRAWER_BTN_SIZE / 2);
 	uint16_t bar_start_x = center_x - _BAR_W / 2;
 	LTDC_Layer_Draw_Rect(cfg, bar_start_x, (uint16_t)button_y + _BAR_GAP + 4,
@@ -270,7 +280,8 @@ static void _draw_hamburger(const LTDC_Layer_Config_TypeDef *cfg,
 
 // Flip toggle value and fire callback
 static int _touch_toggle(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg) {
+	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg)
+{
 	(void)tx; (void)ty; (void)cfg;
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	item->value = !item->value;
@@ -284,7 +295,8 @@ static int _touch_toggle(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Map touch x-coordinate onto a 0-100 value and fire callback
 static int _touch_slider(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg) {
+	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg)
+{
 	(void)ty; (void)cfg;
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t slider_start_x = drawer->x_pos + _PAD_L + _label_w(item->label) + _SLIDER_GAP;
@@ -299,7 +311,8 @@ static int _touch_slider(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Map touch x-coordinate onto a segment index and fire callback
 static int _touch_selector(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg) {
+	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg)
+{
 	(void)ty; (void)cfg;
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t seg_start_x = drawer->x_pos + _PAD_L;
@@ -322,7 +335,8 @@ static int _touch_selector(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Check eye region first (toggle visibility), else handle slider
 static int _touch_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
-	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg) {
+	uint16_t tx, uint16_t ty, const LTDC_Layer_Config_TypeDef *cfg)
+{
 	(void)ty; (void)cfg;
 	UI_DrawerItem_TypeDef *item = &drawer->items[idx];
 	uint16_t eye_x = drawer->x_pos + _PAD_L + _label_w(item->label) + _EYE_GAP;
@@ -358,7 +372,8 @@ static int _touch_composite(UI_Drawer_TypeDef *drawer, uint8_t idx,
 
 // Set defaults and assign the two framebuffers
 void UI_Drawer_Init(UI_Drawer_TypeDef *drawer,
-	uint8_t *buf_open, uint8_t *buf_closed) {
+	uint8_t *buf_open, uint8_t *buf_closed)
+{
 	drawer->x_pos = 0;
 	drawer->y_pos = 0;
 	drawer->is_open = 0;
@@ -374,8 +389,8 @@ void UI_Drawer_Init(UI_Drawer_TypeDef *drawer,
 }
 
 // Pre-render both open/closed states into their respective buffers
-void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer,
-	LTDC_Layer_Config_TypeDef *cfg) {
+void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer, LTDC_Layer_Config_TypeDef *cfg)
+{
 	LTDC_Layer_Config_TypeDef temp_cfg = *cfg;
 
 	// Render closed state
@@ -399,7 +414,8 @@ void UI_Drawer_Prepare(UI_Drawer_TypeDef *drawer,
 // Add a new item at the end of the items array
 UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 	UI_DrawerItemType_TypeDef type, const char *label,
-	UI_DrawerItemCallback_TypeDef cb, void *context, int *out_idx) {
+	UI_DrawerItemCallback_TypeDef cb, void *context, int *out_idx)
+{
 
 	if (drawer->item_count >= UI_DRAWER_MAX_ITEMS) {
 		return UI_ERR_FULL;
@@ -431,15 +447,16 @@ UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 
 // Swap framebuffer pointers to show/hide the drawer
 void UI_Drawer_Toggle(UI_Drawer_TypeDef *drawer,
-	LTDC_Layer_Config_TypeDef *cfg) {
+	LTDC_Layer_Config_TypeDef *cfg)
+{
 	drawer->is_open = !drawer->is_open;
 	cfg->fb = drawer->is_open ? drawer->buf_open : drawer->buf_closed;
 	LTDC_Layer_Address_Set(cfg);
 }
 
 // Read item.value (toggle 0/1, slider 0-100, selector segment index)
-UI_Status_TypeDef UI_Drawer_GetItemValue(
-	const UI_Drawer_TypeDef *drawer, uint8_t idx, uint8_t *out_val) {
+UI_Status_TypeDef UI_Drawer_GetItemValue(const UI_Drawer_TypeDef *drawer, uint8_t idx, uint8_t *out_val)
+{
 
 	if (idx >= drawer->item_count) {
 		return UI_ERR_RANGE;
@@ -459,7 +476,8 @@ UI_Status_TypeDef UI_Drawer_GetItemValue(
 // Two-stage touch: press marks the active item, release acts on it
 UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
 	uint16_t touch_x, uint16_t touch_y, uint8_t pressed,
-	LTDC_Layer_Config_TypeDef *cfg, int *out_idx) {
+	LTDC_Layer_Config_TypeDef *cfg, int *out_idx)
+{
 	// --- Press phase: remember which item was hit ---
 	if (pressed) {
 		// Hamburger button area -> toggle open/close on release
@@ -547,7 +565,8 @@ UI_Status_TypeDef UI_Drawer_HandleTouch(UI_Drawer_TypeDef *drawer,
 
 // Full redraw: clear, then draw panel background + all items + hamburger
 void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer,
-	const LTDC_Layer_Config_TypeDef *cfg) {
+	const LTDC_Layer_Config_TypeDef *cfg)
+{
 	// Clear the entire drawer area
 	LTDC_Layer_Draw_Rect(cfg, drawer->x_pos, drawer->y_pos,
 		UI_DRAWER_WIDTH, cfg->height - drawer->y_pos, 0x00000000U);
@@ -593,7 +612,8 @@ void UI_Drawer_Draw(UI_Drawer_TypeDef *drawer,
 
 // Redraw the surface card + controls for a single item
 void UI_Drawer_DrawItem(UI_Drawer_TypeDef *drawer,
-	uint8_t idx, const LTDC_Layer_Config_TypeDef *cfg) {
+	uint8_t idx, const LTDC_Layer_Config_TypeDef *cfg)
+{
 
 	if (idx >= drawer->item_count || !drawer->is_open) {
 		return;

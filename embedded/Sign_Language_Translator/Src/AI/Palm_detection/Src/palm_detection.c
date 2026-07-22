@@ -28,8 +28,7 @@ AI_Status_TypeDef PALM_Init(void)
 {
     LL_ATON_RT_Init_Network(&NN_Instance_palm_detection_model_v3);
 
-    LL_ATON_Set_User_Input_Buffer(&NN_Instance_palm_detection_model_v3, 0,
-                                   palm_input_mem, PALM_INPUT_SIZE);
+    LL_ATON_Set_User_Input_Buffer(&NN_Instance_palm_detection_model_v3, 0, palm_input_mem, PALM_INPUT_SIZE);
 
     palm_input_info = LL_ATON_Input_Buffers_Info(&NN_Instance_palm_detection_model_v3);
     palm_output_info = LL_ATON_Output_Buffers_Info(&NN_Instance_palm_detection_model_v3);

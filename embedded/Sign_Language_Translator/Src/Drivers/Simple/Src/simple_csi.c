@@ -63,7 +63,8 @@ static const struct {
  * @param [in] reg_lsb | Register address LSB
  * @param [in] val     | Value to write
  */
-static void CSI_write_phy_reg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val){
+static void CSI_write_phy_reg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val)
+{
     _csi->PTCR1 |= CSI_PTCR1_TWM;
     _csi->PTCR0 |= CSI_PTCR0_TCKEN;
     _csi->PTCR1 |= CSI_PTCR1_TWM;
@@ -84,7 +85,8 @@ static void CSI_write_phy_reg(uint8_t reg_msb, uint8_t reg_lsb, uint8_t val){
 
 // ---- API ----
 
-void CSI_Init(void){
+void CSI_Init(void)
+{
     RCC_enable_CSI();
     RCC_reset_CSI();
 
@@ -92,7 +94,8 @@ void CSI_Init(void){
     NVIC_EnableIRQ(CSI_IRQn);
 }
 
-void CSI_Config(CSI_cfg_TypeDef *conf){
+void CSI_Config(CSI_cfg_TypeDef *conf)
+{
     uint32_t hsfreqrange, osc_target, phy_idx;
 
     phy_idx = conf->phy_bitrate;
@@ -158,7 +161,8 @@ void CSI_Config(CSI_cfg_TypeDef *conf){
     _csi->PMCR = 0;
 }
 
-void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format){
+void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format)
+{
     uint32_t cfg = (dt_format << CSI_VC0CFGR1_CDTFT_Pos) | CSI_VC0CFGR1_ALLDT;
 
     if (vc == CSI_VIRTUAL_CHANNEL0)
@@ -171,7 +175,8 @@ void CSI_SetVirtualChannelConfig(uint32_t vc, uint32_t dt_format){
         _csi->VC3CFGR1 = cfg;
 }
 
-CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc){
+CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc)
+{
     uint32_t mask;
 
     if (vc == CSI_VIRTUAL_CHANNEL0)
@@ -194,7 +199,8 @@ CSI_Status_TypeDef CSI_StartVirtualChannel(uint32_t vc){
     return CSI_ERROR;
 }
 
-void CSI_DBG_IRQHandler(void){
+void CSI_DBG_IRQHandler(void)
+{
 	SCHEDULER_ISR_enter();
     if (_csi->SR0) {
         _csi->FCR0 = _csi->SR0;

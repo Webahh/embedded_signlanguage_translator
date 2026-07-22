@@ -28,7 +28,8 @@
  * @retval I2C_ERROR   Arbitration lost, bus error, or overrun
  * @retval I2C_TIMEOUT Loop expired
  */
-static I2C_Status_TypeDef I2C_WaitFlag(I2C_TypeDef *I2CX, uint32_t flag, uint8_t set){
+static I2C_Status_TypeDef I2C_WaitFlag(I2C_TypeDef *I2CX, uint32_t flag, uint8_t set)
+{
     uint32_t timeout = _TIMEOUT_MAX;
 
     while (timeout--) {
@@ -74,7 +75,8 @@ static I2C_Status_TypeDef I2C_WaitFlag(I2C_TypeDef *I2CX, uint32_t flag, uint8_t
  * @retval I2C_OK      Bus became free
  * @retval I2C_TIMEOUT Bus stayed busy
  */
-static I2C_Status_TypeDef I2C_WaitNotBusy(I2C_TypeDef *I2CX){
+static I2C_Status_TypeDef I2C_WaitNotBusy(I2C_TypeDef *I2CX)
+{
     uint32_t timeout = _TIMEOUT_MAX;
 
     while (timeout--) {
@@ -87,7 +89,8 @@ static I2C_Status_TypeDef I2C_WaitNotBusy(I2C_TypeDef *I2CX){
 
 // ---- API ----
 
-void I2C_Config(I2C_TypeDef *I2CX, uint32_t clock_source, uint32_t timing){
+void I2C_Config(I2C_TypeDef *I2CX, uint32_t clock_source, uint32_t timing)
+{
     RCC_setI2C_clock_source(I2CX, clock_source);
     RCC_enable_I2C(I2CX);
     RCC_reset_I2C(I2CX);
@@ -153,11 +156,9 @@ I2C_Status_TypeDef I2C_Mem_write(I2C_TypeDef *I2CX,
     return I2C_OK;
 }
 
-I2C_Status_TypeDef I2C_Mem_read(I2C_TypeDef *I2CX,
-                                uint16_t dev_addr,
-                                uint16_t mem_addr,
-                                uint8_t *data,
-                                uint16_t len){
+I2C_Status_TypeDef I2C_Mem_read(I2C_TypeDef *I2CX, uint16_t dev_addr, uint16_t mem_addr,
+                                uint8_t *data, uint16_t len)
+{
     I2C_Status_TypeDef ret;
 
     if (data == NULL || len == 0 || len > 255U)
@@ -208,7 +209,8 @@ I2C_Status_TypeDef I2C_Mem_read(I2C_TypeDef *I2CX,
     return I2C_OK;
 }
 
-I2C_Status_TypeDef I2C_Device_ready(I2C_TypeDef *I2CX, uint16_t dev_addr){
+I2C_Status_TypeDef I2C_Device_ready(I2C_TypeDef *I2CX, uint16_t dev_addr)
+{
     I2CX->ICR = I2C_ICR_STOPCF | I2C_ICR_NACKCF;
 
     I2CX->CR2 &= ~(I2C_CR2_SADD  | I2C_CR2_NBYTES | I2C_CR2_RELOAD  |
@@ -234,7 +236,8 @@ I2C_Status_TypeDef I2C_Device_ready(I2C_TypeDef *I2CX, uint16_t dev_addr){
     return I2C_TIMEOUT;
 }
 
-void I2C_Scan(I2C_TypeDef *I2CX, uint8_t *found_addrs, uint32_t *count){
+void I2C_Scan(I2C_TypeDef *I2CX, uint8_t *found_addrs, uint32_t *count)
+{
     *count = 0;
     for (uint16_t addr = 1; addr <= 0x7F; addr++) {
         if (I2C_Device_ready(I2CX, addr) == I2C_OK) {

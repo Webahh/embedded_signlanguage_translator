@@ -11,7 +11,8 @@
 static volatile int          _busy          = 0;
 static DMA2D_Handle_TypeDef *_active_handle = NULL;
 
-void DMA2D_Init(DMA2D_Handle_TypeDef *h){
+void DMA2D_Init(DMA2D_Handle_TypeDef *h)
+{
     if (!h) return;
 
     RCC_enable_DMA2D();
@@ -25,7 +26,8 @@ void DMA2D_Init(DMA2D_Handle_TypeDef *h){
     _active_handle = h;
 }
 
-DMA2D_Status_TypeDef DMA2D_Transfer(DMA2D_Handle_TypeDef *h){
+DMA2D_Status_TypeDef DMA2D_Transfer(DMA2D_Handle_TypeDef *h)
+{
 	if (!h) return DMA2D_ERROR_PARAM;
 	if (_busy) return DMA2D_ERROR_BUSY;
 
@@ -69,7 +71,8 @@ DMA2D_Status_TypeDef DMA2D_Transfer(DMA2D_Handle_TypeDef *h){
 	return DMA2D_OK;
 }
 
-void DMA2D_IRQHandler(void){
+void DMA2D_IRQHandler(void)
+{
 	SCHEDULER_ISR_enter();
 
 	DMA2D_Handle_TypeDef *h = _active_handle;

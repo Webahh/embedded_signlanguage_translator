@@ -22,7 +22,8 @@
 /**
  * @brief Configure LTDC GPIO pins
  */
-static void _ConfigGPIO(void){
+static void _ConfigGPIO(void)
+{
     uint32_t pa_pins[] = {0, 1, 2, 7, 8, 15};
     for (int i = 0; i < 6; i++)
         GPIO_Config(GPIOA, pa_pins[i], GPIO_LTDC_cfg);
@@ -54,7 +55,8 @@ static void _ConfigGPIO(void){
 /**
  * @brief Power on the display panel
  */
-static void _PowerOn(void){
+static void _PowerOn(void)
+{
     GPIO_BSRR_reset(GPIOE, 1);
     TIMER_Delay_ms(10);
     GPIO_BSRR_set(GPIOE, 1);
@@ -68,7 +70,8 @@ static void _PowerOn(void){
 /**
  * @brief Configure LTDC display timings
  */
-static void _ConfigTiming(void){
+static void _ConfigTiming(void)
+{
     uint32_t hsync = 4U, hbp = 4U, hfp = 4U, width = 800U;
     uint32_t vsync = 4U, vbp = 4U, vfp = 4U, height = 480U;
 
@@ -89,7 +92,8 @@ static void _ConfigTiming(void){
 // API
 // -------------------------------------------------------------------------
 
-void LTDC_Init(void){
+void LTDC_Init(void)
+{
     RCC_enable_LTDC_memory();
     RCC_config_LTDC_25MHz_clock();
 
@@ -110,7 +114,8 @@ void LTDC_Init(void){
     LTDC->GCR |= LTDC_GCR_LTDCEN;
 }
 
-void LTDC_BackgroundColor_Set(uint8_t r, uint8_t g, uint8_t b){
+void LTDC_BackgroundColor_Set(uint8_t r, uint8_t g, uint8_t b)
+{
     while (!(LTDC->CDSR & LTDC_CDSR_VDES));
     while (LTDC->CDSR & LTDC_CDSR_VDES);
     LTDC->BCCR = ((uint32_t)r << 16U) | ((uint32_t)g << 8U) | (uint32_t)b;

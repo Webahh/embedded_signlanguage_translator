@@ -20,7 +20,8 @@
  * @param [in] af    | Alternate function number
  * @param [in] speed | Output speed setting
  */
-static void GPIO_set_af(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t af, uint32_t speed){
+static void GPIO_set_af(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t af, uint32_t speed)
+{
     GPIOX->OSPEEDR =
         (GPIOX->OSPEEDR & ~(3U << (2U * pinNr))) |
         (((uint32_t)speed & 3U) << (2U * pinNr));
@@ -36,7 +37,8 @@ static void GPIO_set_af(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t af, uint32
 
 // ---- API ----
 
-void GPIO_Config(GPIO_TypeDef *GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg){
+void GPIO_Config(GPIO_TypeDef *GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg)
+{
     RCC_enable_GPIO(GPIOX);
     GPIOX->MODER  = (GPIOX->MODER  & ~(3U << (2U * pinNr))) | (cfg.mode  << (2U * pinNr));
     GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr)))     | (cfg.otyp  << (pinNr));
@@ -47,7 +49,8 @@ void GPIO_Config(GPIO_TypeDef *GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg){
     }
 }
 
-GPIO_Status_TypeDef GPIO_get(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t *pinState){
+GPIO_Status_TypeDef GPIO_get(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t *pinState)
+{
     if (pinNr > 15U || pinState == NULL)
         return GPIO_ERROR;
 
@@ -55,17 +58,20 @@ GPIO_Status_TypeDef GPIO_get(GPIO_TypeDef *GPIOX, uint32_t pinNr, uint32_t *pinS
     return GPIO_OK;
 }
 
-void GPIO_BSRR_toggle(GPIO_TypeDef *GPIOX, uint32_t pinNr){
+void GPIO_BSRR_toggle(GPIO_TypeDef *GPIOX, uint32_t pinNr)
+{
     if (GPIOX->ODR & (1U << pinNr))
         GPIOX->BSRR = (1U << (pinNr + 16U));
     else
         GPIOX->BSRR = (1U << pinNr);
 }
 
-void GPIO_BSRR_set(GPIO_TypeDef *GPIOX, uint32_t pinNr){
+void GPIO_BSRR_set(GPIO_TypeDef *GPIOX, uint32_t pinNr)
+{
     GPIOX->BSRR = (1U << pinNr);
 }
 
-void GPIO_BSRR_reset(GPIO_TypeDef *GPIOX, uint32_t pinNr){
+void GPIO_BSRR_reset(GPIO_TypeDef *GPIOX, uint32_t pinNr)
+{
     GPIOX->BSRR = (1U << (pinNr + 16U));
 }

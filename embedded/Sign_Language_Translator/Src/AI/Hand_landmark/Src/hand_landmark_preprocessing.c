@@ -5,13 +5,6 @@
  *      Author: Weber
  */
 
-/*
- * hand_landmark_preprocessing.c
- *
- *  Created on: 01.07.2026
- *      Author: Weber
- */
-
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -87,10 +80,9 @@ AI_Status_TypeDef LANDMARK_PreprocessROI(const uint8_t *source, uint32_t source_
             const uint32_t off11 = y1 * source_stride_bytes + x1 * RGB888_CHANNEL_COUNT;
 
             /*
-             * Source is BGR888, Modelinput is RGB888.
+             * Source is BGR888, Modelinput is RGB888. -> Switch Channels
              */
             for (uint32_t ch = 0U; ch < 3U; ch++) {
-
                 const uint32_t src_ch =
                     (ch == 0U) ? 2U :
                     (ch == 1U) ? 1U :

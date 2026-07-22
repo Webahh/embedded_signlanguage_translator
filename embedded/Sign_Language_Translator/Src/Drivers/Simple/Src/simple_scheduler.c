@@ -130,7 +130,8 @@ void NMI_Handler(void);
  *
  * @param [in] slot  Task slot index
  */
-static void _compute_psplim(int slot) {
+static void _compute_psplim(int slot)
+{
 	uint32_t bytes = _task_stack_sizes[slot] * 4;
 	uint32_t guard = bytes / 4;
 	if (guard < 64) guard = 64;
@@ -158,7 +159,8 @@ static void _compute_psplim(int slot) {
  *
  * @param [in] i  Task slot index
  */
-static void _Task_Stack_init(int i){
+static void _Task_Stack_init(int i)
+{
 	uint32_t words = _task_stack_sizes[i];
 	uint32_t *stack_base = (uint32_t *)((uint32_t)_task_stack_bases[i] & ~7U);
 
@@ -188,7 +190,8 @@ static void _Task_Stack_init(int i){
  * has a non-zero period, the tick ISR will move it back to Ready
  * when the period elapses
  */
-static void _Task_exit(void){
+static void _Task_exit(void)
+{
 	__disable_irq();
 	_tasks[_task_current].state = TaskBlocked;
 
@@ -225,7 +228,8 @@ __attribute__((noreturn)) static void _Task_Idle(void){
  *
  * @return index of the next task to run
  */
-static int _Task_SelectNext(void){
+static int _Task_SelectNext(void)
+{
 	int best = -1;
 	uint8_t best_prio = 0xFF;
 
@@ -289,7 +293,8 @@ static int _Task_SelectNext(void){
 /**
  * @brief Print per-task CPU utilisation statistics
  */
-static void _PrintStats(void){
+static void _PrintStats(void)
+{
 	__disable_irq();
 
 	uint32_t total = 0;
@@ -385,7 +390,8 @@ static void _PrintStats(void){
  * Restores the first task's context from its TCB, switches to
  * PSP mode, starts TIM7, and returns to the task.
  */
-__attribute__((naked)) void SVC_Handler(void){
+__attribute__((naked)) void SVC_Handler(void)
+{
 	__asm volatile (
 		"ldr    r0, =_task_current                  \n"
 		"ldr    r3, [r0]                            \n"
@@ -427,7 +433,8 @@ __attribute__((naked)) void SVC_Handler(void){
  * outgoing task, selects the next task, restores its registers,
  * and returns to it.
  */
-__attribute__((naked)) void PendSV_Handler(void){
+__attribute__((naked)) void PendSV_Handler(void)
+{
 	__asm volatile (
 		"cpsid	i\n"
 
@@ -487,7 +494,8 @@ __attribute__((naked)) void PendSV_Handler(void){
 /**
  * @brief NMI handler - external / RCC clock loss / power failure
  */
-__attribute__((naked)) void NMI_Handler(void){
+__attribute__((naked)) void NMI_Handler(void)
+{
 	__asm volatile (
 		"mov r0, lr\n"
 		"tst r0, #4\n"
@@ -503,7 +511,8 @@ __attribute__((naked)) void NMI_Handler(void){
  * @brief HardFault handler - escalation from BusFault/MemManage or
  *        synchronous BusFault on unprivileged instruction fetch
  */
-__attribute__((naked)) void HardFault_Handler(void){
+__attribute__((naked)) void HardFault_Handler(void)
+{
 	__asm volatile (
 		"mov r0, lr\n"
 		"tst r0, #4\n"
@@ -518,7 +527,8 @@ __attribute__((naked)) void HardFault_Handler(void){
 /**
  * @brief MemManage handler - MPU violation
  */
-__attribute__((naked)) void MemManage_Handler(void){
+__attribute__((naked)) void MemManage_Handler(void)
+{
 	__asm volatile (
 		"mov r0, lr\n"
 		"tst r0, #4\n"
@@ -534,7 +544,8 @@ __attribute__((naked)) void MemManage_Handler(void){
  * @brief BusFault handler - memory transaction error (precise / imprecise
  *        data or instruction fetch), including stack-push to invalid address
  */
-__attribute__((naked)) void BusFault_Handler(void){
+__attribute__((naked)) void BusFault_Handler(void)
+{
 	__asm volatile (
 		"mov r0, lr\n"
 		"tst r0, #4\n"
@@ -550,7 +561,8 @@ __attribute__((naked)) void BusFault_Handler(void){
  * @brief UsageFault handler - stack overflow, undefined instruction,
  *        unaligned access, divide-by-zero
  */
-__attribute__((naked)) void UsageFault_Handler(void){
+__attribute__((naked)) void UsageFault_Handler(void)
+{
 	__asm volatile (
 		"mov r0, lr\n"
 		"tst r0, #4\n"
@@ -573,7 +585,8 @@ __attribute__((naked)) void UsageFault_Handler(void){
  * PendSV is kept at lowest priority so it runs only after all
  * other interrupt processing completes.
  */
-static void _StartTick(void){
+static void _StartTick(void)
+{
 	NVIC_ClearPendingIRQ(TIM7_IRQn);
 	NVIC_EnableIRQ(TIM7_IRQn);
 	TIMER_Start(TIM7);
@@ -586,7 +599,8 @@ static void _StartTick(void){
  * Increments the system tick counter and marks tasks ready when
  * their period has elapsed, then pends PendSV for context switch.
  */
-void TIM7_IRQHandler(void){
+void TIM7_IRQHandler(void)
+{
 	SCHEDULER_ISR_enter();
 
 	uint32_t tim_flag;
@@ -632,7 +646,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
 	uint32_t period_ms,
 	uint8_t priority,
 	uint32_t stack_size_words,
-	uint8_t* taskIndex){
+	uint8_t* taskIndex)
+{
 
 	if (taskIndex == NULL)  { return SCHEDULER_ERR_NOT_FOUND;  }
 	if (pvTaskCode == NULL) { return SCHEDULER_ERR_TASK_INVALID; }
@@ -717,7 +732,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_add(
  * @retval SCHEDULER_OK            Task removed
  * @retval SCHEDULER_ERR_NOT_FOUND Index out of range
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
+SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex)
+{
 	if (taskIndex < 0 || taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
@@ -737,7 +753,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_remove(int taskIndex){
  * @retval SCHEDULER_OK            Task suspended
  * @retval SCHEDULER_ERR_NOT_FOUND Index invalid or already deleted
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex){
+SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex)
+{
 	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
@@ -761,7 +778,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_suspend(uint8_t taskIndex){
  * @retval SCHEDULER_OK            Task resumed
  * @retval SCHEDULER_ERR_NOT_FOUND Index invalid or not suspended
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
+SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex)
+{
 	if (taskIndex >= SCHEDULER_IDLE_TASK_INDEX) {
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
@@ -781,7 +799,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Task_resume(uint8_t taskIndex){
 /**
  * @brief Suspend the currently running task
  */
-void SCHEDULER_Task_suspend_self(void){
+void SCHEDULER_Task_suspend_self(void)
+{
 	_tasks[_task_current].state = TaskSuspended;
 	SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
@@ -798,7 +817,8 @@ void SCHEDULER_Task_suspend_self(void){
  * after PSP and CONTROL are valid, preventing PendSV from firing before
  * the first task context is set up.
  */
-void SCHEDULER_System_init(void){
+void SCHEDULER_System_init(void)
+{
 	TIMER_Config(TIM7, 400, 999, 0);
 	TIMER_EnableIT(TIM7);
 
@@ -822,7 +842,8 @@ void SCHEDULER_System_init(void){
  * @retval SCHEDULER_OK            Success
  * @retval SCHEDULER_ERR_NOT_FOUND tick pointer is NULL
  */
-SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
+SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick)
+{
 	if (tick == 0) {
 		return SCHEDULER_ERR_NOT_FOUND;
 	}
@@ -838,7 +859,8 @@ SCHEDULER_Status_TypeDef SCHEDULER_Tick_get(uint32_t* tick){
  * enables FPU context save and lazy stacking, selects the
  * first task, then triggers SVC to bootstrap into task context.
  */
-void SCHEDULER_Tasks_run(void){
+void SCHEDULER_Tasks_run(void)
+{
 	__disable_irq();
 
 	uint8_t idle_slot = SCHEDULER_IDLE_TASK_INDEX;
@@ -873,7 +895,8 @@ void SCHEDULER_Tasks_run(void){
 // ISR Usage
 // -------------------------------------------------------------------------
 
-void SCHEDULER_ISR_enter(void){
+void SCHEDULER_ISR_enter(void)
+{
 	if (_isr_nest == 0) {
 		_isr_entry_cycle = DWT->CYCCNT;
 		_isr_owner_task = _task_current;
@@ -881,7 +904,8 @@ void SCHEDULER_ISR_enter(void){
 	_isr_nest++;
 }
 
-void SCHEDULER_ISR_exit(void){
+void SCHEDULER_ISR_exit(void)
+{
 	_isr_nest--;
 	if (_isr_nest == 0) {
 		uint32_t isr_cycles = DWT->CYCCNT - _isr_entry_cycle;
@@ -903,7 +927,8 @@ void SCHEDULER_ISR_exit(void){
  *
  * @return Stack size in words, or 0 if index is invalid
  */
-uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex){
+uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex)
+{
 	if (taskIndex >= SCHEDULER_MAX_TASKS) { return 0; }
 	return _task_stack_sizes[taskIndex];
 }
@@ -917,7 +942,8 @@ uint32_t SCHEDULER_GetTaskStackSize(uint8_t taskIndex){
  *
  * @return Used stack in words, or 0 if index is invalid
  */
-uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex){
+uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex)
+{
 	if (taskIndex >= SCHEDULER_MAX_TASKS) {
 		return 0;
 	}
@@ -947,8 +973,8 @@ uint32_t SCHEDULER_GetTaskStackUsed(uint8_t taskIndex){
  * @param [in] frame      Stack frame pointer (may be NULL)
  * @param [in] reason     Fault reason identifier (1-5)
  */
-static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame,
-	uint32_t reason){
+static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame, uint32_t reason)
+{
 
 	__disable_irq();
 
@@ -1038,14 +1064,15 @@ static void _FaultHandler_C(uint32_t exc_return, uint32_t *frame,
 // Debug API
 // -------------------------------------------------------------------------
 
-SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex){
+SCHEDULER_Status_TypeDef SCHEDULER_GetCurrentTask(int* taskIndex)
+{
 	if (taskIndex == 0) { return SCHEDULER_ERR_NOT_FOUND; }
 	*taskIndex = _task_current;
 	return SCHEDULER_OK;
 }
 
-SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task,
-	const char** name){
+SCHEDULER_Status_TypeDef SCHEDULER_GetTaskName(uint8_t task, const char** name)
+{
 
 	if (task >= SCHEDULER_MAX_TASKS) { return SCHEDULER_ERR_NOT_FOUND; }
 	if (name == 0)                   { return SCHEDULER_ERR_NOT_FOUND; }

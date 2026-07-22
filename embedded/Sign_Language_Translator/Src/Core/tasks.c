@@ -54,7 +54,6 @@ static char _sysinfo_h[12];
 static char _sysinfo_s[12];
 static char _sign_str[16];
 
-
 static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
@@ -67,10 +66,7 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         int next_disp_idx = (ltdc_layer_bg_buffer_disp_idx + 1) % LTDC_LAYER_DISPLAY_BUFFER_NB;
         int next_capt_idx = (ltdc_layer_bg_buffer_capt_idx + 1) % LTDC_LAYER_DISPLAY_BUFFER_NB;
 
-        DCMIPP_Pipe_UpdateBufAddr(
-            CAM_PIPE_DISPLAY,
-            (uint32_t)&ltdc_layer_bg_buffer[next_capt_idx]
-        );
+        DCMIPP_Pipe_UpdateBufAddr(CAM_PIPE_DISPLAY, (uint32_t)&ltdc_layer_bg_buffer[next_capt_idx]);
 
         LTDC_Layer1Config.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[next_disp_idx];
         LTDC_Layer_Address_Set(&LTDC_Layer1Config);
@@ -123,24 +119,6 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         nn_completed_buffer_idx = (DCMIPP->P2SR & DCMIPP_P2SR_LSTFRM) ? 1U : 0U;
         nn_frame_ready = 1U;
     }
-}
-
-__attribute__((noinline, optimize("O0"))) // No optimizations for better testing
-static int recursion(int n)
-{
-    volatile uint32_t marker = 0xDEADBEEF;
-    volatile uint32_t padding[8];
-
-    padding[0] = marker;
-
-    if (n == 0)
-        return padding[0];
-
-    return recursion(n - 1) + 1;
-}
-
-void vRecursionTestTask(void) {
-	recursion(20);
 }
 
 void vSystemTimeTask(void) {
@@ -213,7 +191,7 @@ typedef struct {
 #define LANDMARK_PRESENCE_THRESHOLD  	0.5f
 #define LANDMARK_LOST_FRAME_COUNT    	3U
 #define PALM_SEARCH_INTERVAL_MS      	200U
-#define FINGERALPHABET_INTERVAL_MS   	0U
+#define FINGERALPHABET_INTERVAL_MS   	100U
 #define LANDMARK_TRACK_INTERVAL_MS   	0U
 #define LANDMARK_PREDICTION_TIME_MS     25.0f
 #define LANDMARK_PREDICTION_MAX_DELTA   0.08f
@@ -261,7 +239,8 @@ static uint32_t previous_landmark_tick = 0U;
 static LandmarkPoint_TypeDef last_current_landmark_points[LANDMARK_POINT_COUNT];
 static float last_landmark_rotation = 0.0f;
 
-static void DMA2D_EnsureInit(void){
+static void DMA2D_EnsureInit(void)
+{
     if (!_dma2d_initialized) {
         DMA2D_Init(&_dma2d);
         _dma2d_initialized = 1;
@@ -355,13 +334,28 @@ static bool _isLandmarkValid(const LandmarkNetworkOutput_TypeDef *output)
 static void _resetTracking(void)
 {
     hand_state = HAND_STATE_PALM_SEARCH;
-
     landmark_lost_count = 0U;
 
     _clearPredictedOverlay();
 }
 
-static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
+static void _handleInvalidLandmark(void)
+{
+    if (landmark_lost_count < LANDMARK_LOST_FRAME_COUNT) {
+        landmark_lost_count++;
+    }
+
+    if (landmark_lost_count >= LANDMARK_LOST_FRAME_COUNT) {
+        DEBUG_PRINTF("AI state: PALM_SEARCH\r\n");
+        _resetTracking();
+    }
+}
+
+/* --------------------------------------------------------------------------
+ * AI Pipeline State Machine
+ * -------------------------------------------------------------------------- */
+
+static bool _aiRunLandmarkBlocking(uint8_t camera_buffer_idx)
 {
     // Invalidate camera buffer before CPU reads it (camera/DMA wrote to it)
     CACHE_INVAL(&ltdc_layer_bg_buffer[camera_buffer_idx], sizeof(ltdc_layer_bg_buffer[0]));
@@ -407,19 +401,7 @@ static bool _runLandmarkBlocking(uint8_t camera_buffer_idx)
     return true;
 }
 
-static void _handleInvalidLandmark(void)
-{
-    if (landmark_lost_count < LANDMARK_LOST_FRAME_COUNT) {
-        landmark_lost_count++;
-    }
-
-    if (landmark_lost_count >= LANDMARK_LOST_FRAME_COUNT) {
-        DEBUG_PRINTF("AI state: PALM_SEARCH\r\n");
-        _resetTracking();
-    }
-}
-
-static void _runFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
+static void _aiRunFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
 {
     uint32_t now;
     SCHEDULER_Tick_get(&now);
@@ -456,10 +438,6 @@ static void _runFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
                      fingeralphabet_result.label);
     }
 }
-
-/* --------------------------------------------------------------------------
- * AI Pipeline State Machine
- * -------------------------------------------------------------------------- */
 
 static void _aiUpdateUiContext(AIPipelineUi_TypeDef *ui)
 {
@@ -577,7 +555,7 @@ static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
 {
     uint32_t now;
 
-    if (!_runLandmarkBlocking(_saved_camera_buffer_idx)) {
+    if (!_aiRunLandmarkBlocking(_saved_camera_buffer_idx)) {
         _resetTracking();
         return false;
     }
@@ -642,7 +620,7 @@ static bool _aiRunLandmarkPass(bool from_palm, const AIPipelineUi_TypeDef *ui)
     }
 
     if ((ui != NULL) && (ui->ai_mode >= 2U)) {
-        _runFingeralphabetIfDue(ui);
+        _aiRunFingeralphabetIfDue(ui);
     }
 
     return true;

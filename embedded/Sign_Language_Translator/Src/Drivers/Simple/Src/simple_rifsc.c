@@ -25,7 +25,8 @@
  *
  * @return Position of the first set bit
  */
-static uint32_t _POSITION_VAL(uint32_t x){
+static uint32_t _POSITION_VAL(uint32_t x)
+{
 	uint32_t pos = 0;
 
 	while ((x & 1U) == 0U) {
@@ -42,7 +43,8 @@ static uint32_t _POSITION_VAL(uint32_t x){
  * @param [in] MasterId RIMC master index
  * @param [in] pConfig  Master configuration containing CID and security attributes
  */
-static void _RIFSC_ConfigMasterAttributes(uint32_t MasterId, const RIFSC_MasterConfig_TypeDef* pConfig){
+static void _RIFSC_ConfigMasterAttributes(uint32_t MasterId, const RIFSC_MasterConfig_TypeDef* pConfig)
+{
 	uint32_t master_cid = _POSITION_VAL(pConfig->MasterCID);
 	uint32_t rimc_attr_val = RIFSC->RIMC_ATTRx[MasterId];
 
@@ -57,7 +59,8 @@ static void _RIFSC_ConfigMasterAttributes(uint32_t MasterId, const RIFSC_MasterC
  * @param [in] PeriphId Peripheral index inside the RISC configuration tables
  * @param [in] SecPriv  Security / privilege attribute mask
  */
-static void _RIFSC_SetSlaveSecureAttributes(uint32_t PeriphId, uint32_t SecPriv){
+static void _RIFSC_SetSlaveSecureAttributes(uint32_t PeriphId, uint32_t SecPriv)
+{
 	uint32_t sec_reg_val;
 
 	sec_reg_val = RIFSC->RISC_SECCFGRx[PeriphId >> RIFSC_PERIPH_REG_SHIFT];
@@ -81,7 +84,8 @@ static void _RIFSC_SetSlaveSecureAttributes(uint32_t PeriphId, uint32_t SecPriv)
  * Enables the RIFSC peripheral clock and assigns selected bus masters
  * and peripheral slaves to secure privileged access.
  */
-void RIFSC_Config(void){
+void RIFSC_Config(void)
+{
 	RCC_enable_RIFSC();
 
 	RIFSC_MasterConfig_TypeDef master_cfg = {

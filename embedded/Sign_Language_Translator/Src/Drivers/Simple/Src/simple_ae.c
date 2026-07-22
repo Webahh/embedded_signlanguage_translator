@@ -68,7 +68,8 @@ static uint32_t       _lux_estimate    = 0U;
  * @param  [in]  max		| Maximum bound
  * @param  [out] clamped	| Clamped output value
  */
-static void AE_clamp_u32(uint32_t v, uint32_t min, uint32_t max, uint32_t *clamp){
+static void AE_clamp_u32(uint32_t v, uint32_t min, uint32_t max, uint32_t *clamp)
+{
     if (v < min) {
     	*clamp = min;
     } else if (v > max) {
@@ -86,9 +87,8 @@ static void AE_clamp_u32(uint32_t v, uint32_t min, uint32_t max, uint32_t *clamp
  * @param  [in] gain         | Current gain in millidB
  * @retval Estimated lux value
  */
-static uint32_t AE_EstimateLux(uint32_t average_luma,
-                               uint32_t exposure,
-                               uint32_t gain){
+static uint32_t AE_EstimateLux(uint32_t average_luma, uint32_t exposure, uint32_t gain)
+{
     double global_exposure = (double)exposure * pow(10.0, (double)gain / 20000.0);
     if (global_exposure < 1.0) return 0U;
 
@@ -129,9 +129,8 @@ static uint32_t AE_EstimateLux(uint32_t average_luma,
  * @param  [out] out_exposure  | Exposure component (us)
  * @param  [out] out_gain      | Gain component (mdB)
  */
-static void AE_SplitGlobalExposure(double global_val,
-                                   uint32_t *out_exposure,
-                                   uint32_t *out_gain){
+static void AE_SplitGlobalExposure(double global_val, uint32_t *out_exposure, uint32_t *out_gain)
+{
     if (global_val <= (double)_EXPOSURE_MAX_US) {
         *out_gain = _GAIN_MIN_MDB;
         *out_exposure = (uint32_t)global_val;
@@ -153,10 +152,9 @@ static void AE_SplitGlobalExposure(double global_val,
  * @param  [out] new_exposure_us | Computed exposure in microseconds
  * @param  [out] new_gain_mdb    | Computed gain in millidB
  */
-static void AE_ComputeExposureGain(uint32_t average_luma,
-                                   uint32_t lux,
-                                   uint32_t *new_exposure_us,
-                                   uint32_t *new_gain_mdb){
+static void AE_ComputeExposureGain(uint32_t average_luma, uint32_t lux,
+                                   uint32_t *new_exposure_us, uint32_t *new_gain_mdb)
+{
     uint32_t cur_exposure = _exposure_us;
     uint32_t cur_gain     = _gain_mdb;
 
@@ -226,7 +224,8 @@ static void AE_ComputeExposureGain(uint32_t average_luma,
  * @param  [in] comp	| Colour component (_AE_STAT_RED/GREEN/BLUE)
  * @retval Average 8-bit value for that component
  */
-static uint32_t AE_ExtractStatValue(uint32_t raw, uint32_t comp){
+static uint32_t AE_ExtractStatValue(uint32_t raw, uint32_t comp)
+{
     uint32_t comp_pixels = _STATS_WINDOW_PIXELS;
 
     if (comp == _AE_STAT_GREEN) {
@@ -245,7 +244,8 @@ static uint32_t AE_ExtractStatValue(uint32_t raw, uint32_t comp){
  * @brief  Initialise AE with a starting exposure value
  * @param  [in] start_exposure_us | Initial exposure in microseconds
  */
-void AE_Init(uint32_t start_exposure_us){
+void AE_Init(uint32_t start_exposure_us)
+{
     AE_clamp_u32(start_exposure_us, _EXPOSURE_MIN_US, _EXPOSURE_MAX_US, &_exposure_us);
     _gain_mdb = 0U;
 
@@ -261,7 +261,8 @@ void AE_Init(uint32_t start_exposure_us){
 /**
  * @brief  Frame-statistics callback (call from DCMIPP frame ISR)
  */
-void AE_OnFrameStats(void){
+void AE_OnFrameStats(void)
+{
     _frame_counter++;
 
     if (_frame_counter < _UPDATE_EVERY_N_FRAMES) {
@@ -293,7 +294,8 @@ void AE_OnFrameStats(void){
  * @brief  Run the AE control loop (exposure / gain adjustment)
  * @param  [in] h	| Camera handle
  */
-void AE_Process(CAM_Handle_TypeDef *h){
+void AE_Process(CAM_Handle_TypeDef *h)
+{
     if (!h) {
         return;
     }
@@ -304,9 +306,9 @@ void AE_Process(CAM_Handle_TypeDef *h){
 
     _pending = 0U;
 
-    uint32_t s1 = AE_ExtractStatValue(_stat1_raw, _AE_STAT_RED);
-    uint32_t s2 = AE_ExtractStatValue(_stat2_raw, _AE_STAT_GREEN);
-    uint32_t s3 = AE_ExtractStatValue(_stat3_raw, _AE_STAT_BLUE);
+    //uint32_t s1 = AE_ExtractStatValue(_stat1_raw, _AE_STAT_RED);
+    //uint32_t s2 = AE_ExtractStatValue(_stat2_raw, _AE_STAT_GREEN);
+    //uint32_t s3 = AE_ExtractStatValue(_stat3_raw, _AE_STAT_BLUE);
 
     //  Measure illuminance
     _lux_estimate = AE_EstimateLux(_brightness, _exposure_us, _gain_mdb);
@@ -336,7 +338,8 @@ void AE_Process(CAM_Handle_TypeDef *h){
  * @retval AE_OK		  | Success
  * @retval AE_ERROR		  | NULL pointer
  */
-AE_Status_TypeDef AE_GetExposureUs(uint32_t *exposure){
+AE_Status_TypeDef AE_GetExposureUs(uint32_t *exposure)
+{
     if (!exposure) return AE_ERROR;
     *exposure = _exposure_us;
     return AE_OK;
@@ -348,7 +351,8 @@ AE_Status_TypeDef AE_GetExposureUs(uint32_t *exposure){
  * @retval AE_OK			| Success
  * @retval AE_ERROR			| NULL pointer
  */
-AE_Status_TypeDef AE_GetBrightness(uint32_t *brightness){
+AE_Status_TypeDef AE_GetBrightness(uint32_t *brightness)
+{
     if (!brightness) return AE_ERROR;
     *brightness = _brightness;
     return AE_OK;
@@ -360,7 +364,8 @@ AE_Status_TypeDef AE_GetBrightness(uint32_t *brightness){
  * @retval AE_OK		| Success
  * @retval AE_ERROR		| NULL pointer
  */
-AE_Status_TypeDef AE_GetStat1Raw(uint32_t *stat){
+AE_Status_TypeDef AE_GetStat1Raw(uint32_t *stat)
+{
     if (!stat) return AE_ERROR;
     *stat = _stat1_raw;
     return AE_OK;
@@ -372,7 +377,8 @@ AE_Status_TypeDef AE_GetStat1Raw(uint32_t *stat){
  * @retval AE_OK		| Success
  * @retval AE_ERROR		| NULL pointer
  */
-AE_Status_TypeDef AE_GetStat2Raw(uint32_t *stat){
+AE_Status_TypeDef AE_GetStat2Raw(uint32_t *stat)
+{
     if (!stat) return AE_ERROR;
     *stat = _stat2_raw;
     return AE_OK;
@@ -384,7 +390,8 @@ AE_Status_TypeDef AE_GetStat2Raw(uint32_t *stat){
  * @retval AE_OK		| Success
  * @retval AE_ERROR		| NULL pointer
  */
-AE_Status_TypeDef AE_GetStat3Raw(uint32_t *stat){
+AE_Status_TypeDef AE_GetStat3Raw(uint32_t *stat)
+{
     if (!stat) return AE_ERROR;
     *stat = _stat3_raw;
     return AE_OK;
@@ -396,7 +403,8 @@ AE_Status_TypeDef AE_GetStat3Raw(uint32_t *stat){
  * @retval AE_OK			| Success
  * @retval AE_ERROR			| NULL pointer
  */
-AE_Status_TypeDef AE_GetGainMdB(uint32_t *gain_mdb){
+AE_Status_TypeDef AE_GetGainMdB(uint32_t *gain_mdb)
+{
     if (!gain_mdb) return AE_ERROR;
     *gain_mdb = _gain_mdb;
     return AE_OK;

@@ -183,7 +183,8 @@ static const struct _regval _mirrorflip_mirror_regs[] = {
  * @retval IMX335_OK    on success
  * @retval IMX335_ERROR on I2C error
  */
-static IMX335_Status_TypeDef _write_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t val){
+static IMX335_Status_TypeDef _write_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t val)
+{
     return I2C_Mem_write(h->i2c, h->addr, reg, &val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
 }
 
@@ -193,7 +194,8 @@ static IMX335_Status_TypeDef _write_reg(IMX335_Handle_TypeDef *h, uint16_t reg, 
  * @param  reg   Base 16-bit register address
  * @param  value 24-bit value to write
  */
-static void _write_reg24(IMX335_Handle_TypeDef *h, uint16_t reg, uint32_t value){
+static void _write_reg24(IMX335_Handle_TypeDef *h, uint16_t reg, uint32_t value)
+{
     _write_reg(h, reg + 0U, (uint8_t)(value & 0xFFU));
     _write_reg(h, reg + 1U, (uint8_t)((value >> 8) & 0xFFU));
     _write_reg(h, reg + 2U, (uint8_t)((value >> 16) & 0x0FU));
@@ -207,7 +209,8 @@ static void _write_reg24(IMX335_Handle_TypeDef *h, uint16_t reg, uint32_t value)
  * @retval IMX335_OK    on success
  * @retval IMX335_ERROR on I2C error
  */
-static IMX335_Status_TypeDef _read_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t *val){
+static IMX335_Status_TypeDef _read_reg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t *val)
+{
     return I2C_Mem_read(h->i2c, h->addr, reg, val, 1) == I2C_OK ? IMX335_OK : IMX335_ERROR;
 }
 
@@ -219,8 +222,8 @@ static IMX335_Status_TypeDef _read_reg(IMX335_Handle_TypeDef *h, uint16_t reg, u
  * @retval IMX335_OK    on success
  * @retval IMX335_ERROR on first I2C error (write stops)
  */
-static IMX335_Status_TypeDef _write_table(IMX335_Handle_TypeDef *h, const struct _regval *tbl,
-                                          uint32_t size){
+static IMX335_Status_TypeDef _write_table(IMX335_Handle_TypeDef *h, const struct _regval *tbl, uint32_t size)
+{
     for (uint32_t i = 0; i < size; i++) {
         if (_write_reg(h, tbl[i].addr, tbl[i].val)) {
             return IMX335_ERROR;
@@ -237,8 +240,8 @@ static IMX335_Status_TypeDef _write_table(IMX335_Handle_TypeDef *h, const struct
  * @retval IMX335_OK    if all registers match
  * @retval IMX335_ERROR on read error or mismatch
  */
-static IMX335_Status_TypeDef _write_table_verify(IMX335_Handle_TypeDef *h, const struct _regval *tbl,
-                                                 uint32_t size){
+static IMX335_Status_TypeDef _write_table_verify(IMX335_Handle_TypeDef *h, const struct _regval *tbl, uint32_t size)
+{
     uint8_t rb;
     for (uint32_t i = 0; i < size; i++) {
         if (_read_reg(h, tbl[i].addr, &rb)) {
@@ -254,7 +257,8 @@ static IMX335_Status_TypeDef _write_table_verify(IMX335_Handle_TypeDef *h, const
 
 // ---- API ----
 
-IMX335_Status_TypeDef IMX335_ReadReg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t *val){
+IMX335_Status_TypeDef IMX335_ReadReg(IMX335_Handle_TypeDef *h, uint16_t reg, uint8_t *val)
+{
     if (!h || !val) {
         return IMX335_ERROR;
     }
@@ -298,7 +302,8 @@ static volatile _IMX335_RegDumpEntry _dump[] = {
 
 static volatile _IMX335_RegDump32 _dump32[_DUMP_COUNT];
 
-void IMX335_DumpDebugRegs(IMX335_Handle_TypeDef *h){
+void IMX335_DumpDebugRegs(IMX335_Handle_TypeDef *h)
+{
     uint8_t value = 0;
 
     for (uint32_t i = 0; i < _DUMP_COUNT; i++) {
@@ -318,7 +323,8 @@ void IMX335_DumpDebugRegs(IMX335_Handle_TypeDef *h){
     }
 }
 
-IMX335_Status_TypeDef IMX335_Probe(IMX335_Handle_TypeDef *h, I2C_TypeDef *i2c){
+IMX335_Status_TypeDef IMX335_Probe(IMX335_Handle_TypeDef *h, I2C_TypeDef *i2c)
+{
     h->i2c = i2c;
     h->addr = IMX335_I2C_ADDR;
     h->initialized = 0;
@@ -327,7 +333,8 @@ IMX335_Status_TypeDef IMX335_Probe(IMX335_Handle_TypeDef *h, I2C_TypeDef *i2c){
     return IMX335_ReadID(h, &id);
 }
 
-IMX335_Status_TypeDef IMX335_Init(IMX335_Handle_TypeDef *h){
+IMX335_Status_TypeDef IMX335_Init(IMX335_Handle_TypeDef *h)
+{
     if (h->initialized) {
         return IMX335_OK;
     }
@@ -352,15 +359,18 @@ IMX335_Status_TypeDef IMX335_Init(IMX335_Handle_TypeDef *h){
     return IMX335_OK;
 }
 
-IMX335_Status_TypeDef IMX335_Start(IMX335_Handle_TypeDef *h){
+IMX335_Status_TypeDef IMX335_Start(IMX335_Handle_TypeDef *h)
+{
     return _write_reg(h, IMX335_REG_MODE_SELECT, IMX335_MODE_STREAMING);
 }
 
-IMX335_Status_TypeDef IMX335_Stop(IMX335_Handle_TypeDef *h){
+IMX335_Status_TypeDef IMX335_Stop(IMX335_Handle_TypeDef *h)
+{
     return _write_reg(h, IMX335_REG_MODE_SELECT, IMX335_MODE_STANDBY);
 }
 
-IMX335_Status_TypeDef IMX335_SetFramerate(IMX335_Handle_TypeDef *h, uint32_t fps){
+IMX335_Status_TypeDef IMX335_SetFramerate(IMX335_Handle_TypeDef *h, uint32_t fps)
+{
     switch (fps) {
         case 10:
             return _write_table(h, _framerate_10fps_regs, _ARRAY_SIZE(_framerate_10fps_regs));
@@ -375,7 +385,8 @@ IMX335_Status_TypeDef IMX335_SetFramerate(IMX335_Handle_TypeDef *h, uint32_t fps
     }
 }
 
-IMX335_Status_TypeDef IMX335_SetMirrorFlip(IMX335_Handle_TypeDef *h, uint32_t config){
+IMX335_Status_TypeDef IMX335_SetMirrorFlip(IMX335_Handle_TypeDef *h, uint32_t config)
+{
     if (config) {
         return _write_table(h, _mirrorflip_mirror_regs, _ARRAY_SIZE(_mirrorflip_mirror_regs));
     } else {
@@ -383,11 +394,13 @@ IMX335_Status_TypeDef IMX335_SetMirrorFlip(IMX335_Handle_TypeDef *h, uint32_t co
     }
 }
 
-IMX335_Status_TypeDef IMX335_EnableAutoExposure(IMX335_Handle_TypeDef *h){
+IMX335_Status_TypeDef IMX335_EnableAutoExposure(IMX335_Handle_TypeDef *h)
+{
     return _write_reg(h, IMX335_REG_AEC, IMX335_AEC_ENABLE);
 }
 
-IMX335_Status_TypeDef IMX335_ReadID(IMX335_Handle_TypeDef *h, uint32_t *id){
+IMX335_Status_TypeDef IMX335_ReadID(IMX335_Handle_TypeDef *h, uint32_t *id)
+{
     uint8_t id_byte = 0;
 
     if (h == NULL || id == NULL) {
@@ -402,7 +415,8 @@ IMX335_Status_TypeDef IMX335_ReadID(IMX335_Handle_TypeDef *h, uint32_t *id){
     return IMX335_OK;
 }
 
-IMX335_Status_TypeDef IMX335_VerifyConfig(IMX335_Handle_TypeDef *h){
+IMX335_Status_TypeDef IMX335_VerifyConfig(IMX335_Handle_TypeDef *h)
+{
     if (!h)
         return IMX335_ERROR;
 
@@ -421,7 +435,8 @@ IMX335_Status_TypeDef IMX335_VerifyConfig(IMX335_Handle_TypeDef *h){
     return IMX335_OK;
 }
 
-void IMX335_SetExposureUs(IMX335_Handle_TypeDef *h, uint32_t exposure_us){
+void IMX335_SetExposureUs(IMX335_Handle_TypeDef *h, uint32_t exposure_us)
+{
     if (!h) {
         return;
     }
@@ -444,7 +459,8 @@ void IMX335_SetExposureUs(IMX335_Handle_TypeDef *h, uint32_t exposure_us){
     _write_reg(h, IMX335_REG_HOLD, 0x00);
 }
 
-IMX335_Status_TypeDef IMX335_SetGainMdB(IMX335_Handle_TypeDef *h, uint32_t gain_mdb){
+IMX335_Status_TypeDef IMX335_SetGainMdB(IMX335_Handle_TypeDef *h, uint32_t gain_mdb)
+{
     if (!h) {
         return IMX335_ERROR;
     }

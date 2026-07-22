@@ -31,7 +31,8 @@
   *           - Initialise I2C1 at 400 kHz
   * @note   TIMER_Delay_ms() must be usable (TIMER_Delay_init() called from main)
   */
-static void _CAM_hw_init(void){
+static void _CAM_hw_init(void)
+{
     GPIO_Config(GPIOC, 8, GPIO_default_cfg);
     GPIO_Config(GPIOD, 2, GPIO_default_cfg);
 
@@ -57,7 +58,8 @@ static void _CAM_hw_init(void){
 
 // ---- API ----
 
-CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
+CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h)
+{
     CSI_cfg_TypeDef csi_cfg = CSI_cfg;
     DCMIPP_Pipe_cfg_TypeDef pipe_cfg;
     DCMIPP_IPPlug_cfg_TypeDef ipplug_cfg;
@@ -130,7 +132,8 @@ CAM_Status_TypeDef CAM_Init(CAM_Handle_TypeDef *h){
     return CAM_OK;
 }
 
-CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h){
+CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h)
+{
     ltdc_layer_bg_buffer_capt_idx = 0;
     ltdc_layer_bg_buffer_disp_idx = 1;
     ltdc_layer_bg_buffer_ai_idx   = 0;
@@ -144,7 +147,8 @@ CAM_Status_TypeDef CAM_DisplayPipe_Start(CAM_Handle_TypeDef *h){
     return IMX335_Start(&h->imx335) ? CAM_ERROR : CAM_OK;
 }
 
-CAM_Status_TypeDef CAM_NNPipe_Start(CAM_Handle_TypeDef *h){
+CAM_Status_TypeDef CAM_NNPipe_Start(CAM_Handle_TypeDef *h)
+{
     DCMIPP_Pipe_Start(CAM_PIPE_NN, 0, 0);
 
     //LTDC_Layer2Config.fb = ltdc_fg_buffer[1];

@@ -17,7 +17,8 @@
 /**
  * @brief Wait for HSI oscillator ready flag
  */
-static void RCC_WaitHSIReady(void){
+static void RCC_WaitHSIReady(void)
+{
     while (!(RCC->SR & RCC_SR_HSIRDY)) { }
 }
 
@@ -28,7 +29,8 @@ static void RCC_WaitHSIReady(void){
  *
  * @return Prescaler divider (1, 2, 4, 8, 16, 32, 64, 128)
  */
-static uint32_t RCC_GetAHBPrescalerDiv(uint32_t hpre_bits){
+static uint32_t RCC_GetAHBPrescalerDiv(uint32_t hpre_bits)
+{
     static const uint8_t _ahb_div[8] = {
         1, 2, 4, 8, 16, 32, 64, 128
     };
@@ -43,7 +45,8 @@ static uint32_t RCC_GetAHBPrescalerDiv(uint32_t hpre_bits){
  *
  * @return Prescaler divider (1, 2, 4, 8, 16)
  */
-static uint32_t RCC_GetAPBPrescalerDiv(uint32_t ppre_bits){
+static uint32_t RCC_GetAPBPrescalerDiv(uint32_t ppre_bits)
+{
     static const uint8_t _apb_div[8] = {
         1, 1, 1, 1, 2, 4, 8, 16
     };
@@ -71,7 +74,8 @@ static uint32_t RCC_GetAPBPrescalerDiv(uint32_t ppre_bits){
  * - PCLK4  = HCLK / 1
  * - PCLK5  = HCLK / 1
  */
-void RCC_SystemClock_Config(void){
+void RCC_SystemClock_Config(void)
+{
 
     /* Enable HSI */
     RCC->CR |= RCC_CR_HSION;
@@ -117,7 +121,8 @@ static volatile uint32_t* const _PLL_CFGR3[4] = {
  *
  * @param [in] pll Array of 4 PLL configurations
  */
-void RCC_Clock_PLL_set(const RCC_PLL_cfg_TypeDef pll[4]){
+void RCC_Clock_PLL_set(const RCC_PLL_cfg_TypeDef pll[4])
+{
     for (uint32_t i = 0U; i < 4U; i++) {
         if (RCC->SR & _PLL_RDY[i]) continue;
 
@@ -152,7 +157,8 @@ static const uint32_t _IC_DIVEN[20] = {
  *
  * @param [in] ic Array of 20 IC configurations
  */
-void RCC_Clock_IC_set(const RCC_IC_cfg_TypeDef ic[20]){
+void RCC_Clock_IC_set(const RCC_IC_cfg_TypeDef ic[20])
+{
     for (uint32_t i = 0U; i < 20U; i++) {
         if (ic[i].CFGR == 0U) continue;
 
@@ -165,7 +171,8 @@ void RCC_Clock_IC_set(const RCC_IC_cfg_TypeDef ic[20]){
 /**
  * @brief Full board clock configuration
  */
-void RCC_BoardClock_Config(void){
+void RCC_BoardClock_Config(void)
+{
     RCC_SystemClock_Config();
 
     RCC_Clock_PLL_set(RCC_PLL_cfg);
@@ -198,7 +205,8 @@ void RCC_BoardClock_Config(void){
  *
  * @retval RCC_OK Always succeeds
  */
-RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz)
+{
     *hz = RCC_HSI_VALUE_HZ;
     return RCC_OK;
 }
@@ -212,7 +220,8 @@ RCC_Status_TypeDef RCC_Clock_HSI_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Divider zero - cannot compute
  */
-static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz){
+static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz)
+{
     volatile uint32_t* cfgr1 = _PLL_CFGR1[pll_idx];
     volatile uint32_t* cfgr3 = _PLL_CFGR3[pll_idx];
 
@@ -242,7 +251,8 @@ static RCC_Status_TypeDef RCC_GetPLLFreq(uint32_t pll_idx, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR PLL not ready - frequency unknown
  */
-static RCC_Status_TypeDef RCC_GetICFreq(uint32_t ic_idx, uint32_t* hz){
+static RCC_Status_TypeDef RCC_GetICFreq(uint32_t ic_idx, uint32_t* hz)
+{
     uint32_t cfgr = *_IC_CFGR[ic_idx];
     uint32_t sel = (cfgr >> 28) & 0x3;
     uint32_t div = ((cfgr >> 16) & 0xFF) + 1;
@@ -265,7 +275,8 @@ static RCC_Status_TypeDef RCC_GetICFreq(uint32_t ic_idx, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unknown clock source selected
  */
-RCC_Status_TypeDef RCC_Clock_SYS_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_SYS_get(uint32_t* hz)
+{
     uint32_t syssws =
         (RCC->CFGR1 & RCC_CFGR1_SYSSWS) >> RCC_CFGR1_SYSSWS_Pos;
 
@@ -289,7 +300,8 @@ RCC_Status_TypeDef RCC_Clock_SYS_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unknown clock source selected
  */
-RCC_Status_TypeDef RCC_Clock_CPU_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_CPU_get(uint32_t* hz)
+{
     uint32_t cpusws =
         (RCC->CFGR1 & RCC_CFGR1_CPUSWS) >> RCC_CFGR1_CPUSWS_Pos;
 
@@ -313,7 +325,8 @@ RCC_Status_TypeDef RCC_Clock_CPU_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR PLL or IC not ready
  */
-RCC_Status_TypeDef RCC_Clock_AXI_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_AXI_get(uint32_t* hz)
+{
     return RCC_GetICFreq(1, hz);
 }
 
@@ -325,7 +338,8 @@ RCC_Status_TypeDef RCC_Clock_AXI_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_Clock_HCLK_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_HCLK_get(uint32_t* hz)
+{
     uint32_t axiclk;
     RCC_Status_TypeDef status = RCC_Clock_AXI_get(&axiclk);
     if (status != RCC_OK) {
@@ -352,7 +366,8 @@ RCC_Status_TypeDef RCC_Clock_HCLK_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_Clock_PCLK1_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK1_get(uint32_t* hz)
+{
     uint32_t hclk;
     RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
@@ -379,7 +394,8 @@ RCC_Status_TypeDef RCC_Clock_PCLK1_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_Clock_PCLK2_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK2_get(uint32_t* hz)
+{
     uint32_t hclk;
     RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
@@ -406,7 +422,8 @@ RCC_Status_TypeDef RCC_Clock_PCLK2_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_Clock_PCLK4_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK4_get(uint32_t* hz)
+{
     uint32_t hclk;
     RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
@@ -433,7 +450,8 @@ RCC_Status_TypeDef RCC_Clock_PCLK4_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Prescaler decode failure
  */
-RCC_Status_TypeDef RCC_Clock_PCLK5_get(uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_PCLK5_get(uint32_t* hz)
+{
     uint32_t hclk;
     RCC_Status_TypeDef status = RCC_Clock_HCLK_get(&hclk);
     if (status != RCC_OK) {
@@ -464,7 +482,8 @@ RCC_Status_TypeDef RCC_Clock_PCLK5_get(uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported timer
  */
-RCC_Status_TypeDef RCC_Clock_TIM_get(TIM_TypeDef* TIMX, uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_TIM_get(TIM_TypeDef* TIMX, uint32_t* hz)
+{
     if ((TIMX == TIM2) || (TIMX == TIM3) || (TIMX == TIM4) ||
         (TIMX == TIM5) || (TIMX == TIM6) || (TIMX == TIM7)) {
         return RCC_Clock_PCLK1_get(hz);
@@ -487,7 +506,8 @@ RCC_Status_TypeDef RCC_Clock_TIM_get(TIM_TypeDef* TIMX, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported I2C instance
  */
-RCC_Status_TypeDef RCC_Clock_I2C_get(I2C_TypeDef* I2CX, uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_I2C_get(I2C_TypeDef* I2CX, uint32_t* hz)
+{
     if ((I2CX == I2C1) || (I2CX == I2C2) || (I2CX == I2C3)) {
         return RCC_Clock_PCLK1_get(hz);
     }
@@ -508,7 +528,8 @@ RCC_Status_TypeDef RCC_Clock_I2C_get(I2C_TypeDef* I2CX, uint32_t* hz){
  * @retval RCC_OK    Success
  * @retval RCC_ERROR Unsupported USART instance
  */
-RCC_Status_TypeDef RCC_Clock_USART_get(USART_TypeDef* USARTX, uint32_t* hz){
+RCC_Status_TypeDef RCC_Clock_USART_get(USART_TypeDef* USARTX, uint32_t* hz)
+{
     if (USARTX != USART1) {
         return RCC_ERROR;
     }
@@ -526,7 +547,8 @@ RCC_Status_TypeDef RCC_Clock_USART_get(USART_TypeDef* USARTX, uint32_t* hz){
     }
 }
 
-void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
+void RCC_enable_GPIO(GPIO_TypeDef* GPIOX)
+{
     if (GPIOX == GPIOA) {
         RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN;
         (void)RCC->AHB4ENR;
@@ -566,7 +588,8 @@ void RCC_enable_GPIO(GPIO_TypeDef* GPIOX){
     }
 }
 
-void RCC_enable_I2C(I2C_TypeDef* I2CX){
+void RCC_enable_I2C(I2C_TypeDef* I2CX)
+{
     if (I2CX == I2C1) {
         RCC->APB1ENR1 |= RCC_APB1ENR1_I2C1EN;
         (void)RCC->APB1ENR1;
@@ -582,7 +605,8 @@ void RCC_enable_I2C(I2C_TypeDef* I2CX){
     }
 }
 
-void RCC_reset_I2C(I2C_TypeDef* I2CX){
+void RCC_reset_I2C(I2C_TypeDef* I2CX)
+{
     if (I2CX == I2C1) {
         RCC->APB1RSTR1 |= RCC_APB1RSTR1_I2C1RST;
         (void)RCC->APB1RSTR1;
@@ -606,7 +630,8 @@ void RCC_reset_I2C(I2C_TypeDef* I2CX){
     }
 }
 
-void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
+void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source)
+{
     source &= 0x7U;
 
     if (I2CX == I2C1) {
@@ -626,7 +651,8 @@ void RCC_setI2C_clock_source(I2C_TypeDef* I2CX, uint32_t source){
     (void)RCC->CCIPR4;
 }
 
-void RCC_enable_TIM(TIM_TypeDef* TIMX){
+void RCC_enable_TIM(TIM_TypeDef* TIMX)
+{
     if (TIMX == TIM1) {
         RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
         (void)RCC->APB2ENR;
@@ -670,7 +696,8 @@ void RCC_enable_TIM(TIM_TypeDef* TIMX){
 /**
  * @brief Enable AXISRAM blocks used by the LTDC framebuffer
  */
-void RCC_enable_LTDC_memory(void){
+void RCC_enable_LTDC_memory(void)
+{
     RCC->MEMENR |= RCC_MEMENR_AXISRAM1EN
                 |  RCC_MEMENR_AXISRAM2EN
                 |  RCC_MEMENR_AXISRAM3EN
@@ -681,13 +708,15 @@ void RCC_enable_LTDC_memory(void){
     (void)RCC->MEMENR;
 }
 
-void RCC_enable_LTDC(void){
+void RCC_enable_LTDC(void)
+{
     RCC->APB5ENSR |= RCC_APB5ENSR_LTDCENS;
     RCC->APB5LPENR |= RCC_APB5LPENR_LTDCLPEN;
     (void)RCC->APB5ENSR;
 }
 
-void RCC_reset_LTDC(void){
+void RCC_reset_LTDC(void)
+{
     RCC->APB5RSTSR |= RCC_APB5RSTSR_LTDCRSTS;
     (void)RCC->APB5RSTSR;
 
@@ -695,7 +724,8 @@ void RCC_reset_LTDC(void){
     (void)RCC->APB5RSTCR;
 }
 
-void RCC_setLTDC_clock_source(uint32_t source){
+void RCC_setLTDC_clock_source(uint32_t source)
+{
     source &= 0x3U;
 
     RCC->CCIPR4 &= ~RCC_CCIPR4_LTDCSEL;
@@ -709,7 +739,8 @@ void RCC_setLTDC_clock_source(uint32_t source){
  *
  * @note PLL4 and IC16 must already be configured before calling this.
  */
-void RCC_config_LTDC_25MHz_clock(void){
+void RCC_config_LTDC_25MHz_clock(void)
+{
     RCC->CCIPR4 = (RCC->CCIPR4 & ~RCC_CCIPR4_LTDCSEL) | RCC_CCIPR4_LTDCSEL_1;
     (void)RCC->CCIPR4;
 }
@@ -718,13 +749,15 @@ void RCC_config_LTDC_25MHz_clock(void){
 // DCMIPP / CSI
 // -------------------------------------------------------------------------
 
-void RCC_config_DCMIPP_clock_IC17(void){
+void RCC_config_DCMIPP_clock_IC17(void)
+{
     RCC->CCIPR1 = (RCC->CCIPR1 & ~RCC_CCIPR1_DCMIPPSEL_Msk)
                 | (0x2UL << RCC_CCIPR1_DCMIPPSEL_Pos);
     (void)RCC->CCIPR1;
 }
 
-void RCC_enable_DCMIPP(void){
+void RCC_enable_DCMIPP(void)
+{
     RCC->APB5ENR |= RCC_APB5ENR_DCMIPPEN;
     (void)RCC->APB5ENR;
 
@@ -735,7 +768,8 @@ void RCC_enable_DCMIPP(void){
     (void)RCC->APB5ENSR;
 }
 
-void RCC_reset_DCMIPP(void){
+void RCC_reset_DCMIPP(void)
+{
     RCC->APB5RSTSR = RCC_APB5RSTSR_DCMIPPRSTS;
     (void)RCC->APB5RSTSR;
 
@@ -743,7 +777,8 @@ void RCC_reset_DCMIPP(void){
     (void)RCC->APB5RSTCR;
 }
 
-void RCC_enable_CSI(void){
+void RCC_enable_CSI(void)
+{
     RCC->APB5ENR |= RCC_APB5ENR_CSIEN;
     (void)RCC->APB5ENR;
 
@@ -754,7 +789,8 @@ void RCC_enable_CSI(void){
     (void)RCC->APB5LPENR;
 }
 
-void RCC_reset_CSI(void){
+void RCC_reset_CSI(void)
+{
     RCC->APB5RSTSR |= RCC_APB5RSTSR_CSIRSTS;
     (void)RCC->APB5RSTSR;
     RCC->APB5RSTCR |= RCC_APB5RSTCR_CSIRSTC;
@@ -765,12 +801,14 @@ void RCC_reset_CSI(void){
 // PWR / XSPI / RIFSC
 // -------------------------------------------------------------------------
 
-void RCC_enable_PWR(void){
+void RCC_enable_PWR(void)
+{
     RCC->AHB4ENR |= RCC_AHB4ENR_PWREN;
     (void)RCC->AHB4ENR;
 }
 
-void RCC_config_PWR(void){
+void RCC_config_PWR(void)
+{
     RCC_enable_PWR();
 
     PWR->DBPCR |= PWR_DBPCR_DBP;
@@ -799,12 +837,14 @@ void RCC_config_PWR(void){
     (void)PWR->SVMCR3;
 }
 
-void RCC_enable_XSPI1(void){
+void RCC_enable_XSPI1(void)
+{
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI1ENS;
     (void)RCC->AHB5ENSR;
 }
 
-void RCC_reset_XSPI1(void){
+void RCC_reset_XSPI1(void)
+{
     RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPI1RSTS;
     (void)RCC->AHB5RSTSR;
 
@@ -812,12 +852,14 @@ void RCC_reset_XSPI1(void){
     (void)RCC->AHB5RSTCR;
 }
 
-void RCC_enable_XSPI2(void){
+void RCC_enable_XSPI2(void)
+{
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPI2ENS;
     (void)RCC->AHB5ENSR;
 }
 
-void RCC_reset_XSPI2(void){
+void RCC_reset_XSPI2(void)
+{
     RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPI2RSTS;
     (void)RCC->AHB5RSTSR;
 
@@ -825,12 +867,14 @@ void RCC_reset_XSPI2(void){
     (void)RCC->AHB5RSTCR;
 }
 
-void RCC_enable_XSPIM(void){
+void RCC_enable_XSPIM(void)
+{
     RCC->AHB5ENSR |= RCC_AHB5ENSR_XSPIMENS;
     (void)RCC->AHB5ENSR;
 }
 
-void RCC_reset_XSPIM(void){
+void RCC_reset_XSPIM(void)
+{
     RCC->AHB5RSTSR |= RCC_AHB5RSTSR_XSPIMRSTS;
     (void)RCC->AHB5RSTSR;
 
@@ -838,7 +882,8 @@ void RCC_reset_XSPIM(void){
     (void)RCC->AHB5RSTCR;
 }
 
-void RCC_enable_DMA2D(void){
+void RCC_enable_DMA2D(void)
+{
     RCC->AHB5ENSR |= RCC_AHB5ENSR_DMA2DENS;
     (void)RCC->AHB5ENSR;
 
@@ -846,7 +891,8 @@ void RCC_enable_DMA2D(void){
     (void)RCC->AHB5LPENR;
 }
 
-void RCC_reset_DMA2D(void){
+void RCC_reset_DMA2D(void)
+{
     RCC->AHB5RSTSR |= RCC_AHB5RSTSR_DMA2DRSTS;
     (void)RCC->AHB5RSTSR;
 
@@ -854,12 +900,14 @@ void RCC_reset_DMA2D(void){
     (void)RCC->AHB5RSTCR;
 }
 
-void RCC_enable_RIFSC(void){
+void RCC_enable_RIFSC(void)
+{
     RCC->AHB3ENR |= RCC_AHB3ENR_RIFSCEN;
     (void)RCC->AHB3ENR;
 }
 
-void RCC_setXSPI1_clock_source(uint32_t source){
+void RCC_setXSPI1_clock_source(uint32_t source)
+{
     source &= 0x7U;
 
     RCC->CCIPR6 &= ~RCC_CCIPR6_XSPI1SEL_Msk;
@@ -867,7 +915,8 @@ void RCC_setXSPI1_clock_source(uint32_t source){
     (void)RCC->CCIPR6;
 }
 
-void RCC_setXSPI2_clock_source(uint32_t source){
+void RCC_setXSPI2_clock_source(uint32_t source)
+{
     source &= 0x7U;
 
     RCC->CCIPR6 &= ~RCC_CCIPR6_XSPI2SEL_Msk;

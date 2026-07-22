@@ -25,13 +25,15 @@ static DCMIPP_TypeDef *_dcmipp = DCMIPP;
  * @param [in] pitch | Raw line pitch in bytes
  * @retval Aligned pitch (multiple of 16)
  */
-static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch){
+static inline uint32_t DCMIPP_AlignPitch(uint32_t pitch)
+{
     return (pitch + 15) & ~15U;
 }
 
 // ---- API ----
 
-void DCMIPP_Init(void){
+void DCMIPP_Init(void)
+{
     RCC_config_DCMIPP_clock_IC17();
     RCC_enable_DCMIPP();
     RCC_reset_DCMIPP();
@@ -51,7 +53,8 @@ void DCMIPP_Init(void){
     NVIC_EnableIRQ(DCMIPP_IRQn);
 }
 
-void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type){
+void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type)
+{
     if (pipe == DCMIPP_PIPE0) {
         _dcmipp->P0FSCR = (data_type << DCMIPP_P0FSCR_DTIDA_Pos)
                        | (0UL << 16)
@@ -73,7 +76,8 @@ void DCMIPP_CSI_Pipe_Config(uint32_t pipe, uint32_t data_type){
     _dcmipp->CMCR |= DCMIPP_CMCR_INSEL;
 }
 
-void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch){
+void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *out_pitch)
+{
     uint32_t pitch;
     DCMIPP_Pipe_cfg_TypeDef zero_conf = {0};
     volatile uint32_t *crstr, *crszr, *dsrtior, *dsszr, *dscr, *gmcr, *ppcr, *ppm0pr, *fctcr;
@@ -240,7 +244,8 @@ void DCMIPP_Pipe_Config(uint32_t pipe, DCMIPP_Pipe_cfg_TypeDef *conf, uint32_t *
     }
 }
 
-void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode){
+void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode)
+{
     (void)pipe;
     if (mode == DCMIPP_PIPE_SHARE_SAME) {
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEDIFF;
@@ -249,7 +254,8 @@ void DCMIPP_Pipe_EnableShare(uint32_t pipe, uint32_t mode){
     }
 }
 
-void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf){
+void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf)
+{
     if (!conf) return;
 
     _dcmipp->IPGR2 |= DCMIPP_IPGR2_PSTART;
@@ -276,14 +282,16 @@ void DCMIPP_IPPlug_Config(DCMIPP_IPPlug_cfg_TypeDef *conf){
     _dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
 }
 
-void DCMIPP_Pipe_UpdateBufAddr(uint32_t pipe, uint32_t buf_addr){
+void DCMIPP_Pipe_UpdateBufAddr(uint32_t pipe, uint32_t buf_addr)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1PPM0AR1 = buf_addr;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2PPM0AR1 = buf_addr;
 }
 
-void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type){
+void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type)
+{
     (void)pipe;
     _dcmipp->P1DMCR = bayer_type
                    | (2U << DCMIPP_P1DMCR_PEAK_Pos)
@@ -293,19 +301,22 @@ void DCMIPP_Pipe_EnableISP(uint32_t pipe, uint32_t bayer_type){
                    | DCMIPP_P1DMCR_ENABLE;
 }
 
-void DCMIPP_Pipe_SetBlackLevel(uint32_t pipe, uint32_t blk_r, uint32_t blk_g, uint32_t blk_b){
+void DCMIPP_Pipe_SetBlackLevel(uint32_t pipe, uint32_t blk_r, uint32_t blk_g, uint32_t blk_b)
+{
     (void)pipe;
     _dcmipp->P1BLCCR = (blk_r << DCMIPP_P1BLCCR_BLCR_Pos)
                     | (blk_g << DCMIPP_P1BLCCR_BLCG_Pos)
                     | (blk_b << DCMIPP_P1BLCCR_BLCB_Pos);
 }
 
-void DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe){
+void DCMIPP_Pipe_EnableBlackLevel(uint32_t pipe)
+{
     (void)pipe;
     _dcmipp->P1BLCCR |= DCMIPP_P1BLCCR_ENABLE;
 }
 
-void DCMIPP_ReduceSpurious(void){
+void DCMIPP_ReduceSpurious(void)
+{
     _dcmipp->P1FCR = DCMIPP_P1FCR_CLINEF;
     _dcmipp->P2FCR = DCMIPP_P2FCR_CLINEF;
     _dcmipp->P1IER |= DCMIPP_P1IER_LINEIE;
@@ -316,7 +327,8 @@ void DCMIPP_ReduceSpurious(void){
     _dcmipp->P2IER &= ~DCMIPP_P2IER_LINEIE;
 }
 
-void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode){
+void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode)
+{
     if (pipe == DCMIPP_PIPE1) {
         if (!(_dcmipp->P1PPCR & DCMIPP_P1PPCR_DBM)) {
             _dcmipp->P1PPM0AR1 = buf_addr;
@@ -342,7 +354,8 @@ void DCMIPP_Pipe_Start(uint32_t pipe, uint32_t buf_addr, uint32_t mode){
     }
 }
 
-void DCMIPP_Pipe_Stop(uint32_t pipe){
+void DCMIPP_Pipe_Stop(uint32_t pipe)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
@@ -351,42 +364,48 @@ void DCMIPP_Pipe_Stop(uint32_t pipe){
     _dcmipp->IPGR2 &= ~DCMIPP_IPGR2_PSTART;
 }
 
-void DCMIPP_Pipe_Suspend(uint32_t pipe){
+void DCMIPP_Pipe_Suspend(uint32_t pipe)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR &= ~DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FSCR &= ~DCMIPP_P2FSCR_PIPEN;
 }
 
-void DCMIPP_Pipe_Resume(uint32_t pipe){
+void DCMIPP_Pipe_Resume(uint32_t pipe)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FSCR |= DCMIPP_P1FSCR_PIPEN;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FSCR |= DCMIPP_P2FSCR_PIPEN;
 }
 
-void DCMIPP_EnableInterrupts(uint32_t pipe, uint32_t it_mask){
+void DCMIPP_EnableInterrupts(uint32_t pipe, uint32_t it_mask)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1IER |= it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2IER |= it_mask;
 }
 
-void DCMIPP_DisableInterrupts(uint32_t pipe, uint32_t it_mask){
+void DCMIPP_DisableInterrupts(uint32_t pipe, uint32_t it_mask)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1IER &= ~it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2IER &= ~it_mask;
 }
 
-void DCMIPP_ClearInterrupt(uint32_t pipe, uint32_t it_mask){
+void DCMIPP_ClearInterrupt(uint32_t pipe, uint32_t it_mask)
+{
     if (pipe == DCMIPP_PIPE1)
         _dcmipp->P1FCR = it_mask;
     else if (pipe == DCMIPP_PIPE2)
         _dcmipp->P2FCR = it_mask;
 }
 
-DCMIPP_Status_TypeDef DCMIPP_GetStatus(uint32_t pipe, uint32_t *status){
+DCMIPP_Status_TypeDef DCMIPP_GetStatus(uint32_t pipe, uint32_t *status)
+{
     if (status == NULL)
         return DCMIPP_ERROR;
 
@@ -400,7 +419,8 @@ DCMIPP_Status_TypeDef DCMIPP_GetStatus(uint32_t pipe, uint32_t *status){
     return DCMIPP_OK;
 }
 
-void DCMIPP_IRQHandler(void){
+void DCMIPP_IRQHandler(void)
+{
 	SCHEDULER_ISR_enter();
     uint32_t cmsr1 = _dcmipp->CMSR1;
     uint32_t cmsr2 = _dcmipp->CMSR2;

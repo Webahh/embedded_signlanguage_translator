@@ -23,7 +23,8 @@
  * @param [in] pixel	| Pixel color to write
  * @param [in] bbp		| Bytes Per Pixel to write
  */
-static void TEXT_Pixel_write(volatile uint8_t *fb, uint32_t off, uint32_t pixel, int bpp){
+static void TEXT_Pixel_write(volatile uint8_t *fb, uint32_t off, uint32_t pixel, int bpp)
+{
     // Dispatch by bytes-per-pixel for 16, 24, or 32-bit framebuffer
     if (bpp == 2) {
         *(volatile uint16_t *)(fb + off) = (uint16_t)pixel;
@@ -40,7 +41,8 @@ static void TEXT_Pixel_write(volatile uint8_t *fb, uint32_t off, uint32_t pixel,
 // API
 // -------------------------------------------------------------------------
 
-void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color){
+void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int16_t y, uint32_t fg_color)
+{
     // Bounds-check character against font table
     if (c < FONT_8X16_FIRST_CHAR || c > FONT_8X16_LAST_CHAR) return;
 
@@ -74,7 +76,8 @@ void TEXT_Char_draw(const LTDC_Layer_Config_TypeDef *cfg, char c, int16_t x, int
     }
 }
 
-void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color){
+void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color)
+{
     int16_t cx = x;
 
     while (*str) {
@@ -91,7 +94,8 @@ void TEXT_String_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int
     }
 }
 
-void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color){
+void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint32_t bg_color)
+{
     volatile uint8_t *fb = (volatile uint8_t *)cfg->fb;
     uint16_t buf_width = cfg->buf_width;
     uint16_t height = cfg->height;
@@ -138,7 +142,8 @@ void TEXT_StringBg_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, i
     }
 }
 
-void TEXT_StringScaled_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale){
+void TEXT_StringScaled_draw(const LTDC_Layer_Config_TypeDef *cfg, const char *str, int16_t x, int16_t y, uint32_t fg_color, uint8_t scale)
+{
     // Scale 0 or 1 falls back to unscaled rendering
     if (scale == 0 || scale == 1) {
         TEXT_String_draw(cfg, str, x, y, fg_color);

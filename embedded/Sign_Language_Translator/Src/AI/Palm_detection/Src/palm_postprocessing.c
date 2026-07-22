@@ -226,12 +226,7 @@ AI_Status_TypeDef PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_outp
     uint32_t candidate_count = 0U;
     uint32_t filtered_count = 0U;
 
-    /*
-     * Für conf_threshold = 0.5 ist der Logit-Schwellwert 0.
-     * Allgemein:
-     *
-     * log(conf / (1 - conf))
-     */
+     // log(conf / (1 - conf)) conf Threshold
     const float score_threshold = -logf(1.0f / PALM_PP_CONFIDENCE_THRESHOLD - 1.0f);
 
     for (uint32_t i = 0U; i < PALM_DETECTION_COUNT; i++) {
@@ -264,9 +259,7 @@ AI_Status_TypeDef PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_outp
 
     qsort(candidates, candidate_count, sizeof(PalmCandidate_TypeDef), PALM_CompareCandidates);
 
-    /*
-     * Non-Maximum-Suppression.
-     */
+    // Non-Maximum-Suppression.
     for (uint32_t i = 0U; i < candidate_count; i++) {
         bool suppressed = false;
 
@@ -292,9 +285,7 @@ AI_Status_TypeDef PALM_Postprocess(const PalmNetworkOutput_TypeDef *network_outp
         return AI_STATUS_POSTPROCESS_ERROR;
     }
 
-    /*
-     * Nach Sortierung und NMS ist Element 0 die stärkste Box.
-     */
+    // After sorting and NMS is element 0 the strongest box
     const PalmCandidate_TypeDef *best = &filtered[0];
 
     detection->probability 	= best->probability;
@@ -341,11 +332,9 @@ void PALM_UpdateDetectionFilter(PalmDetectionFilter_TypeDef *filter, bool detect
     }
 }
 
-AI_Status_TypeDef PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection,
-                                          uint32_t frame_width,
-                                          uint32_t frame_height,
-                                          HandROI_TypeDef *roi)
- {
+AI_Status_TypeDef PALM_CreateLandmarkROI(const PalmDetection_TypeDef *detection, uint32_t frame_width,
+                                         uint32_t frame_height, HandROI_TypeDef *roi)
+{
       if ((detection == NULL) ||
           (roi       == NULL) ||
           (frame_width == 0U) ||
