@@ -14,7 +14,19 @@
 
 ### 7.7 Region of Interest
 
-### 7.8 Vor- und Nachverarbeitung der Handlandmarks
+### 7.8 Vor- und Nachverarbeitungsschritte
+
+#### 7.8.1 DCMIPP Embedded Processing
+
+#### 7.8.2 Palm Detection Postprocessing
+
+#### 7.8.3 Hand Landmark Preprocessing
+
+#### 7.8.4 Hand Landmark Postprocessing
+
+#### 7.8.5 Klassifizierungsmodell Preprocessing
+
+#### 7.8.6 Klassifizierungsmodell Postprocessing
 
 ### 7.9 Integration der neuronalen Netze auf dem Embedded-System
 
