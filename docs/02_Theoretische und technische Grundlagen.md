@@ -1,6 +1,6 @@
 ## 2 Theoretische und technische Grundlagen
 
-Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Im Anschluss wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erwähnt.
+Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Im Anschluss wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erläutert.
 
 ---
 
@@ -12,7 +12,7 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
 
 | Aspekt                 | Embedded Spezifisch                                                                                                                                                                                                                                                                |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ressourcenbeschränkung | Eingebettete Systeme verfügen über begrenzten Hauptspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern                                                                                            |
+| Ressourcenbeschränkung | Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern                                                                                          |
 | Echtzeitfähigkeit      | Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen *weicher* Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und *harter* Echtzeit (eine Überschreitung führt zum Systemversagen) |
 | Hohe Zuverlässigkeit   | Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden                                                                                                  |
 | Energieeffizienz       | Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt                                                                                                                            |
@@ -29,7 +29,7 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 - **Peripherie-Einheiten:** Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3)
 
 ![[STM32N6 - Architecture.drawio.png]]
-\[STM32N6 - Architektur]
+\[STM32N6570-DK - Architektur]
 
 #### 2.1.3 Peripherieschnittstellen
 
@@ -84,7 +84,7 @@ Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundam
 Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
 
 **Startup und Systeminitialisierung:**
-Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Der Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
+Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
 
 **Register-Level-Programmierung:**
 Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
@@ -153,7 +153,7 @@ Beispielhafte Beschreibung einiger Zeichen:
 
 #### 2.3.1 Begriffsbildung
 
-Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, aus Daten zu lernen und Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
 
 #### 2.3.2 Supervised Learning
 
@@ -242,8 +242,8 @@ Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensa
 
 Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline (Lugaresi et al., n.d.; Zhang & Notni, 2025)
 
-1. Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
-2. Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erkannten Handfläche werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
+Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
+Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erkannten Handfläche werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
 
 Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeitet auf einem downgesampelten Bild (192×192 Pixel), während die Landmark-Erkennung auf dem zugeschnittenen Hand-Ausschnitt (224×224 Pixel) arbeitet. Dadurch wird die Rechenlast erheblich reduziert.
 
@@ -283,7 +283,7 @@ Dies kann verwendet werden um Modelle gezielt auszuführen.
 \[ROI - Example | Eigene Darstellung]
 ##### 2.5.4.1 Lifecycle
 
-Der Lifecycle einer ROI ist in Abbildung X dargestellt. Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und Größe der initialen ROI berechnet. In den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. Bei ausreichender Konfidenz werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI bestimmt. Dieser Vorgang wird jeden Frame wiederholt. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
+Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und Größe der initialen ROI berechnet. In den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. Bei ausreichender Konfidenz des Landmark-Modells werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI (Position, Orientierung, Größe) bestimmt. Dieser Vorgang wird jeden Frame wiederholt. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
 
 ---
 
@@ -361,7 +361,7 @@ ST Edge Core ist ein Command Line Interface (CLI) das genutzt wird, um Convoluti
 ![[NPU - TF-Lite ONNX Model harware executable conversion.png]]
 ![[NPU - Compilation.png]]
 
-\[NPU - Quantized Model conversion to NPU executables & Compilation | Quelle]
+\[NPU - Quantized Model conversion to NPU executables & Compilation | (ST Neural-ART NPU - Supported Operators and Limitations, n.d.; ST Neural-ART NPU Concepts, n.d.)]
 
 Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen abbilden. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX-Befehlen auf Epochen. Folgende Epochen werden unterschieden:
 
