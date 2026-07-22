@@ -63,7 +63,23 @@ Die verarbeiteten Geste-Daten werden im Pickle-Format (`.pkl`) abgelegt. Der Dat
 
 ### 7.3 Entwicklung und Training des Klassifikationsmodells
 
+Notwendigkeit eines Klassifikationsmodells
+Entscheidung für SparseCategorialCrossentropy
 
+Trainingsprozess:
+```python
+self._model = Sequential(
+    [
+        Input(shape=(88, 1)),
+        Flatten(),
+        Dense(88, activation="relu"),
+        Dropout(0.25),
+        Dense(128, activation="relu"),
+        Dropout(0.5),
+        Dense(training_data.label_count, activation="softmax"),
+    ]
+)
+```
 
 ### 7.4 Quantisierung und Konvertierung der Modelle
 
