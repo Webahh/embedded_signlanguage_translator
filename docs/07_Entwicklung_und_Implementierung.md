@@ -58,28 +58,163 @@ Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen a
 #### 7.1.6 Speicherung
 
 Die verarbeiteten Geste-Daten werden im Pickle-Format (`.pkl`) abgelegt. Der Dateiname folgt dem Muster `{Label}_{Augmentierungstyp}_{UUID}.pkl`, wobei die UUID die ersten vier Hexadezimalzeichen eines UUID4 darstellt. Die Speicherung erfolgt im Verzeichnis `resources/gestures/`. Die Verarbeitung der Videodateien und die Speicherung der Ergebnisse werden mittels Multiprocessing unter Auslastung von 80 % der verfügbaren CPU-Kerne parallelisiert.
-### 7.2 Augmentationspipeline
-
 
 ### 7.3 Entwicklung und Training des Klassifikationsmodells
 
-Notwendigkeit eines Klassifikationsmodells
-Entscheidung für SparseCategorialCrossentropy
+#### 7.3.1 Problemdefinition
 
-Trainingsprozess:
-```python
-self._model = Sequential(
-    [
-        Input(shape=(88, 1)),
-        Flatten(),
-        Dense(88, activation="relu"),
-        Dropout(0.25),
-        Dense(128, activation="relu"),
-        Dropout(0.5),
-        Dense(training_data.label_count, activation="softmax"),
-    ]
-)
+Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Gebärdenalphabet-Zeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
+
+Es liegt keine Binäreklassifikation vor, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
+
+#### 7.3.2 Datenanalyse
+
+**Input-Format:** Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus
+
+- 44 Werten für die linke Hand (22 Gelenke × 2 Koordinaten)
+- 44 Werten für die rechte Hand (22 Gelenke × 2 Koordinaten)
+
+zusammen.
+
+Die 22 Gelenke pro Hand umfassen die 21 MediaPipe-Landmarks sowie die absolute Handgelenkposition. Koordinaten werden wrist-relativ normalisiert und auf den int16-Bereich (−32.768 bis 32.767) skaliert.
+
+**Klassenverteilung:** Der Datensatz umfasst 26 Klassen:
+
+-  NONE (Index 0): Keine Hand erkannt
+- A–Y (Indizes 1–24): 24 statische Buchstaben (J und Z ausgeschlossen, da diese dynamische Handbewegungen erfordern)
+- SCH (Index 25): Sonderzeichen
+
+Die Klassenverteilung ist leicht ungleichmäßig (16 Klassen mit 185, 8 Klassen mit 148, NONE mit 111, F mit 110 Dateien).
+
+**Normalisierung:** Alle Koordinaten werden durch den Maximalwert des int16-Bereichs (POS_MAX = 32.767) dividiert, sodass die Werte im Bereich \[−1, 1] liegen.
+
+#### 7.3.3 Modellauswahl
+
+Für die Modellauswahl wurden verschiedene Ansätze evaluiert, wobei die Anforderungen des Embedded-Systems (schnelle Inferenz, kleine Modellgröße) und die Input-Struktur (88D-feature-Vektor aus MediaPipe-Landmarks) im Vordergrund standen.
+
+Ein mehrschichtiges Perceptron (MLP) wurde als geeignetstes Modell
+identifiziert. Die Input-Struktur war dafür Ausschlaggebend. Die MediaPipe wandelt die räumliche Information der Hand in strukturierte Landmarks um. Daher ist eine convolutionale
+Verarbeitung (CNN) unnötig. Studien belegen, dass CNNs bei
+Landmark-basiertem Input keine signifikanten Genauigkeitsvorteile
+gegenüber MLPs aufweisen. (Fritz, 2025)
+
+Random Forest und SVM wurden ebenfalls in Betracht gezogen, erreichen jedoch in der Literatur geringere Genauigkeiten (70–75 % bzw. 61–76 %) bei vergleichbaren Tasks. Zudem fehlen beiden Modellen nativ kalibrierte Wahrscheinlichkeiten: Random Forest gibt nur harte Klassifikationen aus, während SVM ein zusätzliches Platt-Scaling für Wahrscheinlichkeiten erfordert. (Rahman et al., 2025). Es ist anzumerken das SVM und Random forest auf einer anderen Datenbasis (Photoplethysmography (PPG)) trainiert worden sind.
+
+Das MLP erfüllt es die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit. Die Softmax-Ausgabeschicht liefert direkt kalibrierte Klassenwahrscheinlichkeiten, die für die nachfolgende Verarbeitung benötigt werden. Während direkte Quantisierung zu Genauigkeitsverlust führen kann, zeigen Studien, dass INT8-Quantisierung bei MLP-Modellen mit geeigneten Techniken (LayerNorm, Kalibrierung) Verluste von unter 1 % erreicht. Ein akzeptabler Kompromiss für den Embedded-Einsatz (blogdeveloperspot, 2025).
+
+Ferner bestätigt der Ansatz von Google MediaPipe Model Maker die
+Wahl: Dort werden Dense Layers (MLP) als Standard-Ansatz für
+Landmark-basierte Gesture Recognition eingesetzt, was die
+praktische Bewährtheit dieser Architektur unterstreicht.
+
+#### 7.3.4 Modellarchitektur
+
+Das Modell nutzt die Keras Sequential API:
+
 ```
+             Input
+           (88 × 1)
+               │
+               ▼
+          Flatten
+         (88 values)
+               │
+               ▼
+      Dense(88, ReLU)
+               │
+               ▼
+       Dropout(25%)
+               │
+               ▼
+     Dense(128, ReLU)
+               │
+               ▼
+       Dropout(50%)
+               │
+               ▼
+ Dense(label_count, Softmax)
+               │
+               ▼
+     Class probabilities
+```
+\[ Eigene Darstellung]
+
+**Schichten-Erklärung:**
+
+Kurzfassungen zu den verschieden Schicht-Typen. `Input` nimmt einen Input Tensor mit bestimmten Vektoreigenschaften entgegen. `Flatten` wandelt mehrdimensionale Tensoren (wie z.B 2D-Bilder) in einen einzigen, eindimensionalen Vektor. `Dense` fügt eine Schicht Neuronen mit entsprechender Aktivierungsfunktion sowie vollständiger Verknüpfung zum vorherigen Layer.  `Dropout(%)` setzt die Eingaben eines Layers zufällig auf 0  mit einer Wahrscheinlichkeit von `%`.
+
+| Schicht            | Funktion                                                   |
+| ------------------ | ---------------------------------------------------------- |
+| Input(88, 1)       | Empfängt den normalisierten Feature-Vektor                 |
+| Flatten            | Reduziert die Dimension für die Dense-Schicht              |
+| Dense(88, ReLU)    | Lernt per-Feature-Transformationen                         |
+| Dropout(0.25)      | Verhindert Overfitting (25% deaktiviert)                   |
+| Dense(128, ReLU)   | Erweitert die Repräsentation für Inter-Feature-Beziehungen |
+| Dropout(0.5)       | Stärkere Regularisierung vor der Ausgabe                   |
+| Dense(26, Softmax) | Gibt Klassenwahrscheinlichkeiten aus (Summe = 1)           |
+
+#### 7.3.5 Verlustfunktion und Optimierung
+
+**Verlustfunktion: SparseCategoricalCrossentropy**
+
+Die Verlustfunktion wird als SparseCategoricalCrossentropy gewählt, weil:
+
+- Labels sind Integer-kodiert (nicht One-Hot)
+- Spart Speicherplatz gegenüber One-Hot-Kodierung
+- Gradientenverhalten ist numerisch stabil
+
+Die Formel lautet:
+
+$$L = -\sum(y_{true} \cdot \log(y_{pred}))$$
+
+wobei $y_{true}$ die Integer-Klasse und $y_{pred}$ die Softmax-Ausgabe ist.
+
+**Optimierer: Adam**
+
+Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,00001 verwendet, um:
+
+- Stabile Konvergenz auf kleinem Datensatz zu gewährleisten
+- Per-Parameter-Lernraten automatisch anzupassen
+- Die Adaptive Momentum-Schätzung für schnelleres Training zu nutzen
+
+#### 7.3.6 Trainingsprozess
+
+**Hyperparameter:**
+
+| Parameter | Wert | Begründung |
+|-----------|------|------------|
+| Optimizer | Adam | Adaptiver Optimierer für kleine Datensätze |
+| Learning Rate | 0,00001 | Stabile Konvergenz |
+| Verlustfunktion | SparseCategoricalCrossentropy | Integer-kodiertete Labels |
+| Metrik | sparse_categorical_accuracy | Anteil korrekt klassifizierter Samples |
+| Epochen | 20 | Maximaler Trainingzeitraum |
+| Validation Split | 0,2 (80/20) | Unabhängige Evaluierung |
+| Batch Size | 128 | Balance zwischen Gradient-Noise und Generalisierung |
+| Early Stopping | patience=3 | Stoppt bei 3 Epochen ohne Verbesserung |
+
+**Early Stopping:** Das Training wird automatisch beendet, wenn sich die Validierungsverluste über 3 aufeinanderfolgende Epochen nicht verbessern. Dies verhindert Overfitting ohne manuelle Nachsteuerung.
+
+**Augmentation:** Die Trainingsdaten werden mittels einer Augmentationspipeline vervielfacht:
+
+- Mirror: Horizontale Spiegelung (vertauscht links/rechts)
+- Random Translate: ±10.922 int16-Einheiten (2× pro Geste)
+- Random Zoom: Faktor 0,5–1,5 (5× pro Geste)
+
+#### 7.3.7 Evaluierung
+
+**Trainingsergebnisse:**
+
+| Metrik | Wert |
+|--------|------|
+| Trainingsgenauigkeit | 98,34 % |
+| Validierungsgenauigkeit | 99,21 % |
+| Finaler Trainingsverlust | 0,0754 |
+| Finaler Validierungsverlust | 0,0319 |
+
+Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt kontinuierlich über alle 20 Epochen.
+
+**Modellgröße:** Das quantisierte INT8-Modell benötigt nur 31,83 KB Speicher und inferiert in durchschnittlich 0,005 ms – ideal für Embedded-Einsatz.
+
 
 ### 7.4 Quantisierung und Konvertierung der Modelle
 

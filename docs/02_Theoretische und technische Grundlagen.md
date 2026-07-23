@@ -210,20 +210,24 @@ $$y = f\left(\sum_{i=1}^{n} w_i \cdot x_i + b\right)$$
 wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivierungsfunktion sind.
 \[Mathematisch modelliertes Neuron (Gurney, 2018) | Eigene Darstellung]
 
+![[ML - Schichten.drawio.png]]
+\[Allgemeine Struktur Künstlicher Neuronaler Netze (Kim, 2016) | Eigene Darstellung]
+
 #### 2.4.2 Aktivierungsfunktionen
 
 Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind (Kim, 2016):
 
 - ReLU (Rectified Linear Unit): $f(x) = \max(0, x)$. Einfach zu berechnen, gradientenfreundlich und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.
 - Softmax: Wandelt einen Vektor von Rohergebnissen (logits) in eine Wahrscheinlichkeitsverteilung um. Für die Ausgabeschicht eines Klassifikators geeignet, da die Summe aller Ausgabewerte 1 ergibt und jeder Wert zwischen 0 und 1 liegt.
-
 #### 2.4.3 Architektur: Multi-Layer Perceptron (MLP)
 
-Ein Multi-Layer Perceptron (MLP) ist ein Neuronales Netz mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen. 
+Ein Multi-Layer Perceptron (MLP) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen. 
 
-![[ML - Schichten.drawio.png]]
-\[Allgemeine Struktur Neuronaler Netze (Kim, 2016) | Eigene Darstellung]
-#### 2.4.4 Backpropagation und Gradient Descent
+#### 2.4.4 Architektur: Convolutional Neural Networks (CNN)
+
+Ein Convolutional Neural network (CNN) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung.  
+
+#### 2.4.5 Backpropagation und Gradient Descent
 
 Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie *Stochastic Gradient Descent* (SGD) oder Varianten davon (Adam, RMSprop) (Kim, 2016; Raschka et al., 2022):
 
