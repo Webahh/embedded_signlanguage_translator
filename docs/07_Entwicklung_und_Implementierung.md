@@ -11,7 +11,7 @@ Die Benennungskonvention der Videodateien lautet `alph_[og|fw]_[Label][Nummer].m
 
 Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klassenauswahl beschränkt sich auf die 24 statischen Buchstaben A–Y (ohne J und Z, da diese dynamische Handbewegungen erfordern und somit mit dem statischen Ansatz des Klassifikators nicht kompatibel sind), das Sonderzeichen SCH sowie die Leerklasse NONE, die die Unbestimmtheit des Ergebnisses darstellt. Die Anzahl der Originaufnahmen pro Klasse variiert zwischen 3 und 5, wobei 16 Klassen mit je 5, 8 Klassen mit je 4 und 2 Klassen (F, NONE) mit je 3 Aufnahmen vertreten sind.
 
-#### 7.1.2 Frame-Extraktion und Hand-Erkennung
+#### 7.1.2 Frame-Extraktion und Handdetektion
 
 #TODO MediaPipe Hand/Palm Detection
 
@@ -115,47 +115,27 @@ praktische Bewährtheit dieser Architektur unterstreicht.
 
 Das Modell nutzt die Keras Sequential API:
 
-```
-             Input
-           (88 × 1)
-               │
-               ▼
-          Flatten
-         (88 values)
-               │
-               ▼
-      Dense(88, ReLU)
-               │
-               ▼
-       Dropout(25%)
-               │
-               ▼
-     Dense(128, ReLU)
-               │
-               ▼
-       Dropout(50%)
-               │
-               ▼
- Dense(label_count, Softmax)
-               │
-               ▼
-     Class probabilities
-```
+![[Sequential MLP.drawio.png]]
 \[ Eigene Darstellung]
 
-**Schichten-Erklärung:**
+Das Klassifikationsmodell setzt sich aus sieben Schichten zusammen, die sequenziell eine direkte Informationsflussrichtung von der Eingabe zur Ausgabe aufweisen. Die Architektur folgt dem Prinzip der schrittweisen Transformation und Abstraktion der Eingabemerkmale. Nachdem der Input-Tensor in eine eindimensionale Darstellung überführt wurde, transformiert die erste Dense-Schicht die Rohmerkmale in einen repräsentativen Feature-Raum. Die nachfolgende Dense-Schicht erweitert diesen Raum, um komplexere Inter-Feature-Beziehungen modellieren zu können. Zwischen den Dense-Schichten werden Dropout-Schichten eingebunden um Zufall in das Modell zu bringen, um Overfitting zu verhindern. Die finale Dense-Schicht projeziert die gelernten Repräsentationen auf die 26 Ausgabeklassen.
 
-Kurzfassungen zu den verschieden Schicht-Typen. `Input` nimmt einen Input Tensor mit bestimmten Vektoreigenschaften entgegen. `Flatten` wandelt mehrdimensionale Tensoren (wie z.B 2D-Bilder) in einen einzigen, eindimensionalen Vektor. `Dense` fügt eine Schicht Neuronen mit entsprechender Aktivierungsfunktion sowie vollständiger Verknüpfung zum vorherigen Layer.  `Dropout(%)` setzt die Eingaben eines Layers zufällig auf 0  mit einer Wahrscheinlichkeit von `%`.
+Der Input-Layer empfängt einen tensor der Form `(88, 1)`. Dieser Tensor repräsentiert die normalisierten Merkmale zweier Hände mit je 44 Werten. Pro enthalten sind 21 MediaPipe-Hand-Landmarks jeweils als `(x,y)`-Koordinate sowie die absolute Handgelenkposition ebenfalls als `(x,y)`. Alle Koordianten sind Handgelenksrelativ normalisiert und auf den int15-Bereich skaliert, sodass der Input-Wertebereich \[-1, 1] beträgt.
 
-| Schicht            | Funktion                                                   |
-| ------------------ | ---------------------------------------------------------- |
-| Input(88, 1)       | Empfängt den normalisierten Feature-Vektor                 |
-| Flatten            | Reduziert die Dimension für die Dense-Schicht              |
-| Dense(88, ReLU)    | Lernt per-Feature-Transformationen                         |
-| Dropout(0.25)      | Verhindert Overfitting (25% deaktiviert)                   |
-| Dense(128, ReLU)   | Erweitert die Repräsentation für Inter-Feature-Beziehungen |
-| Dropout(0.5)       | Stärkere Regularisierung vor der Ausgabe                   |
-| Dense(26, Softmax) | Gibt Klassenwahrscheinlichkeiten aus (Summe = 1)           |
+Der Flatten-Layer überführt den mehrdimensionalen Input-Tensor in einen eindimensionalen Vektor der Länge 88. Dense-Schichten erwarten als Eingabe einen flachen Vektor, sodass die räumliche Struktur des Tensors (2 Hände x 44 Werte) für die nachfolgende Gewichtsmatrix aufgelöst werden kann.
+
+Der erste Dense-Layer mit 88 Neuronen und ReLU-Aktivierung führt per-Feature-Transformationen durch. Das bedeutet durch die  Gewichtsmatrix (88 × 88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung (`f(x) = max(0, x)`) fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. (Sharma et al., 2020) Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
+
+Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25% der Ausgaben des vorherigen Dense-Layers. Jedes Neuron wir mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt. Die Summe über alle Neuronen bleibt dabei Gleich. Dies verhindert die Ko-Adaptierung von Neuronen, bei der sich mehrere Neuronen auf ein einzelnes Eingabemuster spezialisieren und dadurch das Modell anfällig für Overfitting wird. (Ying, 2019) 
+
+Der zweite Dense-layer mit 128 Neuronen und ReLU-Aktivierung erweitert den Feature-Raum von 88 auf 128 Dimensionen. Durch die Erhöhung der Kapazität kann des Modell Inter-Feature-Beziehungen modellieren, die über die per-Feature-Transformationen des vorherigen Layers hinausgehen. Typische Beziehungen umfassen:
+- Intra-Hand-Abhängigkeiten: Korrelation zwischen benachbarten Landmarks des Selben fingers (z.B. die Auslenkung von PIP und DIP des Indexfingers), zwischen verschiedenen fingern einer Hand sowie  die Orientierung der Hand und deren Rotation basierend auf der Handflächen features. 
+- Inter-Hand-Beziehungen: Zusammenhänge zwischen den Landmarks beider Hände, die bei einhändigen Gesten durch symmetrische oder asymmetrische Konfigurationen entstehen können.
+- Komplexe Muster: Nicht-lineare Kombinationen mehrerer Landmarks, die erst in der erweiterten Repräsentation als discriminative Merkmale erkennbar werden.
+
+Der zweite Dropout-Layer (0.5) wendet eine stärkere Regularisierung an als der erste Dropout-Layer. Die Rate von 50 % ist bewusst höher gewählt, da der vorherige Dense-Layer mit 128 Neuronen eine größere Modellkapazität aufweist und die Gefahr des Overfitting steigt. Die stärkere Regularisierung vor der Ausgabeschicht stellt sicher, dass das Modell nur die robustesten Feature-Repräsentationen für die finale Klassifikation verwendet.
+
+Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale Klassifikationsschicht. Die 26 Ausgabeneuronen entsprechen den 26 Klassen (NONE, A–Y ohne J und Z, SCH). Die Softmax-Funktion $$σ(z_i) = \frac{e^{z_i}}{Σ e^{z_j}}$$normalisiert (Sharma et al., 2020). Die Rohausgaben (Logits) in Wahrscheinlichkeiten, deren Summe exakt 1 ergibt. Jedes Ausgabeneuron liefert damit die Wahrscheinlichkeit dafür, dass der Input der entsprechenden Gebärdensprache-Klasse angehört.
 
 #### 7.2.5 Verlustfunktion und Optimierung
 
@@ -185,35 +165,33 @@ Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,000
 
 **Hyperparameter:**
 
-| Parameter | Wert | Begründung |
-|-----------|------|------------|
-| Optimizer | Adam | Adaptiver Optimierer für kleine Datensätze |
-| Learning Rate | 0,00001 | Stabile Konvergenz |
-| Verlustfunktion | SparseCategoricalCrossentropy | Integer-kodiertete Labels |
-| Metrik | sparse_categorical_accuracy | Anteil korrekt klassifizierter Samples |
-| Epochen | 20 | Maximaler Trainingzeitraum |
-| Validation Split | 0,2 (80/20) | Unabhängige Evaluierung |
-| Batch Size | 128 | Balance zwischen Gradient-Noise und Generalisierung |
-| Early Stopping | patience=3 | Stoppt bei 3 Epochen ohne Verbesserung |
+| Parameter        | Wert                          | Begründung                                          |
+| ---------------- | ----------------------------- | --------------------------------------------------- |
+| Optimizer        | Adam                          | Adaptiver Optimierer für kleine Datensätze          |
+| Learning Rate    | 0,00001                       | Stabile Konvergenz                                  |
+| Verlustfunktion  | SparseCategoricalCrossentropy | Integer-kodiertete Labels                           |
+| Metrik           | sparse_categorical_accuracy   | Anteil korrekt klassifizierter Samples              |
+| Epochen          | 20                            | Maximaler Trainingzeitraum                          |
+| Validation Split | 0,2 (80/20)                   | Unabhängige Evaluierung                             |
+| Batch Size       | 128                           | Balance zwischen Gradient-Noise und Generalisierung |
+| Early Stopping   | patience=3                    | Stoppt bei 3 Epochen ohne Verbesserung              |
 
 **Early Stopping:** Das Training wird automatisch beendet, wenn sich die Validierungsverluste über 3 aufeinanderfolgende Epochen nicht verbessern. Dies verhindert Overfitting ohne manuelle Nachsteuerung.
-
-**Augmentation:** Die Trainingsdaten werden mittels einer Augmentationspipeline vervielfacht:
-
-- Mirror: Horizontale Spiegelung (vertauscht links/rechts)
-- Random Translate: ±10.922 int16-Einheiten (2× pro Geste)
-- Random Zoom: Faktor 0,5–1,5 (5× pro Geste)
 
 #### 7.2.7 Evaluierung
 
 **Trainingsergebnisse:**
 
-| Metrik | Wert |
-|--------|------|
-| Trainingsgenauigkeit | 98,34 % |
-| Validierungsgenauigkeit | 99,21 % |
-| Finaler Trainingsverlust | 0,0754 |
-| Finaler Validierungsverlust | 0,0319 |
+| Metrik                      | Wert    |
+| --------------------------- | ------- |
+| Trainingsgenauigkeit        | 98,34 % |
+| Validierungsgenauigkeit     | 99,21 % |
+| Finaler Trainingsverlust    | 0,0754  |
+| Finaler Validierungsverlust | 0,0319  |
+
+**Confusionsmatrix**:
+![[confusion_matrix.png]]
+![[confusion_matrix_normalized.png]]
 
 Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt kontinuierlich über alle 20 Epochen.
 
