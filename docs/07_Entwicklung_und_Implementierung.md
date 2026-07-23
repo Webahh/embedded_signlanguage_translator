@@ -200,13 +200,52 @@ Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt 
 
 ### 7.3 Quantisierung und Konvertierung der Modelle
 
-### 7.4 Embedded Projektstruktur/Treiber
+
+
+
+### 7.4 Softwaregrundstruktur und hardwarenahe Basistreiber
+
+Die Umsetzung der Kamera-, Display- und KI-Verarbeitung setzt zunächst eine funktionsfähige hardwarenahe Basissoftware voraus. Hierzu wurden grundlegende Treiber für die Initialisierung und Steuerung des Mikrocontrollers sowie seiner Peripherie entwickelt. Diese abstrahieren die direkten Registerzugriffe und stellen den übergeordneten Softwarekomponenten einheitliche Funktionen zur Verfügung. Zu den grundlegenden Komponenten gehören insbesondere die Taktsteuerung, die Konfiguration der Ein- und Ausgänge sowie Treiber für UART, Timer und I2C.
+
+Die Implementierung greift auf die von CMSIS bereitgestellten Prozessor- und Gerätedefinitionen zurück. CMSIS stellt dabei unter anderem die Registerstrukturen, Interruptnummern und Funktionen für den Zugriff auf den Cortex-M55-Prozessorkern bereit. Die eigentliche Konfiguration der Peripherie wurde dagegen überwiegend durch projektspezifische Treiber umgesetzt. Dadurch konnten die benötigten Funktionen gezielt an die Anforderungen des Systems angepasst und nicht benötigte Bestandteile umfangreicherer Abstraktionsschichten vermieden werden.
+
+Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden.
+
+#### 7.4.1 Aufbau der Embedded-Software
+
+#### 7.4.2 Zentrale Konfiguration und Systeminitialisierung
+#### 7.4.3 Registerbasierte Treiberentwicklung
+
+#### 7.4.4 Grundlegende Systemtreiber
+
+#### 7.4.5 Schnittstelle zu den übergeordneten Komponenten
+
+nur einordnen nicht beschreiben!
 
 ### 7.5 Kamera - Display Pipeline
+
+#### 7.5.1 Initialisierung des Kamerasensors
+
+#### 7.5.2 Übertragung der Kameradaten über CSI
+
+#### 7.5.3 Konfiguration der DCMIPP-Bildpfade
+
+#### 7.5.4 Verwaltung der Bildpuffer
+(XSPI PSRAM etc...)
+
+#### 7.5.5 LTDC-Konfiguration und Verwaltung der Displayebenen
 
 ### 7.6 Ablaufsteuerung und Software Scheduler
 
 ### 7.7 NPU Integration & AI Interface
+
+#### 7.7.1 Initialisierung des Neural-ART Accelerators
+
+#### 7.7.2 Einheitliche KI-Schnittstelle
+
+ATON Middleware kapseln durch simple ai
+
+#### 7.7.3 Cache- und Speicherbehandlung
 
 ### 7.8 Vor- und Nachverarbeitungsschritte
 
@@ -214,54 +253,143 @@ Die drei neuronalen Netze verwenden unterschiedliche Eingabedaten und liefern Au
 
 Die DCMIPP übernimmt die grundlegende Aufbereitung der Kamerabilder. Die nachgelagerten Verarbeitungsschritte umfassen die Nachverarbeitung der Handdetektion, die Bildung der Region of Interest, die Vor- und Nachverarbeitung des Landmark-Modells sowie die Aufbereitung der Landmark-Koordinaten für das Klassifikationsmodell.
 
-#### 7.8.1 DCMIPP Embedded Processing
+#### 7.8.1 DCMIPP-gestützte Bildvorverarbeitung
 
-Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592 x 1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung.
+Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592x1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung.
 
-Die DCMIPP wandelt die RAW-Bayer-Daten zunächst in ein RGB-Bild um. Hierzu werden die Demosaikierung der RAW10-Bilddaten, die Farbkorrektur, die Belichtungsanpassung und die Gammakorrektur innerhalb der Bildpipeline durchgeführt. Das Ergebnis wird im RGB888-Format ausgegeben. Dadurch müssen diese rechenintensiven Verarbeitungsschritte nicht nachträglich durch den Hauptprozessor auf den bereits gespeicherten Kamerabildern ausgeführt werden.
+Die DCMIPP wandelt die RAW-Bayer-Daten zunächst in ein RGB-Bild um. Hierzu werden die Demosaikierung der RAW10-Bilddaten, die Farbkorrektur, die Belichtungsanpassung und die Gammakorrektur innerhalb der Bildpipeline durchgeführt (STMicroelectronics, n.d.). Das Ergebnis wird im RGB888-Format ausgegeben. Dadurch müssen diese rechenintensiven Verarbeitungsschritte nicht nachträglich durch den Hauptprozessor auf den bereits gespeicherten Kamerabildern ausgeführt werden.
 
 Die verwendeten Parameterwerte wurden empirisch bestimmt. Hierzu wurden die entsprechenden DCMIPP-Register schrittweise angepasst und die Auswirkungen auf das ausgegebene Kamerabild visuell bewertet. Einstellungen, die unter den vorgesehenen Einsatzbedingungen eine geeignete Bilddarstellung ergaben, wurden anschließend in die feste Konfiguration der Bildpipeline übernommen.
 
 Aus dem gemeinsamen Kameradatenstrom werden zwei getrennte Ausgabepfade erzeugt. Pipe 1 dient der Displayausgabe und stellt gleichzeitig das Ausgangsbild für die Landmark-Erkennung bereit. Pipe 2 erzeugt dagegen das Eingabebild für die Handdeteketion.
 
-Für Pipe 1 wird das Sensorbild zunächst auf das Seitenverhältnis des Displays zugeschnitten. Der horizontale Bildbereich bleibt vollständig erhalten, während das Bild vertikal zentriert beschnitten wird. Der entstandene Ausschnitt wird anschließend durch die Downscaling-Einheit der DCMIPP auf eine Auflösung von 800 x 480 Pixeln verkleinert und im RGB888-Format im externen PSRAM abgelegt. Die von Pipe 1 erzeugten Bilder werden über vier Hintergrundbildpuffer verwaltet. Die DCMIPP schreibt jeweils in den für die Aufnahme vorgesehenen Puffer, während weitere Puffer für die Displayausgabe, die KI-Verarbeitung und das Einzeichnen der Handregion beziehungsweise der Landmarks verwendet werden. Nach Abschluss eines Bildes wird die Zieladresse der DCMIPP auf den nächsten Aufnahmepuffer umgeschaltet.
+Für Pipe 1 wird das Sensorbild zunächst auf das Seitenverhältnis des Displays zugeschnitten. Der horizontale Bildbereich bleibt vollständig erhalten, während das Bild vertikal zentriert beschnitten wird. Der entstandene Ausschnitt wird anschließend durch die Downscaling-Einheit der DCMIPP auf eine Auflösung von 800x480 Pixeln verkleinert und im RGB888-Format im externen PSRAM abgelegt. Die von Pipe 1 erzeugten Bilder werden über vier Hintergrundbildpuffer verwaltet. Die DCMIPP schreibt jeweils in den für die Aufnahme vorgesehenen Puffer, während weitere Puffer für die Displayausgabe, die KI-Verarbeitung und das Einzeichnen der Handregion beziehungsweise der Landmarks verwendet werden. Nach Abschluss eines Bildes wird die Zieladresse der DCMIPP auf den nächsten Aufnahmepuffer umgeschaltet.
 
-Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild für die Handdetektion. Da deren Eingangsauflösung mit 192 x 192 Pixeln deutlich unterhalb der Sensorauflösung liegt, wird das Bild vor der eigentlichen Skalierung horizontal und vertikal dezimiert. Dadurch reduziert sich die Auflösung zunächst von 2592 x 1944 auf 1296 x 972 Pixel. Anschließend übernimmt der DCMIPP-Downsizer die Skalierung auf 192 x 192 Pixel. Da vor der Skalierung kein quadratischer Bildausschnitt gebildet wird, wird das Seitenverhältnis des vollständigen Sensorbildes dabei an die quadratische Modelleingabe angepasst. Auch dieser Ausgabepfad verwendet das RGB888-Format.
+Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild für die Handdetektion. Da deren Eingangsauflösung mit 192x192 Pixeln deutlich unterhalb der Sensorauflösung liegt, wird das Bild vor der eigentlichen Skalierung horizontal und vertikal dezimiert. Dadurch reduziert sich die Auflösung zunächst von 2592x1944 auf 1296x972 Pixel. Anschließend übernimmt der DCMIPP-Downsizer die Skalierung auf 192x192 Pixel. Da vor der Skalierung kein quadratischer Bildausschnitt gebildet wird, wird das Seitenverhältnis des vollständigen Sensorbildes dabei an die quadratische Modelleingabe angepasst. Auch dieser Ausgabepfad verwendet das RGB888-Format.
 
 Für Pipe 2 wird der Double-Buffer-Modus der DCMIPP verwendet. Die erzeugten Bilder werden abwechselnd in zwei Eingabebildpuffern gespeichert. Während die DCMIPP einen Puffer mit einem neuen Bild beschreibt, kann der zuvor fertiggestellte Puffer für die Handdetektion verwendet werden. Der jeweils abgeschlossene Puffer wird über den Frame-Callback bestimmt und für die weitere Verarbeitung markiert.
 
 Die Konfiguration der beiden Bildpfade wird jeweils durch eine globale Konfigurationsstruktur festgelegt. Die darin enthaltenen Parameter wurden aus den Anforderungen der beiden Verarbeitungspfade und den verwendeten Bildformaten abgeleitet.
 
-| Parameter                         | Pipe 1                         | Pipe 2      | Begründung                                                                                                                                                                                   |
-| --------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `output_width`<br>`output_height` | 800 x 480                      | 192 x 192   | Entsprechen der Displayauflösung, bzw. Eingangsgröße der Handdetection.                                                                                                                      |
-| `output_format`                   | RGB888                         | RGB888      | Display und KI-Vorverarbeitung arbeiten mit drei Farbkanälen und jeweils 8 Bit pro Kanal.                                                                                                    |
-| `output_bpp`                      | 3                              | 3           | RGB888 benötigt drei Byte pro Pixel (für jeden Kanal 8 Bit)<br>Der Wert wird unter anderem zur Berechnung des Speicher-Pitchs verwendet.                                                     |
-| `enable_crop`                     | aktiviert                      | aktiviert   | Pipe 1 benötigt einen Zuschnitt auf das Seitenverhältnis des Displays. <br><br>Pipe 2 verarbeitet den vollständigen Sensorbereich.                                                           |
-| `crop_x`                          | 0                              | 0           | Horizontal wird kein Bereich abgeschnitten.                                                                                                                                                  |
-| `crop_y`                          | Zentriert vertikaler Zuschnitt | 0           | Pipe 1 entfernt oben und unten Bildbereiche, um das Sensorformat ohne Verzerrung an 800 x 480 anzupassen. <br><br>Pipe 2 verwendet das vollständige Bild.                                    |
-| `crop_width`                      | 2592                           | 2592        | Die vollständige Sensorbreite wird verwendet.                                                                                                                                                |
-| `crop_height`                     | ca. 1555                       | 1944        | Pipe 1 erhält das Displayseitenverhältnis<br>5 : 3. <br><br>Pipe  2 behält die vollständige Senorhöhe.                                                                                       |
-| `enable_downsize`                 | aktiviert                      | aktiviert   | Beide Ausgaben sind wesentlich kleiner als das Sensorbild.                                                                                                                                   |
-| `enable_decimate`                 | deaktiviert                    | aktiviert   | Nur Pipe 2 benötigt vor dem Downscaling eine zusätzliche Halbierung.                                                                                                                         |
-| `decimate_h`<br>`decimate_v`      | -                              | 1, 1        | Die Auflösung wird horizontal und vertikal jeweils durch zwei geteilt.                                                                                                                       |
-| `enable_swap`                     | deaktiviert                    | deaktiviert | Die Farbkanäle sind bereits korrekt. Ein Swap ist nicht notwendig.                                                                                                                           |
-| `enable_gamma`                    | aktiviert                      | aktiviert   | Die Gammakorrektur verbessert die Helligkeitsdarstellung.                                                                                                                                    |
-| `enable_dbm`                      | deaktiviert                    | aktiviert   | Pipe 1 verwendet eine softwareseitige Rotation von vier Bildpuffern, da die Anwendung mehr als nur 2 Puffer benötigt.<br><br>Pipe 2 verwendet zwei hardwareseitig wechselnde Eingabepuffer.  |
+| Parameter                         | Pipe 1                         | Pipe 2      | Begründung                                                                                                                                                                                  |
+| --------------------------------- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `output_width`<br>`output_height` | 800x480                        | 192x192     | Entsprechen der Displayauflösung, bzw. Eingangsgröße der Handdetektion.                                                                                                                     |
+| `output_format`                   | RGB888                         | RGB888      | Display und KI-Vorverarbeitung arbeiten mit drei Farbkanälen und jeweils 8 Bit pro Kanal.                                                                                                   |
+| `output_bpp`                      | 3                              | 3           | RGB888 benötigt drei Byte pro Pixel (für jeden Kanal 8 Bit). Der Wert wird unter anderem zur Berechnung des Speicher-Pitchs verwendet.                                                      |
+| `enable_crop`                     | aktiviert                      | aktiviert   | Pipe 1 benötigt einen Zuschnitt auf das Seitenverhältnis des Displays. <br><br>Pipe 2 verarbeitet den vollständigen Sensorbereich.                                                          |
+| `crop_x`                          | 0                              | 0           | Horizontal wird kein Bereich abgeschnitten.                                                                                                                                                 |
+| `crop_y`                          | Zentriert vertikaler Zuschnitt | 0           | Pipe 1 entfernt oben und unten Bildbereiche, um das Sensorformat ohne Verzerrung an 800x480 anzupassen. <br><br>Pipe 2 verwendet das vollständige Bild.                                     |
+| `crop_width`                      | 2592                           | 2592        | Die vollständige Sensorbreite wird verwendet.                                                                                                                                               |
+| `crop_height`                     | ca. 1555                       | 1944        | Pipe 1 erhält das Displayseitenverhältnis<br>5:3. <br><br>Pipe  2 behält die vollständige Sensorhöhe.                                                                                       |
+| `enable_downsize`                 | aktiviert                      | aktiviert   | Beide Ausgaben sind wesentlich kleiner als das Sensorbild.                                                                                                                                  |
+| `enable_decimate`                 | deaktiviert                    | aktiviert   | Nur Pipe 2 benötigt vor dem Downscaling eine zusätzliche Halbierung.                                                                                                                        |
+| `decimate_h`<br>`decimate_v`      | -                              | 1, 1        | Die Auflösung wird horizontal und vertikal jeweils durch zwei geteilt.                                                                                                                      |
+| `enable_swap`                     | deaktiviert                    | deaktiviert | Die Farbkanäle sind bereits korrekt. Ein Swap ist nicht notwendig.                                                                                                                          |
+| `enable_gamma`                    | aktiviert                      | aktiviert   | Die Gammakorrektur verbessert die Helligkeitsdarstellung.                                                                                                                                   |
+| `enable_dbm`                      | deaktiviert                    | aktiviert   | Pipe 1 verwendet eine softwareseitige Rotation von vier Bildpuffern, da die Anwendung mehr als  zwei Puffer benötigt.<br><br>Pipe 2 verwendet zwei hardwareseitig wechselnde Eingabepuffer. |
 Tabelle X: Konfigurationsparameter der DCMIPP-Bildpfade
 
-Zusätzlich zur Erzeugung des Displaybildes werden für Pipe 1 drei Statistikkanäle aktiviert. Diese erfassen Helligkeits- und Farbwerte innerhalb eines zentralen Bildbereichs mit einer Größe von 1296 x 972 Pixeln. Die ermittelten Statistiken werden von der automatischen Belichtungsregelung ausgewertet und zur Anpassung der Belichtungszeit des Kamerasensors verwendet.
+Zusätzlich zur Erzeugung des Displaybildes werden für Pipe 1 drei Statistikkanäle aktiviert. Diese erfassen Helligkeits- und Farbwerte innerhalb eines zentralen Bildbereichs mit einer Größe von 1296x972 Pixeln. Die ermittelten Statistiken werden von der automatischen Belichtungsregelung ausgewertet und zur Anpassung der Belichtungszeit des Kamerasensors verwendet.
 
 Durch die hardwaregestützte Vorverarbeitung werden nur die tatsächlich benötigten Bildauflösungen in den externen Speicher geschrieben. Dies reduziert sowohl den Speicherbedarf als auch die vom Hauptprozessor zu verarbeitende Datenmenge. Die weiteren auf der CPU ausgeführten Vor- und Nachverarbeitungsschritte können dadurch unmittelbar auf den bereits aufbereiteten RGB888-Bilddaten arbeiten.
 
-#### 7.8.2 Palm Detection Postprocessing
+#### 7.8.2 Nachverarbeitung der Handdetektion
+##### 7.8.2.1 Ankerbasierte Modellausgabe
 
-#### 7.8.3 Hand Landmark Preprocessing
+Das Modell zur Handdetektion verwendet ein ankerbasiertes Detektionsverfahren (Zhang et al., 2020). Hierfür sind in der Ankertabelle `pd_anchors` insgesamt 2016 Ankerpositionen definiert. Diese repräsentieren unterschiedliche Positionen und Größen möglicher Handregionen innerhalb des 192x192 Pixel großen Eingabebildes. Für jeden Anker gibt das Modell einen Konfidenzwert sowie mehrere Regressionswerte aus. Der Konfidenzwert beschreibt, wie wahrscheinlich sich im Bereich des jeweiligen Ankers eine Hand befindet. Die Regressionswerte enthalten die Abweichungen zwischen dem Anker und der vorhergesagten Handregion sowie die Positionen der zugehörigen Schlüsselpunkte. 
 
-#### 7.8.4 Hand Landmark Postprocessing
+Die Anker bilden damit ein festes Suchraster über dem Eingabebild. Das Modell muss die Position und Ausdehnung einer Hand nicht vollständig unabhängig bestimmen, sondern sagt für jeden Anker die räumlichen Abweichungen zur tatsächlichen Handregion voraus. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen üblicherweise mehrere ähnliche Erkennungskandidaten, die in der anschließenden Nachverarbeitung bereinigt werden müssen.
 
-#### 7.8.5 Klassifizierungsmodell Preprocessing
+##### 7.8.2.2 Auswahl und Filterung der Erkennungskandidaten
 
-#### 7.8.6 Klassifizierungsmodell Postprocessing
+Für jeden der 2016 Anker wird zunächst geprüft, ob der ausgegebene Konfidenzwert den festgelegten Schwellwert erreicht. Die Konfidenzwerte liegen als Logits vor und müssen für die weitere Bewertung durch eine Sigmoidfunktion in einen Wahrscheinlichkeitswert zwischen 0 und 1 überführt werden (Sharma et al., 2020):
+$$ \sigma(x) = \frac{1}{1 + \mathrm{e}^{-x}} $$
+Eine direkte Berechnung würde die Exponentialfunktion `expf()` erfordern. Da die verwendete Floating Point Unit keine Exponentialfunktion als direkte Hardwareoperation bereitstellt, müsste diese durch eine mathematische Bibliotheksroutine softwareseitig berechnet werden. Zur Verringerung des Rechenaufwands wird die Sigmoidfunktion daher durch die folgende rationale Funktion approximiert: #TODO PRÜFEN, ggf. PADE APPROX!
+$$\hat{\sigma}(x)=\frac{0{,}5+0{,}25x}{1-0{,}25x+0{,}125x^2}$$
+Für Eingabewerte kleiner als -8 beziehungsweise größer als 8 wird unmittelbar der Wert 0 beziehungsweise 1 zurückgegeben. Innerhalb dieses Bereichs benötigt die Berechnung lediglich Additionen, Multiplikationen und eine Division. Um die Sigmoidapproximation nicht für alle 2016 Anker ausführen zu müssen, wird der festgelegte Konfidenzschwellwert zunächst in den Logit-Raum überführt (Athavale et al., 2024):
+$$ t_{\mathrm{Logit}} = \ln\left(\frac{t}{1-t}\right) $$
+Die vom Modell ausgegebenen Logits können dadurch unmittelbar mit dem berechneten Logit-Schwellwert verglichen werden. Nur Kandidaten, die diesen Schwellwert erreichen oder überschreiten, werden vollständig dekodiert und mithilfe der approximierten Sigmoidfunktion in einen Wahrscheinlichkeitswert umgerechnet. Anschließend werden die Regressionswerte der verbleibenden Kandidaten unter Berücksichtigung der jeweils zugehörigen Ankerposition dekodiert. Dabei werden der Mittelpunkt, die Breite und Höhe der vorhergesagten Handregion sowie die vom Modell ausgegebenen Schlüsselpunkte bestimmt. Die berechneten Koordinaten und Abmessungen werden auf die Größe des Modelleingangs normiert. Kandidaten mit einer ungültigen Breite oder Höhe sowie nicht endlichen Zahlenwerten werden verworfen.
+
+Um den Speicherbedarf und den Rechenaufwand der weiteren Verarbeitung zu begrenzen, werden höchstens 20 Erkennungskandidaten zwischengespeichert. Diese Obergrenze wird durch die Konstante `PALM_PP_MAX_CANDIDATES` festgelegt. Solange die maximale Anzahl noch nicht erreicht ist, wird jeder gültige Kandidat übernommen. Ist der Kandidatenspeicher bereits vollständig belegt, wird zunächst der Kandidat mit der geringsten Wahrscheinlichkeit ermittelt. Dieser wird nur dann ersetzt, wenn der neue Kandidat eine höhere Wahrscheinlichkeit aufweist. Auf diese Weise werden aus den Ergebnissen der 2016 Ankerpositionen ausschließlich die 20 wahrscheinlichsten Kandidaten für die weitere Verarbeitung berücksichtigt.
+
+Die ausgewählten Kandidaten werden anschließend absteigend nach ihrer Wahrscheinlichkeit sortiert. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen häufig mehrere stark überlappende Handregionen. Zur Entfernung dieser Mehrfacherkennungen wird eine Non-Maximum Suppression (NMS) durchgeführt (Bodla et al., 2017). Hierzu wird jeder Kandidat mit den bereits übernommenen Handregionen verglichen. Als Maß für ihre räumliche Überschneidung dient die Intersection over Union (IoU). Sie beschreibt das Verhältnis zwischen der Schnittfläche und der Vereinigungsfläche zweier Begrenzungsrahmen (Rezatofighi et al., 2019):
+$$ \operatorname{IoU}(A,B) =\frac{\left|A \cap B\right|} {\left|A \cup B\right|} $$
+Die Kandidaten werden in absteigender Reihenfolge ihrer Wahrscheinlichkeit verarbeitet. Erreicht oder überschreitet die IoU eines Kandidaten mit einer bereits übernommenen Handregion den festgelegten Schwellwert, wird der Kandidat verworfen. Dadurch bleibt von mehreren stark überlappenden Erkennungen in der Regel nur der Kandidat mit der höchsten Wahrscheinlichkeit erhalten. Nach Abschluss der Non-Maximum Suppression wird der stärkste verbleibende Kandidat als Ergebnis der Handdetektion übernommen. Das Ergebnis enthält die Wahrscheinlichkeit, den Mittelpunkt und die Abmessungen der erkannten Handregion, die zugehörigen Schlüsselpunkte sowie den verwendeten Ankerindex.
+
+Um kurzzeitige Fehldetektionen und einzelne Aussetzer zu reduzieren, wird das Ergebnis zusätzlich über mehrere Ausführungen hinweg gefiltert. Eine Hand gilt erst dann als bestätigt, wenn in zwei aufeinanderfolgenden Auswertungen eine gültige Detektion vorliegt. Bei einer ungültigen Detektion wird der positive Zähler zurückgesetzt. Umgekehrt wird der erkannte Zustand erst aufgehoben, wenn in drei aufeinanderfolgenden Auswertungen keine gültige Handdetektion vorliegt. Einzelne Aussetzer führen dadurch nicht unmittelbar zum Verlust der erkannten Handregion.
+
+##### 7.8.2.3 Erzeugung der initialen Region of Interest
+
+Aus der bestätigten Handdetektion wird die initiale Region of Interest für das Handlandmark-Modell erzeugt. Die Handdetektion wird auf dem von Pipe 2 bereitgestellten Bild ausgeführt, während der Eingabeausschnitt für das Landmark-Modell aus dem Displaybild von Pipe 1 entnommen wird. Aufgrund der unterschiedlichen Auflösungen und Bildausschnitte müssen die normierten Koordinaten der Handdetektion zunächst in das Koordinatensystem von Pipe 1 transformiert werden.
+
+In horizontaler Richtung bilden beide Bildpfade die vollständige Sensorbreite ab. Die horizontale Position und Breite können deshalb unmittelbar mit der Breite des Displaybildes skaliert werden. Pipe 1 verwendet jedoch einen vertikal zentrierten Ausschnitt des Sensorbildes. Bei der Transformation der vertikalen Koordinaten müssen daher zusätzlich die Höhe und der Offset dieses Ausschnitts berücksichtigt werden. Neben der Begrenzungsbox stellt das Modell mehrere Schlüsselpunkte der Hand bereit. Zwei dieser Punkte werden zur Bestimmung ihrer Orientierung verwendet. Aus ihrer relativen Lage wird der Rotationswinkel berechnet:
+$$\alpha = \frac{\pi}{2} - \operatorname{atan2}(-\Delta y,\Delta x)$$
+Der berechnete Winkel wird anschließend auf den Bereich von $-\pi$ bis $\pi$ normiert. Kann kein gültiger Winkel bestimmt werden, wird eine Rotation von 0 verwendet. Da die Begrenzungsbox der Handdetektion hauptsächlich die Handfläche umfasst, wird sie für die Landmark-Erkennung erweitert. Ihr Mittelpunkt wird entlang der rotierten lokalen Vertikalachse um die Hälfte der ursprünglichen Höhe in Richtung der Finger verschoben. Anschließend wird die längere Seite der Begrenzungsbox bestimmt und mit dem Faktor 2,6 skaliert. Der berechnete Wert wird für die Breite und Höhe verwendet, sodass eine quadratische Region entsteht.
+
+Aus dem Mittelpunkt, der Seitenlänge und dem Rotationswinkel werden abschließend die vier Eckpunkte der Region berechnet. Die so erzeugte Region bildet die Grundlage für den 224x224 Pixel großen Eingabeausschnitt des Handlandmark-Modells. Dessen Erzeugung wird im folgenden Abschnitt zur Vorverarbeitung der Landmark-Erkennung beschrieben.
+#### 7.8.3 Vorverarbeitung der Landmark-Erkennung
+
+Die aus der Handdetektion erzeugte Region of Interest besitzt eine variable Position, Größe und Rotation innerhalb des von Pipe 1 bereitgestellten Kamerabildes. Das Handlandmark-Modell erwartet dagegen ein quadratisches Eingabebild mit einer festen Auflösung von 224x224 Pixeln. Daher muss die Region aus dem Kamerabild entnommen, entsprechend ihrer Rotation ausgerichtet und auf die Eingangsgröße des Modells übertragen werden. Hierzu wird für jedes Pixel des Zielbildes die zugehörige Position innerhalb der Region bestimmt. Die Zielkoordinaten werden zunächst auf den Bereich von −0,5 bis 0,5 normiert und anschließend mit der Breite und Höhe der Region skaliert. Unter Berücksichtigung des Rotationswinkels werden die lokalen Koordinaten in das Koordinatensystem des Kamerabildes überführt:
+$$\begin{aligned}
+x_{\mathrm{Quelle}}
+&=
+c_x+x_{\mathrm{lokal}}\cos(\alpha)
+-y_{\mathrm{lokal}}\sin(\alpha),\\
+y_{\mathrm{Quelle}}
+&=
+c_y+x_{\mathrm{lokal}}\sin(\alpha)
++y_{\mathrm{lokal}}\cos(\alpha).
+\end{aligned}
+$$
+Dabei beschreiben $c_x$ und $c_y$ den Mittelpunkt und $\alpha$ den Rotationswinkel der Region. Dadurch werden Skalierung, Position und Rotation gleichzeitig berücksichtigt. Damit wird die Hand unabhängig von ihrer Lage im ursprünglichen Kamerabild in eine einheitliche Ausrichtung überführt.
+
+Die Transformation führt häufig zu Quellkoordinaten, die zwischen den ganzzahligen Pixelpositionen des Kamerabildes liegen. Der benötigte Farbwert wird deshalb durch eine bilineare Interpolation aus den vier benachbarten Pixeln berechnet. Dadurch werden Skalierungs- und Rotationsartefakte gegenüber einer einfachen Auswahl des nächstgelegenen Pixels reduziert. Reicht die Region über den Rand des Kamerabildes hinaus, werden die außerhalb des Bildes liegenden Bereiche im Modelleingang schwarz aufgefüllt. Bei der Adressierung der Bilddaten wird außerdem die im Speicher verwendete Zeilenlänge berücksichtigt.
+
+#### 7.8.4 Nachverarbeitung der Landmark-Erkennung
+##### 7.8.4.1 Rücktransformation der Landmarks
+
+Das Handlandmark-Modell gibt für jeden der 21 Handlandmarks drei Koordinaten innerhalb des 224x224 Pixel großen Modelleingangs aus. Da dieser Eingabeausschnitt gegenüber dem ursprünglichen Kamerabild skaliert, verschoben und rotiert wurde, können die ausgegebenen Koordinaten nicht unmittelbar für die Anzeige oder die nachfolgende Zeichenklassifikation verwendet werden. Sie werden deshalb zunächst in das Koordinatensystem des von Pipe 1 bereitgestellten Kamerabildes zurücktransformiert.
+
+Hierzu werden die x- und y-Koordinaten der Landmarks auf den Mittelpunkt des Modelleingangs bezogen und entsprechend der Größe der aktuellen Region of Interest skaliert. Anschließend werden sie anhand des Rotationswinkels der Region ausgerichtet und um deren Mittelpunkt verschoben. Die Transformation entspricht damit der Umkehrung der zuvor durchgeführten Erzeugung des Modelleingangs. Abschließend werden die x- und y-Koordinaten durch die Breite beziehungsweise Höhe des Kamerabildes geteilt und dadurch auf den Bereich des gesamten Bildes normiert. Die vom Modell ausgegebene z-Koordinate wird unverändert übernommen.
+
+Die zurücktransformierten Landmark-Koordinaten werden sowohl für die Anzeige und Zeichenklassifikation als auch für die Aktualisierung der Region of Interest verwendet. Dadurch kann die Hand in den nachfolgenden Kamerabildern anhand der bereits ermittelten Landmarks weiterverfolgt werden, ohne erneut eine vollständige Handdetektion ausführen zu müssen.
+
+##### 7.8.4.2 Aktualisierung der Tracking-Region
+
+Für die Bestimmung der nächsten Tracking-Region werden nicht alle 21 Landmarks verwendet. Insbesondere die Fingerspitzen haben sich in Tests abhängig vom dargestellten Handzeichen stark bewegt und haben dadurch die Größe und Position der Region unnötig verändert. Stattdessen werden zwölf vergleichsweise stabile Punkte aus dem Bereich des Handgelenks, der Handfläche und der Fingerbasen berücksichtigt. Aus ihren minimalen und maximalen x- und y-Koordinaten wird zunächst eine Bounding-Box bestimmt. Deren Mittelpunkt, Breite und Höhe bilden die Grundlage der neuen Region.
+
+Die Orientierung der Hand wird über eine zentrale Handflächenachse bestimmt. Hierzu wird zunächst der Mittelpunkt der vier Fingergrundgelenke von Zeige-, Mittel-, Ring- und kleinem Finger berechnet. Die Verbindung zwischen dem Handgelenk und diesem Mittelpunkt beschreibt die Ausrichtung der Handfläche, aus der der neue Rotationswinkel abgeleitet wird. Um abrupte Änderungen und ein sichtbares Springen der Region zu vermeiden, wird der neue Winkel nicht unmittelbar übernommen. Stattdessen fließen 20 % der berechneten Winkeländerung in die nächste Region ein. Zusätzlich wird die Änderung pro Aktualisierung auf 0,08 Radiant, entsprechend etwa 4,6° begrenzt. Der resultierende Winkel wird anschließend auf den Bereich von $-\pi$ bis $\pi$ normiert.
+
+Abschließend wird die Region entlang ihrer lokalen vertikalen Achse leicht in Richtung der Finger verschoben. Die längere Seite der Begrenzungsbox wird mit dem Faktor 2,0 skaliert und sowohl für die Breite als auch für die Höhe verwendet. Dadurch entsteht erneut eine quadratische Region, die neben der Handfläche auch die Finger vollständig erfassen soll. Aus Mittelpunkt, Seitenlänge und Rotation werden die vier Eckpunkte der nächsten Region berechnet.
+
+Die aktualisierte Region wird im folgenden Kamerabild erneut zur Erzeugung des 224x224 Pixel großen Modelleingangs verwendet. Erst wenn die Landmark-Erkennung über mehrere Durchläufe keine gültige Ausgabe mehr liefert, wird das Tracking zurückgesetzt und erneut die Handdetektion ausgeführt.
+#### 7.8.5 Vorverarbeitung des Klassifizierungsmodells
+
+Das Klassifikationsmodell verarbeitet nicht das Kamerabild selbst, sondern die vom Handlandmark-Modell bestimmten Koordinaten. Der Modelleingang umfasst insgesamt 88 Merkmale und ist in zwei Bereiche mit jeweils 44 Merkmalen für die linke und rechte Hand unterteilt. Zu Beginn der Vorverarbeitung werden beide Bereiche mit den für eine fehlende Hand vorgesehenen Werten initialisiert. Anschließend wird anhand des vom Landmark-Modell ausgegebenen Handedness-Wertes bestimmt, welchem Bereich die erkannte Hand zugeordnet wird. Werte ab einem Schwellwert von 0,5 werden der rechten Hand und kleinere Werte der linken Hand zugeordnet. Für jede Hand werden die x- und y-Koordinaten der 21 Landmarks verwendet. Die z-Koordinaten werden bei der Zeichenklassifikation nicht berücksichtigt. Vor der weiteren Verarbeitung werden die horizontalen Koordinaten gespiegelt. Diese Transformation stellt die Koordinatenorientierung her, die auch bei der Erzeugung der Trainingsdaten verwendet wurde. Werte außerhalb des normierten Bereichs werden zuvor auf den Bereich von 0 bis 1 begrenzt. Um den Einfluss der Position der Hand innerhalb des Bildausschnitts zu verringern, werden die Landmark-Koordinaten relativ zum Handgelenk angegeben. Hierzu wird die Position des ersten Landmarks, das dem Handgelenk entspricht, von allen Landmark-Koordinaten abgezogen:
+$$x_i^{\mathrm{rel}}=x_i-x_0,\qquad y_i^{\mathrm{rel}}=y_i-y_0$$
+Dadurch beschreiben die 42 resultierenden Merkmale überwiegend die geometrische Anordnung der Handpunkte zueinander. Zusätzlich werden die absoluten x- und y-Koordinaten des Handgelenks als zwei weitere Merkmale übernommen. Für jede Hand entstehen somit 44 Werte:
+
+-  42 handgelenkrelative Koordinaten der 21 Landmarks
+-  zwei absolute Koordinaten des Handgelenks
+
+Die normierten Koordinaten werden zunächst in vorzeichenbehaftete 16-Bit-Ganzzahlen überführt. Der normierte Wertebereich wird dafür mit dem Maximalwert 32767 skaliert. Anschließend werden die insgesamt 88 Zwischenwerte entsprechend den Quantisierungsparametern des Klassifikationsmodells in 8-Bit-Werte umgerechnet: 
+$$
+q
+=
+\frac{v}{32767 \cdot s}
++
+z
+$$
+Dabei bezeichnet $v$  das 16-Bit-Merkmal, $s=0,007842$ den Quantisierungsfaktor und $z = 127$ den Nullpunkt. Das Ergebnis wird auf den gültigen Bereich von 0 bis 255 begrenzt und als `uint8_t` in den Eingabepuffer des Klassifikationsmodells geschrieben.
+#### 7.8.6 Nachverarbeitung des Klassifikationsmodells
+
+Das Klassifikationsmodell gibt für jede unterstützte Zeichenklasse einen quantisierten Ausgabewert zurück. Dieser beschreibt die relative Bewertung der jeweiligen Klasse durch das Modell. Da die Werte als `uint8_t` vorliegen, können sie ohne vorherige Dequantisierung miteinander verglichen werden. Zur Bestimmung des Klassifikationsergebnisses werden sämtliche Ausgabewerte durchlaufen. Der Index des größten Wertes wird als vorhergesagte Klasse ausgewählt. 
+
+Nach Abschluss der Suche wird der ermittelte Klassenindex über das Array `ai_labels` dem entsprechenden Fingeralphabetzeichen zugeordnet. Das zurückgegebene Ergebnis enthält somit den Klassenindex, den quantisierten Ausgabewert und die zugehörige Klassenbezeichnung. 
 
 ### 7.9 Visualisierung und Benutzerausgabe
+
+#### 7.9.1 Darstellung der Erkennungsergebnisse
+
+#### 7.9.2 Benutzeroberfläche und Bedienung
+
