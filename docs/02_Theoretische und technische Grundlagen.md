@@ -12,21 +12,21 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
 
 | Aspekt                 | Embedded Spezifisch                                                                                                                                                                                                                                                                |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ressourcenbeschränkung | Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern                                                                                          |
-| Echtzeitfähigkeit      | Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen *weicher* Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und *harter* Echtzeit (eine Überschreitung führt zum Systemversagen) |
-| Hohe Zuverlässigkeit   | Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden                                                                                                  |
-| Energieeffizienz       | Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt                                                                                                                            |
-| Spezialisierung        | Im Unterschied zu universellen Rechnern ist die Funktionalität eines eingebetteten Systems auf einen konkreten Anwendungsfall beschränkt                                                                                                                                           |
+| Ressourcenbeschränkung | Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern.                                                                                          |
+| Echtzeitfähigkeit      | Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen *weicher* Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und *harter* Echtzeit (eine Überschreitung führt zum Systemversagen). |
+| Hohe Zuverlässigkeit   | Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden.                                                                                                  |
+| Energieeffizienz       | Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt.                                                                                                                            |
+| Spezialisierung        | Im Unterschied zu universellen Rechnern ist die Funktionalität eines eingebetteten Systems auf einen konkreten Anwendungsfall beschränkt.                                                                                                                                           |
 
 #### 2.1.2 Mikrocontroller Architektur
 
 Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl. *Microcontroller Unit*). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
 
-- **CPU:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz
+- **CPU:** Recheneinheit mit Instruktionssatz (z.B. Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz.
 - **Programmspeicher (Flash):** Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
-- **Arbeitsspeicher (RAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte
-- **Taktgeber:** Interner Oszillator (HSI, engl. *High-Speed Internal*) oder externer Quarz (HSE, engl. *High-Speed External*) als Zeitbasis für die CPU und Peripherie
-- **Peripherie-Einheiten:** Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3)
+- **Arbeitsspeicher (RAM):** Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte.
+- **Taktgeber:** Interner Oszillator (HSI, engl. *High-Speed Internal*) oder externer Quarz (HSE, engl. *High-Speed External*) als Zeitbasis für die CPU und Peripherie.
+- **Peripherie-Einheiten:** Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3).
 
 ![[STM32N6 - Architecture.drawio.png]]
 \[STM32N6570-DK - Architektur]
@@ -72,7 +72,7 @@ Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M85-Kerne
 
 #### 2.1.5 Clock-Systeme
 
-Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers (STM32N6x7 - Documentation - STMicroelectronics, n.d.; Yiu, 2013)
+Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers (STM32N6x7 - Documentation - STMicroelectronics, n.d.; Yiu, 2013).
 
 - **Oszillatoren:** Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16-64 MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
 - **PLL (Phase-Locked Loop):** Ein PLL multiplier die Taktfrequenz der Basisoszillatoren auf höhere taktfrequenzen bringt. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800 MHz), PLL2 für den NPU (1000 MHz), PLL3 für den NPU-Speicher (900 MHz) und PLL4 für Peripherietakte.
@@ -84,7 +84,7 @@ Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundam
 Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
 
 **Startup und Systeminitialisierung:**
-Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions)
+Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions).
 
 **Register-Level-Programmierung:**
 Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
@@ -98,7 +98,7 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 
 - **DMA:** Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
 - **DMA2D:** Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
-- **NPU (Neural Processing Unit):** Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000 MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7). (STMicroelectronics, n.d.)
+- **NPU (Neural Processing Unit):** Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000 MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7) (STMicroelectronics, n.d.).
 
 ---
 
@@ -108,7 +108,7 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 
 Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren (Deutscher Gehörlosen-Bund e.V., n.d.). Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache.
 
-Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache. (Deutscher Gehörlosen-Bund e.V., n.d.)
+Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache (Deutscher Gehörlosen-Bund e.V., n.d.).
 
 #### 2.2.2 Das Fingeralphabet
 
@@ -137,15 +137,15 @@ Beispielhafte Beschreibung einiger Zeichen:
 
 | Zeichen | Handkonfiguration                                                                       |
 | ------- | --------------------------------------------------------------------------------------- |
-| **A**   | Faust geschlossen, Daumen liegt seitlich an der Handfläche an                           |
-| **B**   | Vier Finger gestreckt und zusammen, Daumen auf die Handfläche geklappt                  |
-| **C**   | Alle Finger gebeugt, Hand formt eine C-förmige Öffnung                                  |
-| **E**   | Alle Finger auf den Daumen geklappt, Daumen sichtbar unter den Fingerspitzen            |
-| **I**   | Nur kleiner Finger gestreckt, übrige Finger geballt                                     |
-| **L**   | Daumen und Zeigefinger im 90°-Winkel gestreckt, übrige Finger geballt                   |
-| **S**   | Faust geschlossen, Daumen vor den Fingern gekreuzt                                      |
-| **Y**   | Daumen und kleiner Finger gestreckt, übrige Finger geballt                              |
-| **SCH** | Drei Finger (Zeige-, Mittel-, Ringfinger) gestreckt und leicht gebeugt, Daumen darunter |
+| **A**   | Faust geschlossen, Daumen liegt seitlich an der Handfläche an.                           |
+| **B**   | Vier Finger gestreckt und zusammen, Daumen auf die Handfläche geklappt.                  |
+| **C**   | Alle Finger gebeugt, Hand formt eine C-förmige Öffnung.                                  |
+| **E**   | Alle Finger auf den Daumen geklappt, Daumen sichtbar unter den Fingerspitzen.            |
+| **I**   | Nur kleiner Finger gestreckt, übrige Finger geballt.                                     |
+| **L**   | Daumen und Zeigefinger im 90°-Winkel gestreckt, übrige Finger geballt.                   |
+| **S**   | Faust geschlossen, Daumen vor den Fingern gekreuzt.                                      |
+| **Y**   | Daumen und kleiner Finger gestreckt, übrige Finger geballt.                              |
+| **SCH** | Drei Finger (Zeige-, Mittel-, Ringfinger) gestreckt und leicht gebeugt, Daumen darunter. |
 
 ---
 
@@ -161,11 +161,11 @@ Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bes
 
 #### 2.3.3 Klassifikation
 
-Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009)
+Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009).
 
 ##### 2.3.3.1 Sparse Categorical Crossentropy
 
-Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speicher effizient im Hintergrund durchführt.
+Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speichereffizient im Hintergrund durchführt.
 
 | Kategorie | Index | One-Hot-Vektor   |
 | --------- | ----- | ---------------- |
@@ -243,7 +243,7 @@ Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensa
 Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline (Lugaresi et al., n.d.; Zhang & Notni, 2025)
 
 Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
-Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erkannten Handfläche werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
+Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erstellten Bounding Box werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
 
 Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeitet auf einem downgesampelten Bild (192×192 Pixel), während die Landmark-Erkennung auf dem zugeschnittenen Hand-Ausschnitt (224×224 Pixel) arbeitet. Dadurch wird die Rechenlast erheblich reduziert.
 
@@ -367,8 +367,8 @@ Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressour
 
 | Epochen-Typ    | Beschreibung                                                                                                |
 | -------------- | ----------------------------------------------------------------------------------------------------------- |
-| HW-Epochen     | Operatoren vollständig auf NPU-Hardware abgebildet. Die MCU-Arbeitslast beträgt ca. 10-15% der Inferenzzeit |
-| SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung)                                                         |
-| Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen                             |
-| Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller                                    |
+| HW-Epochen     | Operatoren vollständig auf NPU-Hardware abgebildet. Die MCU-Arbeitslast beträgt ca. 10-15% der Inferenzzeit. |
+| SW-Epochen     | Operatoren an Host delegiert (Keine Beschleunigung).                                                         |
+| Hybrid-Epochen | Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen.                             |
+| Meta-Epoche    | Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller.                                    |
 Epochen werden als atomare Operationen in fester Reihenfolge ausgeführt, um Datenabhängigkeiten zu gewährleisten. Zwischen Epochen wird kein interner NPU-Hardware-Zustand erhalten. Zwischenergebnisse werden im externen Speicher abgelegt.

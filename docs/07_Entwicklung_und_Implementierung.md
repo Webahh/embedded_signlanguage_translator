@@ -83,13 +83,12 @@ self._model = Sequential(
 
 ### 7.4 Quantisierung und Konvertierung der Modelle
 
-
-
 ### 7.5 Implementierung der Kamerapipeline
 
 ### 7.6 Handflächen- und Landmark-Erkennung
 
 ### 7.7 Region of Interest
+
 
 ### 7.8 Vor- und Nachverarbeitungsschritte
 
