@@ -13,6 +13,8 @@ Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klass
 
 #### 7.1.2 Frame-Extraktion und Hand-Erkennung
 
+#TODO MediaPipe Hand/Palm Detection
+
 Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Videocapture einzeln extrahiert und ohne vorherige Vorfilterung der Erkennungspipeline zugeführt.
 
 Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors (Lugaresi et al., 2019) in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von 2 Händen pro Frame und einer Mindestkonfidenz von 70 %. Pro Hand werden 21 Landmarks extrahiert, die den Handgelenkspunkt (WRIST) sowie die Gelenke der fünf Finger (Daumen: CMC, MCP, IP, TIP; Indexfinger: MCP, PIP, DIP, TIP; Mittelfinger: MCP, PIP, DIP, TIP; Ringfinger: MCP, PIP, DIP, TIP; Kleinfinger: MCP, PIP, DIP, TIP) umfassen.
@@ -32,6 +34,8 @@ Für die verwendeten Optionen sind:
 - 5xZoom
 
 Mit hilfe der 
+
+#TODO Pickle Inspect Gegenüberstellung der Gesten nach Augmentation 
 
 #### 7.1.4 Normalisierung und Interpolation
 
@@ -59,15 +63,15 @@ Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen a
 
 Die verarbeiteten Geste-Daten werden im Pickle-Format (`.pkl`) abgelegt. Der Dateiname folgt dem Muster `{Label}_{Augmentierungstyp}_{UUID}.pkl`, wobei die UUID die ersten vier Hexadezimalzeichen eines UUID4 darstellt. Die Speicherung erfolgt im Verzeichnis `resources/gestures/`. Die Verarbeitung der Videodateien und die Speicherung der Ergebnisse werden mittels Multiprocessing unter Auslastung von 80 % der verfügbaren CPU-Kerne parallelisiert.
 
-### 7.3 Entwicklung und Training des Klassifikationsmodells
+### 7.2 Entwicklung und Training des Klassifikationsmodells
 
-#### 7.3.1 Problemdefinition
+#### 7.2.1 Problemdefinition
 
 Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Gebärdenalphabet-Zeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
 
 Es liegt keine Binäreklassifikation vor, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
 
-#### 7.3.2 Datenanalyse
+#### 7.2.2 Datenanalyse
 
 **Input-Format:** Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus
 
@@ -88,7 +92,7 @@ Die Klassenverteilung ist leicht ungleichmäßig (16 Klassen mit 185, 8 Klassen 
 
 **Normalisierung:** Alle Koordinaten werden durch den Maximalwert des int16-Bereichs (POS_MAX = 32.767) dividiert, sodass die Werte im Bereich \[−1, 1] liegen.
 
-#### 7.3.3 Modellauswahl
+#### 7.2.3 Modellauswahl
 
 Für die Modellauswahl wurden verschiedene Ansätze evaluiert, wobei die Anforderungen des Embedded-Systems (schnelle Inferenz, kleine Modellgröße) und die Input-Struktur (88D-feature-Vektor aus MediaPipe-Landmarks) im Vordergrund standen.
 
@@ -107,7 +111,7 @@ Wahl: Dort werden Dense Layers (MLP) als Standard-Ansatz für
 Landmark-basierte Gesture Recognition eingesetzt, was die
 praktische Bewährtheit dieser Architektur unterstreicht.
 
-#### 7.3.4 Modellarchitektur
+#### 7.2.4 Modellarchitektur
 
 Das Modell nutzt die Keras Sequential API:
 
@@ -153,7 +157,7 @@ Kurzfassungen zu den verschieden Schicht-Typen. `Input` nimmt einen Input Tensor
 | Dropout(0.5)       | Stärkere Regularisierung vor der Ausgabe                   |
 | Dense(26, Softmax) | Gibt Klassenwahrscheinlichkeiten aus (Summe = 1)           |
 
-#### 7.3.5 Verlustfunktion und Optimierung
+#### 7.2.5 Verlustfunktion und Optimierung
 
 **Verlustfunktion: SparseCategoricalCrossentropy**
 
@@ -177,7 +181,7 @@ Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,000
 - Per-Parameter-Lernraten automatisch anzupassen
 - Die Adaptive Momentum-Schätzung für schnelleres Training zu nutzen
 
-#### 7.3.6 Trainingsprozess
+#### 7.2.6 Trainingsprozess
 
 **Hyperparameter:**
 
@@ -200,7 +204,7 @@ Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,000
 - Random Translate: ±10.922 int16-Einheiten (2× pro Geste)
 - Random Zoom: Faktor 0,5–1,5 (5× pro Geste)
 
-#### 7.3.7 Evaluierung
+#### 7.2.7 Evaluierung
 
 **Trainingsergebnisse:**
 
@@ -216,18 +220,61 @@ Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt 
 **Modellgröße:** Das quantisierte INT8-Modell benötigt nur 31,83 KB Speicher und inferiert in durchschnittlich 0,005 ms – ideal für Embedded-Einsatz.
 
 
-### 7.4 Quantisierung und Konvertierung der Modelle
+### 7.3 Quantisierung und Konvertierung der Modelle
 
-### 7.5 Implementierung der Kamerapipeline
+### 7.4 Embedded Projektstruktur/Treiber
 
-### 7.6 Handflächen- und Landmark-Erkennung
+### 7.5 Kamera - Display Pipeline
 
-### 7.7 Region of Interest
+### 7.6 Ablaufsteuerung und Software Scheduler
 
+### 7.7 NPU Integration & AI Interface
 
 ### 7.8 Vor- und Nachverarbeitungsschritte
 
+Die drei neuronalen Netze verwenden unterschiedliche Eingabedaten und liefern Ausgaben, die nicht unmittelbar durch das jeweils nachfolgende Modell verarbeitet werden können. Daher sind zwischen den einzelnen Inferenzschritten mehrere Vor- und Nachverarbeitungen erforderlich. Diese umfassen sowohl hardwaregestützte Operationen innerhalb der DCMIPP als auch durch den Hauptprozessor ausgeführte Transformationen der Bild- und Landmark-Daten.
+
+Die DCMIPP übernimmt die grundlegende Aufbereitung der Kamerabilder. Die nachgelagerten Verarbeitungsschritte umfassen die Nachverarbeitung der Handdetektion, die Bildung der Region of Interest, die Vor- und Nachverarbeitung des Landmark-Modells sowie die Aufbereitung der Landmark-Koordinaten für das Klassifikationsmodell.
+
 #### 7.8.1 DCMIPP Embedded Processing
+
+Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592 x 1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung.
+
+Die DCMIPP wandelt die RAW-Bayer-Daten zunächst in ein RGB-Bild um. Hierzu werden die Demosaikierung der RAW10-Bilddaten, die Farbkorrektur, die Belichtungsanpassung und die Gammakorrektur innerhalb der Bildpipeline durchgeführt. Das Ergebnis wird im RGB888-Format ausgegeben. Dadurch müssen diese rechenintensiven Verarbeitungsschritte nicht nachträglich durch den Hauptprozessor auf den bereits gespeicherten Kamerabildern ausgeführt werden.
+
+Die verwendeten Parameterwerte wurden empirisch bestimmt. Hierzu wurden die entsprechenden DCMIPP-Register schrittweise angepasst und die Auswirkungen auf das ausgegebene Kamerabild visuell bewertet. Einstellungen, die unter den vorgesehenen Einsatzbedingungen eine geeignete Bilddarstellung ergaben, wurden anschließend in die feste Konfiguration der Bildpipeline übernommen.
+
+Aus dem gemeinsamen Kameradatenstrom werden zwei getrennte Ausgabepfade erzeugt. Pipe 1 dient der Displayausgabe und stellt gleichzeitig das Ausgangsbild für die Landmark-Erkennung bereit. Pipe 2 erzeugt dagegen das Eingabebild für die Handdeteketion.
+
+Für Pipe 1 wird das Sensorbild zunächst auf das Seitenverhältnis des Displays zugeschnitten. Der horizontale Bildbereich bleibt vollständig erhalten, während das Bild vertikal zentriert beschnitten wird. Der entstandene Ausschnitt wird anschließend durch die Downscaling-Einheit der DCMIPP auf eine Auflösung von 800 x 480 Pixeln verkleinert und im RGB888-Format im externen PSRAM abgelegt. Die von Pipe 1 erzeugten Bilder werden über vier Hintergrundbildpuffer verwaltet. Die DCMIPP schreibt jeweils in den für die Aufnahme vorgesehenen Puffer, während weitere Puffer für die Displayausgabe, die KI-Verarbeitung und das Einzeichnen der Handregion beziehungsweise der Landmarks verwendet werden. Nach Abschluss eines Bildes wird die Zieladresse der DCMIPP auf den nächsten Aufnahmepuffer umgeschaltet.
+
+Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild für die Handdetektion. Da deren Eingangsauflösung mit 192 x 192 Pixeln deutlich unterhalb der Sensorauflösung liegt, wird das Bild vor der eigentlichen Skalierung horizontal und vertikal dezimiert. Dadurch reduziert sich die Auflösung zunächst von 2592 x 1944 auf 1296 x 972 Pixel. Anschließend übernimmt der DCMIPP-Downsizer die Skalierung auf 192 x 192 Pixel. Da vor der Skalierung kein quadratischer Bildausschnitt gebildet wird, wird das Seitenverhältnis des vollständigen Sensorbildes dabei an die quadratische Modelleingabe angepasst. Auch dieser Ausgabepfad verwendet das RGB888-Format.
+
+Für Pipe 2 wird der Double-Buffer-Modus der DCMIPP verwendet. Die erzeugten Bilder werden abwechselnd in zwei Eingabebildpuffern gespeichert. Während die DCMIPP einen Puffer mit einem neuen Bild beschreibt, kann der zuvor fertiggestellte Puffer für die Handdetektion verwendet werden. Der jeweils abgeschlossene Puffer wird über den Frame-Callback bestimmt und für die weitere Verarbeitung markiert.
+
+Die Konfiguration der beiden Bildpfade wird jeweils durch eine globale Konfigurationsstruktur festgelegt. Die darin enthaltenen Parameter wurden aus den Anforderungen der beiden Verarbeitungspfade und den verwendeten Bildformaten abgeleitet.
+
+| Parameter                         | Pipe 1                         | Pipe 2      | Begründung                                                                                                                                                                                   |
+| --------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `output_width`<br>`output_height` | 800 x 480                      | 192 x 192   | Entsprechen der Displayauflösung, bzw. Eingangsgröße der Handdetection.                                                                                                                      |
+| `output_format`                   | RGB888                         | RGB888      | Display und KI-Vorverarbeitung arbeiten mit drei Farbkanälen und jeweils 8 Bit pro Kanal.                                                                                                    |
+| `output_bpp`                      | 3                              | 3           | RGB888 benötigt drei Byte pro Pixel (für jeden Kanal 8 Bit)<br>Der Wert wird unter anderem zur Berechnung des Speicher-Pitchs verwendet.                                                     |
+| `enable_crop`                     | aktiviert                      | aktiviert   | Pipe 1 benötigt einen Zuschnitt auf das Seitenverhältnis des Displays. <br><br>Pipe 2 verarbeitet den vollständigen Sensorbereich.                                                           |
+| `crop_x`                          | 0                              | 0           | Horizontal wird kein Bereich abgeschnitten.                                                                                                                                                  |
+| `crop_y`                          | Zentriert vertikaler Zuschnitt | 0           | Pipe 1 entfernt oben und unten Bildbereiche, um das Sensorformat ohne Verzerrung an 800 x 480 anzupassen. <br><br>Pipe 2 verwendet das vollständige Bild.                                    |
+| `crop_width`                      | 2592                           | 2592        | Die vollständige Sensorbreite wird verwendet.                                                                                                                                                |
+| `crop_height`                     | ca. 1555                       | 1944        | Pipe 1 erhält das Displayseitenverhältnis<br>5 : 3. <br><br>Pipe  2 behält die vollständige Senorhöhe.                                                                                       |
+| `enable_downsize`                 | aktiviert                      | aktiviert   | Beide Ausgaben sind wesentlich kleiner als das Sensorbild.                                                                                                                                   |
+| `enable_decimate`                 | deaktiviert                    | aktiviert   | Nur Pipe 2 benötigt vor dem Downscaling eine zusätzliche Halbierung.                                                                                                                         |
+| `decimate_h`<br>`decimate_v`      | -                              | 1, 1        | Die Auflösung wird horizontal und vertikal jeweils durch zwei geteilt.                                                                                                                       |
+| `enable_swap`                     | deaktiviert                    | deaktiviert | Die Farbkanäle sind bereits korrekt. Ein Swap ist nicht notwendig.                                                                                                                           |
+| `enable_gamma`                    | aktiviert                      | aktiviert   | Die Gammakorrektur verbessert die Helligkeitsdarstellung.                                                                                                                                    |
+| `enable_dbm`                      | deaktiviert                    | aktiviert   | Pipe 1 verwendet eine softwareseitige Rotation von vier Bildpuffern, da die Anwendung mehr als nur 2 Puffer benötigt.<br><br>Pipe 2 verwendet zwei hardwareseitig wechselnde Eingabepuffer.  |
+Tabelle X: Konfigurationsparameter der DCMIPP-Bildpfade
+
+Zusätzlich zur Erzeugung des Displaybildes werden für Pipe 1 drei Statistikkanäle aktiviert. Diese erfassen Helligkeits- und Farbwerte innerhalb eines zentralen Bildbereichs mit einer Größe von 1296 x 972 Pixeln. Die ermittelten Statistiken werden von der automatischen Belichtungsregelung ausgewertet und zur Anpassung der Belichtungszeit des Kamerasensors verwendet.
+
+Durch die hardwaregestützte Vorverarbeitung werden nur die tatsächlich benötigten Bildauflösungen in den externen Speicher geschrieben. Dies reduziert sowohl den Speicherbedarf als auch die vom Hauptprozessor zu verarbeitende Datenmenge. Die weiteren auf der CPU ausgeführten Vor- und Nachverarbeitungsschritte können dadurch unmittelbar auf den bereits aufbereiteten RGB888-Bilddaten arbeiten.
 
 #### 7.8.2 Palm Detection Postprocessing
 
@@ -239,8 +286,4 @@ Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt 
 
 #### 7.8.6 Klassifizierungsmodell Postprocessing
 
-### 7.9 Integration der neuronalen Netze auf dem Embedded-System
-
-### 7.10 Ablaufsteuerung und Software-Scheduler
-
-### 7.11 Visualisierung und Benutzerausgabe
+### 7.9 Visualisierung und Benutzerausgabe
