@@ -32,16 +32,15 @@
    - [x] 6.2 Hardwarekonzept
    - [x] 6.3 KI-Verarbeitungskette
    - [x] 6.4 Speicher-  und Datenflusskonzept
-   - [ ] 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
+   - [x] 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
 1. Entwicklung und Implementierung ---- beide
-   - [ ] 7.1 Aufbau und Aufbereitung des Datensatzes
+   - [x] 7.1 Aufbau und Aufbereitung des Datensatzes
    - [ ] 7.2 Augmentationspipeline
-   - [ ] 7.3 Entwicklung und Training des Klassifikationsmodells
+   - [x] 7.3 Entwicklung und Training des Klassifikationsmodells
    - [ ] 7.4 Quantisierung und Konvertierung des Modells
    - [ ] 7.5 Implementierung der Kamerapipeline
    - [ ] 7.6 Handflächen- und Landmark-Erkennung
-   - [ ] 7.7 Region of Interest
-   - [ ] 7.8 Vor- und Nachverarbeitung der Handlandmarks
+   - [x] 7.8 Vor- und Nachverarbeitung der Handlandmarks
    - [ ] 7.9 Integration der neuronalen Netze auf dem Embedded-System
    - [ ] 7.10 Ablaufsteuerung und Software-Scheduler
    - [ ] 7.11 Visualisierung und Benutzerausgabe

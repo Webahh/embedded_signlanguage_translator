@@ -48,17 +48,44 @@
    - 6.5 Ablauf vom Kamerabild bis zum Erkennungsergebnis
 1. [[07_Entwicklung_und_Implementierung | Entwicklung und Implementierung]]
    - 7.1 Aufbau und Aufbereitung des Datensatzes
-   - 7.2 Augmentationspipeline
-   - 7.3 Entwicklung und Training des Klassifikationsmodells
-   - 7.4 Quantisierung und Konvertierung des Modells
-   - 7.5 Implementierung der Kamerapipeline
-   - 7.6 Handflächen- und Landmark-Erkennung
-   - 7.7 Region of Interest
-   - 7.8 Vor- und Nachverarbeitung in der 
-   - 7.9 Integration der neuronalen Netze auf dem Embedded-System
-   - 7.10 Ablaufsteuerung und Software-Scheduler
-   - 7.11 Visualisierung und Benutzerausgabe
-   - 7.12 Optimierungen
+	   - 7.1.1 Rohvideos
+	   - 7.1.2 Frame-Extraktion und Handdetektion
+	   - 7.1.3 Augmentation
+	   - 7.1.4 Normalisierung und Interpolation
+	   - 7.1.5 Datenstrukturen und Speicherung
+   - 7.2 Entwicklung und Training des Klassifikationsmodells
+	   - 7.2.1 Problemdefinition
+	   - 7.2.2 Datenanalyse
+	   - 7.2.3 Modellauswahl
+	   - 7.2.4 Modellarchitektur
+	   - 7.2.5 Verlustfunktion und Optimierung
+	   - 7.2.6 Trainingprozess
+   - 7.3 Quantisierung und Konvertierung des Modells
+   - 7.4 Softwaregrundstruktur und hardwarenahe Basistreiber
+	   - 7.4.1 Aufbauder Embedded-Software
+	   - 7.4.2 Zentrale Konfiguration und Systeminitialisierung
+	   - 7.4.3 Registerbasierte Treiberentwicklung
+	   - 7.4.4 Grundlegende Systemtreiber
+   - 7.5 Kamera - Display Pipeline
+	   - 7.5.1 Initialisierung des Kamerasensors
+	   - 7.5.2 Übertragung der Kamerdaten über CSI & DCMIPP
+	   - 7.5.3 Verwaltung der Bildpuffer
+	   - 7.5.4 LTDC-Konfiguration und Verwaltung der Displayebenen
+   - 7.6 Ablaufsteuerung und Software Scheduler
+   - 7.7 Neural Processing Unit und AI-Interface
+	   - 7.7.1 Initialisierung des Neural-ART Accelerators
+	   - 7.7.2 Einheitliche KI-Schnittstelle
+   - 7.8 Vor- und Nachverarbeitungsschritte
+	   - 7.8.1 DCMIPP-gestützte Bildvorverarbeitung
+	   - 7.8.2 Nachverarbeitung der Handdetektion
+	   - 7.8.3 Vorberarbeitung der Landmark-Erkennung
+	   - 7.8.4 Nachverarbeitung der Landmark-Erkennung
+	   - 7.8.5 Vorberarbeitung des Klassifizierungsmodells
+	   - 7.8.6 Nachverarbeitung des Klassifikationsmodells
+   - 7.9 Visualisierung und Benutzerausgabe
+	   - 7.9.1 Darstellung der Erkennungsergebnisse
+	   - 7.9.2 Benutzeroberfläche und Bedienung
+   - 7.10 Optimierungen
 1. [[08_Evaluation_und_Validierung | Evaluation und Validierung]]
    - 9.1  Versuchsaufbau und Testbedingungen
    - 9.2 Erkennungsgenauigkeit

@@ -43,7 +43,7 @@ Die extrahierten Landmarks werden für eine effiziente und positionsinvariante D
 
 Für eine einheitliche Darstellung aller Sequenzen erfolgt eine FPS-Normalisierung auf 60 FPS mittels linearer Interpolation zwischen den Frames. Frames, in denen eine Hand nicht erkannt wird, werden durch leere Handstrukturen mit der Sentinel-Koordinate \[−100, −100] repräsentiert und bei der Interpolation als Sprungpunkte behandelt.
 
-#### 7.1.5 Datenstrukturen
+#### 7.1.5 Datenstrukturen und Speicherung
 
 Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen abgebildet:
 
@@ -58,8 +58,6 @@ Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen a
 - `landmarks`: Dictionary mit 21 benannten Landmarks relativ zum Handgelenk
 - `hand_area`: Bounding-Box in Pixelkoordinaten `(x, y, width, height)`
 - `landmark_pos`: Absolute Landmark-Positionen in Pixelkoordinaten (21 × \[x, y])
-
-#### 7.1.6 Speicherung
 
 Die verarbeiteten Geste-Daten werden im Pickle-Format (`.pkl`) abgelegt. Der Dateiname folgt dem Muster `{Label}_{Augmentierungstyp}_{UUID}.pkl`, wobei die UUID die ersten vier Hexadezimalzeichen eines UUID4 darstellt. Die Speicherung erfolgt im Verzeichnis `resources/gestures/`. Die Verarbeitung der Videodateien und die Speicherung der Ergebnisse werden mittels Multiprocessing unter Auslastung von 80 % der verfügbaren CPU-Kerne parallelisiert.
 
@@ -179,6 +177,7 @@ Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,000
 **Early Stopping:** Das Training wird automatisch beendet, wenn sich die Validierungsverluste über 3 aufeinanderfolgende Epochen nicht verbessern. Dies verhindert Overfitting ohne manuelle Nachsteuerung.
 
 #### 7.2.7 Evaluierung
+## Was sagst du oliver? Bleibt das hier? oder geht das richtung Kap 8???
 
 **Trainingsergebnisse:**
 
@@ -226,14 +225,12 @@ nur einordnen nicht beschreiben!
 
 #### 7.5.1 Initialisierung des Kamerasensors
 
-#### 7.5.2 Übertragung der Kameradaten über CSI
+#### 7.5.2 Übertragung der Kameradaten über CSI & DCMIPP
 
-#### 7.5.3 Konfiguration der DCMIPP-Bildpfade
-
-#### 7.5.4 Verwaltung der Bildpuffer
+#### 7.5.3 Verwaltung der Bildpuffer
 (XSPI PSRAM etc...)
 
-#### 7.5.5 LTDC-Konfiguration und Verwaltung der Displayebenen
+#### 7.5.4 LTDC-Konfiguration und Verwaltung der Displayebenen
 
 ### 7.6 Ablaufsteuerung und Software Scheduler
 
@@ -245,7 +242,6 @@ nur einordnen nicht beschreiben!
 
 ATON Middleware kapseln durch simple ai
 
-#### 7.7.3 Cache- und Speicherbehandlung
 
 ### 7.8 Vor- und Nachverarbeitungsschritte
 
@@ -294,13 +290,14 @@ Zusätzlich zur Erzeugung des Displaybildes werden für Pipe 1 drei Statistikkan
 Durch die hardwaregestützte Vorverarbeitung werden nur die tatsächlich benötigten Bildauflösungen in den externen Speicher geschrieben. Dies reduziert sowohl den Speicherbedarf als auch die vom Hauptprozessor zu verarbeitende Datenmenge. Die weiteren auf der CPU ausgeführten Vor- und Nachverarbeitungsschritte können dadurch unmittelbar auf den bereits aufbereiteten RGB888-Bilddaten arbeiten.
 
 #### 7.8.2 Nachverarbeitung der Handdetektion
-##### 7.8.2.1 Ankerbasierte Modellausgabe
 
-Das Modell zur Handdetektion verwendet ein ankerbasiertes Detektionsverfahren (Zhang et al., 2020). Hierfür sind in der Ankertabelle `pd_anchors` insgesamt 2016 Ankerpositionen definiert. Diese repräsentieren unterschiedliche Positionen und Größen möglicher Handregionen innerhalb des 192x192 Pixel großen Eingabebildes. Für jeden Anker gibt das Modell einen Konfidenzwert sowie mehrere Regressionswerte aus. Der Konfidenzwert beschreibt, wie wahrscheinlich sich im Bereich des jeweiligen Ankers eine Hand befindet. Die Regressionswerte enthalten die Abweichungen zwischen dem Anker und der vorhergesagten Handregion sowie die Positionen der zugehörigen Schlüsselpunkte. 
+**Ankerbasierte Modellausgabe**
+
+Das Modell zur Handdetektion verwendet ein ankerbasiertes Detektionsverfahren (Zhang et al., 2020). Hierfür sind in der Ankertabelle `pd_anchors` insgesamt 2016 Ankerpositionen definiert. Diese repräsentieren unterschiedliche Positionen und Größen möglicher Handregionen innerhalb des 192x192 Pixel großen Eingabebildes. Für jeden Anker gibt das Modell einen Konfidenzwert sowie mehrere Regressionswerte aus. Der Konfidenzwert beschreibt, wie wahrscheinlich sich im Bereich des jeweiligen Ankers eine Hand befindet. Die Regressionswerte enthalten die Abweichungen zwischen dem Anker und der vorhergesagten Handregion sowie die Positionen der zugehörigen Schlüsselpunkte.  (QUELLE?)
 
 Die Anker bilden damit ein festes Suchraster über dem Eingabebild. Das Modell muss die Position und Ausdehnung einer Hand nicht vollständig unabhängig bestimmen, sondern sagt für jeden Anker die räumlichen Abweichungen zur tatsächlichen Handregion voraus. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen üblicherweise mehrere ähnliche Erkennungskandidaten, die in der anschließenden Nachverarbeitung bereinigt werden müssen.
 
-##### 7.8.2.2 Auswahl und Filterung der Erkennungskandidaten
+**Auswahl und Filterung der Erkennungskandidaten**
 
 Für jeden der 2016 Anker wird zunächst geprüft, ob der ausgegebene Konfidenzwert den festgelegten Schwellwert erreicht. Die Konfidenzwerte liegen als Logits vor und müssen für die weitere Bewertung durch eine Sigmoidfunktion in einen Wahrscheinlichkeitswert zwischen 0 und 1 überführt werden (Sharma et al., 2020):
 $$ \sigma(x) = \frac{1}{1 + \mathrm{e}^{-x}} $$
@@ -318,11 +315,11 @@ Die Kandidaten werden in absteigender Reihenfolge ihrer Wahrscheinlichkeit verar
 
 Um kurzzeitige Fehldetektionen und einzelne Aussetzer zu reduzieren, wird das Ergebnis zusätzlich über mehrere Ausführungen hinweg gefiltert. Eine Hand gilt erst dann als bestätigt, wenn in zwei aufeinanderfolgenden Auswertungen eine gültige Detektion vorliegt. Bei einer ungültigen Detektion wird der positive Zähler zurückgesetzt. Umgekehrt wird der erkannte Zustand erst aufgehoben, wenn in drei aufeinanderfolgenden Auswertungen keine gültige Handdetektion vorliegt. Einzelne Aussetzer führen dadurch nicht unmittelbar zum Verlust der erkannten Handregion.
 
-##### 7.8.2.3 Erzeugung der initialen Region of Interest
+**Erzeugung der initialen Region of Interest**
 
 Aus der bestätigten Handdetektion wird die initiale Region of Interest für das Handlandmark-Modell erzeugt. Die Handdetektion wird auf dem von Pipe 2 bereitgestellten Bild ausgeführt, während der Eingabeausschnitt für das Landmark-Modell aus dem Displaybild von Pipe 1 entnommen wird. Aufgrund der unterschiedlichen Auflösungen und Bildausschnitte müssen die normierten Koordinaten der Handdetektion zunächst in das Koordinatensystem von Pipe 1 transformiert werden.
 
-In horizontaler Richtung bilden beide Bildpfade die vollständige Sensorbreite ab. Die horizontale Position und Breite können deshalb unmittelbar mit der Breite des Displaybildes skaliert werden. Pipe 1 verwendet jedoch einen vertikal zentrierten Ausschnitt des Sensorbildes. Bei der Transformation der vertikalen Koordinaten müssen daher zusätzlich die Höhe und der Offset dieses Ausschnitts berücksichtigt werden. Neben der Begrenzungsbox stellt das Modell mehrere Schlüsselpunkte der Hand bereit. Zwei dieser Punkte werden zur Bestimmung ihrer Orientierung verwendet. Aus ihrer relativen Lage wird der Rotationswinkel berechnet:
+In horizontaler Richtung bilden beide Bildpfade die vollständige Sensorbreite ab. Die horizontale Position und Breite können deshalb unmittelbar mit der Breite des Displaybildes skaliert werden. Pipe 1 verwendet jedoch einen vertikal zentrierten Ausschnitt des Sensorbildes. Bei der Transformation der vertikalen Koordinaten müssen daher zusätzlich die Höhe und der Offset dieses Ausschnitts berücksichtigt werden. Neben der Begrenzungsbox stellt das Modell mehrere Schlüsselpunkte der Hand bereit. Zwei dieser Punkte werden zur Bestimmung ihrer Orientierung verwendet. Aus ihrer relativen Lage wird der Rotationswinkel berechnet: QUELLE?
 $$\alpha = \frac{\pi}{2} - \operatorname{atan2}(-\Delta y,\Delta x)$$
 Der berechnete Winkel wird anschließend auf den Bereich von $-\pi$ bis $\pi$ normiert. Kann kein gültiger Winkel bestimmt werden, wird eine Rotation von 0 verwendet. Da die Begrenzungsbox der Handdetektion hauptsächlich die Handfläche umfasst, wird sie für die Landmark-Erkennung erweitert. Ihr Mittelpunkt wird entlang der rotierten lokalen Vertikalachse um die Hälfte der ursprünglichen Höhe in Richtung der Finger verschoben. Anschließend wird die längere Seite der Begrenzungsbox bestimmt und mit dem Faktor 2,6 skaliert. Der berechnete Wert wird für die Breite und Höhe verwendet, sodass eine quadratische Region entsteht.
 
@@ -343,10 +340,11 @@ c_y+x_{\mathrm{lokal}}\sin(\alpha)
 $$
 Dabei beschreiben $c_x$ und $c_y$ den Mittelpunkt und $\alpha$ den Rotationswinkel der Region. Dadurch werden Skalierung, Position und Rotation gleichzeitig berücksichtigt. Damit wird die Hand unabhängig von ihrer Lage im ursprünglichen Kamerabild in eine einheitliche Ausrichtung überführt.
 
-Die Transformation führt häufig zu Quellkoordinaten, die zwischen den ganzzahligen Pixelpositionen des Kamerabildes liegen. Der benötigte Farbwert wird deshalb durch eine bilineare Interpolation aus den vier benachbarten Pixeln berechnet. Dadurch werden Skalierungs- und Rotationsartefakte gegenüber einer einfachen Auswahl des nächstgelegenen Pixels reduziert. Reicht die Region über den Rand des Kamerabildes hinaus, werden die außerhalb des Bildes liegenden Bereiche im Modelleingang schwarz aufgefüllt. Bei der Adressierung der Bilddaten wird außerdem die im Speicher verwendete Zeilenlänge berücksichtigt.
+Die Transformation führt häufig zu Quellkoordinaten, die zwischen den ganzzahligen Pixelpositionen des Kamerabildes liegen. Der benötigte Farbwert wird deshalb durch eine bilineare Interpolation aus den vier benachbarten Pixeln berechnet. Dadurch werden Skalierungs- und Rotationsartefakte gegenüber einer einfachen Auswahl des nächstgelegenen Pixels reduziert. Reicht die Region über den Rand des Kamerabildes hinaus, werden die außerhalb des Bildes liegenden Bereiche im Modelleingang schwarz aufgefüllt. Bei der Adressierung der Bilddaten wird außerdem die im Speicher verwendete Zeilenlänge berücksichtigt. (QUELLE)
 
 #### 7.8.4 Nachverarbeitung der Landmark-Erkennung
-##### 7.8.4.1 Rücktransformation der Landmarks
+
+**Rücktransformation der Landmarks**
 
 Das Handlandmark-Modell gibt für jeden der 21 Handlandmarks drei Koordinaten innerhalb des 224x224 Pixel großen Modelleingangs aus. Da dieser Eingabeausschnitt gegenüber dem ursprünglichen Kamerabild skaliert, verschoben und rotiert wurde, können die ausgegebenen Koordinaten nicht unmittelbar für die Anzeige oder die nachfolgende Zeichenklassifikation verwendet werden. Sie werden deshalb zunächst in das Koordinatensystem des von Pipe 1 bereitgestellten Kamerabildes zurücktransformiert.
 
@@ -354,7 +352,7 @@ Hierzu werden die x- und y-Koordinaten der Landmarks auf den Mittelpunkt des Mod
 
 Die zurücktransformierten Landmark-Koordinaten werden sowohl für die Anzeige und Zeichenklassifikation als auch für die Aktualisierung der Region of Interest verwendet. Dadurch kann die Hand in den nachfolgenden Kamerabildern anhand der bereits ermittelten Landmarks weiterverfolgt werden, ohne erneut eine vollständige Handdetektion ausführen zu müssen.
 
-##### 7.8.4.2 Aktualisierung der Tracking-Region
+**Aktualisierung der Tracking-Region***
 
 Für die Bestimmung der nächsten Tracking-Region werden nicht alle 21 Landmarks verwendet. Insbesondere die Fingerspitzen haben sich in Tests abhängig vom dargestellten Handzeichen stark bewegt und haben dadurch die Größe und Position der Region unnötig verändert. Stattdessen werden zwölf vergleichsweise stabile Punkte aus dem Bereich des Handgelenks, der Handfläche und der Fingerbasen berücksichtigt. Aus ihren minimalen und maximalen x- und y-Koordinaten wird zunächst eine Bounding-Box bestimmt. Deren Mittelpunkt, Breite und Höhe bilden die Grundlage der neuen Region.
 
@@ -393,3 +391,5 @@ Nach Abschluss der Suche wird der ermittelte Klassenindex über das Array `ai_la
 
 #### 7.9.2 Benutzeroberfläche und Bedienung
 
+
+### 7.10 Optimierungen
