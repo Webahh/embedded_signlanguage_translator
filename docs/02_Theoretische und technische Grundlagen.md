@@ -197,6 +197,10 @@ Gegenmaßnahmen bezüglich Overfitting umfassen:
 - Datenaugmentation: Künstliche Vermehrung der Trainingsdaten durch Transformationen (siehe Abschnitt 2.6).
 - Validierung: Aufteilen des Datensatzes in Trainings-, Validierungs- und Testset, um die Generalisierungsfähigkeit zu überwachen.
 
+#### 2.3.6 Parameter vs Hyperparameter
+
+Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese parameter bestimmen das Lernverhalten. (Praxiseinstieg Machine Learning Mit Scikit-Learn, Keras Und TensorFlow - 11727363, n.d.)
+
 ---
 
 ### 2.4 Neuronale Netze zur Klassifikation

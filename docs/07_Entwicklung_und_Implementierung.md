@@ -102,12 +102,7 @@ gegenüber MLPs aufweisen. (Fritz, 2025)
 
 Random Forest und SVM wurden ebenfalls in Betracht gezogen, erreichen jedoch in der Literatur geringere Genauigkeiten (70–75 % bzw. 61–76 %) bei vergleichbaren Tasks. Zudem fehlen beiden Modellen nativ kalibrierte Wahrscheinlichkeiten: Random Forest gibt nur harte Klassifikationen aus, während SVM ein zusätzliches Platt-Scaling für Wahrscheinlichkeiten erfordert. (Rahman et al., 2025). Es ist anzumerken das SVM und Random forest auf einer anderen Datenbasis (Photoplethysmography (PPG)) trainiert worden sind.
 
-Das MLP erfüllt es die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit. Die Softmax-Ausgabeschicht liefert direkt kalibrierte Klassenwahrscheinlichkeiten, die für die nachfolgende Verarbeitung benötigt werden. Während direkte Quantisierung zu Genauigkeitsverlust führen kann, zeigen Studien, dass INT8-Quantisierung bei MLP-Modellen mit geeigneten Techniken (LayerNorm, Kalibrierung) Verluste von unter 1 % erreicht. Ein akzeptabler Kompromiss für den Embedded-Einsatz (blogdeveloperspot, 2025).
-
-Ferner bestätigt der Ansatz von Google MediaPipe Model Maker die
-Wahl: Dort werden Dense Layers (MLP) als Standard-Ansatz für
-Landmark-basierte Gesture Recognition eingesetzt, was die
-praktische Bewährtheit dieser Architektur unterstreicht.
+Das MLP erfüllt die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit. Die Softmax-Ausgabeschicht liefert direkt kalibrierte Klassenwahrscheinlichkeiten, die für die nachfolgende Verarbeitung benötigt werden. Während direkte Quantisierung zu Genauigkeitsverlust führen kann, zeigen Studien, dass INT8-Quantisierung bei MLP-Modellen mit geeigneten Techniken (LayerNorm, Kalibrierung) Verluste von unter 1 % erreicht. Ein akzeptabler Kompromiss für den Embedded-Einsatz (blogdeveloperspot, 2025).
 
 #### 7.2.4 Modellarchitektur
 
@@ -137,70 +132,54 @@ Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale
 
 #### 7.2.5 Verlustfunktion und Optimierung
 
-**Verlustfunktion: SparseCategoricalCrossentropy**
+Für das Training des Modells wird die Verlustfunktion Sparse Categorical Crossentropy verwendet. Diese eignet sich insbesondere, da die Zielklassen als Integer und nicht als One-Hot-Vektoren kodiert vorliegen. Dadurch wird der Speicherbedarf reduziert und gleichzeitig eine numerisch stabile Berechnung der Gradienten ermöglicht. Die Verlustfunktion berechnet die Abweichung zwischen den tatsächlichen Klassen und den durch die Softmax-Ausgabe vorhergesagten Klassenwahrscheinlichkeiten und lässt sich durch folgende Formel beschreiben:
 
-Die Verlustfunktion wird als SparseCategoricalCrossentropy gewählt, weil:
-
-- Labels sind Integer-kodiert (nicht One-Hot)
-- Spart Speicherplatz gegenüber One-Hot-Kodierung
-- Gradientenverhalten ist numerisch stabil
-
-Die Formel lautet:
-
-$$L = -\sum(y_{true} \cdot \log(y_{pred}))$$
-
-wobei $y_{true}$ die Integer-Klasse und $y_{pred}$ die Softmax-Ausgabe ist.
-
-**Optimierer: Adam**
-
-Adam (Adaptive Moment Estimation) wird mit einer sehr kleinen Lernrate von 0,00001 verwendet, um:
-
-- Stabile Konvergenz auf kleinem Datensatz zu gewährleisten
-- Per-Parameter-Lernraten automatisch anzupassen
-- Die Adaptive Momentum-Schätzung für schnelleres Training zu nutzen
+$$L = -\log(p_{y_{true}})$$
+(What Is Sparse Categorical Crossentropy, 10:49:00+00:00) wobei $p_{y_{true}}$​​ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet. 
 
 #### 7.2.6 Trainingsprozess
 
-**Hyperparameter:**
+Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden. Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und Frühzeitiges Stoppen.
 
-| Parameter        | Wert                          | Begründung                                          |
-| ---------------- | ----------------------------- | --------------------------------------------------- |
-| Optimizer        | Adam                          | Adaptiver Optimierer für kleine Datensätze          |
-| Learning Rate    | 0,00001                       | Stabile Konvergenz                                  |
-| Verlustfunktion  | SparseCategoricalCrossentropy | Integer-kodiertete Labels                           |
-| Metrik           | sparse_categorical_accuracy   | Anteil korrekt klassifizierter Samples              |
-| Epochen          | 20                            | Maximaler Trainingzeitraum                          |
-| Validation Split | 0,2 (80/20)                   | Unabhängige Evaluierung                             |
-| Batch Size       | 128                           | Balance zwischen Gradient-Noise und Generalisierung |
-| Early Stopping   | patience=3                    | Stoppt bei 3 Epochen ohne Verbesserung              |
+Der Adam-Optimizer (Adaptive Moment Estimation) kombiniert die Vorteile von Momentum und adaptiven Lernraten (RMSProp). Er berechnet für jeden Parameter individuelle Lernraten auf Basis des ersten und zweiten Moments der Gradienten. Dadurch konvergiert das Modell in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind. (A. G. et al., 2026)
 
-**Early Stopping:** Das Training wird automatisch beendet, wenn sich die Validierungsverluste über 3 aufeinanderfolgende Epochen nicht verbessern. Dies verhindert Overfitting ohne manuelle Nachsteuerung.
+Die Lernrate bestimmt die Größe der Aktualisierungsschritte während der Optimierung. Eine sehr kleine Lernrate von $10^{-5}$ reduziert das Risiko, das Minimum der Verlustfunktion zu überschreiten oder instabile Trainingsverläufe zu erzeugen. Der Nachteil einer geringeren Lernrate besteht in einer längeren Trainingsdauer, die jedoch durch eine stabilere Konvergenz ausgeglichen wird.
+
+Als Verlustfunktion eignet sich Sparse Categorical Crossentropy für Mehrklassenklassifikationen, bei denen die Zielklassen als Ganzzahlen (z. B. 0, 1, 2, …) codiert sind. Im Gegensatz zur Categorical Crossentropy ist keine One-Hot-Kodierung der Labels erforderlich, wodurch Speicherbedarf und Vorverarbeitungsaufwand reduziert werden. Die Verlustfunktion misst die Abweichung zwischen den vorhergesagten Klassenwahrscheinlichkeiten und den tatsächlichen Klassen und liefert somit eine geeignete Optimierungsgrundlage für Klassifikationsaufgaben.
+
+Die Sparse categorical Accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar. Da die Zielklassen als Integer vorliegen, passt sie direkt zur verwendeten Verlustfunktion SparseCategoricalCrossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
+
+Eine Epoche entspricht einem vollständigen Durchlauf des Trainingsdatensatzes. Die Wahl von 20 Epochen bietet dem Modell ausreichend Möglichkeiten, die zugrunde liegenden Muster zu erlernen, ohne die Trainingszeit unnötig zu verlängern. Da zusätzlich Early Stopping eingesetzt wird, dient dieser Wert als maximale Obergrenze. Das Training endet automatisch früher, sobald keine Verbesserung der Validierungsleistung mehr festgestellt wird.
+
+Ein weiterer Hyperparameter ist die Aufteilung der Trainingsdaten in Training, Validation und Testdaten. Durch die Aufteilung des Datensatzes in 64 % Trainingsdaten, 16% Validierungsdaten und 20% Testdaten kann die Generalisierungsfähigkeit des Modells während des Trainings überprüft werden. Die Validierungsdaten werden nicht für das Lernen verwendet und ermöglichen daher eine unabhängige Beurteilung der Modellleistung.
+
+Die Batch Size legt fest, wie viele Trainingsbeispiele gleichzeitig verarbeitet werden, bevor eine Aktualisierung der Modellgewichte erfolgt. Eine Batchgröße von 128 stellt einen guten Kompromiss zwischen Rechenleistung, Speicherbedarf und Trainingsstabilität dar. Größere Batches ermöglichen eine effizientere Nutzung von GPU Hardware dar und liefern stabilere Gradienten, während kleinere Batches zwar stärkeres Rauschen erzeugen, jedoch teilweise eine bessere Generalisierung fördern. Die gewählte Batchgröße bietet daher eine ausgewogene Balance zwischen Trainingsgeschwindigkeit und Modellqualität.
+
+Early Stopping dient der Vermeidung von Overfitting, indem das Training automatisch beendet wird, sobald sich die Validierungsleistung über mehrere Epochen hinweg nicht mehr verbessert. Mit einer Patience von 3 werden kleinere Schwankungen der Validierungsverluste toleriert, bevor das Training gestoppt wird. Dadurch wird verhindert, dass unnötig lange trainiert wird oder das Modell beginnt, sich zu stark an die Trainingsdaten anzupassen. Gleichzeitig wird das Modell mit der besten Validierungsleistung gespeichert bzw. verwendet.
+
+Zusammenfassend:
+
+| Parameter        | Wert                            |
+| ---------------- | ------------------------------- |
+| Optimizer        | Adam                            |
+| Learning Rate    | 0,00001                         |
+| Verlustfunktion  | Sparse Categorical Crossentropy |
+| Metrik           | Sparse Categorical Accuracy     |
+| Epochen          | 20                              |
+| Validation Split | 0,2 (80/20)                     |
+| Batch Size       | 128                             |
+| Early Stopping   | 3                               |
 
 #### 7.2.7 Evaluierung
-## Was sagst du oliver? Bleibt das hier? oder geht das richtung Kap 8???
 
-**Trainingsergebnisse:**
+Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel 8 zu finden.
+#TODO Füge kapitelreferenz ein!
 
-| Metrik                      | Wert    |
-| --------------------------- | ------- |
-| Trainingsgenauigkeit        | 98,34 % |
-| Validierungsgenauigkeit     | 99,21 % |
-| Finaler Trainingsverlust    | 0,0754  |
-| Finaler Validierungsverlust | 0,0319  |
+### 7.3 Quantisierung, Konvertierung und Deployment der Modelle
 
-**Confusionsmatrix**:
-![[confusion_matrix.png]]
-![[confusion_matrix_normalized.png]]
-
-Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt kontinuierlich über alle 20 Epochen.
-
-**Modellgröße:** Das quantisierte INT8-Modell benötigt nur 31,83 KB Speicher und inferiert in durchschnittlich 0,005 ms – ideal für Embedded-Einsatz.
-
-
-### 7.3 Quantisierung und Konvertierung der Modelle
-
-
-
+#### 7.3.1 Quantisierung von Tensorflow Modellen
+#### 7.3.2 Schnittstelle Quantisierte Modelle -> Embedded binaries
+#### 7.3.3 Deployment  
 
 ### 7.4 Softwaregrundstruktur und hardwarenahe Basistreiber
 
