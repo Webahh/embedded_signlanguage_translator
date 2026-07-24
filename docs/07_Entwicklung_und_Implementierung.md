@@ -219,7 +219,7 @@ Die Dateien `config.c/h` enthalten die systemweit verwendeten Konfigurationswert
 | `tasks.c`    | Definition der später durch den Software-Scheduler ausgeführten Verarbeitungsaufgaben.   |
 Tabelle X: Aufgaben der zentralen Core-Dateien
 
-Nach dem Systemstart wird zunächst die Adresse der Interruptvektortabelle in das Vector Table Offset Register des Prozessors eingetragen. Anschließend erfolgt die Konfiguration des Resource Isolation Framework Security Controllers (RIFSC). Dieser verwaltet die Zugriffsrechte auf interne Speicherbereiche und Peripheriekomponenten des STM32N657. Eine fehlerhafte Zuordnung kann dazu führen, dass einzelne Komponenten trotz aktivierter Taktversorgung nicht auf benötigte Register oder Speicherbereiche zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die entsprechenden Hardwarekomponenten initialisiert werden. (QUELLE)
+Nach dem Systemstart wird zunächst die Adresse der Interruptvektortabelle in das Vector Table Offset Register des Prozessors eingetragen. Anschließend erfolgt die Konfiguration des Resource Isolation Framework Security Controllers (RIFSC). Dieser verwaltet die Zugriffsrechte auf interne Speicherbereiche und Peripheriekomponenten des STM32N6570. Eine fehlerhafte Zuordnung kann dazu führen, dass einzelne Komponenten trotz aktivierter Taktversorgung nicht auf benötigte Register oder Speicherbereiche zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die entsprechenden Hardwarekomponenten initialisiert werden. (Resource Isolation Framework Overview - Stm32mpu, n.d.)
 
 Darauf folgen die Konfiguration der Spannungsversorgung sowie die Einrichtung der System- und Peripherietakte. Zusätzlich werden die benötigten Takte für den Energiesparmodus aktiviert. Dies ist insbesondere für die asynchrone Ausführung der neuronalen Netze relevant, da der Prozessorkern während der Inferenz durch Warteanweisungen vorübergehend in einen Energiesparzustand wechseln kann. Die von der NPU und den externen Speichern benötigten Takte müssen währenddessen weiterhin aktiv bleiben. Dieses Verhalten wird auch in der Dokumentation zur Ausführung neuronaler Netze auf dem STM32N6 beschrieben (STM32N6 Example Projects & Tips for Creating New Projects, n.d.).
 
@@ -325,14 +325,51 @@ Die Zuordnung zeigt, dass insbesondere die RCC-, und GPIO-Treiber von mehreren S
 
 ### 7.6 Ablaufsteuerung und Software Scheduler
 
-### 7.7 NPU Integration & AI Interface
+### 7.7 Integration der NPU und einheitliche KI-Schnittstelle
 
+Die Ausführung der drei neuronalen Netze erfolgt überwiegend auf dem im STM32N657 integrierten Neural-ART Accelerator. Für dessen Verwendung müssen zunächst die zugehörigen Takt- und Speicherbereiche sowie die ATON-Laufzeitumgebung eingerichtet werden. Anschließend werden die drei konvertierten Netzwerkinstanzen für die Handdetektion, Landmark-Erkennung und Fingeralphabetklassifikation initialisiert.
+
+Um die Middleware-spezifischen Aufrufe nicht unmittelbar in der Ablaufsteuerung verwenden zu müssen, wurde mit `simple_ai` eine gemeinsame KI-Schnittstelle umgesetzt. Diese fasst die Initialisierung der KI-Komponenten zusammen, vereinheitlicht die Statusrückgaben und stellt Funktionen für die Ausführung der neuronalen Netze bereit.
 #### 7.7.1 Initialisierung des Neural-ART Accelerators
+
+Die Initialisierung der KI-Komponenten erfolgt zentral durch `AI_Init()`. Die Funktion prüft zunächst, ob die Initialisierung bereits durchgeführt wurde. In diesem Fall wird unmittelbar `AI_STATUS_OK` zurückgegeben. Dadurch kann die Funktion mehrfach aufgerufen werden, ohne die Laufzeitumgebung und Netzwerkinstanzen erneut einzurichten. Zu Beginn werden die benötigten Takt- und Speicherbereiche aktiviert. Neben den zugehörigen Peripherietakten betrifft das die AXI-SRAM-Bereiche 3 bis 6.
+
+Innerhalb dieser Funktion wird außerdem die Konfiguration des NPU-Caches vorgenommen. Die anschließende Initialisierung des CacheAXI erfolgt über `HAL_CACHEAXI_Init()`. CacheAXI stellt die für die NPU erforderliche Cache-Infrastruktur bereit. Da die Initialisierung durch die von STMicroelectronics bereitgestellte HAL-Komponente erfolgt, bildet sie eine Ausnahme von der ansonsten überwiegend registerbasierten Treiberimplementierung. Schlägt dieser Schritt fehl, wird die Initialisierung mit `AI_STATUS_CACHEAXI_ERROR` abgebrochen.  
+
+Der verwendete `CACHEAXI-HAL`-Treiber erwartet für seine interne Zeitüberwachung die Funktion `HAL_GetTick()`. Da im Projekt keine separate HAL-Zeitbasis verwendet wird, wurde mit `ai_hal_adapter.c` ein kleiner Adapter umgesetzt. Die Funktion `HAL_GetTick()` greift auf den bereits vorhandenen Millisekundenzähler des Software-Schedulers zurück. Dadurch kann der `CACHEAXI`-Treiber seine vorgesehenen Zeitüberwachungen verwenden, ohne zusätzlich den vollständigen HAL-Zeitbasismechanismus in das Projekt zu integrieren. 
+
+Nach erfolgreicher Einrichtung der Hardware wird `LL_ATON_RT_RuntimeInit()` aufgerufen. Diese Funktion initialisiert die ATON-Laufzeitumgebung, über die die konvertierten neuronalen Netze ausgeführt werden. Anschließend werden die drei Netzwerkinstanzen nacheinander initialisiert:
+
+1. Handdetektion über `PALM_Init()`
+2. Landmark-Erkennung über `LANDMARK_Init()`
+3. Fingeralphabetklassifikation über `FINGERALPHABET_Init()`
+
+Jede Initialisierungsfunktion ermittelt die vom jeweiligen Netzwerk verwendeten Ein- und Ausgabepuffer und bereitet dessen internen Zustand vor. Gibt eine der Funktionen einen Fehlerstatus zurück, wird die weitere Initialisierung abgebrochen und der Status an die aufrufende Komponente weitergereicht. Erst nach erfolgreicher Initialisierung aller drei Modelle wird `ai_initialized` gesetzt und `AI_STATUS_OK` zurückgegeben.
 
 #### 7.7.2 Einheitliche KI-Schnittstelle
 
-ATON Middleware kapseln durch simple ai
+Die von der ATON-Middleware bereitgestellten Funktionen sind an die Laufzeitumgebung und die jeweils erzeugten Netzwerkinstanzen gekoppelt. Um diese Abhängigkeiten nicht unmittelbar in die Ablaufsteuerung und die Vor- beziehungsweise Nachverarbeitung zu übernehmen, wurde mit `simple_ai` eine gemeinsame KI-Schnittstelle implementiert. Sie bündelt die allgemeinen Funktionen zur Initialisierung und Ausführung der neuronalen Netze und stellt einheitliche Statuswerte für alle Modellkomponenten bereit.
 
+Für die Rückgabe von Fehlerzuständen wird der gemeinsame Aufzählungstyp `AI_Status_TypeDef` verwendet. Dadurch können die zentralen und modellspezifischen KI-Funktionen ihre Ergebnisse in einer einheitlichen Form an die aufrufenden Komponenten weitergeben. Die Ablaufsteuerung muss somit keine unterschiedlichen Fehlerdarstellungen der einzelnen Modelle auswerten.
+
+| Statuswert                    | Bedeutung                                                        |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `AI_STATUS_OK`                | Die aufgerufene Funktion wurde erfolgreich ausgeführt.           |
+| `AI_STATUS_NOT_INITIALIZED`   | Die benötigte KI-Komponente wurde noch nicht initialisiert.      |
+| `AI_STATUS_CACHEAXI_ERROR`    | Bei der Einrichtung des CacheAXI ist ein Fehler aufgetreten.     |
+| `AI_STATUS_INVALID_BUFFER`    | Ein benötigter Ein- oder Ausgabepuffer ist ungültig.             |
+| `AI_STATUS_PREPROCESS_ERROR`  | Die Vorverarbeitung der Eingabedaten ist fehlgeschlagen.         |
+| `AI_STATUS_POSTPROCESS_ERROR` | Die Nachverarbeitung der Modellausgabe ist fehlgeschlagen.       |
+| `AI_STATUS_RUNTIME_ERROR`     | Während der Ausführung eines Modells ist ein Fehler aufgetreten. |
+Tabelle X: Einheitliche Statuswerte der KI-Komponenten
+
+Die eigentliche Ausführung einer Netzwerkinstanz wird durch `AI_RuntimeRunNetwork()` gekapselt. Der Funktion wird ein Zeiger auf die jeweilige `NN_Instance_TypeDef` übergeben. Dadurch kann dieselbe Funktion für die Handdetektion, die Landmark-Erkennung und die Fingeralphabetklassifikation verwendet werden. Ist der übergebene Zeiger ungültig, wird die Ausführung unmittelbar abgebrochen. Intern ruft die Funktion wiederholt `LL_ATON_RT_RunEpochBlock()` auf. Die ATON-Laufzeitumgebung verarbeitet das Netzwerk dabei abschnittsweise und liefert nach jedem Aufruf einen Status zurück. Mit `LL_ATON_RT_WFE` wird signalisiert, dass zunächst auf ein Hardwareereignis gewartet werden muss. In diesem Fall erfolgt das Warten über `LL_ATON_OSAL_WFE()`. Der Status `LL_ATON_RT_NO_WFE` zeigt dagegen an, dass die Verarbeitung ohne vorheriges Warten fortgesetzt werden kann. Die Aufrufe werden wiederholt, bis die Laufzeitumgebung einen abschließenden Status zurückgibt.
+
+Die Funktion liefert nur dann `true`, wenn die Netzwerkausführung mit `LL_ATON_RT_DONE` beendet wurde. Alle anderen abschließenden Zustände werden als fehlgeschlagene Ausführung behandelt und durch `false` signalisiert. Für die aufrufenden Modellkomponenten entsteht dadurch eine vereinfachte Schnittstelle, bei der die einzelnen ATON-Rückgabewerte nicht außerhalb von `simple_ai` ausgewertet werden müssen.
+
+Die modellspezifischen Komponenten kapseln darauf aufbauend die jeweiligen Netzwerkinstanzen sowie deren Ein- und Ausgabepuffer. Sie prüfen ihren Initialisierungszustand und die übergebenen Puffer, führen die Netzwerkinstanz über `AI_RuntimeRunNetwork()` aus und übersetzen das Ergebnis in einen Wert des gemeinsamen Typs `AI_Status_TypeDef`. Die Vor- und Nachverarbeitung verbleibt hingegen in den jeweiligen Modellkomponenten, da sie sich zwischen Handdetektion, Landmark-Erkennung und Fingeralphabetklassifikation unterscheidet.
+
+Damit bildet `simple_ai` die gemeinsame Verbindung zwischen den erzeugten Netzwerkinstanzen und der übergeordneten Ablaufsteuerung. Middleware-spezifische Details der Netzwerkausführung bleiben innerhalb dieser Schnittstelle gekapselt, während die modellspezifischen Unterschiede weiterhin in den zugehörigen Komponenten behandelt werden.
 
 ### 7.8 Vor- und Nachverarbeitungsschritte
 
