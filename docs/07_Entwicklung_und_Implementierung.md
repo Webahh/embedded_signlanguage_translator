@@ -176,9 +176,143 @@ Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel 8 zu
 
 ### 7.3 Quantisierung, Konvertierung und Deployment der Modelle
 
+Das folgende Kapitel beschreibt die Quantisierung des Tensorflow Fingeralphabet Modells, die Convertierung der Quantisierten Handdedektion-, Landmarkerkennung- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
+
 #### 7.3.1 Quantisierung von Tensorflow Modellen
-#### 7.3.2 Schnittstelle Quantisierte Modelle -> Embedded binaries
+
+Da die Modelle zur Handdetektion und Landmark-Erkennung bereits in einer quantisierten Form vorliegen, ist für diese keine weitere Quantisierung erforderlich. Lediglich das Modell zur Erkennung des Fingeralphabets muss für den Einsatz auf der Zielhardware quantisiert werden. Die Quantisierung erfolgt im Rahmen der Konvertierung des trainierten Keras-Modells in das TensorFlow-Lite-Format (TFLite). Dieser Schritt ist notwendig, da die Generierung der Embedded-Binärdateien mit STEdgeAI ausschließlich Modelle im TensorFlow-Lite- oder ONNX-Format unterstützt.
+
+Bei der Konvertierung wird eine Post-Training-Quantisierung (PTQ) durchgeführt. Hierbei werden die Gewichte und Aktivierungen des bereits trainierten Modells von Gleitkommazahlen (Float32) auf 8-Bit-Ganzzahlen (INT8) abgebildet. Da die eingesetzte Neural Processing Unit (NPU) ausschließlich vollständig INT8-quantisierte Modelle unterstützt, müssen sowohl die internen Operationen als auch die Ein- und Ausgabedaten des Modells diesem Format entsprechen.
+
+Zunächst wird das trainierte Keras-Modell geladen und ein Tensorflow-Lite-Konverter erzeugt.
+
+```python
+model = keras.models.load_model(MODEL_DIR)
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+```
+
+Anschließend werden die Standardoptimierungen des Konverters aktiviert, wodurch unter anderem die Quantisierung ermöglicht wird:
+
+```python
+converter.optimization = [tf.lite.Optimize.DEFAULT]
+```
+
+Für die Kalibrierung der Quantisierung wird ein repräsentativer Datensatz bereitgestellt. Hierfür werden die normalisierten Trainingsdaten verwendet.
+
+```python
+converter.representative_dataset = representative_dataset
+```
+
+Während der Kalibrierung bestimmt TensorFlow Lite anhand dieser Daten die Wertebereiche der Aktivierungen, um geeignete Skalierungsfaktoren und Nullpunkte für die Quantisierung zu berechnen. Sind die Trainingsdaten nicht verfügbar, wird ersatzweise ein Datensatz aus gleichverteilten Zufallswerten im Bereich `[-1, 1]` verwendet.
+
+Da die Zielhardware ausschließlich INT8-Operationen unterstützt, wird die Konvertierung entsprechend eingeschränkt und zusätzlich die Ein- und Ausgabedatentyp des Modells auf 8-Bit-Ganzzahlen festgelegt:
+```python
+converter.target_spec.supported_ops = [
+    tf.lite.OpsSet.TFLITE_BUILTINS_INT8
+]
+
+converter.inference_input_type = tf.uint8
+converter.inference_output_type = tf.uint8
+```
+
+Abschließend wird das Modell in das Tensorflow-Lite-Format konvertiert und als `.tflite`-Datei gespeichert.
+
+Ergebnis ist ein vollständig quantisiertes TensorFlow-Lite-Modell, das den Anforderungen der eingesetzten NPU entspricht und anschließend mit STEdgeAI in eine für das Embedded-System ausführbare Binärdatei überführt werden kann. Durch die Quantisierung werden der Speicherbedarf und der Rechenaufwand reduziert, während die Modellgenauigkeit durch die Verwendung repräsentativer Kalibrierungsdaten weitgehend erhalten bleibt.
+#### 7.3.2 Konvertierung INT8-Quantisierte-Modelle -> Embedded binaries
+
+Nach der Quantisierung liegen alle drei Modelle (Handdetektion, Handlandmark-Erkennung und Fingeralphabet-Klassifikation) im TensorFlow-Lite-Format mit einer INT8-Quantisierung vor. Der nächste Verarbeitungsschritt ist diese Modelle mithilfe der ST Edge AI Core CLI in für die Zielhardware ausführbare Binärdateien zu überführen. Die Verwendung der Kommandozeilenschnittstelle (CLI) wurde bewusst der grafischen Benutzeroberfläche (GUI) vorgezogen, da sich hierdurch der gesamte Konvertierungsprozess automatisieren lässt. Auf diese Weise können Skripte erstellt werden, welche die Generierung aller Modellartefakte reproduzierbar und mit einem einzelnen Aufruf durchführen.
+
+Die Umwandlungsstruktur:
+```
+models/
+├── source/                           ← Raw TFLite models (input)
+│   ├── 033_palm_detection_full_quant_pc_ff_od.tflite
+│   ├── 033_hand_landmark_full_quant_pc_uf_handl.tflite
+│   └── fingeralphabet_model_int8.tflite
+│
+├── my_mpools/                        ← Memory pool definitions per model
+│   ├── palm_detection.mpool
+│   ├── hand_landmark.mpool
+│   └── fingeralphabet.mpool
+│
+├── user_neuralart.json   ← Per-model config (links model → mpool+compiler flags)
+├── generate_n6_models.sh ← Orchestrator script (calls stedgeai, copies outputs)
+├── copy_n6_models.sh     ← Copies generated files into the firmware project tree
+│
+├── generated/            ← Output: C source + headers ready for compilation
+│   ├── palm/
+│   │   ├── palm_detection_model_v3.c         ← Weight data as C arrays (ECBLOBs)
+│   │   ├── palm_detection_model_v3_ecblobs.h ← Header declaring weight arrays
+│   │   ├── stai_palm_detection_model_v3.c    ← ST AI runtime wrapper
+│   │   └── stai_palm_detection_model_v3.h    ← Public API header
+│   ├── landmark/
+│   │   ├── hand_landmark_model_v3.c
+│   │   ├── hand_landmark_model_v3_ecblobs.h
+│   │   ├── stai_hand_landmark_model_v3.c
+│   │   └── stai_hand_landmark_model_v3.h
+│   └── finger/
+│       ├── fingeralphabet_model_v3.c
+│       ├── fingeralphabet_model_v3_ecblobs.h
+│       ├── stai_fingeralphabet_model_v3.c
+│       └── stai_fingeralphabet_model_v3.h
+│
+└── st_ai_output/                 ← Intermediate build artifacts (gitignored)
+    └── *.raw, *.bin, *.hex       ← Binary weight blobs + Intel HEX for flashing
+```
+
+**Modell Profile**
+In der Struktur definiert `user_neuralart.json` wie die einzelnen Modelle zu behandeln sind. Sie enthält einen Abschnitt `Profiles` mit jeweils einem Eintrag pro Modell:
+
+```json
+{
+  "Profiles": {
+    "palm_detection_model_v3": {
+      "memory_pool": "./my_mpools/palm_detection.mpool",
+      "options": "--enable-epoch-controller
+			     "-O3" 
+			     "--all-buffers-info"
+			     "--cache-maintenance"
+			     "..."
+    }
+  }
+}
+```
+
+`memory_pool`
+Verweist auf die .mpool-Datei, die das Speicherlayout der NPU für dieses Modell definiert (welche SRAM-Bänke, Flash-Bereiche, Adressen und Größen).
+
+`options` - ST Edge AI Core compiler flags
+
+| Flag                                | Effekt                                                                                                                                                                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --enable-epoch-controller           | Ermöglicht die epochenbasierte Ausführung der NPU (schichtweise Ablaufplanung)                                                                                                                                                          |
+| -O3/-O2                             | Optimierungsstufe für den NPU-Codegenerator                                                                                                                                                                                             |
+| --all-buffers-info                  | Vollständige Puffer-Metadaten für die Laufzeit ausgeben                                                                                                                                                                                 |
+| --cache-maintenance<br>--Ocache-opt | Befehle zum Leeren/Ungültigmachen des Caches einfügen                                                                                                                                                                                   |
+| --Oauto-sched                       | Automatisches planen der Epochen (default/Ohne verweis)                                                                                                                                                                                 |
+| --native-float                      | Verwendet hardware float operationen wenn möglich                                                                                                                                                                                       |
+| --enable-virtual-mem-pools          | Erlaubt dem linker Tensoren über mehrere physische Speicherregionen zu verteilen                                                                                                                                                        |
+| --Omax-ca-pipe \<num>               | Legt die maximale Anzahl \<num> an Compute-&-Accumulate- (CA-)Pipelines bzw. parallelen Hardware-Ausführungspfaden fest, die der Compiler für eine bestimmte Schicht oder Operation eines neuronalen Netzes gleichzeitig zuweisen darf. |
+| --Oconv-split-kw                    | Aufteilen von Faltungskernen auf die verfügbaren NPU-MAC-Arrays                                                                                                                                                                         |
+\[(ST Neural-ART Compiler Primer, n.d.)]
+
+**Memory-Pool-Definition**
+Die .mpool Dateien beschreiben die STM32N6 Hardware Speicherabbild der NPU. Alle .mpool Dateien haben den identischen Aufbau. Der einzige wesentliche Unterschied zwischen den Modellen besteht in der xSPI2 (flash) Region (Basisadresse und Größe) an welcher die Modelle gespeichert sind.
+
+Hauptbereiche:
+
+```json
+{ "paramname": "max_onchip_sram_size", "value": "1024", "magnitude": "KBYTES"}
+```
+
+| Name | Region | Adresse | Größe | Rolle                   |
+| ---- | ------ | ------- | ----- | ---------------------- |
+|      |        |         |       NPU activation scratch n  |
+
+
 #### 7.3.3 Deployment  
+
+
 
 ### 7.4 Softwaregrundstruktur und hardwarenahe Basistreiber
 
