@@ -109,3 +109,20 @@
 ## Abbildungsverzeichnis
 ## Tabellenverzeichnis
 ## Abkürzungsverzeichnis
+
+AI / KI Artifical Intelligence / Künstliche Intelligenz
+CPU Central Processing Unit
+FPU Floating Point Processing Unit
+NPU Neural Processing Unit
+GPIO General Purpose Input/Output
+UART / USART Universal Synchronous/Asynchronous Receiver/Transmitter
+I²C / I2C Inter-Integrated Circuit
+DMA Direct Memory Access
+MCU Microcontroller
+RAM Random-Access-Memory
+SRAM Static Random-Access-Memory
+PSRAM Pseudo-Static Random-Access-Memory
+NOR-Flash Not OR-Flash
+
+
+

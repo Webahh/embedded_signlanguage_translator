@@ -68,7 +68,7 @@ Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen 
 - **PSRAM (extern):** Pseudo-Static RAM, angeschlossen über OctoSPI oder Quad-SPI. Bietet größere Speicherkapazitäten als On-Chip-SRAM bei moderater Zugriffszeit. Im STM32N6570-System wird PSRAM für Zwischenspeicherung von Bilddaten genutzt.
 - **NOR-Flash (extern):** Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI. Im vorliegenden Projekt werden die vorkompilierten Modellbinaries (Palm Detection, Hand Landmark, Fingeralphabet) in externem NOR-Flash bei festen Adressen gespeichert.
 
-Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M85-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) (STMicroelectronics, n.d.).
+Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) (STMicroelectronics, n.d.).
 
 #### 2.1.5 Clock-Systeme
 

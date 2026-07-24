@@ -1,4 +1,3 @@
-
 ## 7 Entwicklung und Implementierung
 
 ### 7.1 Aufbau und Aufbereitung des Datensatzes
@@ -185,20 +184,133 @@ Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel 8 zu
 
 Die Umsetzung der Kamera-, Display- und KI-Verarbeitung setzt zunächst eine funktionsfähige hardwarenahe Basissoftware voraus. Hierzu wurden grundlegende Treiber für die Initialisierung und Steuerung des Mikrocontrollers sowie seiner Peripherie entwickelt. Diese abstrahieren die direkten Registerzugriffe und stellen den übergeordneten Softwarekomponenten einheitliche Funktionen zur Verfügung. Zu den grundlegenden Komponenten gehören insbesondere die Taktsteuerung, die Konfiguration der Ein- und Ausgänge sowie Treiber für UART, Timer und I2C.
 
-Die Implementierung greift auf die von CMSIS bereitgestellten Prozessor- und Gerätedefinitionen zurück. CMSIS stellt dabei unter anderem die Registerstrukturen, Interruptnummern und Funktionen für den Zugriff auf den Cortex-M55-Prozessorkern bereit. Die eigentliche Konfiguration der Peripherie wurde dagegen überwiegend durch projektspezifische Treiber umgesetzt. Dadurch konnten die benötigten Funktionen gezielt an die Anforderungen des Systems angepasst und nicht benötigte Bestandteile umfangreicherer Abstraktionsschichten vermieden werden.
+Die Implementierung greift auf den Cortex Microcontroller Software Interface Standard (CMSIS) zurück. Das sind bereitgestellte Prozessor- und Gerätedefinitionen für Cortex Microcontroller. CMSIS stellt dabei unter anderem die Registerstrukturen, Interruptnummern und Funktionen für den Zugriff auf den Cortex-M55-Prozessorkern bereit.  (CMSIS: Introduction, n.d.) Die eigentliche Konfiguration der Peripherie wurde dagegen überwiegend durch projektspezifische Treiber umgesetzt. Dadurch konnten die benötigten Funktionen gezielt an die Anforderungen des Systems angepasst und nicht benötigte Bestandteile umfangreicherer Abstraktionsschichten vermieden werden. 
 
-Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden.
+Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden. (Washizaki, 2025, S. 3-4 f.).
 
 #### 7.4.1 Aufbau der Embedded-Software
 
+Mit der Integration der Kamera, des Displays, der externen Speicher und der neuronalen Netze umfasst die Firmware mehrere Komponenten mit unterschiedlichen Aufgaben und Hardwareabhängigkeiten. Der Quellcode wurde daher in getrennte Bereiche gegliedert. Die Struktur orientiert sich an den Prinzipien der Modularisierung und der Trennung von Zuständigkeiten. Dabei werden unterschiedliche Funktionen in eigenständigen Komponenten mit definierten Schnittstellen zusammengefasst und Implementierungsdetails gegenüber den übergeordneten Komponenten gekapselt (Washizaki, 2025, S. 3-4 f.). Tabelle X zeigt die grundlegende Projektstruktur.
+
+| Verzeichnis          | Inhalt und Aufgabe                                                                                                                                                                                                               |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Src/Core`           | Enthält den Programmeinstieg, die übergeordnete Systeminitialisierung, zentrale Konfiguration und die Definition der Verarbeitungsaufgaben.                                                                                      |
+| `Src/Drivers/CMSIS`  | Stellt die Definitionen des Cortex-M55-Prozessorkerns, gerätespezifische Registerstrukturen, Interruptnummern und Funktionen für den Zugriff auf den Prozessorkern bereit.                                                       |
+| `Src/Drivers/HAL`    | Enthält ausgewählte Komponenten der von STMicroelectronics bereitgestellten Hardware Abstraction Layer. Diese werden in diesem Projekt lediglich für eine vereinfachte Anbindung der Neural Processing Unit Middleware benötigt. |
+| `Src/Drivers/Simple` | Beinhaltet die selbst entwickelten hardwarenahen Teiber. Diese kapseln die Registerzugriffe und stellen den übergeordneten Systemkomponenten einheitliche Schnittstellen zur Verfügung.                                          |
+| `Src/AI`             | Enthält die Einbindung der neuronalen Netze, die Schnittstellen zur NPU, sowie die modellbezogenen Vor- und Nachverarbeitungsschritte.                                                                                           |
+| `Src/Assets`         | Stellt statische Ressourcen für Anzeigen und Benutzeroberfläche bereit.                                                                                                                                                          |
+| `Src/Middleware`     | Externe Bibliothek für die Verwendung der Neural Processing Unit.                                                                                                                                                                |
+Tabelle X: Aufbau der Embedded-Software
+
+Ein Schwerpunkt der Eigenentwicklung liegt auf der Treiberschicht im Verzeichnis `Src/Drivers/Simple`. Ihre öffentlichen Schnittstellen werden in den Headerdateien des Unterverzeichnisses `Inc` bereitgestellt, während sich die Implementierungen in `Src` befinden. Über diese Schnittstellen können die übergeordneten Komponenten beispielsweise Takte aktivieren, Ein- und Ausgänge konfigurieren, Zeitfunktionen verwenden oder Daten über serielle Schnittstellen übertragen, ohne die dafür erforderlichen Registerzugriffe selbst auszuführen.
+
 #### 7.4.2 Zentrale Konfiguration und Systeminitialisierung
+
+Die Konfiguration und Initialisierung der Systemkomponenten werden an zentralen Stellen der Firmware zusammengeführt. Dadurch müssen hardwarespezifische Parameter nicht innerhalb der einzelnen Anwendungskomponenten festgelegt werden. Gleichzeitig wird eine definierte Initialisierungsreihenfolge sichergestellt, da mehrere Komponenten von zuvor eingerichteten Taktquellen, Speicherbereichen oder Basistreibern abhängig sind.
+
+Die Dateien `config.c/h` enthalten die systemweit verwendeten Konfigurationswerte und Konfigurationsstrukturen. Dazu gehören unter anderem Bildauflösungen, Speicherzuordnungen, Schnittstellenparameter sowie Einstellungen der Kamera-, DCMIPP- und Displaykomponenten. Die Konfiguration wird damit von der eigentlichen Treiberimplementierung getrennt. Die jeweiligen Treiber erhalten die benötigten Parameter über definierte Strukturen und übertragen sie während der Initialisierung in die zugehörigen Hardwareregister.
+
+| Datei        | Aufgabe                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `main.c`     | Einstiegspunkt der Software und Übergabe an die übergeordnete Anwendungsinitialisierung. |
+| `app.c`      | Koordination der Initialisierung der einzelnen Hardware- und Softwarekomponenten.        |
+| `config.c/h` | Definition & Instanzierung zentraler Konfigurationsstruktuten.                           |
+| `tasks.c`    | Definition der später durch den Software-Scheduler ausgeführten Verarbeitungsaufgaben.   |
+Tabelle X: Aufgaben der zentralen Core-Dateien
+
+Nach dem Systemstart wird zunächst die Adresse der Interruptvektortabelle in das Vector Table Offset Register des Prozessors eingetragen. Anschließend erfolgt die Konfiguration des Resource Isolation Framework Security Controllers (RIFSC). Dieser verwaltet die Zugriffsrechte auf interne Speicherbereiche und Peripheriekomponenten des STM32N657. Eine fehlerhafte Zuordnung kann dazu führen, dass einzelne Komponenten trotz aktivierter Taktversorgung nicht auf benötigte Register oder Speicherbereiche zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die entsprechenden Hardwarekomponenten initialisiert werden. (QUELLE)
+
+Darauf folgen die Konfiguration der Spannungsversorgung sowie die Einrichtung der System- und Peripherietakte. Zusätzlich werden die benötigten Takte für den Energiesparmodus aktiviert. Dies ist insbesondere für die asynchrone Ausführung der neuronalen Netze relevant, da der Prozessorkern während der Inferenz durch Warteanweisungen vorübergehend in einen Energiesparzustand wechseln kann. Die von der NPU und den externen Speichern benötigten Takte müssen währenddessen weiterhin aktiv bleiben. Dieses Verhalten wird auch in der Dokumentation zur Ausführung neuronaler Netze auf dem STM32N6 beschrieben (STM32N6 Example Projects & Tips for Creating New Projects, n.d.).
+
+Nach der grundlegenden Systemkonfiguration werden der Instruktions- und der Datencache aktiviert. Der Instruktioncache reduziert die Zugriffzeiten beim Laden von Programmcode. Der Datencache beschleunigt den Zugriff auf häufig verwendete Daten, erfordert jedoch bei gemeinsam durch Prozessor und Peripherie genutzten Speicherbereiche eine explizite Cache-Synchronisation. Dies betrifft beispielsweise die Ein- und Ausgabepuffer der neuronalen Netze. Die erforderlichen Cache-Operationen werden deshalb innerhalb der jeweiligen Treiber bzw. Modulschnittstellen ausgeführt.
+
+Im nächsten Schritt werden die serielle Debugschnittstelle, die Zeitbasis und ein zu Diagnosezwecken verwendeter GPIO-Ausgang initialisiert. Die Debugschnittstelle ermöglicht es, Statusmeldungen und Fehlercodes bereits während der nachfolgenden Initialisierung auszugeben. Dadurch können insbesondere Fehler bei der Einrichtung der externen Speicher oder der Kamerapipeline frühzeitig erkannt werden. 
+
+Anschließend werden der externe PSRAM- und der NOR-Flash-Speicher über die XSPI-Schnittstellen eingerichtet. Der PSRAM wird vor allem für die Aufnahme der Bild- und Anzeigepuffer verwendet, während der NOR-Flash die für die neuronalen Netze benötigten Modell- und Laufzeitdaten enthält. Da das Display und die Kamerapipeline auf diese Speicherbereiche zugreifen, müssen die externen Speicher vor diesen Komponenten initialisiert werden.
+
+Daraufhin wird die Kamera initialisiert und die Bildverarbeitung über die DCMIPP-Komponente gestartet. Dabei werden zwei Verarbeitungspfade verwendet. Der erste Pfad stellt die aufgenommenen Kamerabilder für die Anzeige bereit. Der zweite Pfad erzeugt die Eingabebilder für die Verarbeitung durch die neuronalen Netze. Durch diese Trennung können Anzeige und KI-Pipeline unterschiedliche Bildauflösungen und Speicherbereiche verwenden. Nach dem Start der Kamerapipeline werden der Touchcontroller und die grafische Benutzeroberfläche eingerichtet. Die Benutzeroberfläche stellt unter anderem Auswahl- und Anzeigeelemente für die einzelnen Verarbeitungsstufen bereit. Über diese können die Ergebnisse der Handerkennung, der Landmarkenerkennung und der Fingeralphabetklassifikation getrennt dargestellt und konfiguriert werden.
+
+Im Anschluss wird die KI-Laufzeitumgebung initialisiert. Dabei werden die NPU, die zugehörige Middleware sowie die Ein- und Ausgabepuffer der eingebundenen neuronalen Netze vorbereitet. Schlägt dieser Schritt fehl, wird der weitere Programmablauf gestoppt, da die eigentliche Anwendung ohne die neuronalen Netze nicht vollständig ausgeführt werden kann. Abschließend wird der Software-Scheduler gestartet, um die eigentliche Ablaufsteuerung zu verwalten. Dazu wird Genaueres in Kapitel 7.6 beschrieben. Die Initialisierungsreihenfolge lässt sich damit wie folgt zusammenfassen:
+
+| Schritt | Komponente                    | Zweck                                                    |
+| ------- | ----------------------------- | -------------------------------------------------------- |
+| 1       | Interruptvektortabelle        | Zuordnung der verwendeten Interruptbehandlungen          |
+| 2       | RIFSC                         | Freigabe der benötigten Speicher- und Peripheriezugriffe |
+| 3       | Spannungsversorgung und Takte | Grundlage für alle weiteren Hardwarekomponenten          |
+| 4       | Instruktions- und Datencache  | Beschleunigung der Code- und Datenzugriffe               |
+| 5       | Debugschnittstelle            | Diagnose                                                 |
+| 6       | PSRAM und NOR-Flash           | Bereitstellung der Bild- und Modelldaten                 |
+| 7       | LTDC und LTDC-Layer           | Ausgabe des Kamerabildes und der Benutzeroberfläche      |
+| 8       | Kamera und DCMIPP             | Aufnahme und Aufbereitung der Bilddaten                  |
+| 0       | Touch und Benutzeroberfläche  | Interaktion und Ergebnisdarstellung                      |
+| 10      | KI-Laufzeitumgebung           | Vorbereitung der NPI und der neuronalen Netze            |
+| 11      | Software-Scheduler            | Zyklische Ausführung der Verarbeitungsaufgaben           |
+Tabelle X: Initialisierungreihenfolge nach Systemstart
+
 #### 7.4.3 Registerbasierte Treiberentwicklung
 
+Die Hardwareanbindung wurde überwiegend durch projektspezifische, registerbasierte Treiber umgesetzt. Diese greifen mithilfe der von CMSIS bereitgestellten Registerstrukturen und Bitmasken direkt auf die Peripherieregister des Mikrocontrollers zu. Die Konfiguration erfolgt entsprechend den Vorgaben des Referenzhandbuchs des STM32N657. Die direkten Registerzugriffe werden hinter einheitlichen Treiberfunktionen gekapselt. Übergeordnete Komponenten müssen daher weder die verwendeten Register noch die Position der einzelnen Registerfelder kennen. Konfigurationsparameter werden überwiegend in Strukturen zusammengefasst und bei der Initialisierung an den jeweiligen Treiber übergeben.
+
+Das Vorgehen zeigt sich beispielsweise im GPIO-Treiber. Die Funktion `GPIO_Config()` aktiviert zunächst den Takt des ausgewählten GPIO-Ports und überträgt anschließend die übergebene Konfiguration in die Register `MODER`, `OTYPER` und `PUPDR`:
+
+```c
+void GPIO_Config(GPIO_TypeDef *GPIOX, uint32_t pinNr, GPIO_cfg_TypeDef cfg){
+	RCC_enable_GPIO(GPIOX);
+
+	GPIOX->MODER  = (GPIOX->MODER & ~(3U << (2U * pinNr)))
+			  | (cfg.mode << (2U * pinNr));
+
+	GPIOX->OTYPER = (GPIOX->OTYPER & ~(1U << (pinNr))) 
+			  | (cfg.otyp << (pinNr));
+
+	GPIOX->PUPDR  = (GPIOX->PUPDR & ~(3U << (2U * pinNr))) 
+			  | (cfg.pupdr << (2U * pinNr));
+
+if (cfg.mode == GPIO_MODE_AF) {
+	GPIO_set_af(GPIOX, pinNr, cfg.af, cfg.speed);
+	}
+}
+```
+
+Durch die Maskierung werden ausschließlich die zum ausgewählten Anschluss gehörenden Registerfelder verändert. Bei Verwendung einer Alternativfunktion übernimmt die interne Hilfsfunktion `GPIO_set_af()`zusätzlich die Konfiguration des `AFR`- und des `OSPEEDR`-Registers.
+
+Die Konfiguration erfolgt mithilfe der Struktur `GPIO_cfg_TypeDef`. Diese fasst den Betriebsmodus, den Ausgangstyp, die Pull-up- beziehungsweise Pull-down-Konfiguration, die Ausgangsgeschwindigkeit und die Nummer der Alternativfunktion zusammen. Für wiederkehrende Anwendungsfälle werden passende Konfigurationen vorab definiert und anschließend gemeinsam mit dem GPIO-Port und der Pinnummer an `GPIO_Config()` übergeben. Dadurch bleibt die eigentliche Registerkonfiguration unabhängig von der späteren Verwendung des Anschlusses. Der GPIO-Treiber muss beispielsweise nicht wissen, ob ein Anschluss für I²C, USART oder eine andere Peripherie vorgesehen ist. Er überträgt lediglich die in der Konfigurationsstruktur enthaltenen Parameter in die entsprechenden Register. Die Zuordnung einer konkreten Schnittstelle zu den benötigten Anschlüssen und Alternativfunktionen erfolgt außerhalb des Treibers.
+
+Dieses Prinzip wird auch bei weiteren Treibern verwendet. Hardwareparameter werden in Konfigurationsstrukturen zusammengefasst, während die Treiberfunktionen deren Prüfung und Übertragung in die Register übernehmen. Dadurch können unterschiedliche Instanzen derselben Peripherie mit einer gemeinsamen Implementierung konfiguriert werden. Gleichzeitig bleiben die hardwarespezifischen Registerzugriffe auf die jeweilige Treiberschicht begrenzt.
 #### 7.4.4 Grundlegende Systemtreiber
 
-#### 7.4.5 Schnittstelle zu den übergeordneten Komponenten
+Die projektspezifische Treiberschicht umfasst sowohl grundlegende Systemtreiber als auch funktionsspezifische Komponenten. Als grundlegende Systemtreiber werden im Rahmen dieser Arbeit diejenigen Komponenten eingeordnet, die von mehreren übergeordneten Modulen verwendet werden und zunächst keinen eigenständigen Anwendungszweck erfüllen. Sie stellen unter anderem die Taktversorgung, den Zugriff auf Ein- und Ausgänge, Zeitfunktionen sowie serielle Kommunikations- und Speicherschnittstellen bereit.
 
-nur einordnen nicht beschreiben!
+Die Treiber für Kamera, DCMIPP, Display und Benutzereingabe bauen auf diesen grundlegenden Funktionen auf. Ebenso werden die Komponenten für den Software-Scheduler und die NPU-Anbindung getrennt behandelt. Tabelle X beschränkt sich daher auf die allgemeinen Systemtreiber der Firmware.
+
+| Datei            | Aufgabe                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| `simple_rcc.c`   | Konfiguration der Energieversorgung sowie Aktivierung und Auswahl der System- und Peripheretakte.  |
+| `simple_rifsc.c` | Konfiguration der Zugriffsrechte und Sicherheitsattribute der verwendeten Systemressourcen.        |
+| `simple_gpio.c`  | Konfiguration und Ansteuerung der digitalen Ein- und Ausgänge sowie ihrer alternativen Funktionen. |
+| `simple_timer.c` | Konfiguration der Timer und Bereitstellung von einer Systemzeit und einer Verzögerungsfunktion.    |
+| `simple_usart.c` | Konfiguration der seriellen Schnittstelle zur Übertragung von Diagnose- und Debugdaten.            |
+| `simple_i2c.c`   | Kommunikation mit externen Komponenten, insbesondere die Kamera und der Touchcontroller.           |
+| `simple_xspi.c`  | Initialisierung und Ansteuerung des externen PSRAM und NOR-Flash über die XSPI-Schnittstellen.     |
+Tabelle X: Grundlegende Systemtreiber der Embedded-Software
+
+Die grundlegenden Systemtreiber bauen teilweise aufeinander auf. Der RCC-Treiber aktiviert zunächst die benötigten Peripherietakte, während der RIFSC die erforderlichen Zugriffsrechte auf Speicher- und Peripheriebereiche bereitstellt. Darauf aufbauend konfiguriert der GPIO-Treiber die Ein- und Ausgänge sowie die alternativen Pin-Funktionen für Schnittstellen wie USART, I²C und XSPI. Die Timer-, Kommunikations- und Speichertreiber können anschließend von den übergeordneten Komponenten verwendet werden. Die funktionsspezifischen Treiber für Kamera, Display, Ablaufsteuerung und NPU werden in den folgenden Kapiteln im Zusammenhang mit ihrer jeweiligen Verwendung beschrieben.
+
+#### 7.4.5 Einordnung der Basistreiber in die übergeordneten Komponenten
+
+Die funktionsspezifischen Komponenten der Firmware bauen jeweils auf mehreren grundlegenden Systemtreibern auf. Tabelle X ordnet den übergeordneten Komponenten die von ihnen verwendeten Basistreiber zu.
+
+| Übergeordnete Komponente               | Verwendete Basistreiber                      |
+| -------------------------------------- | -------------------------------------------- |
+| Kamera- und Bildpipeline               | RCC, RIFSC, GPIO, I2C, Timer, XSPI und USART |
+| Ablaufsteuerung und Software Scheduler | RCC, Timer und USART                         |
+| NPU- und KI-Modul                      | RCC, RIFSC, XSPI und USART                   |
+| Status-LED                             | RCC, GPIO und Timer                          |
+| Touch-Eingabe                          | RCC, GPIO, I2C, Timer und USART              |
+Tabelle X: Zuordnung der Basistreiber zu den übergeordneten Softwarekomponenten
+
+Die Zuordnung zeigt, dass insbesondere die RCC-, und GPIO-Treiber von mehreren Systembereichen gemeinsam verwendet werden. Die Basistreiber stellen damit die gemeinsame hardwarenahe Grundlage bereit, während die übergeordneten Komponenten deren Funktionen zu anwendungsspezifischen Abläufen kombinieren.
 
 ### 7.5 Kamera - Display Pipeline
 
