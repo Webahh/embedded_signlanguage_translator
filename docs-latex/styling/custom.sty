@@ -1,0 +1,64 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{styling/custom}[2024/06/20 Custom theming Package]
+
+% Font
+\RequirePackage[scaled=0.95]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% Graphics
+\RequirePackage{graphicx}
+
+% Section numbering depth
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% German language
+\RequirePackage[ngerman]{babel}
+
+% Page geometry
+\RequirePackage{geometry}
+
+% Zitate
+\RequirePackage{csquotes}
+
+% Literaturverzeichnis
+\RequirePackage[style=iso-authoryear]{biblatex}
+\addbibresource{datenbanken/Literaturverzeichnis.bib}
+\KOMAoptions{bibliography=totocnumbered}
+
+% Absatz
+\KOMAoptions{parskip=half}
+
+% Zeilenabstand
+\RequirePackage[singlespacing]{setspace}
+
+% Kopfzeile und Fußzeile
+\RequirePackage[headsepline, plainheadsepline]{scrlayer-scrpage}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\addtokomafont{pagehead}{\small\normalfont}
+\ofoot*{\pagemark}
+
+% hyperref
+\RequirePackage{hyperref}
+\hypersetup{
+    pdftitle={\ThesisTitle},
+    pdfsubject={\ThesisSubject},
+    pdfauthor={\ThesisAuthor},
+    pdfcreator={LuaLaTeX},
+    pdfkeywords={\ThesisKeywords},
+    breaklinks = true,
+    citecolor = black,
+    colorlinks = true,
+    linkcolor = black,
+    urlcolor = black
+}
+
+% Abkürzungsverzeichnis
+\RequirePackage[acronym,nomain]{glossaries-extra}
+\setabbreviationstyle[acronym]{long-short}
+\makeglossaries
+\loadglsentries{datenbanken/Abkuerzungsverzeichnis.tex}
+
+% Behebt Paket-Warnungen mit KOMA-Script
+\RequirePackage{scrhack}

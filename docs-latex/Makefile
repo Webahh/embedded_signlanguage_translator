@@ -11,18 +11,14 @@ MAKEGLOSSARIES = makeglossaries
 
 all: $(OUTDIR)/$(MAIN).pdf
 
-$(OUTDIR)/$(MAIN).pdf: $(MAIN).tex meta.tex
+$(OUTDIR)/$(MAIN).pdf: $(MAIN).tex meta.tex styling/custom.sty
 	@mkdir -p $(OUTDIR)
 	$(LATEX) $(LATEXFLAGS) $(MAIN)
 	$(BIBER) $(OUTDIR)/$(MAIN)
-	$(MAKEGLOSSARIES) $(OUTDIR)/$(MAIN)
-	$(LATEX) $(LATEXFLAGS) $(MAIN)
+	cd $(OUTDIR) && $(MAKEGLOSSARIES) $(MAIN)
 	$(LATEX) $(LATEXFLAGS) $(MAIN)
 	@echo "Build complete: $(OUTDIR)/$(MAIN).pdf"
-
-quick:
-	@mkdir -p $(OUTDIR)
-	$(LATEX) $(LATEXFLAGS) $(MAIN)
+	@xdg-open $(OUTDIR)/$(MAIN).pdf
 
 clean:
 	rm -rf $(OUTDIR)

@@ -1,1 +1,55 @@
 \chapter{Entwicklung und Implementation}
+
+\section{Aufbau und Aufbereitung des Datensatzes}
+\subsection{Rohvideos}
+\subsection{Frame-Extraktion und Handdetektion}
+\subsection{Augmentation}
+\subsection{Normalisierung und Interpolation}
+\subsection{Datenstrukturen und Speicherung}
+
+\section{Entwicklung und Training des Klassifikationsmodells}
+\subsection{Problemdefinition}
+\subsection{Datenanalyse}
+\subsection{Modellauswahl}
+\subsection{Modellarchitektur}
+\subsection{Verlustfunktion und Optimierung}
+\subsection{Trainingsprozess}
+\subsection{Evaluierung}
+
+\section{Quantisierung, Konvertierung und Deployment der Modelle}
+\subsection{Quantisierung von Tensorflow Modellen}
+\subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded binaries}
+\subsection{Deployment}
+
+\section{Softwaregrundstruktur und hardwarenahe Basistreiber}
+\subsection{Aufbau der Embedded-Software}
+\subsection{Zentrale Konfiguration und Systeminitialisierung}
+\subsection{Registerbasierte Treiberentwicklung}
+\subsection{Grundlegende Systemtreiber}
+\subsection{Einordnung der Basistreiber in die übergeordneten Komponenten}
+
+\section{Kamera - Display Pipeline}
+\subsection{Initialisierung des Kamerasensors}
+\subsection{Übertragung der Kameradaten über CSI und DCMIPP}
+\subsection{Verwaltung der Bildpuffer}
+\subsection{LTDC-Konfiguration und Verwaltung der Displayebenen}
+
+\section{Ablaufsteuerung und Software Scheduler}
+
+\section{Integration der NPU und einheitliche KI-Schnittstelle}
+\subsection{Initialisierung des Neural-ART Accelerators}
+\subsection{Einheitliche KI-Schnittstelle}
+
+\section{Vor- und Nachverarbeitungsschritte}
+\subsection{DCMIPP-gestützte Bildvorverarbeitung}
+\subsection{Nachverarbeitung der Handdetektion}
+\subsection{Vorverarbeitung der Landmark-Erkennung}
+\subsection{Nachverarbeitung der Landmark-Erkennung}
+\subsection{Vorverarbeitung des Klassifizierungsmodells}
+\subsection{Nachverarbeitung des Klassifikationsmodells}
+
+\section{Visualisierung und Benutzerausgabe}
+\subsection{Darstellung der Erkennungsergebnisse}
+\subsection{Benutzeroberfläche und Bedienung}
+
+\section{Optimierungen}
