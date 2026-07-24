@@ -301,18 +301,81 @@ Die .mpool Dateien beschreiben die STM32N6 Hardware Speicherabbild der NPU. Alle
 
 Hauptbereiche:
 
+`params` - Globale Einschränkungen:
 ```json
 { "paramname": "max_onchip_sram_size", "value": "1024", "magnitude": "KBYTES"}
 ```
+Beschränkt die maximale verfügbare onchip sram größe auf 1024 KB für die NPU.  
 
-| Name | Region | Adresse | Größe | Rolle                   |
-| ---- | ------ | ------- | ----- | ---------------------- |
-|      |        |         |       NPU activation scratch n  |
+`cacheinfo` - Beschreibt den cache
+`mempools` - Speicherbereich Konfiguration pro Modell auf der NPU.
 
+| Name      | Region   | Adresse    | Größe | Rolle                           |
+| --------- | -------- | ---------- | ----- | ------------------------------- |
+| npuRAM3   | AXISRAM3 | 0x34200000 | 448KB | NPU activation scratch          |
+| npuRAM4   | AXISRAM4 | 0x34270000 | 448KB | NPU activation scratch          |
+| npuRAM5   | AXISRAM5 | 0x342e0000 | 448KB | NPU activation scratch          |
+| npuRAM6   | AXISRAM6 | 0x34350000 | 448KB | NPU activation scratch          |
+| hyperRAM  | xSPI1    | 0x90000000 | 0MB   | External HyperRAM (Deaktiviert) |
+| octoFlash | xSPI2    | 0x71000000 | 2MB   | Weight storage in OctoSPI flash |
+Die vier AXISRAM-Bänke sind On-Chip-SRAM-Speicher mit hohem Durchsatz und geringer Latenz, die für Laufzeit-Aktivierungen (Zwischentensoren) genutzt werden. octoFlash ist zur Laufzeit schreibgeschützt (ACC_READ) und speichert die Modellgewichte bzw. -konstanten. Die Einstellung constants_preferred: "true" weist das Tool an, konstante Daten in diesem Bereich abzulegen.
+
+Die Flash-Basisadressen unterscheiden sich je nach Modell, um den 16-MB-xSPI2-Flash zu partitionieren:
+
+| Modell        | Flash Start | Flash Size |
+| ------------- | ----------- | ---------- |
+| Finger        | 0x71000000  | 2 MB       |
+| Handdedektion | 0x71200000  | 4 MB       |
+| Handlandmark  | 0x71600000  | 10 MB      |
+**Script - Generierung**
+Das `generate_n6_models.sh`-Script führt für jedes Modell 3 Schritte durch dann Kopiert und Builded anschließend das Projekt.
+
+Schritt 1 - STedgeAI generation:
+
+```bash
+stedgeai generate \
+    --name palm_detection_model_v3 \
+    --model source/033_palm_detection_full_quant_pc_ff_od.tflite \
+    --target stm32n6 \
+    --st-neural-art "palm_detection_model_v3@user_neuralart.json" \
+    --input-data-type uint8 \
+    --output st_ai_output/
+```
+
+Dies liest das Tensorflow Lite modell ein, lädt die `palm_detection_model_v3` Konfiguration in `user_neuralart.json` um den Memory-Pool und Compiler optionen zu erhalten und generiert:
+- Eine .c-Datei mit Gewichtsdaten als C-Arrays (die rohen Binärdaten sind eingebettet)
+- Ein Header namens \_ecblobs.h, der diese Arrays mit Attributen für Linker-Sektionen deklariert
+- stai\_\*.c / stai\_\*.h - der ST-AI-Runtime-API-Wrapper (Zuweisung, Laden, Ausführung der Inferenz)
+- Ein *\_atonbuf.xSPI2.raw file - Der Binär-Blob mit den Gewichten für die Flash-Programmierung
+
+Schritt 2 -  arm-none-eabi-objcopy:
+
+Konvertiert .raw Gewichts-Blob in eine Intel .hex Datei mit der korrekten Basisadresse (z.B. 0x71000000). Diese Hex-Datei kann via STM32CubeProgrammer auf den Microkontroller geflashed werden.
+
+Schritt 3 - copy_n6_models.sh
+
+Kopiert die generierten Dateien in das STM32N6570DK-Embedded-Projekt:
+- \*.c and \*\_ecblobs.h -> embedded/STM32N6570DK/FSBL/Src/AI/\<Model>/Src|Inc/
+- stai_\*.c/h (with --stai flag)
+- \*\.bin weight blobs (with --weights flag) -> FSBL/Assets/AI/
+
+Zudem wird \*\_ecblobs.h gepatcht, um `#include "ecblob_sections.h"` einzufügen. Dadurch wird sichergestellt, dass die Gewichts-Arrays im ECBLOBS-Linker-Abschnitt (0x72000000, 8 MB) landen, anstatt das interne ROM (255 KB) zu sprengen.
 
 #### 7.3.3 Deployment  
 
+Die Firmware erstellt mit arm-none-eabi-gcc ecblobs.bin, kopiert sie nach Assets/AI/ und führt anschließend flash_models.sh aus, um alles auf das Board zu programmieren.
 
+**Generierte Dateien**
+
+| Datei                    | Nutzen                                                                                                | Embedded Nutzung                              |
+| ------------------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| \*\_model\_v3.c          | Gewichtskonstanten als C-Arrays mit ECBLOB-Linker-Sektionen                                           | Ja - compiliert zu ecblobs.bin                |
+| \*\_model\_v3\_ecblobs.h | Header-Datei zur Deklaration der Symbole für das Gewichts-Array (angepasst mittels ecblob_sections.h) | Ja - Includiert von .c                        |
+| stai\_\*\_model\_v3.c    | ST-KI-Laufzeit-Wrapper - Funktionen stai Allocate(), stai Load() und stai Run()                       | Ja - Inferenz Eintrittspunkt                  |
+| stai\_\*\_model\_v3.h    | Öffentlicher API-Header für den Laufzeit-Wrapper                                                      | Ja - Includiert durhc Anwendung               |
+| \*\_data.hex             | Intel-HEX-Datei des Gewichts-Blobs an der Flash-Adresse (für CubeProgrammer)                          | Ja - Wird Seperat auf xSPI2 geflashed         |
+| \*\_atonbuf.xSPI2.raw    | Binärer Rohdaten-Gewichts-Blob (Zwischenschritt)                                                      | Indirekt - Wird zu .hex oder .bin convertiert |
+Die drei Modelle werden in einer Pipeline auf der MCU verwendet: palm_detection -> hand_landmark -> fingeralphabet. Für die Kompilierung und Ausführung jedes Modells werden alle vier zugehörigen Dateien (.c, \_ecblobs.h, stai\_\*.c, stai\_\*.h) benötigt.
 
 ### 7.4 Softwaregrundstruktur und hardwarenahe Basistreiber
 
