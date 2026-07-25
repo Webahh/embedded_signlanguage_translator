@@ -18,7 +18,7 @@ $(OUTDIR)/$(MAIN).pdf: $(MAIN).tex meta.tex styling/custom.sty
 	cd $(OUTDIR) && $(MAKEGLOSSARIES) $(MAIN)
 	$(LATEX) $(LATEXFLAGS) $(MAIN)
 	@echo "Build complete: $(OUTDIR)/$(MAIN).pdf"
-	@xdg-open $(OUTDIR)/$(MAIN).pdf
+	@okular --unique $(OUTDIR)/$(MAIN).pdf &>/dev/null &
 
 clean:
 	rm -rf $(OUTDIR)

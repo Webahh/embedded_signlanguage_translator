@@ -1,22 +1,62 @@
 \chapter{Einleitung}
 
-Dieses Kapitel gibt einen Überblick über die Forschungsfrage und die Motivation dieser Arbeit.
-Das \gls{fh} ist eine der beteiligten Institutionen bei der Entwicklung dieses \gls{ai}-Systems.
+Gebärdensprachen sind visuell-manuelle Sprachen, bei denen Informationen nicht nur durch Handformen und Handbewegung, sondern auch durch Körperhaltung und Mimik vermittelt werden. Das Fingeralphabet stellt innerhalb dieser Sprache ein ergänzendes Hilfsmittel dar. Es ermöglicht, Buchstaben und bestimmte Buchstabenkombinationen durch festgelegte Handformen darzustellen. Verwendet wird es insbesondere zum Buchstabieren von Eigennamen, Fachbegriffen, Fremdwörtern oder Begriffen, für die keine gebräuchliche Gebärde vorhanden ist (AktionMensch e.V., n.d.; Deutscher Gehörlosen-Bund e.V., n.d.).
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.4\textwidth]{material/figures/fhlogo.pdf}
-    \caption{Logo der Hoch Bonn-Rhein-Sieg}
-    \label{fig:fhlogo}
-\end{figure}
+Für Personen, die das Fingeralphabet erlernen, ist eine unmittelbare Rückmeldung zur ausgeführten Handform hilfreich. Bereits geringe Abweichungen in der Stellung einzelner Finger können dazu führen, dass ein anderes Zeichen dargestellt wird oder die Handform nicht eindeutig zugeordnet werden kann. Beim selbständigen Üben ist die Beurteilung der eigenen Ausführung jedoch nur eingeschränkt möglich. Eine Rückmeldung durch eine andere Person steht zudem nicht jederzeit zur Verfügung. Computergestützte Lernsysteme können an dieser Stelle eine ergänzende Unterstützung bieten, indem sie ausgeführte Handzeichen erfassen, analysieren und den Lernenden unmittelbar eine Rückmeldung geben. Untersuchungen zu digitalen Lernsystemen für Gebärdensprachen zeigen, dass automatisiertes Feedback grundsätzlich zur Unterstützung des selbstständigen Übens eingesetzt werden kann (Huenerfauth et al., 2017).
 
-Abbildung~\ref{fig:fhlogo} zeigt das Logo der \gls{hbrs}, an der diese Arbeit durchgeführt wurde.
+Im Rahmen dieser Arbeit wird die technische Grundlage für einen solchen Fingeralphabet-Trainer entwickelt. Das System erfasst die Hand über eine Kamera, bestimmt deren Position und charakteristische Landmarks und klassifiziert anschließend das dargestellte Zeichen. Die gesamte Verarbeitung soll lokal auf einem eingebetteten System erfolgen. Als Zielplattform wird das STM32N6570-Discovery Kit verwendet, das neben den üblichen Mikrocontroller-Funktionen über einen integrierten Beschleuniger für neuronale Netze verfügt (STMicroelectronics, n.d.).
 
 \section{Problemstellung}
+
+Die Ausführung einer vollständigen kamerabasierten Erkennungskette auf einem Mikrocontroller ist aufgrund der begrenzten Ressourcen anspruchsvoll (Abadade et al., 2023). Neben den neuronalen Netzen müssen auch die Kameraschnittstelle, die Bildspeicherung, die Vor- und Nachverarbeitung der Daten, die Ablaufsteuerung sowie die grafische Ausgabe berücksichtigt werden. Werden einzelne Verarbeitungsschritte blockierend oder ineffizient umgesetzt, können hohe Latenzen, eine geringe Bildrate oder instabile Erkennungsergebnisse entstehen.
+
+Eine weitere Herausforderung liegt in der zuverlässigen Klassifikation der Handzeichen. Einige Zeichen des deutschen Fingeralphabets unterscheiden sich nur durch geringe Veränderungen der Fingerstellung (Deutscher Gehörlosen-Bund e.V., n.d.). Gleichzeitig können die Position, Orientierung und Größe der Hand im Kamerabild sowie unterschiedliche Lichtverhältnisse und individuelle Ausführungen der Handzeichen  variieren (Benitez-Garcia et al., 2021). Das Klassifikationsmodell muss daher ausreichend robust gegenüber diesen Einflüssen sein, ohne die verfügbaren Ressourcen der Zielplattform zu überschreiten.
+
+Damit die neuronalen Netze auf der eingebetteten Plattform ausgeführt werden können, müssen sie an deren technischen Anforderungen und Ressourcenbeschränkungen angepasst werden. Hierzu können unter anderem die Modellkomplexität reduziert und die verwendeten Zahlenformate quantisiert werden. Diese Optimierungen können den Speicherbedarf und den Rechenaufwand verringern, zugleich aber die Erkennungsgenauigkeit beeinflussen (Jacob et al., 2018). Es muss daher ein geeigneter Kompromiss zwischen Modellgröße, Ausführungsgeschwindigkeit und Erkennungsleistung gefunden werden.
+
+Die zentrale Problemstellung dieser Arbeit besteht darin, eine mehrstufige Verarbeitungskette zur Erkennung des deutschen Fingeralphabets so auf einem ressourcenbeschränkten eingebetten System umzusetzen, dass eine hinreichend genaue, stabile und echtzeitnahe Verarbeitung erreicht wird.
+
 \section{Motivation und Zielsetzung}
+
+Die Motivation für diese Arbeit ergibt sich aus dem Bedarf an einer kompakten und unmittelbaren nutzbaren Unterstützung beim Erlernen des deutschen Fingeralphabets. Ein lokal arbeitendes System kann ausgeführte Handzeichen direkt erfassen und bewerten, ohne das die Kamerabilder an einen externen Rechner oder einen Cloud-Dienst übertragen werden müssen. Dadurch kann der Fingeralphabet-Trainer unabhängig von einer Internetverbindung eingesetzt werden. Gleichzeitig bietet die lokale Verarbeitung Vorteile hinsichtlich der Reaktionszeit und des Schutzes der aufgenommenen Bilddaten.
+
+Die Entwicklung technischer Assistenz- und Lernsystem für Gebärdensprachen besitzt darüber hinaus eine besondere praktische Relevanz. Der Deutsche Gehörlosen-Bund e. V. weist daraufhin, dass bislang keine Computerprogramme oder Apps verfügbar sind, die Gebärdensprachen vollständig und zuverlässig übersetzen können (Deutscher Gehörlosen-Bund e.V., n.d.). Daraus ergibt sich die Motivation, einzelne Teilbereiche gezielt zu untersuchen und technisch umzusetzen. Die vorliegende Arbeit setzt an einem solchen Teilbereich an und entwickelt ein System zur Erkennung von Handzeichen des deutschen Fingeralphabets.
+
+Ziel der Arbeit ist die Entwicklung und Integration eines prototypischen Systems, das statische Handzeichen des deutschen Fingeralphabets über eine Kamera erfasst und auf dem STM32N6570 Discovery Kit klassifiziert. Hierfür wird ein Machine-Learning-Modell entwickelt, das die zuvor ermittelten Handlandmarks verarbeitet und das dargestellte Zeichen einer definierten Klasse zuordnet. Dazu werden ein Datensatz erstellt und aufbereitet, Augmentationsverfahren umgesetzt und unterschiedliche Modellvarianten trainiert. bzw. evaluiert.
+
+Das ausgewählte Klassifikationsmodell wird anschließend für die Ausführung auf der Zielplattform optimiert und gemeinsam mit den Modellen zur Handlokalisierung und Landmark-Erkennung in eine durchgängige Verarbeitungspipeline integriert. Darüber hinaus werden die erforderlichen Softwarekomponenten zur Ablaufsteuerung, Datenverarbeitung und grafische Darstellung der Inferenzergebnisse umgesetzt. Abschließend wird untersucht, inwieweit das entwickelte Gesamtsystem die definierten Handzeichen zuverlässig erkennt und eine für die interaktive Nutzung geeignete Verarbeitungsgeschwindigkeit erreicht. Das Ergebnis der Arbeit ist ein funktionsfähiger Prototyp, der die technische Umsetzbarkeit eines lokal arbeitenden Fingeralphabet-Trainers auf einer ressourcenbeschränkten eingebetteten Plattform demonstriert.
 
 \section{Abgrenzung des Untersuchungsgegenstandes}
 \subsection{Inhaltliche Abgrenzung}
+
+Diese Arbeit beschreibt die Entwicklung eines prototypischen Systems zur Erkennung des deutschen Fingeralphabets auf einer eingebetteten Plattform. Im Mittelpunkt steht die Entwicklung eines funktionsfähigen Gesamtsystems, das kamerabasierte Bildverarbeitung und maschinelles Lernen miteinander verbindet.
+
+Ein wesentlicher Bestandteil ist die Entwicklung eines Machine-Learning-Modells zur Klassifikation ausgewählter Handzeichen des deutschen Einhand-Fingeralphabets. Dieses Modell wird gemeinsam mit zwei bereits bestehenden Modellen zur Handerkennung und zur Bestimmung von Handlandmarken in eine mehrstufige Verarbeitungspipeline integriert. Darüber hinaus umfasst die Arbeit die Überführung der Modelle auf die eingebettete Zielplattform.
+
+Nicht Gegenstand der Arbeit ist die Erkennung vollständiger Gebärdensprachen. Insbesondere werden keine dynamischen Gebärden, Bewegungsabläufe, Gesichtsausdrücke oder Körperhaltungen berücksichtigt. Das entwickelte System beschränkt sich auf die Erkennung statischer Handzeichen des deutschen Fingeralphabets unter den im Rahmen des Prototypes definierten Einsatzbedingungen.
+
+Darüber hinaus erfolgt keine linguistische oder semantische Betrachtung des Fingeralphabets. Ebenso ist auch auch kein groß angelegtes Training von Modellen mit umfangreichen Datensätzen vorgesehen. Stattdessen werden eigens erstellte aber begrenzte Datensätze verwendet, die dem prototypischen Nachweis der Funktionsfähigkeit dienen. Die Implementierung und Evaluation beschränken sich zudem auf eine spezifische Plattform.
+
 \subsection{Personenspezifische Abgrenzung}
 
+Das Projekt wurde im Rahmen einer Gruppenarbeit durchgeführt. Daher ist eine klare inhaltliche Abgrenzung der jeweiligen Aufgabenbereiche und der erbrachten Eigenleistungen erforderlich. Die Bearbeitung lässt sich grundsätzlich in zwei Schwerpunkte unterteilen: die Entwicklung des Machine-Learning-Modells sowie die Umsetzung der Software- und Hardwarekomponenten, auf denen das Modell ausgeführt und in das Gesamtsystem integriert wird.
+
+Fabian Weber übernimmt überwiegend die Entwicklung des maschinellen Lernmodells. Dazu zählen insbesondere die Erstellung und Aufbereitung des Datensatzes, die Entwicklung der Datenpipeline einschließlich Augmentationsverfahren sowie das Training und die Optimierung des Modells.
+
+Oliver Groß ist für die Umsetzung der Hardware und Software verantwortlich. Dies umfasst vor allem den Aufbau und die Integration der notwendigen Camera-Pipeline, sowie die Implementierung  der Systemumgebung zur Ausführung des Modells.
+
+Gemeinsame Aufgaben betreffen insbesondere die Abstimmung der Systemarchitektur, sowie die Integration der einzelne Komponenten zu einem funktionsfähigen Gesamtsystems.
+
 \section{Aufbau der Arbeit}
+
+Nach der Einleitung werden in Kapitel 2 die theoretischen und technischen Grundlagen erläutert. Dazu gehören eingebettete Systeme, das deutsche Fingeralphabet, grundlegende Verfahren des maschinellen Lernens, neuronale Netze zur Klassifikation, Handdetektion und Handlandmarken sowie Datenaugmentation, Modellquantisierung und Edge AI.
+
+Kapitel 3 stellt den Stand der Technik dar. Es werden bestehende Ansätze zur Erkennung von Handzeichen und Fingeralphabeten sowie aktuelle Embedded-AI-Lösungen betrachtet. Anschließend wird die vorliegende Arbeit gegenüber den bestehenden Ansätzen eingeordnet und abgegrenzt.
+
+In Kapitel 4 werden die verwendete Methodik und der Entwicklungsprozess beschrieben. Dazu gehören das Vorgehen bei der Literatur- und Technologierecherche, das gewählte Vorgehensmodell, der iterative Integrationsprozess, die Modellentwicklung sowie das Verifikations- und Evaluationskonzept. Kapitel 5 leitet aus dem Anwendungsszenario die funktionalen und nichtfunktionalen Anforderungen, die technischen Randbedingungen und die Abnahmekriterien ab.
+
+Der Systementwurf wird in Kapitel 6 vorgestellt. Dabei werden das System- und Hardwarekonzept, die KI-Verarbeitungskette sowie der Speicher- und Datenfluss vom Kamerabild bis zum Erkennungsergebnis beschrieben. Kapitel 7 behandelt die konkrete Entwicklung und Implementierung. Hierzu gehören die Aufbereitung des Datensatzes, die Augmentationspipeline, das Training und die Quantisierung des Klassifikationsmodells, die Implementierung der Kamerapipeline, die Handflächen- und Landmark-Erkennung, die Bestimmung der Region of Interest, die Verarbeitung der Landmark-Daten sowie die Integration der neuronalen Netze, die Ablaufsteuerung und die Visualisierung.
+
+Anschließend wird das entwickelte System in Kapitel 8 anhand der in der Anforderungsanalyse festgelegten Kriterien evaluiert und validiert. Hierzu werden zunächst der Versuchsaufbau und die zugrunde liegenden Testbedingungen beschrieben. Darauf aufbauend erfolgt die Untersuchung der Erkennungsgenauigkeit sowie eine klassenbezogene Auswertung mithilfe einer Konfusionsmatrix. Zusätzlich wird analysiert, welchen Einfluss unterschiedliche Beleuchtungsbedingungen und Hintergründe auf die Erkennungsleistung haben. Neben der funktionalen Bewertung werden auch die Inferenz- und Ende-zu-Ende-Latenz, die erreichbare Bildrate und der Datendurchsatz sowie der Speicher- und Ressourcenverbrauch betrachtet. Abschließend werden die erzielten Ergebnisse mit den zuvor definierten Anforderungen abgeglichen.
+
+Die Ergebnisse der Evaluation werden in Kapitel 9 interpretiert und diskutiert. Dabei werden das Gesamtsystem, seine Grenzen und der technische sowie praktische Beitrag der Arbeit betrachtet. Kapitel 10 fasst die wesentlichen Ergebnisse zusammen, bewertet die Erreichung der Zielsetzung und gibt einen Ausblick auf mögliche Weiterentwicklungen.

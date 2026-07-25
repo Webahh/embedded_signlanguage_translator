@@ -1,8 +1,52 @@
 \chapter{Theoretische und technische Grundlagen}
 
+Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Im Anschluss wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erläutert.
+
 \section{Eingebettete Systeme \& STM32N6570DK}
 \subsection{Begriffsbildung und Merkmale}
+
+Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Bestandteil eines übergeordneten Gesamtsystems in eine technische Umgebung eingebettet sind (Marwedel, 2021). Im Gegensatz zu universellen Rechnern (Personal Computer, Server) erfüllen sie eine spezifische, fest definierte Aufgabe und sind darauf optimiert. Typische Merkmale sind (Wolf, 2012):
+
+\begin{table}[htbp]
+    \centering
+    \caption{Charakteristische Merkmale eingebetteter Systeme (nach Wolf, 2012)}
+    \label{tab:embedded-merkmale}
+    \begin{tabular}{|p{0.2\textwidth}|p{0.75\textwidth}|}
+        \hline
+        \textbf{Aspekt} & \textbf{Embedded Spezifisch} \\
+        \hline
+        Ressourcen-beschränkung & Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern. \\
+        \hline
+        Echtzeitfähigkeit & Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen \textit{weicher} Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und \textit{harter} Echtzeit (eine Überschreitung führt zum Systemversagen). \\
+        \hline
+        Hohe \newline Zuverlässigkeit & Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden. \\
+        \hline
+        Energieeffizienz & Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt. \\
+        \hline
+        Spezialisierung & Im Unterschied zu universellen Rechnern ist die Funktionalität eines eingebetteten Systems auf einen konkreten Anwendungsfall beschränkt. \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Mikrocontroller Architektur}
+
+Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl.\ \textit{Microcontroller Unit}). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
+
+\begin{itemize}
+    \item \textbf{CPU:} Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz.
+    \item \textbf{Programmspeicher (Flash):} Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
+    \item \textbf{Arbeitsspeicher (RAM):} Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte.
+    \item \textbf{Taktgeber:} Interner Oszillator (HSI, engl.\ \textit{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \textit{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
+    \item \textbf{Peripherie-Einheiten:} Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3).
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/STM32N6-Architecture.drawio.png}
+    \caption{STM32N6570-DK - Architektur}
+    \label{fig:stm32n6-architektur}
+\end{figure}
+
 \subsection{Peripherieschnittstellen}
 \subsection{Speicherarchitektur}
 \subsection{Clock-Systeme}
