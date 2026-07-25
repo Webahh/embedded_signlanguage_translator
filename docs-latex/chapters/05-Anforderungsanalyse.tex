@@ -1,9 +1,206 @@
 \chapter{Anforderungsanalyse}
 
+Die Anforderungsanalyse bildet die Grundlage für den Entwurf, die Implementierung und die anschließende Bewertung des zu entwickelnden Systems. Die festgelegten Anforderungen beeinflussen den Aufbau des Systems und bestimmen, welche Funktionen und Eigenschaften bei der Entwicklung besonders berücksichtigt werden müssen (Kleuker, 2025, S. 53ff).
+
+Zur Ermittlung und Beschreibung der Anforderungen werden zunächst das vorgesehene Anwendungsszenario und die daraus abgeleiteten Anwendungsfälle betrachtet. Darauf aufbauend werden die funktionalen und nichtfunktionalen Anforderungen sowie die durch die Zielplattform vorgegebenen Randbedingungen festgelegt. Abschließend werden überprüfbare Abnahmekriterien definiert, die im weiteren Verlauf der Arbeit als Grundlage für die Verifikation und Evaluation des Gesamtsystems dienen.
+
 \section{Anwendungsszenario}
+Das entwickelte System ist als prototypischer Fingeralphabet-Trainer vorgesehen. Es soll Personen beim selbständigen Üben ausgewählter statischer Handzeichen des deutschen Fingeralphabets unterstützen. Die nutzende Person positioniert hierzu eine Hand im Erfassungsbereich der Kamera und führt ein Zeichen aus. Das Kamerabild wird vom System aufgenommen und lokal verarbeitet.
+
+Die Verarbeitung erfolgt in mehreren aufeinanderfolgenden Schritten. Zunächst wird die Hand im Kamerabild lokalisiert. Anschließend werden charakteristische Handlandmarks bestimmt und für die Klassifikation aufbereitet. Auf Grundlage dieser Merkmale ordnet das Klassifikationsmodell die dargestellte Handform einer der unterstützten Zeichenklassen zu. Das ermittelte Ergebnis wird über das Display des Systems ausgegeben und ermöglicht eine unmittelbare Rückmeldung zur dargestellten Handform. Das System ist für die Verwendung durch jeweils eine Person und die Erfassung einer einzelnen Hand vorgesehen. Die Handzeichen werden nacheinander und innerhalb eines geeigneten Abstands zur Kamera dargestellt. Die Verarbeitung setzt ausreichende Lichtverhältnisse und eine weitgehend freie Sicht auf die Hand voraus. Verdeckte Hände, mehrere gleichzeitig dargestellte Hände sowie dynamische Bewegungsabläufe gehören nicht zum vorgesehenen Anwendungsszenario.
+
+Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgeführt. Eine Verbindung zu einem externen Rechner oder einem Cloud-Dienst ist für den Betrieb des fertigen Prototyps nicht vorgesehen.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{material/figures/Use_Case.png}
+    \caption{Use-Case Diagramm Fingeralphabet Trainer}
+    \label{fig:use-case}
+\end{figure}
+
+Abbildung X stellt das Anwendungsszenario des entwickelten Fingeralphabet-Trainers als Use-Case-Diagramm dar. Die übende Person startet das System und zeigt ein Handzeichen im Erfassungsbereich der Kamera. Der Anwendungsfall „Handzeichen erkennen“ umfasst die Erfassung des Kamerabildes, die Lokalisierung der Hand, die Bestimmung der Handlandmarks und die Klassifikation des dargestellten Zeichens. Das ermittelte Erkennungsergebnis wird anschließend auf dem Display ausgegeben.
+
 \section{Anforderungen \& Randbedingungen}
+
+Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diagramm lassen sich die folgenden funktionalen, nichtfunktionalen und technischen Anforderungen, bzw. Randbedingungen ableiten.
+
 \subsection{Funktionale Anforderungen}
+
+\begin{table}[H]
+    \centering
+    \caption{Funktionale Anforderungen}
+    \label{tab:funktionale-anforderungen}
+    \begin{tabular}{|c|p{0.85\textwidth}|}
+        \hline
+        \textbf{ID} & \textbf{Funktionale Anforderung} \\
+        \hline
+        FA\_01 & Das System muss über die angeschlossene Kamera laufend Bilddaten erhalten können. \\
+        \hline
+        FA\_02 & Das System muss eine einzelne Hand im Kamerabild lokalisieren können. \\
+        \hline
+        FA\_03 & Aus einer lokalisierten Hand muss eine Region of Interest gebildet und fortlaufend aktualisiert werden können. \\
+        \hline
+        FA\_04 & Das System muss innerhalb der Region of Interest die charakteristischen Handlandmarks bestimmen können. \\
+        \hline
+        FA\_05 & Die Handlandmarks müssen für die Fingeralphabet-Klassifizierung vorbereitet werden können. \\
+        \hline
+        FA\_06 & Das System muss anhand der aufbereiteten Handlandmarks das statische Handzeichen einer Klassifizierung ausgeben können. \\
+        \hline
+        FA\_07 & Das Klassifizierungs- bzw.\ Inferenzergebnis muss auf dem Display ausgegeben werden können. \\
+        \hline
+        FA\_08 & Das System muss die Erkennung, bzw.\ Inferenz wiederholt ausführen und Änderungen von Handzeichen erkennen können. \\
+        \hline
+        FA\_09 & Das System muss mit Situationen umgehen können, in denen keine Hand oder kein eindeutig klassifizierbares Handzeichen erkannt wird. \\
+        \hline
+        FA\_10 & Das System muss die für die Bewertung relevanten Ergebnisse und Laufzeitinformationen erfassen oder zur Auswertung bereitstellen können. \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Nichtfunktionale Anforderungen}
+
+\begin{table}[H]
+    \centering
+    \caption{Nichtfunktionale Anforderungen}
+    \label{tab:nichtfunktionale-anforderungen}
+    \begin{tabular}{|c|p{0.85\textwidth}|}
+        \hline
+        \textbf{ID} & \textbf{Nichtfunktionale Anforderung} \\
+        \hline
+        NFA\_01 & Das System muss unter den festgelegten Bedingungen eine Erkennungsgenauigkeit von mindestens 80\,\% erreichen. \\
+        \hline
+        NFA\_02 & Das System muss eine Bild- bzw.\ Verarbeitungsrate von mindestens 15 Bildern pro Sekunde erreichen. \\
+        \hline
+        NFA\_03 & Die Zeitspanne von der Bereitstellung eines Kamerabildes bis zur Ausgabe des zugehörigen Klassifikationsergebnisses darf 80\,ms nicht überschreiten. \\
+        \hline
+        NFA\_04 & Das System muss mindestens 20 Minuten kontinuierlich arbeiten können, ohne abzustürzen oder einen Neustart zu erfordern. \\
+        \hline
+        NFA\_05 & Das System muss die Hand unter den festgelegten Testbedingungen auch bei Positionsänderungen und veränderten Lichtverhältnissen ausreichend zuverlässig lokalisieren und verfolgen können. \\
+        \hline
+        NFA\_06 & Das Erkennungsergebnis muss auf dem Display eindeutig und für die nutzende Person verständlich dargestellt werden. \\
+        \hline
+        NFA\_07 & Der Quellcode soll modular aufgebaut und ausreichend dokumentiert sein, sodass einzelne Komponenten unabhängig angepasst und getestet werden können. \\
+        \hline
+        NFA\_08 & Der Speicherbedarf der Modelle und Laufzeitdaten darf die hierfür vorgesehenen internen und externen Speicherbereiche nicht überschreiten. \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Technische Anforderungen}
+
+\begin{table}[H]
+    \centering
+    \caption{Technische Anforderungen}
+    \label{tab:technische-anforderungen}
+    \begin{tabular}{|c|p{0.85\textwidth}|}
+        \hline
+        \textbf{ID} & \textbf{Technische Anforderung} \\
+        \hline
+        TA\_01 & Als Zielplattform muss das STM32N6570 Discovery Kit verwendet werden. \\
+        \hline
+        TA\_02 & Das System muss die vollständige Verarbeitung vom Kamerabild bis zur Ausgabe des Klassifikationsergebnisses lokal auf der eingebetteten Zielplattform ausführen können. \\
+        \hline
+        TA\_03 & Die Kamerabilder müssen über die an das Board angeschlossene Kamera erfasst und innerhalb der eingebetteten Plattform verarbeitet werden. Dabei handelt es sich um das IMX-335 Sensormodul. \\
+        \hline
+        TA\_04 & Die Ausgabe des Kamerabildes und des Erkennungsergebnisses muss über das angeschlossene Display erfolgen. Dabei handelt es sich um das MB1860B. \\
+        \hline
+        TA\_05 & Die Kamerapipeline wird mit den vom Board bereitgestellten Schnittstellen implementiert. Das sind unter anderem Camera Serial Interface (CSI), Digital Camera Interface Pipe Processing (DCMIPP), LCD-TFT Display Controller (LTDC). \\
+        \hline
+        TA\_06 & Bildsignalanpassungen wie z.\,B.\ Gammakorrektur, Blacklevelkorrektur, RGB-Conversion müssen embedded mittels DCMIPP erfolgen. \\
+        \hline
+        TA\_07 & Hardwarezugriffe sollen in abgegrenzten Treiber- und Schnittstellenmodulen gekapselt werden. Soweit für die erforderliche Kontrolle und Ausführungsgeschwindigkeit notwendig, sollen Low-Layer-Treiber oder direkte Registerzugriffe verwendet werden. \\
+        \hline
+        TA\_08 & Die verwendeten neuronalen Netze müssen in das INT8-Zahlenformat quantisiert und mit ST Edge AI Core für die Zielplattform konvertiert werden. \\
+        \hline
+        TA\_09 & Die von der Hardware unterstützten Operationen der neuronalen Netze müssen auf dem integrierten ST Neural-ART Accelerator ausgeführt werden. Nicht unterstützte Operationen dürfen auf dem Hauptprozessor ausgeführt werden. \\
+        \hline
+        TA\_10 & Die Gewichte der neuronalen Netze müssen im externen Octo-SPI-NOR-Flash gespeichert werden. \\
+        \hline
+        TA\_11 & Die Bilddaten und die hierfür erforderlichen Puffer müssen in der externen Hexadeca-SPI-PSRAM abgelegt werden. \\
+        \hline
+        TA\_12 & Der reguläre Betrieb des Prototyps muss ohne aktive Verbindung zu einem externen Rechner oder einem Cloud-Dienst möglich sein. \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Randbedingungen}
+
+\begin{table}[H]
+    \centering
+    \caption{Randbedingungen}
+    \label{tab:randbedingungen}
+    \begin{tabular}{|c|p{0.85\textwidth}|}
+        \hline
+        \textbf{ID} & \textbf{Randbedingung} \\
+        \hline
+        RB\_01 & Als Zielplattform steht ausschließlich das STM32N6570 Discovery Kit mit dem Mikrocontroller STM32N657X0H3Q zur Verfügung. \\
+        \hline
+        RB\_02 & Der Mikrocontroller verfügt nur über begrenzten internen Arbeits- und Programmspeicher. Größere Datenbestände müssen daher in den externen Speichern abgelegt werden. \\
+        \hline
+        RB\_03 & Als externer nichtflüchtiger Speicher steht ein 1-Gbit-Octo-SPI-NOR-Flash zur Verfügung. Zur Zwischenspeicherung größerer Datenmengen steht eine 256-Mbit-Hexadeca-SPI-PSRAM zur Verfügung. \\
+        \hline
+        RB\_04 & Zur Beschleunigung der neuronalen Netze steht der integrierte ST Neural-ART Accelerator zur Verfügung. Dessen Nutzung ist auf die unterstützten Operationen und Datenformate beschränkt. \\
+        \hline
+        RB\_05 & Die Konfiguration und Konvertierung der neuronalen Netze erfolgt mit den Werkzeugen der ST Edge AI Suite beziehungsweise mit ST Edge AI Core. \\
+        \hline
+        RB\_06 & Für die Handlokalisierung und Handlandmark-Erkennung werden bereits bestehende Modelle verwendet. Lediglich das nachgelagerte Klassifikationsmodell wird im Rahmen dieser Arbeit neu entwickelt. \\
+        \hline
+        RB\_07 & Modellgewichte müssen vor Inbetriebnahme manuell oder per Skript auf den NOR-Flash geladen werden. \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \section{Abnahmekriterien}
+
+Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet. Sie legen fest, anhand welcher Prüfungen und Grenzwerte beurteilt wird, ob das entwickelte Gesamtsystem die jeweiligen Anforderungen erfüllt. Inhaltlich zusammengehörige Anforderungen können dabei gemeinsam überprüft werden.
+
+\begin{longtable}[H]{|c|p{2.75cm}|p{0.40\textwidth}|p{0.28\textwidth}|}
+    \caption{Abnahmekriterien}
+    \label{tab:abnahmekriterien} \\
+    \hline
+    \textbf{ID} & \textbf{Zugeordnete Anforderungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
+    \hline
+    \endfirsthead
+    \hline
+    \textbf{ID} & \textbf{Zugeordnete Anforderungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
+    \hline
+    \endhead
+    \hline
+    \multicolumn{4}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \endfoot
+    \hline
+    \endlastfoot
+    AK\_01 & FA\_01 & Das System erfasst fortlaufend gültige Kamerabilder. & Visuelle Überprüfung des Displays. \\
+    \hline
+    AK\_02 & FA\_02 bis FA\_04 & Eine Hand wird lokalisiert, eine ROI wird gebildet und die Handlandmarks werden bestimmt. & Prüfung anhand ausgewählter Bilder und Visualisierung der ROI, bzw.\ der Landmarks. \\
+    \hline
+    AK\_03 & FA\_05, FA\_06, NFA\_01 & Das Klassifikationsmodell erreicht eine Gesamtgenauigkeit von mindestens 80\,\%. & Auswertung der Modellvorhersagen und Erstellung einer Konfusionsmatrix. \\
+    \hline
+    AK\_04 & FA\_07, NFA\_06 & Das erkannte Zeichen wird eindeutig und lesbar auf dem Display dargestellt. & Visuelle Prüfung der Anzeige für alle unterstützten Zeichenklassen. \\
+    \hline
+    AK\_05 & FA\_08 & Mehrere nacheinander dargestellte Handzeichen werden ohne Neustart erkannt und die Anzeige wird aktualisiert. & Durchführung einer festgelegten Zeichenfolge und Vergleich. \\
+    \hline
+    AK\_06 & FA\_09 & Wird keine Hand erkannt, gibt das System kein gültiges Klassifikationsergebnis aus. & Tests ohne Hand sowie mit nicht unterstützten Handformen. \\
+    \hline
+    AK\_07 & FA\_10 & Erkennungs-, Laufzeit- und Speicherinformationen können für die Evaluation ausgelesen werden. & Überprüfung der Messwerte über die Debug-Schnittstelle. \\
+    \hline
+    AK\_08 & NFA\_02 & Das Gesamtsystem verarbeitet mindestens 15 Kamerabilder pro Sekunde. & Zählung der verarbeiteten Bilder und Berechnung der mittleren Verarbeitungsrate. \\
+    \hline
+    AK\_09 & NFA\_03 & Die Zeitspanne bis zum Klassifikationsergebnis beträgt höchstens 80\,ms. & Zeitmessung an festgelegten Punkten der Verarbeitungskette. \\
+    \hline
+    AK\_10 & NFA\_04 & Das System arbeitet mindestens 20 Minuten ohne Absturz. & Kontinuierlicher Dauerlauftest. \\
+    \hline
+    AK\_11 & NFA\_05 & Die Hand wird in mindestens 70\,\% der Bilder erfolgreich lokalisiert. & Durchführung und Auswertung definierter Testszenarien. \\
+    \hline
+    AK\_12 & TA\_05, TA\_06 & Die Kameradaten werden über die festgelegten Schnittstellen verarbeitet. & Überprüfung der Peripheriekonfiguration und Registereinstellungen. \\
+    \hline
+    AK\_13 & TA\_10, TA\_11 & Modellgewichte im NOR-Flash, Bilddaten und Puffer im PSRAM abgelegt. & Überprüfung der Speicheradressen mittels Linker-Map-Datei. \\
+    \hline
+    AK\_14 & TA\_01, TA\_12 & Das Gesamtsystem wird auf dem STM32N6570 Discovery Kit ausgeführt. & Durchführung sämtlicher Tests auf der Zielplattform. \\
+    \hline
+    AK\_15 & NFA\_07, TA\_07 & Der Quellcode ist modular aufgebaut und ohne HAL implementiert. & Code-Review. \\
+    \hline
+    AK\_16 & TA\_08 & Die Modelle sind quantisiert und für die NPU optimiert. & Überprüfung der Modelle und des Quellcodes. \\
+    \hline
+\end{longtable}
+

@@ -1,6 +1,55 @@
 \chapter{Methodik und Entwicklungsprozess}
 
 \section{Vorgehensweise bei der Literatur- und Technologierecherche}
+
+Die Literatur- und Technologierecherche dient dazu, die fachlichen Grundlagen der Arbeit zu erarbeiten, bestehende Lösungsansätze zu untersuchen und geeignete Technologien für die Umsetzung des Systems auszuwählen. Die Auswahl des Rechercheansatzes richtet sich nach dem Zweck der Literaturauswertung und der zugrunde liegenden Fragestellung (Snyder, 2019, S. 334). Die Literaturrecherche bildete in dieser Arbeit keinen eigenständigen Untersuchungsgegenstand, sondern diente der fachlichen Fundierung und der Begleitung des Entwicklungsprozesses. Daher wurde keine systematische Literaturstudie mit dem Anspruch auf eine vollständige Erfassung und Synthese aller Veröffentlichungen durchgeführt. Stattdessen erfolgte eine zielgerichtete und entwicklungsbegleitende Recherche, die sich an den jeweils zu lösenden fachlichen und technischen Fragestellungen orientierte.
+
+Die wissenschaftliche Literaturrecherche umfasste insbesondere die Themengebiete Fingeralphabet- und Handzeichenerkennung, kamerabasierte Handdetektion, Handlandmark-Erkennung, Klassifikation mittels neuronaler Netze, Datenaugmentation, Modellquantisierung und Embedded AI. Für die Suche wurden zunächst Mind-Maps und Wortwolken mit den genannten Begriffen erstellt und in verschiedenen Kombinationen in wissenschaftliche Datenbanken (u. a. Google Scholar und BibDiscover) eingegeben und recherchiert. Zu den verwendeten Suchbegriffen gehörten unter anderem:
+
+\begin{itemize}
+    \item Hand Gesture Classification
+    \item Embedded AI / AI on the Edge
+    \item Quantisierung von neuralen Netzen
+    \item TensorFlow / TensorFlow Lite
+    \item Konvertierung von Modellen (TFLite)
+    \item Fingeralphabet
+    \item Sign Language Recognition
+    \item Gebärdensprache
+    \item Modeltraining / Modelquantization Parameters
+\end{itemize}
+
+Bei der Auswahl der Quellen wurden deren fachliche Relevanz, Aktualität und Nachvollziehbarkeit berücksichtigt. Bevorzugt wurden Fachartikel und wissenschaftliche Ausarbeitungen. Für grundlegende Informationen zum deutschen Fingeralphabet wurden Veröffentlichungen und Informationsangebote von Verbänden und Organisationen herangezogen. Die ausgewählten Quellen wurden mithilfe der Literaturverwaltungssoftware Zotero erfasst und verwaltet.
+
+Die Technologierecherche konzentrierte sich überwiegend auf die verwendete Plattform, das STM32N6570 Discovery Kit, sowie auf die für die Implementierung erforderlichen Hard- und Softwarekomponenten. Als Quellen dienten insbesondere die Referenz- und Benutzerhandbücher, Datenblätter, Anwendungshinweise und Beispielprojekte des Herstellers STMicroelectronics. Ergänzend wurden technische Informationen zu den verwendeten Peripherien und Schnittstellen recherchiert. Dazu gehörten unter anderem die Digital Camera Memory Interface Pixel Pipeline (DCMIPP), das Camera Serial Interface (CSI), der LCD-TFT Display Controller (LTDC) und das Extended Serial Peripheral Interface (XSPI).
+
+Die Recherche wurde parallel zum Entwicklungsprozess fortgeführt. Technische Fragestellungen, die während der Implementierung oder Integration auftraten, führten zu einer gezielten Vertiefung einzelner Themenbereiche. Die daraus gewonnenen Erkenntnisse flossen unmittelbar in die Auswahl und Anpassung der Modelle, die Entwicklung der Verarbeitungspipeline sowie die hardwarenahe Umsetzung auf der Zielplattform ein.
+
 \section{Iterativer Entwicklungs- und Integrationsprozess}
+
+Eine vollständig vorausgeplante und sequenzielle Entwicklung war für das Gesamtsystem nur eingeschränkt geeignet, da sich viele technische Anforderungen und Wechselwirkungen erst bei der praktischen Integration auf der Zielplattform beurteilen ließen. Dies betraf insbesondere das Zusammenspiel zwischen Kamerapipeline, neuronalen Netzen, Speicherverwaltung, Ablaufsteuerung und grafischer Ausgabe. Die Entwicklung erfolgte daher iterativ und prototypisch. In jeder Iteration wurde ein abgegrenzter Funktionsumfang umgesetzt, in den bestehenden Entwicklungsstand integriert und anschließend praktisch überprüft. Die dabei gewonnenen Erkenntnisse bildeten die Grundlage für nachfolgende Anpassungen und weitere Entwicklungsschritte (López et al., 2018, S.70).
+
+Zu Beginn einer Iteration wurden die nächsten Entwicklungsschritte gemeinsam festgelegt und auf konkrete Aufgaben verteilt. Da das Projekt als Gruppenarbeit durchgeführt wurde, erfolgte eine personenspezifische Aufteilung in die bereits in Kapitel 1.3.2 genannten Aufgabenbereiche. Während des Entwicklungsprozesses fanden regelmäßige Absprachen zum aktuellen Stand, zu aufgetretenen Problemen und zum weiteren Vorgehen statt. Dabei wurden Ergebnisse der vorherigen Iteration bewertet und die Ziele der nächsten Iteration festgelegt. Falls sich eine Lösung als ungeeignet erwies oder neue technische Einschränkungen erkannt wurden, wurde das weitere Vorgehen entsprechend angepasst. Der Entwicklungsprozess wies damit agile Elemente auf, ohne einem festgelegten agilen Vorgehensmodell wie Scrum vollständig zu folgen (Agile Manifesto, 2001).
+
+Zur Versionsverwaltung des Quellcodes wurde Git eingesetzt. Git ermöglicht es, Änderungen am Quellcode zu dokumentieren, unterschiedliche Entwicklungsstände zu verwalten und bei Bedarf auf frühere Versionen zurückzugreifen. Die gemeinsame Entwicklung erfolgte über ein Remote-Repository (Preißel, 2019, S. 27ff). Neue Funktionen und umfangreiche Änderungen wurden überwiegend in separaten Feature-Branches entwickelt.  Dadurch konnten Änderungen zunächst unabhängig vom stabilen Entwicklungsstand umgesetzt und getestet werden. Gleichzeitig erleichterte die Trennung der Entwicklungsstände die Zuordnung und Überprüfung einzelner Änderungen. Nach erfolgreicher Überprüfung wurden die Branches in den gemeinsamen Hauptzweig integriert. Insbesondere bei großen Änderungen und vor der Zusammenführung der Branches wurden gegenseitige Code-Reviews durchgeführt. Diese dienten dazu, Fehler zu erkennen, die Verständlichkeit des Quellcodes zu verbessern und mögliche Auswirkungen auf andere Komponenten zu berücksichtigen. Festgestellte Probleme wurden vor oder während der Integration behoben. (Preißel, 2019, S. 191ff).
+
+Durch die Kombination aus iterativer Prototypentwicklung, klarer Aufgabenverteilung, regelmäßiger Abstimmung und gemeinsamer Versionsverwaltung konnte der Entwicklungsfortschritt fortlaufend nachvollzogen werden. Gleichzeitig blieb das Vorgehen flexibel genug, um auf technische Schwierigkeiten und neue Erkenntnisse während der Entwicklung reagieren zu können.
+
 \section{Vorgehen bei der Modellentwicklung}
+
+Die Entwicklung des Klassifikationsmodells erfolgte in mehreren aufeinander aufbauenden Schritten. Zunächst wurden die zu erkennenden Handzeichen festgelegt und ein eigener Datensatz erstellt. Die aufgenommenen Daten wurden anschließend aufbereitet und in Trainings-, Validierungs- und Testdaten unterteilt.
+
+Auf Grundlage des Datensatzes wurden verschiedene Modellvarianten entwickelt und trainiert. Dabei wurden sowohl die Modellarchitektur als auch die Trainingsparameter schrittweise angepasst. Zur Erweiterung des Datensatzes kamen unterschiedliche Augmentationsverfahren zum Einsatz. Diese sollten die Variabilität der Trainingsdaten erhöhen und das Modell gegenüber unterschiedlichen Ausführungen der Handzeichen robuster machen.
+
+Das Modell mit der besten Erkennungsgenauigkeit wurde ausgewählt und abschließend für die eingebettete Plattform verfügbar gemacht und integriert. Dabei wurde geprüft, ob und in welchem Umfang sich die Erkennungsleistung durch die Anpassungen verändert hatte.
+
 \section{Verifikation- und Evaluationskonzept}
+
+Die Verifikation und Evaluation des entwickelten Systems erfolgten sowohl entwicklungsbegleitend als auch abschließend anhand der zuvor festgelegten Anforderungen. Im Rahmen dieser Arbeit bezeichnet die Verifikation die Überprüfung, ob die einzelnen Komponenten und Funktionen entsprechend ihrer Festlegung umgesetzt wurden. Die Evaluation dient dagegen der abschließenden Bewertung des integrierten Gesamtsystems anhand der definierten Anforderungen und Abnahmekriterien. Auf diese Weise wurden sowohl die technische Funktionsfähigkeit als auch die Eignung des entstandenen Prototyps für den vorgesehenen Anwendungsfall untersucht.
+
+Die Verifikation wurde entsprechend dem Entwicklungsprozess iterativ durchgeführt. Neu entwickelte Funktionen wurden zunächst unabhängig getestet, bevor sie in den gemeinsamen Entwicklungsstand übernommen wurden. Nach der Integration wurde kontrolliert, ob die hinzugefügte Funktion wie vorgesehen arbeitete und bereits vorhandene Funktionen weiterhin verfügbar waren. Letzteres entspricht dem Grundgedanken des Regressionstestens, mit dem unbeabsichtigte Auswirkungen von Änderungen auf bereits bestehende Funktionen erkannt werden sollen (ISTQB, 2024, S. 30).
+
+Die Überprüfung erfolgte auf mehreren Ebenen. Zunächst wurden einzelne Komponenten unabhängig voneinander getestet. Anschließend wurde im Rahmen von Integrationstests untersucht, ob die Komponenten und ihre Schnittstellen korrekt zusammenarbeiteten. Abschließend wurde das Gesamtsystem unter festgelegten Versuchsbedingungen geprüft. Dieses Vorgehen orientierte sich an den im ISTQB-Lehrplan beschriebenen Teststufen, die unter anderem Komponenten-, Integrations- und Systemtests unterscheiden (ISTQB, 2024, S. 28-30).
+
+Die Evaluation des Gesamtsystems wurde anhand der funktionalen und nichtfunktionalen Anforderungen sowie der daraus abgeleiteten Abnahmekriterien vorgenommen. Jeder zu bewertenden Anforderung wurden geeignete Versuche oder Bewertungsparameter zugeordnet. Dadurch konnte nachvollziehbar dargestellt werden, welche Anforderungen erfüllt, teilweise erfüllt oder nicht erfüllt wurden.
+
+Die konkreten Versuchsbedingungen, Bewertungsparameter und Ergebnisse werden im Evaluationskapitel beschrieben. Auf Grundlage dieser Ergebnisse wird beurteilt, inwieweit die Zielsetzung der Arbeit erreicht wurde und welche Einschränkungen beim entwickelten Prototyp bestehen.
