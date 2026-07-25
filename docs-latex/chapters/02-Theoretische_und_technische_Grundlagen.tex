@@ -185,13 +185,83 @@ Beispielhafte Beschreibung einiger Zeichen:
 
 \section{Grundlagen des maschinellen Lernens}
 \subsection{Begriffsbildung}
+
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+
 \subsection{Supervised Learning}
+
+Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert (Hastie et al., 2009; Pattern Recognition and Machine Learning, n.d.). Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+
 \subsection{Klassifikation}
+
+Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009).
+
 \subsubsection{Sparse Categorical Crossentropy}
+
+Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speichereffizient im Hintergrund durchführt.
+
+\begin{table}[htbp]
+    \centering
+    \caption{One-Hot-Kodierung vs.\ Sparse Indexdarstellung}
+    \label{tab:one-hot-codierung}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Kategorie} & \textbf{Index} & \textbf{One-Hot-Vektor} \\
+        \hline
+        NONE & 0 & [1, 0, 0, 0, 0] \\
+        \hline
+        A & 1 & [0, 1, 0, 0, 0] \\
+        \hline
+        B & 2 & [0, 0, 1, 0, 0] \\
+        \hline
+        C & 3 & [0, 0, 0, 1, 0] \\
+        \hline
+        D & 4 & [0, 0, 0, 0, 1] \\
+        \hline
+    \end{tabular}
+\end{table}
+
 \subsection{Metriken}
+
+Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangezogen (Hastie et al., 2009):
+
+\begin{itemize}
+    \item \textbf{Accuracy (Genauigkeit):} Anteil der korrekten Vorhersagen an allen Vorhersagen. Für ausgewogene Datensätze aussagekräftig, bei unausgewogenen Klassen jedoch irreführend.
+    \item \textbf{Confusion Matrix:} Tabelle, die die tatsächlichen Klassen den vorhergesagten Klassen gegenüberstellt. Sie macht sichtbar, welche Zeichen miteinander verwechselt werden.
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Confusion Matrix -- Begriffsdefinitionen}
+    \label{tab:confusion-matrix-definition}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        & \textbf{Predicted 0} & \textbf{Predicted 1} \\
+        \hline
+        \textbf{Actual 0} & True Negative & False Positive \\
+        \hline
+        \textbf{Actual 1} & False Negative & True Positive \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
 \subsection{Overfitting und Gegenmaßnahmen}
+
+Overfitting liegt vor, wenn ein Modell die Trainingsdaten zu gut lernt und dabei spezifische Muster, Rauschen und Ausreißer mitinterpretiert, diese allerdings nicht für die Allgemeingültigkeit relevant sind (Pattern Recognition and Machine Learning, n.d.). Das Modell performt auf Trainingsdaten exzellent (Hohe Genauigkeit), auf unbekannten Daten jedoch schlecht (Geringe Genauigkeit).
+
+Gegenmaßnahmen bezüglich Overfitting umfassen:
+
+\begin{itemize}
+    \item Regularisierung: Bestrafung großer Gewichtswerte, um die Modellkomplexität zu begrenzen.
+    \item Dropout: Zufälliges Deaktivieren eines Teils der Neuronen während des Trainings, um Abhängigkeiten zwischen Neuronen zu reduzieren.
+    \item Datenaugmentation: Künstliche Vermehrung der Trainingsdaten durch Transformationen (siehe Abschnitt 2.6).
+    \item Validierung: Aufteilen des Datensatzes in Trainings-, Validierungs- und Testset, um die Generalisierungsfähigkeit zu überwachen.
+\end{itemize}
+
 \subsection{Parameter vs Hyperparameter}
-Text.
+
+Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese parameter bestimmen das Lernverhalten. (Praxiseinstieg Machine Learning Mit Scikit-Learn, Keras Und TensorFlow - 11727363, n.d.)
 
 \section{Neuronale Netze zur Klassifikation}
 \subsection{Künstliche Neuronale Netze}
