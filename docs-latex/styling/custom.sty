@@ -107,5 +107,52 @@
 \makeglossaries
 \loadglsentries{datenbanken/Abkuerzungsverzeichnis.tex}
 
+% Code Listings
+\RequirePackage{xcolor}
+\RequirePackage{listings}
+
+\definecolor{codebackground}{RGB}{248,248,248}
+\definecolor{codecomment}{RGB}{80,130,80}
+\definecolor{codekeyword}{RGB}{30,70,160}
+\definecolor{codestring}{RGB}{170,60,40}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebackground},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  columns=fullflexible,
+  keepspaces=true,
+  captionpos=b
+}
+
+\lstdefinelanguage{json}{
+  string=[s]{"}{"},
+  stringstyle=\color{codestring},
+  morekeywords={true,false,null},
+  sensitive=true
+}
+
+\lstdefinelanguage{bash}{
+  morekeywords={if,then,else,fi,for,do,done,echo,exit,return},
+  morecomment=[l]{\#},
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstdefinelanguage{markdown}{
+  sensitive=true,
+  morecomment=[s]{<!--}{-->},
+  morestring=[b]`
+}
+
 % Behebt Paket-Warnungen mit KOMA-Script
 \RequirePackage{scrhack}

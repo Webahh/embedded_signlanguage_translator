@@ -32,8 +32,6 @@ Für die verwendeten Optionen sind:
 - 2xTranslation
 - 5xZoom
 
-Mit hilfe der 
-
 #TODO Pickle Inspect Gegenüberstellung der Gesten nach Augmentation 
 
 #### 7.1.4 Normalisierung und Interpolation
