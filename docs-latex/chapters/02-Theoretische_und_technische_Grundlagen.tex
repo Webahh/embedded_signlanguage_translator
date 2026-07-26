@@ -5,7 +5,7 @@ Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Gr
 \section{Eingebettete Systeme \& STM32N6570DK}
 \subsection{Begriffsbildung und Merkmale}
 
-Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Bestandteil eines übergeordneten Gesamtsystems in eine technische Umgebung eingebettet sind (Marwedel, 2021). Im Gegensatz zu universellen Rechnern (Personal Computer, Server) erfüllen sie eine spezifische, fest definierte Aufgabe und sind darauf optimiert. Typische Merkmale sind (Wolf, 2012):
+Eingebettete Systeme (engl. embedded systems) sind Computersysteme, die als Bestandteil eines übergeordneten Gesamtsystems in eine technische Umgebung eingebettet sind \cite[s. 2]{marwedel2021}. Im Gegensatz zu universellen Rechnern (Personal Computer, Server) erfüllen sie eine spezifische, fest definierte Aufgabe und sind darauf optimiert. Typische Merkmale sind \cite{wolfComputersComponentsPrinciples2012}:
 
 \begin{table}[htbp]
     \centering
@@ -17,7 +17,7 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
         \hline
         Ressourcen-beschränkung & Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern. \\
         \hline
-        Echtzeitfähigkeit & Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen \textit{weicher} Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und \textit{harter} Echtzeit (eine Überschreitung führt zum Systemversagen). \\
+        Echtzeitfähigkeit & Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen \texttt{weicher} Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und \texttt{harter} Echtzeit (eine Überschreitung führt zum Systemversagen). \\
         \hline
         Hohe \newline Zuverlässigkeit & Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden. \\
         \hline
@@ -30,13 +30,13 @@ Eingebettete Systeme (engl. *embedded systems*) sind Computersysteme, die als Be
 
 \subsection{Mikrocontroller Architektur}
 
-Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl.\ \textit{Microcontroller Unit}). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
+Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl.\ \texttt{Microcontroller Unit}). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten \cite{wolfComputersComponentsPrinciples2012}:
 
 \begin{itemize}
-    \item \textbf{CPU:} Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehrerenhundert MHz.
+    \item \textbf{CPU:} Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehreren hundert MHz.
     \item \textbf{Programmspeicher (Flash):} Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
-    \item \textbf{Arbeitsspeicher (RAM):} Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigenhundert Kilobyte.
-    \item \textbf{Taktgeber:} Interner Oszillator (HSI, engl.\ \textit{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \textit{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
+    \item \textbf{Arbeitsspeicher (RAM):} Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigen hundert Kilobyte.
+    \item \textbf{Taktgeber:} Interner Oszillator (HSI, engl.\ \texttt{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \texttt{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
     \item \textbf{Peripherie-Einheiten:} Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3).
 \end{itemize}
 
@@ -50,22 +50,27 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 \subsection{Peripherieschnittstellen}
 
 Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
-\paragraph{General Purpose Input/Output (GPIO)}
-GPIO-Pins sind die einfachste Form der digitalen Ein-/Ausgabe. Jeder Pin kann konfiguriert werden als Eingang (Lesen eines logischen Pegels: 0 oder 1) oder als Ausgang (Setzen eines Pegels). GPIO-Pins werden zum Ansteuern von LEDs, Auslesen von Tasten oder als Steuerleitungen für andere Peripheriemodule verwendet.
-\paragraph{Universal Asynchronous Receiver/Transmitter (UART)}
-Serielles Kommunikationsprotokoll zur asynchronen Datenübertragung. Es wird für Debug-Ausgaben, die Kommunikation mit Host-PCs oder seriellen Sensoren eingesetzt.
-\paragraph{Serial Peripheral Interface (SPI)}
-Synchrones, vollduplexes Kommunikationsprotokoll mit Transmitter-Receiver-Architektur. Es bietet höhere Datenraten als UART und wird bevorzugt für externe Speicher (Flash, PSRAM), Display-Controller oder Sensoren verwendet. Ein SPI-Bus besteht typischerweise aus den Leitungen MOSI, MISO, SCK und einem Chip-Select (CS).
-\paragraph{Inter-Integrated Circuit (I²C)}
-Zweidrahtiges, synchrones Kommunikationsprotokoll (SDA, SCL) mit Adressierung. Es ermöglicht den Anschluss mehrerer Slaves über denselben Bus und wird für Sensoren, Echtzeituhren (RTC) und kleinere EEPROMs verwendet.
-\paragraph{Timer}
-Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
-\paragraph{Direct Memory Access (DMA)}
-DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B.\ Kamerabilder) relevant, da es die CPU erheblich entlastet.
+
+
+\begin{itemize}
+    \item \texttt{General Purpose Input/Output (GPIO): }GPIO-Pins sind die einfachste Form der digitalen Ein-/Ausgabe. Jeder Pin kann konfiguriert werden als Eingang (Lesen eines logischen Pegels: 0 oder 1) oder als Ausgang (Setzen eines Pegels). GPIO-Pins werden zum Ansteuern von LEDs, Auslesen von Tasten oder als Steuerleitungen für andere Peripheriemodule verwendet.
+    \item  \texttt{Universal Synchronous/Asynchronous Receiver/Transmitter (USART): } Serielles Kommunikationsprotokoll zur asynchronen Datenübertragung. Es wird für Debug-Ausgaben, die Kommunikation mit Host-PCs oder seriellen Sensoren eingesetzt.
+    \item \texttt{Serial Peripheral Interface (SPI)}: Synchrones, vollduplexes Kommunikationsprotokoll mit Transmitter-Receiver-Architektur. Es bietet höhere Datenraten als UART und wird bevorzugt für externe Speicher (Flash, PSRAM), Display-Controller oder Sensoren verwendet. Ein SPI-Bus besteht typischerweise aus den Leitungen COPI, CIPO, SCK und einem Chip-Select (CS).
+    \item \texttt{Inter-Integrated Circuit (I²C): } Zweidrahtiges, synchrones Kommunikationsprotokoll (SDA, SCL) mit Adressierung. Es ermöglicht den Anschluss mehrerer Peripherals über denselben Bus und wird für Sensoren, Echtzeituhren (RTC) und kleinere EEPROMs verwendet.
+    \item \texttt{Timer: }
+    Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
+    \item \texttt{Direct Memory Access (DMA): }DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B.\ Kamerabilder) relevant, da es die CPU erheblich entlastet.
+    \item \texttt{DMA2D (ChromART): } 
+\end{itemize}
+
+
+
+\paragraph{}
+
 \paragraph{DMA2D (ChromART)}
-Eine spezielle DMA-Einheit für 2D-Blit-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten ohne die CPU zu blockieren (Erweiterung des DMA).
+
 \paragraph{Interrupts}
-Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \textit{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
+Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
 
 \subsection{Speicherarchitektur}
 
@@ -335,7 +340,7 @@ Da das Modell pro Bild 2016 Kandidaten ausgibt, wird eine Non-Maximum Suppressio
 
 \subsection{Handlandmarks}
 
-Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \textit{Region of Interest}) und bestimmt darin 21 Landmark-Punkte (Zhang \& Notni, 2025). Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
+Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \texttt{Region of Interest}) und bestimmt darin 21 Landmark-Punkte (Zhang \& Notni, 2025). Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
 
 \begin{table}[htbp]
     \centering
@@ -451,7 +456,7 @@ Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellge
 
 \subsection{Edge AI}
 
-Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl.\ \textit{edge device}) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl.\ \texttt{edge device}) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
 
 \begin{itemize}
     \item \textbf{Geringe Latenz:} Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essentiell.

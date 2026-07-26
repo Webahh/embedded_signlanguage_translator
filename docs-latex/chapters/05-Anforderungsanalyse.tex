@@ -1,6 +1,6 @@
 \chapter{Anforderungsanalyse}
 
-Die Anforderungsanalyse bildet die Grundlage für den Entwurf, die Implementierung und die anschließende Bewertung des zu entwickelnden Systems. Die festgelegten Anforderungen beeinflussen den Aufbau des Systems und bestimmen, welche Funktionen und Eigenschaften bei der Entwicklung besonders berücksichtigt werden müssen (Kleuker, 2025, S. 53ff).
+Die Anforderungsanalyse bildet die Grundlage für den Entwurf, die Implementierung und die anschließende Bewertung des zu entwickelnden Systems. Die festgelegten Anforderungen beeinflussen den Aufbau des Systems und bestimmen, welche Funktionen und Eigenschaften bei der Entwicklung besonders berücksichtigt werden müssen \cite[s. 53 ff.]{kleukerAnforderungsanalyse2025}.
 
 Zur Ermittlung und Beschreibung der Anforderungen werden zunächst das vorgesehene Anwendungsszenario und die daraus abgeleiteten Anwendungsfälle betrachtet. Darauf aufbauend werden die funktionalen und nichtfunktionalen Anforderungen sowie die durch die Zielplattform vorgegebenen Randbedingungen festgelegt. Abschließend werden überprüfbare Abnahmekriterien definiert, die im weiteren Verlauf der Arbeit als Grundlage für die Verifikation und Evaluation des Gesamtsystems dienen.
 
@@ -9,20 +9,18 @@ Das entwickelte System ist als prototypischer Fingeralphabet-Trainer vorgesehen.
 
 Die Verarbeitung erfolgt in mehreren aufeinanderfolgenden Schritten. Zunächst wird die Hand im Kamerabild lokalisiert. Anschließend werden charakteristische Handlandmarks bestimmt und für die Klassifikation aufbereitet. Auf Grundlage dieser Merkmale ordnet das Klassifikationsmodell die dargestellte Handform einer der unterstützten Zeichenklassen zu. Das ermittelte Ergebnis wird über das Display des Systems ausgegeben und ermöglicht eine unmittelbare Rückmeldung zur dargestellten Handform. Das System ist für die Verwendung durch jeweils eine Person und die Erfassung einer einzelnen Hand vorgesehen. Die Handzeichen werden nacheinander und innerhalb eines geeigneten Abstands zur Kamera dargestellt. Die Verarbeitung setzt ausreichende Lichtverhältnisse und eine weitgehend freie Sicht auf die Hand voraus. Verdeckte Hände, mehrere gleichzeitig dargestellte Hände sowie dynamische Bewegungsabläufe gehören nicht zum vorgesehenen Anwendungsszenario.
 
-Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgeführt. Eine Verbindung zu einem externen Rechner oder einem Cloud-Dienst ist für den Betrieb des fertigen Prototyps nicht vorgesehen.
+Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgeführt. Eine Verbindung zu einem externen Rechner oder einem Cloud-Dienst ist für den Betrieb des fertigen Prototyps nicht vorgesehen. Abbildung 5.1 stellt das Anwendungsszenario des Fingeralphabet-Trainers als Use-Case-Diagramm dar \cite[s. 61 ff.]{kleukerAnforderungsanalyse2025}. Die übende Person startet das System und zeigt ein Handzeichen im Erfassungsbereich der Kamera. Der Anwendungsfall „Handzeichen erkennen“ umfasst die Erfassung des Kamerabildes, die Lokalisierung der Hand, die Bestimmung der Handlandmarks und die Klassifikation des dargestellten Zeichens. Das ermittelte Erkennungsergebnis wird anschließend auf dem Display ausgegeben.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{material/figures/Use_Case.png}
     \caption{Use-Case Diagramm Fingeralphabet Trainer}
     \label{fig:use-case}
 \end{figure}
 
-Abbildung X stellt das Anwendungsszenario des entwickelten Fingeralphabet-Trainers als Use-Case-Diagramm dar. Die übende Person startet das System und zeigt ein Handzeichen im Erfassungsbereich der Kamera. Der Anwendungsfall „Handzeichen erkennen“ umfasst die Erfassung des Kamerabildes, die Lokalisierung der Hand, die Bestimmung der Handlandmarks und die Klassifikation des dargestellten Zeichens. Das ermittelte Erkennungsergebnis wird anschließend auf dem Display ausgegeben.
-
 \section{Anforderungen \& Randbedingungen}
 
-Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diagramm lassen sich die folgenden funktionalen, nichtfunktionalen und technischen Anforderungen, bzw. Randbedingungen ableiten.
+Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diagramm lassen sich die folgenden funktionalen, nichtfunktionalen und technischen Anforderungen, bzw. Randbedingungen ableiten \cite[s. 73 ff.]{kleukerAnforderungsanalyse2025}.
 
 \subsection{Funktionale Anforderungen}
 
@@ -38,7 +36,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \endhead
     \hline
-    \multicolumn{2}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
     \hline
     \endlastfoot
@@ -78,7 +76,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \endhead
     \hline
-    \multicolumn{2}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
     \hline
     \endlastfoot
@@ -114,7 +112,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \endhead
     \hline
-    \multicolumn{2}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
     \hline
     \endlastfoot
@@ -158,7 +156,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \endhead
     \hline
-    \multicolumn{2}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
     \hline
     \endlastfoot
@@ -180,7 +178,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
 
 \section{Abnahmekriterien}
 
-Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet. Sie legen fest, anhand welcher Prüfungen und Grenzwerte beurteilt wird, ob das entwickelte Gesamtsystem die jeweiligen Anforderungen erfüllt. Inhaltlich zusammengehörige Anforderungen können dabei gemeinsam überprüft werden.
+Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet. Sie legen fest, anhand welcher Prüfungen und Grenzwerte beurteilt wird, ob das entwickelte Gesamtsystem die jeweiligen Anforderungen erfüllt. Inhaltlich zusammengehörige Anforderungen können dabei gemeinsam überprüft werden \cite[s. 85 ff.]{kleukerAnforderungsanalyse2025}.
 
 \begin{longtable}{|c|p{2.75cm}|p{0.40\textwidth}|p{0.28\textwidth}|}
     \caption{Abnahmekriterien}
@@ -194,7 +192,7 @@ Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet.
     \hline
     \endhead
     \hline
-    \multicolumn{4}{r}{\textit{Fortsetzung auf nächster Seite}} \\
+    \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
     \hline
     \endlastfoot
