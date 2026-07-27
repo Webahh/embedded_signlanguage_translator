@@ -9,7 +9,7 @@ Eingebettete Systeme (engl. embedded systems) sind Computersysteme, die als Best
 
 \begin{table}[htbp]
     \centering
-    \caption{Charakteristische Merkmale eingebetteter Systeme (nach Wolf, 2012)}
+    \caption{Charakteristische Merkmale eingebetteter Systeme \cite{wolfComputersComponentsPrinciples2012}}
     \label{tab:embedded-merkmale}
     \begin{tabular}{|p{0.2\textwidth}|p{0.75\textwidth}|}
         \hline
@@ -123,7 +123,7 @@ Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache \cite{aktio
     \item \textbf{1 Sonderzeichen:} SCH (als Trigraph dargestellt, d.h. ein Zeichen für drei Buchstaben)
 \end{itemize}
 
-\begin{figure}[!htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{material/figures/aktion-mensch-deutsches-fingeralphabet.jpg}
     \caption{Deutsches Einhand-Fingeralphabet \cite{aktion-mensch}}
@@ -145,7 +145,7 @@ Jedes Zeichen des Fingeralphabets wird durch eine spezifische Konfiguration der 
 
 Beispielhafte Beschreibung einiger Zeichen:
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Ausgewählte Handkonfigurationen des deutschen Einhand-Fingeralphabets \cite{aktion-mensch}}
     \label{tab:fingeralphabet-konfigurationen}
@@ -175,14 +175,14 @@ Beispielhafte Beschreibung einiger Zeichen:
 \end{table}
 
 
-\section{Grundlagen des maschinellen Lernens}\label{sec:ml-grundlagen} \#TODO Quellen für diesen Abchnitt!
+\section{Grundlagen des maschinellen Lernens}\label{sec:ml-grundlagen}
 \subsection{Begriffsbildung}\label{sub:ml-begriffsbildung}
 
-Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet. \cite{MachineLearning1st}
 
 \subsection{Supervised Learning}\label{sub:supervised-learning}
 
-Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert \cite{hastieElementsStatisticalLearning2009}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert \cite{hastieElementsStatisticalLearning2009, MachineLearning1st}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
 
 \subsection{Klassifikation}\label{sub:klassifikation}
 
@@ -190,9 +190,9 @@ Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem di
 
 \subsubsection{Sparse Categorical Crossentropy}\label{ssub:sparse-cce}
 
-Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speichereffizient im Hintergrund durchführt.
+Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speichereffizient im Hintergrund durchführt. \cite{SparseCategoricalCrossentropy18:23:14+00:00, WhatSparseCategorical10:49:00+00:00}
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{One-Hot-Kodierung vs.\ Sparse Indexdarstellung}
     \label{tab:one-hot-codierung}
@@ -222,7 +222,7 @@ Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangez
     \item \textbf{Confusion Matrix:} Tabelle, die die tatsächlichen Klassen den vorhergesagten Klassen gegenüberstellt. Sie macht sichtbar, welche Zeichen miteinander verwechselt werden.
 \end{itemize}
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Confusion Matrix -- Begriffsdefinitionen}
     \label{tab:confusion-matrix-definition}
@@ -241,6 +241,7 @@ Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangez
 \subsection{Overfitting und Gegenmaßnahmen}\label{sub:overfitting}
 
 Overfitting liegt vor, wenn ein Modell die Trainingsdaten zu gut lernt und dabei spezifische Muster, Rauschen und Ausreißer mitinterpretiert, diese allerdings nicht für die Allgemeingültigkeit relevant sind (Pattern Recognition and Machine Learning, n.d.). Das Modell performt auf Trainingsdaten exzellent (Hohe Genauigkeit), auf unbekannten Daten jedoch schlecht (Geringe Genauigkeit).
+\cite{zhangOverfittingUnderfittingAnalysis2019, yingOverviewOverfittingIts2019}
 
 Gegenmaßnahmen bezüglich Overfitting umfassen:
 
@@ -258,13 +259,12 @@ Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim
 \section{Neuronale Netze zur Klassifikation}\label{sec:neuronale-netze}
 \subsection{Künstliche Neuronale Netze}\label{sub:knn}
 
-\#TODO Check those Quellen
 Ein künstliches neuronales Netz (KNN) ist ein mathematisches Modell, das lose von biologischen neuronalen Netzen inspiriert ist \cite{kimBookReviewDeep2016}, \cite{raschkaMachineLearningPyTorch2022}. Es besteht aus einer Menge von künstlichen Neuronen (auch Einheiten oder Knoten genannt), die in Schichten (engl. layers) organisiert sind. Jedes Neuron berechnet eine gewichtete Summe seiner Eingaben, addiert einen Bias-Wert und wendet eine Aktivierungsfunktion an:
 
-\begin{figure}[htbp]
+\begin{figure}[!h]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/Neuron.drawio.png}
-    \caption{Mathematisch modelliertes Neuron (Gurney, 2018) | Eigene Darstellung}
+    \caption{Mathematisch modelliertes Neuron (\cite{gurneyIntroductionNeuralNetworks2018}) | Eigene Darstellung}
     \label{fig:neuron}
 \end{figure}
 
@@ -272,10 +272,10 @@ $$y = f\left(\sum_{i=1}^{n} w_i \cdot x_i + b\right)$$
 
 wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivierungsfunktion sind.
 
-\begin{figure}[htbp]
+\begin{figure}[!h]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/ML-Schichten.drawio.png}
-    \caption{Allgemeine Struktur Künstlicher Neuronaler Netze (Kim, 2016) | Eigene Darstellung}
+    \caption{Allgemeine Struktur Künstlicher Neuronaler Netze \cite{kimBookReviewDeep2016} | Eigene Darstellung}
     \label{fig:ml-schichten}
 \end{figure}
 
@@ -290,14 +290,15 @@ Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen 
 
 \subsection{Architektur: Multi-Layer Perceptron (MLP)}\label{sub:mlp}
 Ein Multi-Layer Perceptron (MLP) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen.
+\cite{}
 
 \subsection{Architektur: Convolutional Neural Networks (CNN)}\label{sub:cnn}
 
-Ein Convolutional Neural network (CNN) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung.
+Ein Convolutional Neural network (CNN) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung. \cite{burkovMachineLearningKompakt2019}
 
 \subsection{Backpropagation und Gradient Descent}\label{sub:backpropagation}
 
-Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie Stochastic Gradient Descent (SGD) oder Varianten davon (Adam, RMSprop) (Kim, 2016; Raschka et al., 2022):
+Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie Stochastic Gradient Descent (SGD) oder Varianten davon (Adam, RMSprop) \cite{kimBookReviewDeep2016, raschkaMachineLearningPyTorch2022}:
 
 1. Forward Pass: Die Eingabedaten durchlaufen das Netz, und die Vorhersage wird berechnet. \newline
 2. Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert. \newline
