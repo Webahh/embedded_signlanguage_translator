@@ -1,0 +1,515 @@
+\chapter{Theoretische und technische Grundlagen}
+
+Dieses Kapitel vermittelt die für das Verständnis der Arbeit erforderlichen Grundlagen. Es beginnt mit den zentralen Konzepten eingebetteter Systeme und der Bare-Metal-Programmierung.  Im Anschluss wird das deutsche Einhand-Fingeralphabet als zu erkennendes Zeichensystem eingeführt. Abschließend werden die Grundlagen des maschinellen Lernens, der Handdetektion, der Modellquantisierung sowie der Edge AI erläutert.
+
+\section{Eingebettete Systeme \& STM32N6570DK}
+\subsection{Begriffsbildung und Merkmale}
+
+Eingebettete Systeme (engl. embedded systems) sind Computersysteme, die als Bestandteil eines übergeordneten Gesamtsystems in eine technische Umgebung eingebettet sind \cite[s. 2]{marwedel2021}. Im Gegensatz zu universellen Rechnern (Personal Computer, Server) erfüllen sie eine spezifische, fest definierte Aufgabe und sind darauf optimiert. Typische Merkmale sind \cite{wolfComputersComponentsPrinciples2012}:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Charakteristische Merkmale eingebetteter Systeme (nach Wolf, 2012)}
+    \label{tab:embedded-merkmale}
+    \begin{tabular}{|p{0.2\textwidth}|p{0.75\textwidth}|}
+        \hline
+        \textbf{Aspekt} & \textbf{Embedded Spezifisch} \\
+        \hline
+        Ressourcen-beschränkung & Eingebettete Systeme verfügen über begrenzten Arbeitsspeicher (RAM), begrenzten Programmspeicher (Flash) und eine eingeschränkte Rechenleistung im Vergleich zu General-Purpose-Computern. \\
+        \hline
+        Echtzeitfähigkeit & Viele Anwendungen erfordern, dass Daten innerhalb definierter Zeitgrenzen verarbeitet werden. Man unterscheidet zwischen \texttt{weicher} Echtzeit (eine Überschreitung der Frist ist unerwünscht, aber tolerierbar) und \texttt{harter} Echtzeit (eine Überschreitung führt zum Systemversagen). \\
+        \hline
+        Hohe \newline Zuverlässigkeit & Da eingebettete Systeme häufig in sicherheitskritischen oder industriellen Umgebungen eingesetzt werden, muss ein definiertes Fehlverhalten über lange Zeiträume vermieden werden. \\
+        \hline
+        Energieeffizienz & Viele Systeme arbeiten mit begrenzter Energieversorgung (Batterien, Netzteil), weshalb der Energieverbrauch eine zentrale Designrandbedingung darstellt. \\
+        \hline
+        Spezialisierung & Im Unterschied zu universellen Rechnern ist die Funktionalität eines eingebetteten Systems auf einen konkreten Anwendungsfall beschränkt. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Mikrocontroller Architektur}
+
+Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl.\ \texttt{Microcontroller Unit}). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten \cite{wolfComputersComponentsPrinciples2012}:
+
+\begin{itemize}
+    \item \textbf{CPU:} Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehreren hundert MHz.
+    \item \textbf{Programmspeicher (Flash):} Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
+    \item \textbf{Arbeitsspeicher (RAM):} Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigen hundert Kilobyte.
+    \item \textbf{Taktgeber:} Interner Oszillator (HSI, engl.\ \texttt{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \texttt{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
+    \item \textbf{Peripherie-Einheiten:} Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3).
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/STM32N6-Architecture.drawio.png}
+    \caption{STM32N6570-DK - Architektur}
+    \label{fig:stm32n6-architektur}
+\end{figure}
+
+\subsection{Peripherieschnittstellen}
+
+Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
+
+
+\begin{itemize}
+    \item \texttt{General Purpose Input/Output (GPIO): }GPIO-Pins sind die einfachste Form der digitalen Ein-/Ausgabe. Jeder Pin kann konfiguriert werden als Eingang (Lesen eines logischen Pegels: 0 oder 1) oder als Ausgang (Setzen eines Pegels). GPIO-Pins werden zum Ansteuern von LEDs, Auslesen von Tasten oder als Steuerleitungen für andere Peripheriemodule verwendet.
+    \item  \texttt{Universal Synchronous/Asynchronous Receiver/Transmitter (USART): } Serielles Kommunikationsprotokoll zur asynchronen Datenübertragung. Es wird für Debug-Ausgaben, die Kommunikation mit Host-PCs oder seriellen Sensoren eingesetzt.
+    \item \texttt{Serial Peripheral Interface (SPI)}: Synchrones, vollduplexes Kommunikationsprotokoll mit Transmitter-Receiver-Architektur. Es bietet höhere Datenraten als UART und wird bevorzugt für externe Speicher (Flash, PSRAM), Display-Controller oder Sensoren verwendet. Ein SPI-Bus besteht typischerweise aus den Leitungen COPI, CIPO, SCK und einem Chip-Select (CS).
+    \item \texttt{Inter-Integrated Circuit (I²C): } Zweidrahtiges, synchrones Kommunikationsprotokoll (SDA, SCL) mit Adressierung. Es ermöglicht den Anschluss mehrerer Peripherals über denselben Bus und wird für Sensoren, Echtzeituhren (RTC) und kleinere EEPROMs verwendet.
+    \item \texttt{Timer: }
+    Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
+    \item \texttt{Direct Memory Access (DMA): }DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B.\ Kamerabilder) relevant, da es die CPU erheblich entlastet.
+    \item \texttt{DMA2D (ChromART): } 
+\end{itemize}
+
+
+
+\paragraph{}
+
+\paragraph{DMA2D (ChromART)}
+
+\paragraph{Interrupts}
+Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
+
+\subsection{Speicherarchitektur}
+
+Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen Rechnern ab. Die wesentlichen Speichertypen sind (Wolf, 2012; Yiu, 2013):
+
+\begin{itemize}
+    \item \textbf{Flash-Speicher (On-Chip):} Nichtflüchtig, integriert auf dem MCU-Chip. Dient als Programmspeicher (Code) und für konstante Daten (Konstanten-Tabelle, lookup tables). Schreibzugriffe sind langsam und erfordern einen Löschzyklus.
+    \item \textbf{SRAM (On-Chip):} Flüchtig, sehr schneller Zugriff (im Takt der CPU). Dient als Hauptspeicher für Variablen, Heap und Stack. Auf Cortex-M85-Systemen ist SRAM in mehrere Banken aufgeteilt (AXISRAM), um parallele Zugriffe durch CPU, DMA und NPU zu ermöglichen.
+    \item \textbf{PSRAM (extern):} Pseudo-Static RAM, angeschlossen über OctoSPI oder Quad-SPI. Bietet größere Speicherkapazitäten als On-Chip-SRAM bei moderater Zugriffszeit. Im STM32N6570-System wird PSRAM für Zwischenspeicherung von Bilddaten genutzt.
+    \item \textbf{NOR-Flash (extern):} Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI. Im vorliegenden Projekt werden die vorkompilierten Modellbinaries (Palm Detection, Hand Landmark, Fingeralphabet) in externem NOR-Flash bei festen Adressen gespeichert.
+\end{itemize}
+
+Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) (STMicroelectronics, n.d.).
+
+\subsection{Clock-Systeme}
+
+Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers (STM32N6x7 - Documentation - STMicroelectronics, n.d.; Yiu, 2013).
+
+\begin{itemize}
+    \item \textbf{Oszillatoren:} Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16--64\,MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
+    \item \textbf{PLL (Phase-Locked Loop):} Ein PLL multipliziert die Taktfrequenz der Basisoszillatoren auf höhere Taktfrequenzen. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800\,MHz), PLL2 für den NPU (1000\,MHz), PLL3 für den NPU-Speicher (900\,MHz) und PLL4 für Peripherietakte.
+    \item \textbf{Takthierarchie:} Der PLL-Ausgang wird über Teiler (Prescaler) auf verschiedene Busdomänen verteilt: AHB (High-Speed Bus), APB1/APB2 (Peripheral Buses). Peripherie-Einheiten erhalten ihren Takt von diesen Bussen.
+\end{itemize}
+
+\subsection{Bare-Metal-Programmierung}
+
+\paragraph{Definition und Abgrenzung:}
+Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
+
+\paragraph{Startup und Systeminitialisierung:}
+Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions).
+
+\paragraph{Register-Level-Programmierung:}
+Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
+
+\paragraph{Vorteile und Trade-Offs:}
+Bare-Metal bietet minimale Latenz, minimalen Speicherverbrauch und deterministisches Verhalten. Die Nachteile liegen in der höheren Entwicklungskomplexität: Es gibt kein Thread-Management, keine Synchronisationsprimitive (Mutexe, Semaphore) und keine automatische Ressourcenverwaltung. Für ressourcenbeschränkte Systeme mit klar definiertem Ablauf überwiegen jedoch die Vorteile (Mikrocontroller, n.d.).
+
+\subsection{Hardware-Beschleunigung}
+
+Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte Operationen mit hoher Effizienz ausführen:
+
+\begin{itemize}
+    \item \textbf{DMA:} Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
+    \item \textbf{DMA2D:} Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
+    \item \textbf{NPU (Neural Processing Unit):} Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000\,MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7) (STMicroelectronics, n.d.).
+\end{itemize}
+
+\section{Deutsches Einhand-Fingeralphabet}
+
+\subsection{Gebärdensprache als eigenständige Sprache}
+Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren (Deutscher Gehörlosen-Bund e.V., n.d.). Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache.
+
+Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache (Deutscher Gehörlosen-Bund e.V., n.d.).
+
+\subsection{Das Fingeralphabet}
+Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache (AktionMensch e.V., n.d.; Deutscher Gehörlosen-Bund e.V., n.d.). Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum.
+
+\subsection{Das deutsche Einhand-Fingeralphabet}
+
+\begin{itemize}
+    \item \textbf{26 Buchstaben:} A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü
+    \item \textbf{1 Sonderzeichen:} SCH (als Trigraph dargestellt, d.h. ein Zeichen für drei Buchstaben)
+\end{itemize}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{material/figures/aktion-mensch-deutsches-fingeralphabet.jpg}
+    \caption{Deutsches Einhand-Fingeralphabet (Quelle: Aktion Mensch e.V.)}
+    \label{fig:fingeralphabet}
+\end{figure}
+
+
+\subsection{Handpositionen und Fingerkonfigurationen}
+
+Jedes Zeichen des Fingeralphabets wird durch eine spezifische Konfiguration der Hand charakterisiert, die sich aus mehreren Parametern zusammensetzt (AktionMensch e.V., n.d.):
+
+\begin{itemize}
+    \item Beteiligte Finger: Welche Finger sind gestreckt, welche sind gebeugt oder angeballt?
+    \item Fingerkonfiguration: Sind Finger together (zusammengedrückt) oder gespreizt?
+    \item Daumenposition: Liegt der Daumen über den Fingern, neben ihnen, oder ist er abgespreizt?
+    \item Handfläche: Zeigt die Handfläche zum Betrachter (ventral) oder weg (dorsal)?
+    \item Fingerstellung: Zeigen die Finger nach oben, unten oder zur Seite?
+\end{itemize}
+
+Beispielhafte Beschreibung einiger Zeichen:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Ausgewählte Handkonfigurationen des deutschen Einhand-Fingeralphabets (nach Aktion Mensch e.V.)}
+    \label{tab:fingeralphabet-konfigurationen}
+    \begin{tabular}{|c|p{0.85\textwidth}|}
+        \hline
+        \textbf{Zeichen} & \textbf{Handkonfiguration} \\
+        \hline
+        A & Faust geschlossen, Daumen liegt seitlich an der Handfläche an. \\
+        \hline
+        B & Vier Finger gestreckt und zusammen, Daumen auf die Handfläche geklappt. \\
+        \hline
+        C & Alle Finger gebeugt, Hand formt eine C-förmige Öffnung. \\
+        \hline
+        E & Alle Finger auf den Daumen geklappt, Daumen sichtbar unter den Fingerspitzen. \\
+        \hline
+        I & Nur kleiner Finger gestreckt, übrige Finger geballt. \\
+        \hline
+        L & Daumen und Zeigefinger im 90°-Winkel gestreckt, übrige Finger geballt. \\
+        \hline
+        S & Faust geschlossen, Daumen vor den Fingern gekreuzt. \\
+        \hline
+        Y & Daumen und kleiner Finger gestreckt, übrige Finger geballt. \\
+        \hline
+        SCH & Alle Finger vom Handballen weggestreckt. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+\section{Grundlagen des maschinellen Lernens}
+\subsection{Begriffsbildung}
+
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+
+\subsection{Supervised Learning}
+
+Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert (Hastie et al., 2009; Pattern Recognition and Machine Learning, n.d.). Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+
+\subsection{Klassifikation}
+
+Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009).
+
+\subsubsection{Sparse Categorical Crossentropy}
+
+Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Sparse categorical Crossentropy löst dieses Problem indem der Datensatz einen einzigen Integer-Wert annimmt und die mathematisch äquivalente Kreuzentropie-Berechnung Speichereffizient im Hintergrund durchführt.
+
+\begin{table}[htbp]
+    \centering
+    \caption{One-Hot-Kodierung vs.\ Sparse Indexdarstellung}
+    \label{tab:one-hot-codierung}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Kategorie} & \textbf{Index} & \textbf{One-Hot-Vektor} \\
+        \hline
+        NONE & 0 & [1, 0, 0, 0, 0] \\
+        \hline
+        A & 1 & [0, 1, 0, 0, 0] \\
+        \hline
+        B & 2 & [0, 0, 1, 0, 0] \\
+        \hline
+        C & 3 & [0, 0, 0, 1, 0] \\
+        \hline
+        D & 4 & [0, 0, 0, 0, 1] \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Metriken}
+
+Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangezogen (Hastie et al., 2009):
+
+\begin{itemize}
+    \item \textbf{Accuracy (Genauigkeit):} Anteil der korrekten Vorhersagen an allen Vorhersagen. Für ausgewogene Datensätze aussagekräftig, bei unausgewogenen Klassen jedoch irreführend.
+    \item \textbf{Confusion Matrix:} Tabelle, die die tatsächlichen Klassen den vorhergesagten Klassen gegenüberstellt. Sie macht sichtbar, welche Zeichen miteinander verwechselt werden.
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Confusion Matrix -- Begriffsdefinitionen}
+    \label{tab:confusion-matrix-definition}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        & \textbf{Predicted 0} & \textbf{Predicted 1} \\
+        \hline
+        \textbf{Actual 0} & True Negative & False Positive \\
+        \hline
+        \textbf{Actual 1} & False Negative & True Positive \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+\subsection{Overfitting und Gegenmaßnahmen}
+
+Overfitting liegt vor, wenn ein Modell die Trainingsdaten zu gut lernt und dabei spezifische Muster, Rauschen und Ausreißer mitinterpretiert, diese allerdings nicht für die Allgemeingültigkeit relevant sind (Pattern Recognition and Machine Learning, n.d.). Das Modell performt auf Trainingsdaten exzellent (Hohe Genauigkeit), auf unbekannten Daten jedoch schlecht (Geringe Genauigkeit).
+
+Gegenmaßnahmen bezüglich Overfitting umfassen:
+
+\begin{itemize}
+    \item Regularisierung: Bestrafung großer Gewichtswerte, um die Modellkomplexität zu begrenzen.
+    \item Dropout: Zufälliges Deaktivieren eines Teils der Neuronen während des Trainings, um Abhängigkeiten zwischen Neuronen zu reduzieren.
+    \item Datenaugmentation: Künstliche Vermehrung der Trainingsdaten durch Transformationen (siehe Abschnitt 2.6).
+    \item Validierung: Aufteilen des Datensatzes in Trainings-, Validierungs- und Testset, um die Generalisierungsfähigkeit zu überwachen.
+\end{itemize}
+
+\subsection{Parameter vs Hyperparameter}
+
+Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese parameter bestimmen das Lernverhalten. (Praxiseinstieg Machine Learning Mit Scikit-Learn, Keras Und TensorFlow - 11727363, n.d.)
+
+\section{Neuronale Netze zur Klassifikation}
+\subsection{Künstliche Neuronale Netze}
+
+Ein künstliches neuronales Netz (KNN) ist ein mathematisches Modell, das lose von biologischen neuronalen Netzen inspiriert ist (Kim, 2016; Raschka et al., 2022). Es besteht aus einer Menge von künstlichen Neuronen (auch Einheiten oder Knoten genannt), die in Schichten (engl. layers) organisiert sind. Jedes Neuron berechnet eine gewichtete Summe seiner Eingaben, addiert einen Bias-Wert und wendet eine Aktivierungsfunktion an:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/Neuron.drawio.png}
+    \caption{Mathematisch modelliertes Neuron (Gurney, 2018) | Eigene Darstellung}
+    \label{fig:neuron}
+\end{figure}
+
+$$y = f\left(\sum_{i=1}^{n} w_i \cdot x_i + b\right)$$
+
+wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivierungsfunktion sind.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/ML-Schichten.drawio.png}
+    \caption{Allgemeine Struktur Künstlicher Neuronaler Netze (Kim, 2016) | Eigene Darstellung}
+    \label{fig:ml-schichten}
+\end{figure}
+
+\subsection{Aktivierungsfunktionen}
+
+Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind (Kim, 2016):
+
+\begin{itemize}
+    \item \textbf{ReLU (Rectified Linear Unit):} $f(x) = \max(0, x)$. Einfach zu berechnen, gradientenfreundlich und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.
+    \item \textbf{Softmax:} Wandelt einen Vektor von Rohergebnissen (logits) in eine Wahrscheinlichkeitsverteilung um. Für die Ausgabeschicht eines Klassifikators geeignet, da die Summe aller Ausgabewerte 1 ergibt und jeder Wert zwischen 0 und 1 liegt.
+\end{itemize}
+
+\subsection{Architektur: Multi-Layer Perceptron (MLP)}
+Ein Multi-Layer Perceptron (MLP) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen.
+
+\subsection{Architektur: Convolutional Neural Networks (CNN)}
+
+Ein Convolutional Neural network (CNN) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung.
+
+\subsection{Backpropagation und Gradient Descent}
+
+Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie Stochastic Gradient Descent (SGD) oder Varianten davon (Adam, RMSprop) (Kim, 2016; Raschka et al., 2022):
+
+1. Forward Pass: Die Eingabedaten durchlaufen das Netz, und die Vorhersage wird berechnet. \newline
+2. Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert. \newline
+3. Backward Pass: Die Ableitungen des Loss nach den Gewichten werden über die Schichten zurückgerechnet (Kettenregel der Differentiation).\newline
+4. Gewichts-Update: Die Gewichte werden in Richtung des negativen Gradienten angepasst, um den Loss zu minimieren.
+
+Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensatz) wiederholt, bis das Modell eine zufriedenstellende Güte erreicht.
+
+\section{Handdetektion und Handlandmarks}
+
+\subsection{Zweistufige Erkennungspipeline}
+
+Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline (Lugaresi et al., n.d.; Zhang \& Notni, 2025)
+
+Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
+Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erstellten Bounding Box werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
+
+Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeitet auf einem downgesampelten Bild (192×192 Pixel), während die Landmark-Erkennung auf dem zugeschnittenen Hand-Ausschnitt (224×224 Pixel) arbeitet. Dadurch wird die Rechenlast erheblich reduziert.
+
+\subsection{Palm Detection}
+
+Die Palm Detection identifiziert die Position der Handfläche im Kamerabild (Lugaresi et al., n.d.). Das Modell (basierend auf MediaPipe) nimmt ein RGB-Bild der Größe 192×192 Pixel als Eingabe und erzeugt als Ausgabe eine Menge von Kandidaten. Jeder Kandidat besteht aus:
+
+- Score: Ein Vertrauenswert (0 bis 1), der angibt, wie wahrscheinlich es sich um eine Handfläche handelt.
+- Regression: Vier Werte, die die Bounding Box (x, y, Breite, Höhe) der Handfläche definieren.
+
+Da das Modell pro Bild 2016 Kandidaten ausgibt, wird eine Non-Maximum Suppression (NMS) durchgeführt: Überlappende Bounding Boxes werden zusammengefasst, und nur der Kandidat mit dem höchsten Score in jedem Cluster wird beibehalten. Als Schwellenwerte dienen ein Confidence-Threshold von 0,3 und ein IoU-Threshold (Intersection over Union) von 0,4.
+
+\subsection{Handlandmarks}
+
+Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \texttt{Region of Interest}) und bestimmt darin 21 Landmark-Punkte (Zhang \& Notni, 2025). Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Die 21 Handlandmark-Punkte}
+    \label{tab:handlandmarks}
+    \begin{tabular}{|c|p{0.7\textwidth}|}
+        \hline
+        \textbf{Index} & \textbf{Beschreibung} \\
+        \hline
+        0 & Handgelenk (Wrist) \\
+        \hline
+        1--4 & Daumen: MCP, IP, Tip (3 Punkte) \\
+        \hline
+        5--8 & Zeigefinger: PIP, DIP, Tip (3 Punkte) \\
+        \hline
+        9--12 & Mittelfinger: PIP, DIP, Tip (3 Punkte) \\
+        \hline
+        13--16 & Ringfinger: PIP, DIP, Tip (3 Punkte) \\
+        \hline
+        17--20 & Kleiner Finger: PIP, DIP, Tip (3 Punkte) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\noindent MCP = Metacarpophalangeal Joint, IP = Interphalangeal Joint, PIP = Proximal Interphalangeal Joint, DIP = Distal Interphalangeal Joint, Tip = Fingerspitze
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/Mediapipe-HandPoints.png}
+    \caption{Beispiel Hand Landmark Punkte | Eigene Darstellung}
+    \label{fig:hand-landmarks}
+\end{figure}
+
+Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich um eine linke oder rechte Hand handelt.
+
+\subsection{ROI}
+
+Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
+Dies kann verwendet werden um Modelle gezielt auszuführen.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/ROI-Explaination.png}
+    \caption{ROI -- Example | Eigene Darstellung}
+    \label{fig:roi-explaination}
+\end{figure}
+
+\subsubsection{Lifecycle}
+
+Eine ROI entsteht durch die Ausgabe des Detector-Modells, das eine Bounding Box sowie Schlüsselpunkte liefert. Aus diesen werden Position, Orientierung und Größe der initialen ROI berechnet. In den folgenden Frames wird innerhalb der ROI das Landmark-Modell ausgeführt. Bei ausreichender Konfidenz des Landmark-Modells werden Landmarken in Bildkoordinaten zurückgerechnet und daraus eine aktualisierte ROI (Position, Orientierung, Größe) bestimmt. Dieser Vorgang wird jeden Frame wiederholt. Fällt die Konfidenz unter den definierten Schwellwert, wird die ROI verworfen und der Lifecycle endet.
+
+\section{Datenaugmentation und Modellquantisierung}
+
+\subsection{Datenaugmentation}
+
+\paragraph{Definition und Ziel:}
+Datenaugmentation bezeichnet die künstliche Vermehrung eines Trainingsdatensatzes durch Transformationen der vorhandenen Daten (Pattern Recognition and Machine Learning, n.d.). Der Zweck besteht darin, die Robustheit und Generalisierungsfähigkeit des Modells zu erhöhen, ohne zusätzliche Daten erfassen zu müssen. Für eingebettete Systeme mit begrenztem Speicher ist eine effiziente Datennutzung besonders relevant.
+
+\paragraph{Transformationsverfahren:}
+Im vorliegenden Projekt werden folgende Augmentationen eingesetzt:
+
+\begin{itemize}
+    \item \textbf{Spiegelung (Horizontal Flip):} Die Hand wird horizontal gespiegelt. Dies simuliert Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
+    \item \textbf{Zufällige Translation:} Die Landmarks werden um einen zufälligen Betrag in x- und y-Richtung verschoben, um unterschiedliche Handpositionen im Kamerabild zu simulieren.
+    \item \textbf{Zufälliger Zoom:} Die Landmarks werden um einen Faktor zwischen 0,5$\times$ und 1,5$\times$ skaliert, um unterschiedliche Handgrößen und Abstände zur Kamera abzubilden.
+    \item \textbf{Jitter:} Zufälliges Rauschen wird zu den Koordinaten hinzugefügt, um natürliche Schwankungen in der Landmark-Erkennung zu simulieren.
+\end{itemize}
+
+\paragraph{Implementierung:}
+Die Augmentationspipeline (\texttt{AugmentationPipeline}) wendet diese Transformationen sequenziell auf die extrahierten Landmarks an und erzeugt pro Original-Datensatz mehrere Variationen. Dadurch wird der effektive Datensatz um einen Faktor von typisch 5--10$\times$ vermehrt.
+
+\subsection{Modellquantisierung}
+
+Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe Genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten eingebetteten Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
+
+\paragraph{Float32 vs.\ INT8:}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Vergleich Float32 vs.\ INT8}
+    \label{tab:float32-vs-int8}
+    \begin{tabular}{|p{0.35\textwidth}|l|l|}
+        \hline
+        \textbf{Eigenschaft} & \textbf{Float32} & \textbf{INT8} \\
+        \hline
+        Speicher pro Gewicht & 4 Byte & 1 Byte \\
+        \hline
+        Speicherersparnis & -- & 75\,\% \\
+        \hline
+        Rechengeschwindigkeit & Standard & Deutlich schneller (NPU-nativ) \\
+        \hline
+        Genauigkeit & Hoch & Leicht reduziert (hinnehmbar) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\paragraph{Scale und Zero-Point:}
+Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab. Für die affine Quantisierung gilt (Post-Training Quantization | TensorFlow Model Optimization, n.d.):
+
+$$q = \text{round}\left(\frac{r}{s}\right) + z$$
+
+wobei $r$ den realen Float-Wert, $s$ den Skalierungsfaktor, $z$ den Zero-Point und $q$ den quantisierten Integer-Wert darstellt. Die Rückrechnung erfolgt über:
+
+$$r = s \cdot (q - z)$$
+
+\paragraph{Post-Training-Quantisierung (PTQ):}
+Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training (Post-Training Quantization | TensorFlow Model Optimization, n.d.). Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
+
+\paragraph{Genauigkeitsverluste:}
+Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Repräsentativer Datensatz) jedoch gering (typisch $< 2\,\%$ Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
+
+\section{Edge AI und Neuronale Beschleuniger (NPU)}
+
+\subsection{Edge AI}
+
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl.\ \texttt{edge device}) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+
+\begin{itemize}
+    \item \textbf{Geringe Latenz:} Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essentiell.
+    \item \textbf{Datenschutz:} Biometrische Daten (Kamerabilder der Hand) verlassen das Gerät nicht.
+    \item \textbf{Offline-Fähigkeit:} Das System funktioniert ohne Internetverbindung.
+    \item \textbf{Reduzierte Bandbreite:} Es müssen keine Bilder übertragen werden.
+\end{itemize}
+
+Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf eingebetteten Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden (Abadade et al., 2023).
+
+\subsection{Neuronale Beschleuniger (NPU)}
+
+Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit dient der Inferenz INT8 quantisierter Convolutional Neural Networks (CNN) (Passold \& da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN Instruktionen mit hoher Parallelität aus.
+
+Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann (vgl.\ Abschnitt~\ref{fig:stm32n6-architektur}).
+
+\subsection{ST Edge Core CLI}
+
+ST Edge Core ist ein Command Line Interface (CLI) das genutzt wird, um Convolutional Neural Networks (CNN) im ONNX (QDQ) oder TF-Lite-Format in ein für die NPU-Platform passendes Format zu überführen. Der ST Neural-ART-Compiler ist als Back-End in die ST Edge Core CLI integriert und führt alle Optimierungen, Graph-Planung und Code-Generierung offline durch. Es wird keine interpretierende Engine auf dem eingebetteten System ausgeführt.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/NPU-TF-Lite ONNX Model harware executable conversion.png}
+    \caption{NPU -- Quantized Model Conversion to NPU Executables | (ST Neural-ART NPU -- Supported Operators and Limitations, n.d.; ST Neural-ART NPU Concepts, n.d.)}
+    \label{fig:npu-conversion}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{material/figures/NPU-Compilation.png}
+    \caption{NPU -- Compilation | (ST Neural-ART NPU -- Supported Operators and Limitations, n.d.; ST Neural-ART NPU Concepts, n.d.)}
+    \label{fig:npu-compilation}
+\end{figure}
+
+Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen abbilden. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX-Befehlen auf Epochen. Folgende Epochen werden unterschieden:
+
+\begin{table}[htbp]
+    \centering
+    \caption{NPU-Epochen-Typen}
+    \label{tab:npu-epochen}
+    \begin{tabular}{|p{0.25\textwidth}|p{0.7\textwidth}|}
+        \hline
+        \textbf{Epochen-Typ} & \textbf{Beschreibung} \\
+        \hline
+        HW-Epochen & Operatoren vollständig auf NPU-Hardware abgebildet. Die MCU-Arbeitslast beträgt ca.\ 10--15\,\% der Inferenzzeit. \\
+        \hline
+        SW-Epochen & Operatoren an Host delegiert (Keine Beschleunigung). \\
+        \hline
+        Hybrid-Epochen & Teilweise Software, teilweise hardwareunterstützt über vordefinierte HW-Epochen. \\
+        \hline
+        Meta-Epoche & Menge von HW-Epochen, gesteuert über Befehlsstrom via Epochen-Controller. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Epochen werden als atomare Operationen in fester Reihenfolge ausgeführt, um Datenabhängigkeiten zu gewährleisten. Zwischen Epochen wird kein interner NPU-Hardware-Zustand erhalten. Zwischenergebnisse werden im externen Speicher abgelegt.

@@ -1,0 +1,161 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{styling/custom}[2024/06/20 Custom theming Package]
+
+% ============================================================
+% FH Bonn-Rhein-Sieg style guidelines
+% Source: "Regeln fuer wissenschaftliche Arbeiten" v9.2.1
+% ============================================================
+
+% Font: Arial 11pt (helvet is closest to Arial in pdflatex)
+\RequirePackage[scaled=0.95]{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+% Graphics
+\RequirePackage{graphicx}
+
+% Section numbering depth
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+% Quotations
+\RequirePackage{csquotes}
+
+% Tablepackages
+\RequirePackage{longtable}
+\RequirePackage{float}
+
+% German language
+\RequirePackage[ngerman]{babel}
+
+% Page geometry (Regeln 3.1): left=4cm, right=2cm, top=2.5cm, bottom=1cm
+\RequirePackage[
+    left=40mm,
+    right=20mm,
+    top=25mm,
+    bottom=10mm
+]{geometry}
+
+% Zeilenabstand 1.0 (Regeln 3.1)
+\RequirePackage[singlespacing]{setspace}
+
+% Schriftgroessen und Formatierung der Ueberschriften (Regeln 3.1)
+% Ueberschrift 1: 12pt fett
+\RedeclareSectionCommand[
+    afterskip=1.5em,
+    beforeskip=1.5em
+]{chapter}
+\setkomafont{chapter}{\fontsize{12}{14}\selectfont\bfseries}
+
+% Ueberschrift 2: 11pt fett
+\RedeclareSectionCommand[
+    afterskip=1em,
+    beforeskip=1em
+]{section}
+\setkomafont{section}{\fontsize{11}{13}\selectfont\bfseries}
+
+% Ueberschrift 3: 11pt fett
+\RedeclareSectionCommand[
+    afterskip=0.75em,
+    beforeskip=0.75em
+]{subsection}
+\setkomafont{subsection}{\fontsize{11}{13}\selectfont\bfseries}
+
+% Ueberschrift 4: 11pt fett
+\RedeclareSectionCommand[
+    afterskip=0.5em,
+    beforeskip=0.5em
+]{subsubsection}
+\setkomafont{subsubsection}{\fontsize{11}{13}\selectfont\bfseries}
+
+% Abbildungsbeschriftungen: 10pt (Regeln 3.1)
+\setkomafont{caption}{\fontsize{10}{12}\selectfont}
+
+% Absatz
+\KOMAoptions{parskip=half}
+
+% Kopfzeile und Fusszeile (10pt, Regeln 3.1)
+\RequirePackage[headsepline, plainheadsepline]{scrlayer-scrpage}
+\pagestyle{scrheadings}
+\clearpairofpagestyles
+\addtokomafont{pagehead}{\fontsize{10}{12}\selectfont\normalfont}
+\ofoot*{\pagemark}
+
+% Literaturverzeichnis
+\RequirePackage{csquotes}
+\RequirePackage[style=ieee]{biblatex}
+\addbibresource{datenbanken/Literaturverzeichnis.bib}
+\KOMAoptions{bibliography=totocnumbered}
+
+% Abbildungsverzeichnis im Inhaltsverzeichnis
+\KOMAoptions{listof=totoc}
+
+% hyperref (muss nach allen anderen Paketen geladen werden)
+\RequirePackage{hyperref}
+\hypersetup{
+    pdftitle={\ThesisTitle},
+    pdfsubject={\ThesisSubject},
+    pdfauthor={\ThesisAuthor},
+    pdfcreator={LuaLaTeX},
+    pdfkeywords={\ThesisKeywords},
+    breaklinks=true,
+    citecolor=black,
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=black
+}
+
+% Abkürzungsverzeichnis
+\RequirePackage[acronym,nomain]{glossaries-extra}
+\setabbreviationstyle[acronym]{long-short}
+\makeglossaries
+\loadglsentries{datenbanken/Abkuerzungsverzeichnis.tex}
+
+% Code Listings
+\RequirePackage{xcolor}
+\RequirePackage{listings}
+
+\definecolor{codebackground}{RGB}{248,248,248}
+\definecolor{codecomment}{RGB}{80,130,80}
+\definecolor{codekeyword}{RGB}{30,70,160}
+\definecolor{codestring}{RGB}{170,60,40}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebackground},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  numbersep=8pt,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  keywordstyle=\color{codekeyword}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{codestring},
+  columns=fullflexible,
+  keepspaces=true,
+  captionpos=b
+}
+
+\lstdefinelanguage{json}{
+  string=[s]{"}{"},
+  stringstyle=\color{codestring},
+  morekeywords={true,false,null},
+  sensitive=true
+}
+
+\lstdefinelanguage{bash}{
+  morekeywords={if,then,else,fi,for,do,done,echo,exit,return},
+  morecomment=[l]{\#},
+  morestring=[b]",
+  sensitive=true
+}
+
+\lstdefinelanguage{markdown}{
+  sensitive=true,
+  morecomment=[s]{<!--}{-->},
+  morestring=[b]`
+}
+
+% Behebt Paket-Warnungen mit KOMA-Script
+\RequirePackage{scrhack}

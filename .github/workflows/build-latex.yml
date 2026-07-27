@@ -1,0 +1,39 @@
+name: Build LaTeX Thesis
+
+on:
+  push:
+    branches: [main, master, docs]
+    paths:
+      - 'docs-latex/**'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'docs-latex/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xu-cheng/texlive-full:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compile LaTeX thesis
+        working-directory: docs-latex
+        run: |
+          mkdir -p out
+          pdflatex -interaction=nonstopmode -halt-on-error --shell-escape -output-directory=out main
+          biber out/main
+          makeglossaries out/main
+          pdflatex -interaction=nonstopmode -halt-on-error --shell-escape -output-directory=out main
+          pdflatex -interaction=nonstopmode -halt-on-error --shell-escape -output-directory=out main
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: thesis-pdf
+          path: docs-latex/out/main.pdf
+          if-no-files-found: error

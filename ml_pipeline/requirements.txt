@@ -9,4 +9,6 @@ tensorflow == 2.19.1
 pandas
 scikit-learn
 seaborn
+pydot
+graphviz
 ai-edge-litert == 2.1.5
