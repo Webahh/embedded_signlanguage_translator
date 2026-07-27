@@ -134,7 +134,23 @@
   stringstyle=\color{codestring},
   columns=fullflexible,
   keepspaces=true,
-  captionpos=b
+  captionpos=b,
+  literate={ü}{{\"u}}1 {ö}{{\"o}}1 {ä}{{\"a}}1
+           {Ü}{{\"U}}1 {Ö}{{\"O}}1 {Ä}{{\"A}}1
+           {×}{{$\times$}}1 {ß}{{\ss}}1
+}
+
+\lstdefinelanguage{pseudocode}{
+    morekeywords={if, then, else, endif, while, do, endwhile,
+                  for, to, step, endfor, return, function,
+                  endfunction, true, false, null, and, or, not},
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    sensitive=true,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{red},
 }
 
 \lstdefinelanguage{json}{

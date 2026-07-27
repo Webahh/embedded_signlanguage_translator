@@ -6,9 +6,7 @@ Der Systementwurf legt damit die grundlegende Architektur und die Schnittstellen
 
 \section{Systemkonzept}
 
-Ausgehend von den zuvor definierten Anforderungen wurde ein Systemkonzept entwickelt, das die funktionalen Komponenten des Gesamtsystems und den zwischen ihnen stattfindenden Datenfluss beschreibt. Das Konzept stellt zunächst eine weitgehend von der konkreten Zielplattform unabhängige Betrachtung des Systems dar. Dadurch können die erforderlichen Verarbeitungsschritte festgelegt werden, bevor diese im Hardware- und Softwareentwurf konkreten Komponenten der Zielplattform zugeordnet werden.
-
-Das in Abbildung X dargestellte Blockdiagramm veranschaulicht den Datenfluss von der Aufnahme eines Kamerabildes bis zur Ausgabe des erkannten Fingeralphabetzeichens auf dem Display.
+Ausgehend von den zuvor definierten Anforderungen wurde ein Systemkonzept entwickelt, das die funktionalen Komponenten des Gesamtsystems und den zwischen ihnen stattfindenden Datenfluss beschreibt. Das Konzept stellt zunächst eine weitgehend von der konkreten Zielplattform unabhängige Betrachtung des Systems dar. Dadurch können die erforderlichen Verarbeitungsschritte festgelegt werden, bevor diese im Hardware- und Softwareentwurf konkreten Komponenten der Zielplattform zugeordnet werden. Das in Abbildung 6.1 dargestellte Blockdiagramm veranschaulicht den Datenfluss von der Aufnahme eines Kamerabildes bis zur Ausgabe des erkannten Fingeralphabetzeichens auf dem Display.
 
 \begin{figure}[!htbp]
     \centering
@@ -17,7 +15,7 @@ Das in Abbildung X dargestellte Blockdiagramm veranschaulicht den Datenfluss von
     \label{fig:systemkonzept}
 \end{figure}
 
-Die Kamera erfasst kontinuierlich Bilddaten und überträgt diese an das System. Die aufgenommenen Bilder werden zunächst in einem Bildpuffer zwischengespeichert. Das Bild wird für die Palmdetection skaliert und anschließend der Verarbeitungskette zur Verfügung gestellt. Innerhalb der Verarbeitungskette kommen drei aufeinander aufbauende neuronale Netze zum Einsatz.
+Die Kamera erfasst kontinuierlich Bilddaten und überträgt diese an das System. Die aufgenommenen Bilder werden zunächst in einem Bildpuffer zwischengespeichert. Das Bild wird für die Palmdetection skaliert und anschließend der Verarbeitungskette zur Verfügung gestellt. Innerhalb der Verarbeitungskette kommen drei aufeinander aufbauende neuronale Netze zum Einsatz. 
 
 Im ersten Verarbeitungsschritt wird mithilfe des Handdetektionsmodells geprüft, ob sich eine Hand im Kamerabild befindet. Für eine erkannte Hand werden deren Position und räumliche Ausdehnung bestimmt. Aus diesen Informationen wird eine Region of Interest gebildet, welche den für die weiteren Verarbeitungsschritte relevanten Bildbereich enthält. Die Region of Interest wird entsprechend der erkannten Handposition aktualisiert und für die nachfolgende Landmark-Erkennung aufbereitet.
 
@@ -29,17 +27,15 @@ Die Verarbeitungskette wird zyklisch ausgeführt, sodass Änderungen der Handpos
 
 \section{Hardwarekonzept}
 
-Das Hardwarekonzept überführt die im Systemkonzept festgelegten Funktionen auf die Komponenten der eingebetteten Zielplattform. Als zentrale Verarbeitungseinheit wird das STM32N6570 Discovery Kit verwendet. Neben dem Mikrocontroller umfasst der Hardwareaufbau das Kameramodul MB1854B mit dem Bildsensor IMX335, das Displaymodul MB1860B sowie die auf dem Board vorhandenen externen Speicher.
+Das Hardwarekonzept überführt die im Systemkonzept festgelegten Funktionen auf die Komponenten der eingebetteten Zielplattform. Als zentrale Verarbeitungseinheit wird das STM32N6570 Discovery Kit verwendet. Neben dem Mikrocontroller umfasst der Hardwareaufbau das Kameramodul MB1854B mit dem Bildsensor IMX335, das Displaymodul MB1860B sowie die auf dem Board vorhandenen externen Speicher \cite{STM32N6570DKProductSTMicroelectronics}.
 
-Die Kameradaten werden über die CSI-Schnittstelle empfangen und mithilfe der Digital Camera Interface Pixel Pipeline verarbeitet. Die DCMIPP übernimmt hardwarenahe Verarbeitungsschritte wie die Anpassung des Bildformats, die Skalierung und die Aufbereitung der Kamerabilder für die weitere Verarbeitung. Die erzeugten Bilddaten und die erforderlichen Bildpuffer werden aufgrund ihres Umfangs in der externen PSRAM abgelegt.
-
-Die Gewichte der neuronalen Netze werden im externen NOR-Flash gespeichert. Für die Ausführung der unterstützten Modelloperationen wird der integrierte ST Neural-ART Accelerator verwendet. Der Hauptprozessor übernimmt insbesondere die Ablaufsteuerung, die Vor- und Nachverarbeitung der Modelldaten sowie die Konfiguration und Koordination der eingesetzten Peripheriekomponenten.
+Die Kameradaten werden über die CSI-Schnittstelle empfangen und mithilfe der Digital Camera Interface Pixel Pipeline verarbeitet. Die DCMIPP übernimmt hardwarenahe Verarbeitungsschritte wie die Anpassung des Bildformats, die Skalierung und die Aufbereitung der Kamerabilder für die weitere Verarbeitung. Die erzeugten Bilddaten und die erforderlichen Bildpuffer werden aufgrund ihres Umfangs in der externen PSRAM abgelegt. Die Gewichte der neuronalen Netze werden im externen NOR-Flash gespeichert. Für die Ausführung der unterstützten Modelloperationen wird der integrierte ST Neural-ART Accelerator verwendet. Der Hauptprozessor übernimmt insbesondere die Ablaufsteuerung, die Vor- und Nachverarbeitung der Modelldaten sowie die Konfiguration und Koordination der eingesetzten Peripheriekomponenten.
 
 Die grafische Ausgabe erfolgt über den LCD-TFT Display Controller. Dieser liest die darzustellenden Bild- und Ergebnisdaten aus den zugeordneten Speicherbereichen und überträgt sie an das angeschlossene Display. Dadurch können das aktuelle Kamerabild und das ermittelte Klassifikationsergebnis gemeinsam dargestellt werden.
 
 \section{KI-Verarbeitungskette}
 
-Die KI-Verarbeitungskette besteht aus drei aufeinander aufbauenden Modellen zur Handdetektion, Handlandmark-Erkennung und Klassifikation des dargestellten Fingeralphabetzeichens. Abbildung X zeigt die einzelnen Verarbeitungsscgitte sowie die beiden durch die DCMIPP bereitgestellten Bildpfade.
+Die KI-Verarbeitungskette besteht aus drei aufeinander aufbauenden Modellen zur Handdetektion, Handlandmark-Erkennung und Klassifikation des dargestellten Fingeralphabetzeichens. Abbildung 6.2 zeigt die einzelnen Verarbeitungsschitte sowie die beiden durch die DCMIPP bereitgestellten Bildpfade.
 
 \begin{figure}[!htbp]
     \centering
@@ -48,15 +44,9 @@ Die KI-Verarbeitungskette besteht aus drei aufeinander aufbauenden Modellen zur 
     \label{fig:ml-sequence}
 \end{figure}
 
-Ausgangspunkt der Verarbeitungskette ist das von der Kamera aufgenommene Bild mit einer Auflösung von 2592 × 1944 Pixeln. Die DCMIPP stellt den Kameradatenstrom parallel über zwei getrennte Verarbeitungspfade bereit. Pipe 1 erzeugt ein Bild mit einer Auflösung von 800 × 480 Pixeln, das für die Displayausgabe und als Ausgangsbild der Handlandmark-Erkennung verwendet wird. Pipe 2 erzeugt parallel dazu ein Bild mit einer Auflösung von 192 × 192 Pixeln für die Handdetektion.
+Ausgangspunkt der Verarbeitungskette ist das von der Kamera aufgenommene Bild mit einer Auflösung von 2592 × 1944 Pixeln. Die DCMIPP stellt den Kameradatenstrom parallel über zwei getrennte Verarbeitungspfade bereit. Pipe 1 erzeugt ein Bild mit einer Auflösung von 800 × 480 Pixeln, das für die Displayausgabe und als Ausgangsbild der Handlandmark-Erkennung verwendet wird. Pipe 2 erzeugt parallel dazu ein Bild mit einer Auflösung von 192 × 192 Pixeln für die Handdetektion. Das Handdetektionsmodell verarbeitet das von Pipe 2 bereitgestellte Bild und ermittelt die Position einer vorhandenen Hand. Im Rahmen der Nachverarbeitung wird aus dem Modellergebnis eine initiale Region of Interest bestimmt. Da die Handdetektion und die Landmark-Erkennung unterschiedliche Bildpfade verwenden, wird die Region of Interest anschließend in das Koordinatensystem des von Pipe 1 erzeugten Bildes übertragen. Auf Grundlage der transformierten Region of Interest wird aus dem Bild von Pipe 1 ein Ausschnitt mit einer Auflösung von 224 × 224 Pixeln erzeugt. Dieser Ausschnitt wird für das Handlandmark-Modell aufbereitet und anschließend an das Modell übergeben. Das Handlandmark-Modell bestimmt die Positionen der charakteristischen Landmark-Punkte innerhalb der Handregion.
 
-Das Handdetektionsmodell verarbeitet das von Pipe 2 bereitgestellte Bild und ermittelt die Position einer vorhandenen Hand. Im Rahmen der Nachverarbeitung wird aus dem Modellergebnis eine initiale Region of Interest bestimmt. Da die Handdetektion und die Landmark-Erkennung unterschiedliche Bildpfade verwenden, wird die Region of Interest anschließend in das Koordinatensystem des von Pipe 1 erzeugten Bildes übertragen.
-
-Auf Grundlage der transformierten Region of Interest wird aus dem Bild von Pipe 1 ein Ausschnitt mit einer Auflösung von 224 × 224 Pixeln erzeugt. Dieser Ausschnitt wird für das Handlandmark-Modell aufbereitet und anschließend an das Modell übergeben. Das Handlandmark-Modell bestimmt die Positionen der charakteristischen Landmark-Punkte innerhalb der Handregion.
-
-Nach einer erfolgreichen Landmark-Erkennung wird die Region of Interest anhand der Modellausgabe aktualisiert. Für die Verarbeitung des folgenden Kamerabildes wird dadurch nicht erneut die gesamte Handdetektion ausgeführt. Stattdessen wird aus dem nächsten Bild von Pipe 1 unmittelbar eine neue Landmark-Eingabe auf Grundlage der aktualisierten Region erzeugt. Dieser Rückkopplungspfad bildet das Landmark-Tracking.
-
-Kann das Handlandmark-Modell über mehrere aufeinanderfolgende Bilder keine gültige Hand mehr bestimmen, wird das Tracking beendet. Das System wechselt daraufhin zurück zur Handdetektion, um erneut eine initiale Region of Interest im vollständigen Bild zu bestimmen. Die Handdetektion und das Landmark-Tracking bilden somit zwei aufeinander abgestimmte Zustände der Verarbeitungskette.
+Nach einer erfolgreichen Landmark-Erkennung wird die Region of Interest anhand der Modellausgabe aktualisiert. Für die Verarbeitung des folgenden Kamerabildes wird dadurch nicht erneut die gesamte Handdetektion ausgeführt. Stattdessen wird aus dem nächsten Bild von Pipe 1 unmittelbar eine neue Landmark-Eingabe auf Grundlage der aktualisierten Region erzeugt. Dieser Rückkopplungspfad bildet das Landmark-Tracking. Kann das Handlandmark-Modell über mehrere aufeinanderfolgende Bilder keine gültige Hand mehr bestimmen, wird das Tracking beendet. Das System wechselt daraufhin zurück zur Handdetektion, um erneut eine initiale Region of Interest im vollständigen Bild zu bestimmen. Die Handdetektion und das Landmark-Tracking bilden somit zwei aufeinander abgestimmte Zustände der Verarbeitungskette.
 
 Für die anschließende Zeichenklassifikation werden ausschließlich die ermittelten Landmark-Koordinaten verwendet. Vor der Übergabe an das Klassifikationsmodell werden diese in eine einheitliche Darstellung überführt und an das erforderliche Eingabeformat angepasst. Dazu gehören die Berücksichtigung der erkannten Händigkeit, die Normalisierung der Koordinaten und deren Überführung in das vom quantisierten Klassifikationsmodell verwendete Zahlenformat. Die konkrete Berechnung dieser Schritte wird im Implementierungskapitel beschrieben.
 
@@ -64,7 +54,7 @@ Das Klassifikationsmodell ordnet die aufbereiteten Landmark-Koordinaten einer de
 
 \section{Speicher- und Datenflusskonzept}
 
-Die im Gesamtsystem anfallenden Daten unterscheiden sich deutlich hinsichtlich ihres Umfangs, ihrer Lebensdauer und ihrer Verwendung. Aus diesem Grund werden die Kamerabilder, Modellgewichte, Modellein- und -ausgaben sowie Steuerungsdaten auf unterschiedliche Speicherbereiche der Zielplattform verteilt. Abbildung X zeigt die vorgesehene Zuordnung der Daten zu den verfügbaren Speichern sowie den Datenfluss zwischen den beteiligten Hardware- und Softwarekomponenten.
+Die im Gesamtsystem anfallenden Daten unterscheiden sich deutlich hinsichtlich ihres Umfangs, ihrer Lebensdauer und ihrer Verwendung. Aus diesem Grund werden die Kamerabilder, Modellgewichte, Modellein- und -ausgaben sowie Steuerungsdaten auf unterschiedliche Speicherbereiche der Zielplattform verteilt. Abbildung 6.3 zeigt die vorgesehene Zuordnung der Daten zu den verfügbaren Speichern sowie den Datenfluss zwischen den beteiligten Hardware- und Softwarekomponenten.
 
 \begin{figure}[!htbp]
     \centering
@@ -126,7 +116,7 @@ In den vorherigen Abschnitten wurden zunächst die Komponenten des Gesamtsystems
     \label{fig:aktivitaetsdiagramm}
 \end{figure}
 
-Abbildung X führt die zuvor beschriebenen Komponenten und Verarbeitungsschritte in einem gemeinsamen Ablauf zusammen. Nach der Erfassung wird das Kamerabild durch die DCMIPP verarbeitet und über Pipe 1 für die Display- und Landmark-Verarbeitung sowie über Pipe 2 für die Handdetektion bereitgestellt.
+Abbildung 6.4 führt die zuvor beschriebenen Komponenten und Verarbeitungsschritte in einem gemeinsamen Ablauf zusammen. Nach der Erfassung wird das Kamerabild durch die DCMIPP verarbeitet und über Pipe 1 für die Display- und Landmark-Verarbeitung sowie über Pipe 2 für die Handdetektion bereitgestellt.
 
 Ist noch kein Landmark-Tracking aktiv, wird zunächst die Handdetektion auf dem von Pipe 2 bereitgestellten Bild ausgeführt. Wird keine Hand erkannt, beginnt die Verarbeitung mit dem nächsten Kamerabild erneut. Bei einer erfolgreichen Erkennung wird eine initiale Region of Interest bestimmt und in das Koordinatensystem von Pipe 1 übertragen. Aus dem dort vorliegenden Displaybild wird anschließend ein 224 × 224 Pixel großer Ausschnitt für das Landmark-Modell erzeugt. Bei aktivem Tracking kann hierfür unmittelbar die anhand des vorherigen Bildes aktualisierte Region verwendet werden.
 

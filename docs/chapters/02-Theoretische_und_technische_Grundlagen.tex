@@ -49,7 +49,7 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 
 \subsection{Peripherieschnittstellen}
 
-Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind (STM32N6x7 - Documentation - STMicroelectronics, n.d.):
+Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind \cite{STM32N6570DKProductSTMicroelectronics}\cite{Mikrocontroller}:
 
 
 \begin{itemize}
@@ -60,74 +60,61 @@ Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der 
     \item \texttt{Timer: }
     Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
     \item \texttt{Direct Memory Access (DMA): }DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B.\ Kamerabilder) relevant, da es die CPU erheblich entlastet.
-    \item \texttt{DMA2D (ChromART): } 
+    \item \texttt{DMA2D (ChromART): } Eine spezielle DMA-Einheit für 2D-Blit-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten ohne die CPU zu blockieren (Erweiterung des DMA).
+    \item \texttt{Interrupts: } Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR)\cite[s. 104 ff.]{yiuDefinitiveGuideARM2013}.
 \end{itemize}
-
-
-
-\paragraph{}
-
-\paragraph{DMA2D (ChromART)}
-
-\paragraph{Interrupts}
-Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR) (Yiu, 2013).
 
 \subsection{Speicherarchitektur}
 
-Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen Rechnern ab. Die wesentlichen Speichertypen sind (Wolf, 2012; Yiu, 2013):
+Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen Rechnern ab. Die wesentlichen Speichertypen sind \cite{wolfComputersComponentsPrinciples2012},\cite{STM32N6570DKProductSTMicroelectronics},\cite{rm0486}:
 
 \begin{itemize}
-    \item \textbf{Flash-Speicher (On-Chip):} Nichtflüchtig, integriert auf dem MCU-Chip. Dient als Programmspeicher (Code) und für konstante Daten (Konstanten-Tabelle, lookup tables). Schreibzugriffe sind langsam und erfordern einen Löschzyklus.
-    \item \textbf{SRAM (On-Chip):} Flüchtig, sehr schneller Zugriff (im Takt der CPU). Dient als Hauptspeicher für Variablen, Heap und Stack. Auf Cortex-M85-Systemen ist SRAM in mehrere Banken aufgeteilt (AXISRAM), um parallele Zugriffe durch CPU, DMA und NPU zu ermöglichen.
-    \item \textbf{PSRAM (extern):} Pseudo-Static RAM, angeschlossen über OctoSPI oder Quad-SPI. Bietet größere Speicherkapazitäten als On-Chip-SRAM bei moderater Zugriffszeit. Im STM32N6570-System wird PSRAM für Zwischenspeicherung von Bilddaten genutzt.
-    \item \textbf{NOR-Flash (extern):} Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI. Im vorliegenden Projekt werden die vorkompilierten Modellbinaries (Palm Detection, Hand Landmark, Fingeralphabet) in externem NOR-Flash bei festen Adressen gespeichert.
+    \item \texttt{Flash-Speicher (On-Chip): } Nichtflüchtig, integriert auf dem MCU-Chip. Dient als Programmspeicher (Code) und für konstante Daten (Konstanten-Tabelle, lookup tables). Schreibzugriffe sind langsam und erfordern einen Löschzyklus.
+    \item \texttt{SRAM (On-Chip): } Flüchtig, sehr schneller Zugriff (im Takt der CPU). Dient als Hauptspeicher für Variablen, Heap und Stack. Auf Cortex-M85-Systemen ist SRAM in mehrere Banken aufgeteilt (AXISRAM), um parallele Zugriffe durch CPU, DMA und NPU zu ermöglichen.
+    \item \texttt{PSRAM (extern): } Pseudo-Static RAM, angeschlossen über OctoSPI oder Quad-SPI. Bietet größere Speicherkapazitäten als On-Chip-SRAM bei moderater Zugriffszeit. Im STM32N6570-System wird PSRAM für Zwischenspeicherung von Bilddaten genutzt.
+    \item \texttt{NOR-Flash (extern): } Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI. Im vorliegenden Projekt werden die vorkompilierten Modellbinaries (Palm Detection, Hand Landmark, Fingeralphabet) in externem NOR-Flash bei festen Adressen gespeichert.
 \end{itemize}
 
-Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) (STMicroelectronics, n.d.).
+Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) \cite{rm0486}\cite{STM32N6ExampleProjects}.
 
 \subsection{Clock-Systeme}
 
-Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers (STM32N6x7 - Documentation - STMicroelectronics, n.d.; Yiu, 2013).
+Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers \cite{STM32N6570DKProductSTMicroelectronics}\cite{rm0486}.
 
 \begin{itemize}
-    \item \textbf{Oszillatoren:} Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16--64\,MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
-    \item \textbf{PLL (Phase-Locked Loop):} Ein PLL multipliziert die Taktfrequenz der Basisoszillatoren auf höhere Taktfrequenzen. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800\,MHz), PLL2 für den NPU (1000\,MHz), PLL3 für den NPU-Speicher (900\,MHz) und PLL4 für Peripherietakte.
-    \item \textbf{Takthierarchie:} Der PLL-Ausgang wird über Teiler (Prescaler) auf verschiedene Busdomänen verteilt: AHB (High-Speed Bus), APB1/APB2 (Peripheral Buses). Peripherie-Einheiten erhalten ihren Takt von diesen Bussen.
+    \item \texttt{Oszillatoren: }Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16--64\,MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
+    \item \texttt{PLL (Phase-Locked Loop): }Ein PLL multipliziert die Taktfrequenz der Basisoszillatoren auf höhere Taktfrequenzen. Das STM32N6570-System verwendet mehrere PLLs: PLL1 für den CPU-Takt (800\,MHz), PLL2 für den NPU (1000\,MHz), PLL3 für den NPU-Speicher (900\,MHz) und PLL4 für Peripherietakte.
+    \item \texttt{Takthierarchie: }Der PLL-Ausgang wird über Teiler (Prescaler) auf verschiedene Busdomänen verteilt: AHB (High-Speed Bus), APB1/APB2 (Peripheral Buses). Peripherie-Einheiten erhalten ihren Takt von diesen Bussen.
 \end{itemize}
 
 \subsection{Bare-Metal-Programmierung}
 
-\paragraph{Definition und Abgrenzung:}
-Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) (Mikrocontroller, n.d.). Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
-
-\paragraph{Startup und Systeminitialisierung:}
-Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions).
-
-\paragraph{Register-Level-Programmierung:}
-Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
-
-\paragraph{Vorteile und Trade-Offs:}
-Bare-Metal bietet minimale Latenz, minimalen Speicherverbrauch und deterministisches Verhalten. Die Nachteile liegen in der höheren Entwicklungskomplexität: Es gibt kein Thread-Management, keine Synchronisationsprimitive (Mutexe, Semaphore) und keine automatische Ressourcenverwaltung. Für ressourcenbeschränkte Systeme mit klar definiertem Ablauf überwiegen jedoch die Vorteile (Mikrocontroller, n.d.).
+\begin{itemize}
+    \item  \texttt{Definition und Abgrenzung: }Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) \cite{GbatiIsrael2024BECP}. Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
+    \item \texttt{Startup und Systeminitialisierung: }Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions).
+    \item \texttt{Register-Level-Programmierung: }Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
+    \item \texttt{Vorteile und Trade-Offs: }Bare-Metal bietet minimale Latenz, minimalen Speicherverbrauch und deterministisches Verhalten. Die Nachteile liegen in der höheren Entwicklungskomplexität: Es gibt kein Thread-Management, keine Synchronisationsprimitive (Mutexe, Semaphore) und keine automatische Ressourcenverwaltung. Für ressourcenbeschränkte Systeme mit klar definiertem Ablauf überwiegen jedoch die Vorteile \cite{GbatiIsrael2024BECP}\cite{Mikrocontroller}.
+\end{itemize}
 
 \subsection{Hardware-Beschleunigung}
 
 Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte Operationen mit hoher Effizienz ausführen:
 
 \begin{itemize}
-    \item \textbf{DMA:} Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
-    \item \textbf{DMA2D:} Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
-    \item \textbf{NPU (Neural Processing Unit):} Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000\,MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7) (STMicroelectronics, n.d.).
+    \item \texttt{DMA:} Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
+    \item \texttt{DMA2D:} Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
+    \item \texttt{NPU (Neural Processing Unit):} Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000\,MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7) \cite[s. 1011 ff.]{rm0486}.
 \end{itemize}
 
 \section{Deutsches Einhand-Fingeralphabet}
 
 \subsection{Gebärdensprache als eigenständige Sprache}
-Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren (Deutscher Gehörlosen-Bund e.V., n.d.). Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache.
+Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren \cite{DeutscheGebaerdensprache}. Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache.
 
-Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache (Deutscher Gehörlosen-Bund e.V., n.d.).
+Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache \cite{DeutscheGebaerdensprache}.
 
 \subsection{Das Fingeralphabet}
-Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache (AktionMensch e.V., n.d.; Deutscher Gehörlosen-Bund e.V., n.d.). Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum.
+Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache \cite{aktion-mensch},\cite{DeutscheGebaerdensprache}. Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum.
 
 \subsection{Das deutsche Einhand-Fingeralphabet}
 
@@ -139,14 +126,14 @@ Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache (AktionMens
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\textwidth]{material/figures/aktion-mensch-deutsches-fingeralphabet.jpg}
-    \caption{Deutsches Einhand-Fingeralphabet (Quelle: Aktion Mensch e.V.)}
+    \caption{Deutsches Einhand-Fingeralphabet \cite{aktion-mensch}}
     \label{fig:fingeralphabet}
 \end{figure}
 
 
 \subsection{Handpositionen und Fingerkonfigurationen}
 
-Jedes Zeichen des Fingeralphabets wird durch eine spezifische Konfiguration der Hand charakterisiert, die sich aus mehreren Parametern zusammensetzt (AktionMensch e.V., n.d.):
+Jedes Zeichen des Fingeralphabets wird durch eine spezifische Konfiguration der Hand charakterisiert, die sich aus mehreren Parametern zusammensetzt \cite{aktion-mensch}:
 
 \begin{itemize}
     \item Beteiligte Finger: Welche Finger sind gestreckt, welche sind gebeugt oder angeballt?
@@ -160,7 +147,7 @@ Beispielhafte Beschreibung einiger Zeichen:
 
 \begin{table}[htbp]
     \centering
-    \caption{Ausgewählte Handkonfigurationen des deutschen Einhand-Fingeralphabets (nach Aktion Mensch e.V.)}
+    \caption{Ausgewählte Handkonfigurationen des deutschen Einhand-Fingeralphabets \cite{aktion-mensch}}
     \label{tab:fingeralphabet-konfigurationen}
     \begin{tabular}{|c|p{0.85\textwidth}|}
         \hline
@@ -188,18 +175,18 @@ Beispielhafte Beschreibung einiger Zeichen:
 \end{table}
 
 
-\section{Grundlagen des maschinellen Lernens}
+\section{Grundlagen des maschinellen Lernens} \#TODO Quellen für diesen Abchnitt!
 \subsection{Begriffsbildung}
 
-Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden (Pattern Recognition and Machine Learning, n.d.). Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
+Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet.
 
 \subsection{Supervised Learning}
 
-Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert (Hastie et al., 2009; Pattern Recognition and Machine Learning, n.d.). Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert \cite{hastieElementsStatisticalLearning2009}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
 
 \subsection{Klassifikation}
 
-Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt (Hastie et al., 2009).
+Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt \cite{hastieElementsStatisticalLearning2009}.
 
 \subsubsection{Sparse Categorical Crossentropy}
 
@@ -266,12 +253,13 @@ Gegenmaßnahmen bezüglich Overfitting umfassen:
 
 \subsection{Parameter vs Hyperparameter}
 
-Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese parameter bestimmen das Lernverhalten. (Praxiseinstieg Machine Learning Mit Scikit-Learn, Keras Und TensorFlow - 11727363, n.d.)
+Parameter sind Variablen welche aus dem zur verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese parameter bestimmen das Lernverhalten \cite{PraxiseinstiegMachineLearning}.
 
 \section{Neuronale Netze zur Klassifikation}
 \subsection{Künstliche Neuronale Netze}
 
-Ein künstliches neuronales Netz (KNN) ist ein mathematisches Modell, das lose von biologischen neuronalen Netzen inspiriert ist (Kim, 2016; Raschka et al., 2022). Es besteht aus einer Menge von künstlichen Neuronen (auch Einheiten oder Knoten genannt), die in Schichten (engl. layers) organisiert sind. Jedes Neuron berechnet eine gewichtete Summe seiner Eingaben, addiert einen Bias-Wert und wendet eine Aktivierungsfunktion an:
+\#TODO Check those Quellen
+Ein künstliches neuronales Netz (KNN) ist ein mathematisches Modell, das lose von biologischen neuronalen Netzen inspiriert ist \cite{kimBookReviewDeep2016}, \cite{raschkaMachineLearningPyTorch2022}. Es besteht aus einer Menge von künstlichen Neuronen (auch Einheiten oder Knoten genannt), die in Schichten (engl. layers) organisiert sind. Jedes Neuron berechnet eine gewichtete Summe seiner Eingaben, addiert einen Bias-Wert und wendet eine Aktivierungsfunktion an:
 
 \begin{figure}[htbp]
     \centering
@@ -322,7 +310,7 @@ Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensa
 
 \subsection{Zweistufige Erkennungspipeline}
 
-Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline (Lugaresi et al., n.d.; Zhang \& Notni, 2025)
+Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline \cite{lugaresiMediaPipeFrameworkPerceiving}, \cite{zhang3DGeometricFeatures2025}:
 
 Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
 Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erstellten Bounding Box werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
@@ -331,7 +319,7 @@ Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeite
 
 \subsection{Palm Detection}
 
-Die Palm Detection identifiziert die Position der Handfläche im Kamerabild (Lugaresi et al., n.d.). Das Modell (basierend auf MediaPipe) nimmt ein RGB-Bild der Größe 192×192 Pixel als Eingabe und erzeugt als Ausgabe eine Menge von Kandidaten. Jeder Kandidat besteht aus:
+Die Palm Detection identifiziert die Position der Handfläche im Kamerabild \cite{lugaresiMediaPipeFrameworkPerceiving}. Das Modell (basierend auf MediaPipe) nimmt ein RGB-Bild der Größe 192×192 Pixel als Eingabe und erzeugt als Ausgabe eine Menge von Kandidaten. Jeder Kandidat besteht aus:
 
 - Score: Ein Vertrauenswert (0 bis 1), der angibt, wie wahrscheinlich es sich um eine Handfläche handelt.
 - Regression: Vier Werte, die die Bounding Box (x, y, Breite, Höhe) der Handfläche definieren.
@@ -340,7 +328,7 @@ Da das Modell pro Bild 2016 Kandidaten ausgibt, wird eine Non-Maximum Suppressio
 
 \subsection{Handlandmarks}
 
-Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \texttt{Region of Interest}) und bestimmt darin 21 Landmark-Punkte (Zhang \& Notni, 2025). Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
+Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \texttt{Region of Interest}) und bestimmt darin 21 Landmark-Punkte \cite{zhang3DGeometricFeatures2025}. Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
 
 \begin{table}[htbp]
     \centering
@@ -367,7 +355,7 @@ Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildau
 
 \noindent MCP = Metacarpophalangeal Joint, IP = Interphalangeal Joint, PIP = Proximal Interphalangeal Joint, DIP = Distal Interphalangeal Joint, Tip = Fingerspitze
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/Mediapipe-HandPoints.png}
     \caption{Beispiel Hand Landmark Punkte | Eigene Darstellung}
@@ -381,7 +369,7 @@ Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich u
 Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
 Dies kann verwendet werden um Modelle gezielt auszuführen.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/ROI-Explaination.png}
     \caption{ROI -- Example | Eigene Darstellung}
@@ -403,10 +391,10 @@ Datenaugmentation bezeichnet die künstliche Vermehrung eines Trainingsdatensatz
 Im vorliegenden Projekt werden folgende Augmentationen eingesetzt:
 
 \begin{itemize}
-    \item \textbf{Spiegelung (Horizontal Flip):} Die Hand wird horizontal gespiegelt. Dies simuliert Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
-    \item \textbf{Zufällige Translation:} Die Landmarks werden um einen zufälligen Betrag in x- und y-Richtung verschoben, um unterschiedliche Handpositionen im Kamerabild zu simulieren.
-    \item \textbf{Zufälliger Zoom:} Die Landmarks werden um einen Faktor zwischen 0,5$\times$ und 1,5$\times$ skaliert, um unterschiedliche Handgrößen und Abstände zur Kamera abzubilden.
-    \item \textbf{Jitter:} Zufälliges Rauschen wird zu den Koordinaten hinzugefügt, um natürliche Schwankungen in der Landmark-Erkennung zu simulieren.
+    \item \texttt{Spiegelung (Horizontal Flip):} Die Hand wird horizontal gespiegelt. Dies simuliert Unterschiede zwischen linker und rechter Hand sowie Variationen in der Handhaltung.
+    \item \texttt{Zufällige Translation:} Die Landmarks werden um einen zufälligen Betrag in x- und y-Richtung verschoben, um unterschiedliche Handpositionen im Kamerabild zu simulieren.
+    \item \texttt{Zufälliger Zoom:} Die Landmarks werden um einen Faktor zwischen 0,5$\times$ und 1,5$\times$ skaliert, um unterschiedliche Handgrößen und Abstände zur Kamera abzubilden.
+    \item \texttt{Jitter:} Zufälliges Rauschen wird zu den Koordinaten hinzugefügt, um natürliche Schwankungen in der Landmark-Erkennung zu simulieren.
 \end{itemize}
 
 \paragraph{Implementierung:}
@@ -414,11 +402,9 @@ Die Augmentationspipeline (\texttt{AugmentationPipeline}) wendet diese Transform
 
 \subsection{Modellquantisierung}
 
-Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe Genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten eingebetteten Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient (Jacob et al., 2018). Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
+Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommazahlen um eine möglichst hohe Genauigkeit zu erreichen (Float32, 4 Byte pro Wert). Auf ressourcenbeschränkten eingebetteten Plattformen ist dies sowohl speichermäßig als auch rechnerisch ineffizient \cite{jacobQuantizationTrainingNeural2018}. Die Quantisierung reduziert die Genauigkeit der Gewichte und Aktivierungen auf Ganzzahlen (typisch INT8, 1 Byte pro Wert).
 
-\paragraph{Float32 vs.\ INT8:}
-
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Vergleich Float32 vs.\ INT8}
     \label{tab:float32-vs-int8}
@@ -437,26 +423,20 @@ Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommaza
     \end{tabular}
 \end{table}
 
-\paragraph{Scale und Zero-Point:}
-Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab. Für die affine Quantisierung gilt (Post-Training Quantization | TensorFlow Model Optimization, n.d.):
-
-$$q = \text{round}\left(\frac{r}{s}\right) + z$$
-
-wobei $r$ den realen Float-Wert, $s$ den Skalierungsfaktor, $z$ den Zero-Point und $q$ den quantisierten Integer-Wert darstellt. Die Rückrechnung erfolgt über:
-
-$$r = s \cdot (q - z)$$
-
-\paragraph{Post-Training-Quantisierung (PTQ):}
-Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training (Post-Training Quantization | TensorFlow Model Optimization, n.d.). Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
-
-\paragraph{Genauigkeitsverluste:}
-Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Repräsentativer Datensatz) jedoch gering (typisch $< 2\,\%$ Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
+\begin{itemize}
+    \item \texttt{Scale und Zero-Point:} Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab. Für die affine Quantisierung gilt \cite{PosttrainingQuantizationTensorFlow}:
+    $$q = \text{round}\left(\frac{r}{s}\right) + z$$
+    wobei $r$ den realen Float-Wert, $s$ den Skalierungsfaktor, $z$ den Zero-Point und $q$ den quantisierten Integer-Wert darstellt. Die Rückrechnung erfolgt über:
+    $$r = s \cdot (q - z)$$
+    \item \texttt{Post-Training-Quantisierung (PTQ):} Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training \cite{PosttrainingQuantizationTensorFlow}. Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
+    \item \texttt{Genauigkeitsverluste:} Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Repräsentativer Datensatz) jedoch gering (typisch < 2 \% Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
+\end{itemize}
 
 \section{Edge AI und Neuronale Beschleuniger (NPU)}
 
 \subsection{Edge AI}
 
-Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl.\ \texttt{edge device}) anstelle einer Übertragung der Daten an einen Cloud-Server (Jain, 2023; Smalley, 2023). Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
+Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (engl.\ \texttt{edge device}) anstelle einer Übertragung der Daten an einen Cloud-Server \cite{smalleyWhatEdgeAI2023}. Die Mikrocontroller erfassen Daten über Sensoren und verarbeiten diese lokal mithilfe von Modellen des maschinellen Lernens. Die wesentlichen Vorteile gegenüber Cloud-basierten Ansätzen sind:
 
 \begin{itemize}
     \item \textbf{Geringe Latenz:} Die Verarbeitung erfolgt lokal, ohne Netzwerkübertragungszeit. Für Echtzeitanwendungen wie die Gesture-Erkennung ist dies essentiell.
@@ -465,11 +445,11 @@ Edge AI bezeichnet die Ausführung von KI-Inferenzen direkt auf dem Endgerät (e
     \item \textbf{Reduzierte Bandbreite:} Es müssen keine Bilder übertragen werden.
 \end{itemize}
 
-Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf eingebetteten Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden (Abadade et al., 2023).
+Die Haupt-Herausforderung liegt in der Ressourcenbeschränkung: Speicher, Rechenleistung und Energieverbrauch sind auf eingebetteten Plattformen stark limitiert. Ein KI-Modell, das auf einem Server mit Gigabytes an Speicher und leistungsstarken GPUs trainiert wurde, muss auf dem Mikrocontroller mit wenigen Kilobytes an SRAM und einem dedizierten Beschleuniger betrieben werden \cite{abadadeComprehensiveSurveyTinyML2023}.
 
 \subsection{Neuronale Beschleuniger (NPU)}
 
-Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit dient der Inferenz INT8 quantisierter Convolutional Neural Networks (CNN) (Passold \& da Silva, 2025; STMicroelectronics, n.d.). Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN Instruktionen mit hoher Parallelität aus.
+Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigurierbare Neuronale Verarbeitunseinheit (NPU). Diese dedizierte Hardware-Einheit dient der Inferenz INT8 quantisierter Convolutional Neural Networks (CNN) \cite[s. 1011 ff.]{rm0486}. Im Gegensatz zur allgemeinen CPU, die nur einen Bruchteil ihrer Rechenleistung für Matrix-Operationen nutzt, führt die NPU Matrix-Multiplikationen, Vektoroperationen und spezialisierte CNN Instruktionen mit hoher Parallelität aus.
 
 Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann (vgl.\ Abschnitt~\ref{fig:stm32n6-architektur}).
 
@@ -477,23 +457,23 @@ Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen
 
 ST Edge Core ist ein Command Line Interface (CLI) das genutzt wird, um Convolutional Neural Networks (CNN) im ONNX (QDQ) oder TF-Lite-Format in ein für die NPU-Platform passendes Format zu überführen. Der ST Neural-ART-Compiler ist als Back-End in die ST Edge Core CLI integriert und führt alle Optimierungen, Graph-Planung und Code-Generierung offline durch. Es wird keine interpretierende Engine auf dem eingebetteten System ausgeführt.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/NPU-TF-Lite ONNX Model harware executable conversion.png}
-    \caption{NPU -- Quantized Model Conversion to NPU Executables | (ST Neural-ART NPU -- Supported Operators and Limitations, n.d.; ST Neural-ART NPU Concepts, n.d.)}
+    \caption{NPU -- Quantized Model Conversion to NPU Executables \cite{STNeuralARTCompiler}}
     \label{fig:npu-conversion}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{material/figures/NPU-Compilation.png}
-    \caption{NPU -- Compilation | (ST Neural-ART NPU -- Supported Operators and Limitations, n.d.; ST Neural-ART NPU Concepts, n.d.)}
+    \caption{NPU -- Compilation \cite{STNeuralARTCompiler}}
     \label{fig:npu-compilation}
 \end{figure}
 
 Modelle werden in NPU-Epochen unterteilt die in die verfügbaren Hardwareressourcen abbilden. Die Umsetzung der Transformation geschieht mittels Mapping von TF-Lite/ONNX-Befehlen auf Epochen. Folgende Epochen werden unterschieden:
 
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{NPU-Epochen-Typen}
     \label{tab:npu-epochen}

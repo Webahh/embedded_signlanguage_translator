@@ -1,6 +1,8 @@
 \chapter{Evaluation und Validierung}
 
-\section{Versuchsaufbau und Testbedingungen}
+In diesem Kapitel wird das entwickelte Gesamtsystem anhand der in Kapitel 5 definierten Anforderungen und Abnahmekriterien bewertet. Ziel ist es, sowohl die Erkennungsleistung der KI-Verarbeitungskette als auch die technische Leistungsfähigkeit des eingebetteten Systems zu untersuchen. Dazu werden die Erkennungsgenauigkeit, das Verhalten unter unterschiedlichen Umgebungsbedingungen, die Verarbeitungsgeschwindigkeit sowie der Speicher- und Ressourcenverbrauch betrachtet.
+
+Die Evaluation umfasst sowohl das Klassifikationsmodell als auch den integrierten Prototyp. Die Bewertung des Modells erfolgt anhand zuvor nicht für das Training verwendeter Testdaten. Ergänzend wird das Gesamtsystem unter festgelegten realen Einsatzbedingungen untersucht. Dadurch kann zwischen der isolierten Modellleistung und der Erkennungsleistung der vollständig integrierten Kamera- und KI-Verarbeitungskette unterschieden werden. Die ermittelten Ergebnisse werden abschließend den festgelegten Anforderungen und Abnahmekriterien gegenübergestellt. Auf dieser Grundlage wird beurteilt, welche Anforderungen vollständig, teilweise oder nicht erfüllt wurden.
 
 \section{Erkennungsgenauigkeit}
 
@@ -10,13 +12,9 @@
     \caption{Trainingsergebnisse des Klassifizierungsmodells}
     \label{tab:trainingsergebnisse} \\
     \hline
-    \textbf{Metrik} & \textbf{Wert} \\
+    \texttt{Metrik} & \texttt{Wert} \\
     \hline
     \endfirsthead
-    \hline
-    \textbf{Metrik} & \textbf{Wert} \\
-    \hline
-    \endhead
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
@@ -47,6 +45,42 @@
 \end{figure}
 
 Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt kontinuierlich über alle 20 Epochen.
+
+
+
+\section{Versuchsaufbau und Testbedingungen}
+
+Das System wird während der Versuche in einer festen Position aufgestellt. Die Handzeichen werden einzeln innerhalb des Erfassungsbereichs der Kamera dargestellt. Um die Versuche Vergleichbar zu gestalten, werden der Abstand zur Kamera, die Beleuchtung, der Hintergrund und die Anzahl der Wiederholungen dokumentiert. Soweit ein Parameter nicht gezielt untersucht wird, bleiben die Bedingungen während der jeweiligen Versuchsreihe unverändert.
+
+\begin{longtable}{|p{0.4\textwidth}|p{0.45\textwidth}|}
+    \caption{Grundlegende Bedingungen der Systemevaluation}
+    \label{tab:versuchsbedingungen} \\
+    \hline
+    \texttt{Parameter} & \texttt{Festlegung} \\
+    \hline
+    \endfirsthead
+    \hline
+    \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
+    \endfoot
+    \hline
+    \endlastfoot
+    Abstand zur Kamera & 50 cm \\
+    \hline
+    Hintergrund & leer, weiße Wand \\
+    \hline
+    Beleuchtung & Lichtquelle von oben, außerhalb des Bildes \\
+    \hline
+    Unterstützte Zeichenklassen & A-Y ohne J, SCH \\
+    \hline
+    Versuchspersonen & vier \\
+    \hline
+    Wiederholungen je Zeichen &  10 \\
+    \hline
+\end{longtable}
+
+\section{Feldversuch}
+
+
 
 \section{Einfluss von Beleuchtung und Hintergrund}
 \section{Inferenzlatenz und Ende-zu-Ende-Latenz}
