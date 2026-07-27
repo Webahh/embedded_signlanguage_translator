@@ -1,7 +1,7 @@
-\chapter{Entwicklung und Implementation}
+\chapter{Entwicklung und Implementation}\label{ch:entwicklung}
 
-\section{Aufbau und Aufbereitung des Datensatzes}
-\subsection{Rohvideos}
+\section{Aufbau und Aufbereitung des Datensatzes}\label{sec:datensatz}
+\subsection{Rohvideos}\label{sub:rohvideos}
 
 Der Datensatz basiert auf einer eigens erstellten Sammlung von Videoaufnahmen der deutsche Gebärdensprache (DGS) und wurde speziell für die Klassifikation statischer Fingeralphabetzeichen konzipiert. Die Rohvideos wurden manuell aufgezeichnet und liegen im MP4-Format vor.
 
@@ -9,7 +9,7 @@ Die Benennungskonvention der Videodateien lautet \texttt{alph\_[og|fw]\_[Label][
 
 Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klassenauswahl beschränkt sich auf die 24 statischen Buchstaben A–Y (ohne J und Z, da diese dynamische Handbewegungen erfordern und somit mit dem statischen Ansatz des Klassifikators nicht kompatibel sind), das Sonderzeichen SCH sowie die Leerklasse NONE, die die Unbestimmtheit des Ergebnisses darstellt. Die Anzahl der Originaufnahmen pro Klasse variiert zwischen 3 und 5, wobei 16 Klassen mit je 5, 8 Klassen mit je 4 und 2 Klassen (F, NONE) mit je 3 Aufnahmen vertreten sind.
 
-\subsection{Frame-Extraktion und Handdetektion}
+\subsection{Frame-Extraktion und Handdetektion}\label{sub:frame-extraktion}
 
 \#TODO MediaPipe Hand/Palm Detection
 
@@ -18,7 +18,7 @@ Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Vi
 Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors (Lugaresi et al., 2019) in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von 2 Händen pro Frame und einer Mindestkonfidenz von 70. Pro Hand werden 21 Landmarks extrahiert, die den Handgelenkspunkt (WRIST) sowie die Gelenke der fünf Finger (Daumen: CMC, MCP, IP, TIP; Indexfinger: MCP, PIP, DIP, TIP; Mittelfinger: MCP, PIP, DIP, TIP; Ringfinger: MCP, PIP, DIP, TIP; Kleinfinger: MCP, PIP, DIP, TIP) umfassen.
 
 
-\subsection{Augmentation}
+\subsection{Augmentation}\label{sub:augmentation}
 
 Die Augmentationspipeline wendet sequenziell Transformationen auf die extrahierten Landmarks an. Jeder Schritt kann mehrere Variationen erzeugen, die kumulativ kombiniert werden:
 
@@ -36,13 +36,13 @@ Für die verwendeten Optionen sind:
 
 \#TODO Pickle Inspect Gegenüberstellung der Gesten nach Augmentation
 
-\subsection{Normalisierung und Interpolation}
+\subsection{Normalisierung und Interpolation}\label{sub:normalisierung}
 
 Die extrahierten Landmarks werden für eine effiziente und positionsinvariante Darstellung normalisiert. Hierbei werden alle Landmark-Koordinaten relativ zum Handgelenk positioniert und in den int16-Zahlenbereich ({-}32.768 bis 32.767) umgerechnet. Die Landmark-Daten werden als Dictionary mit den 21 benannten Schlüsseln und den zugehörigen \([x, y, z]\)-Koordinaten abgebildet. Zusätzlich wird die absolute Handgelenkposition (\texttt{wrist\_pos}) in Skalierung auf den int16-Bereich sowie die Bounding-Box der Hand in Pixelkoordinaten (\texttt{hand\_area}) gespeichert. Die absoluten Landmark-Positionen in Pixelkoordinaten (\texttt{landmark\_pos}) werden ebenfalls erfasst.
 
 Für eine einheitliche Darstellung aller Sequenzen erfolgt eine FPS-Normalisierung auf 60\,FPS mittels linearer Interpolation zwischen den Frames. Frames, in denen eine Hand nicht erkannt wird, werden durch leere Handstrukturen mit der Sentinel-Koordinate \([{-100}, {-100}]\) repräsentiert und bei der Interpolation als Sprungpunkte behandelt.
 
-\subsection{Datenstrukturen und Speicherung}
+\subsection{Datenstrukturen und Speicherung}\label{sub:datenstrukturen}
 
 Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen abgebildet:
 
@@ -64,14 +64,14 @@ Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen a
 
 Die verarbeiteten Geste-Daten werden im Pickle-Format (\texttt{.pkl}) abgelegt. Der Dateiname folgt dem Muster \texttt{\{Label\}\_\{Augmentierungstyp\}\_\{UUID\}.pkl}, wobei die UUID die ersten vier Hexadezimalzeichen eines UUID4 darstellt. Die Speicherung erfolgt im Verzeichnis \texttt{resources/gestures/}. Die Verarbeitung der Videodateien und die Speicherung der Ergebnisse werden mittels Multiprocessing unter Auslastung von 80\,\% der verfügbaren CPU-Kerne parallelisiert.
 
-\section{Entwicklung und Training des Klassifikationsmodells}
-\subsection{Problemdefinition}
+\section{Entwicklung und Training des Klassifikationsmodells}\label{sec:klassifikationsmodell}
+\subsection{Problemdefinition}\label{sub:problemdefinition}
 
 Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Gebärdenalphabet-Zeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
 
 Es liegt keine Binäreklassifikation vor, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
 
-\subsection{Datenanalyse}
+\subsection{Datenanalyse}\label{sub:datenanalyse}
 
 \paragraph{Input-Format:} Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus 44 Werten für die linke Hand (22 Gelenke $\times$ 2 Koordinaten) und 44 Werten für die rechte Hand (22 Gelenke $\times$ 2 Koordinaten) zusammen.
 
@@ -81,7 +81,7 @@ Die 22 Gelenke pro Hand umfassen die 21 MediaPipe-Landmarks sowie die absolute H
 
 \paragraph{Normalisierung:} Alle Koordinaten werden durch den Maximalwert des int16-Bereichs (POS\_MAX = 32.767) dividiert, sodass die Werte im Bereich \([{-}1, 1]\) liegen.
 
-\subsection{Modellauswahl}
+\subsection{Modellauswahl}\label{sub:modellauswahl}
 
 Für die Modellauswahl wurden verschiedene Ansätze evaluiert, wobei die Anforderungen des Embedded-Systems (schnelle Inferenz, kleine Modellgröße) und die Input-Struktur (88D-feature-Vektor aus MediaPipe-Landmarks) im Vordergrund standen.
 
@@ -95,7 +95,7 @@ Random Forest und SVM wurden ebenfalls in Betracht gezogen, erreichen jedoch in 
 
 Das MLP erfüllt die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit. Die Softmax-Ausgabeschicht liefert direkt kalibrierte Klassenwahrscheinlichkeiten, die für die nachfolgende Verarbeitung benötigt werden. Während direkte Quantisierung zu Genauigkeitsverlust führen kann, zeigen Studien, dass INT8-Quantisierung bei MLP-Modellen mit geeigneten Techniken (LayerNorm, Kalibrierung) Verluste von unter 1\% erreicht. Ein akzeptabler Kompromiss für den Embedded-Einsatz (blogdeveloperspot, 2025).
 
-\subsection{Modellarchitektur}
+\subsection{Modellarchitektur}\label{sub:modellarchitektur}
 
 \begin{figure}[!htbp]
     \centering
@@ -127,14 +127,14 @@ Der zweite Dropout-Layer (0.5) wendet eine stärkere Regularisierung an als der 
 
 Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale Klassifikationsschicht. Die 26 Ausgabeneuronen entsprechen den 26 Klassen (NONE, A–Y ohne J und Z, SCH). Die Softmax-Funktion $$\sigma(z_i) = \frac{e^{z_i}}{\sum e^{z_j}}$$normalisiert (Sharma et al., 2020). Die Rohausgaben (Logits) in Wahrscheinlichkeiten, deren Summe exakt 1 ergibt. Jedes Ausgabeneuron liefert damit die Wahrscheinlichkeit dafür, dass der Input der entsprechenden Gebärdensprache-Klasse angehört.
 
-\subsection{Verlustfunktion und Optimierung}
+\subsection{Verlustfunktion und Optimierung}\label{sub:verlustfunktion}
 
 Für das Training des Modells wird die Verlustfunktion Sparse Categorical Crossentropy verwendet. Diese eignet sich insbesondere, da die Zielklassen als Integer und nicht als One-Hot-Vektoren kodiert vorliegen. Dadurch wird der Speicherbedarf reduziert und gleichzeitig eine numerisch stabile Berechnung der Gradienten ermöglicht. Die Verlustfunktion berechnet die Abweichung zwischen den tatsächlichen Klassen und den durch die Softmax-Ausgabe vorhergesagten Klassenwahrscheinlichkeiten und lässt sich durch folgende Formel beschreiben:
 
 $$L = -\log(p_{y_{true}})$$
 (What Is Sparse Categorical Crossentropy, 10:49:00+00:00) wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet.
 
-\subsection{Trainingsprozess}
+\subsection{Trainingsprozess}\label{sub:trainingsprozess}
 
 Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden. Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und Frühzeitiges Stoppen.
 
@@ -188,16 +188,16 @@ Early Stopping dient der Vermeidung von Overfitting, indem das Training automati
     \hline
 \end{longtable}
 
-\subsection{Evaluierung}
+\subsection{Evaluierung}\label{sub:evaluierung}
 
 Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel 8 zu finden.
 \#TODO Füge kapitelreferenz ein!
 
-\section{Quantisierung, Konvertierung und Deployment der Modelle}
+\section{Quantisierung, Konvertierung und Deployment der Modelle}\label{sec:quantisierung-deployment}
 
 Das folgende Kapitel beschreibt die Quantisierung des Tensorflow Fingeralphabet Modells, die Convertierung der Quantisierten Handdedektion-, Landmarkerkennung- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
 
-\subsection{Quantisierung von Tensorflow Modellen}
+\subsection{Quantisierung von Tensorflow Modellen}\label{sub:quantisierung-tf}
 
 a die Modelle zur Handdetektion und Landmark-Erkennung bereits in einer quantisierten Form vorliegen, ist für diese keine weitere Quantisierung erforderlich. Lediglich das Modell zur Erkennung des Fingeralphabets muss für den Einsatz auf der Zielhardware quantisiert werden. Die Quantisierung erfolgt im Rahmen der Konvertierung des trainierten Keras-Modells in das TensorFlow-Lite-Format (TFLite). Dieser Schritt ist notwendig, da die Generierung der Embedded-Binärdateien mit STEdgeAI ausschließlich Modelle im TensorFlow-Lite- oder ONNX-Format unterstützt.
 
@@ -238,7 +238,7 @@ Abschließend wird das Modell in das Tensorflow-Lite-Format konvertiert und als 
 
 Ergebnis ist ein vollständig quantisiertes TensorFlow-Lite-Modell, das den Anforderungen der eingesetzten NPU entspricht und anschließend mit STEdgeAI in eine für das Embedded-System ausführbare Binärdatei überführt werden kann. Durch die Quantisierung werden der Speicherbedarf und der Rechenaufwand reduziert, während die Modellgenauigkeit durch die Verwendung repräsentativer Kalibrierungsdaten weitgehend erhalten bleibt.
 
-\subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded binaries}
+\subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded binaries}\label{sub:konvertierung}
 
 Nach der Quantisierung liegen alle drei Modelle (Handdetektion, Handlandmark-Erkennung und Fingeralphabet-Klassifikation) im TensorFlow-Lite-Format mit einer INT8-Quantisierung vor. Der nächste Verarbeitungsschritt ist diese Modelle mithilfe der ST Edge AI Core CLI in für die Zielhardware ausführbare Binärdateien zu überführen. Die Verwendung der Kommandozeilenschnittstelle (CLI) wurde bewusst der grafischen Benutzeroberfläche (GUI) vorgezogen, da sich hierdurch der gesamte Konvertierungsprozess automatisieren lässt. Auf diese Weise können Skripte erstellt werden, welche die Generierung aller Modellartefakte reproduzierbar und mit einem einzelnen Aufruf durchführen.
 
@@ -437,7 +437,7 @@ Der lertzte Schritt führt das \texttt{copy\_n6\_models.sh}-Script aus es kopier
 
 Zudem wird \texttt{\*\_ecblobs.h} gepatcht, um \verb|\#include "ecblob_sections.h"| einzufügen. Dadurch wird sichergestellt, dass die Gewichts-Arrays im ECBLOBS-Linker-Abschnitt (0x72000000, 8\,MB) landen, anstatt des internen ROM (255\,KB) zu sprengen.
 
-\section{Softwaregrundstruktur und hardwarenahe Basistreiber}
+\section{Softwaregrundstruktur und hardwarenahe Basistreiber}\label{sec:softwaregrundstruktur}
 
 Die Umsetzung der Kamera-, Display- und KI-Verarbeitung setzt zunächst eine funktionsfähige hardwarenahe Basissoftware voraus. Hierzu wurden grundlegende Treiber für die Initialisierung und Steuerung des Mikrocontrollers sowie seiner Peripherie entwickelt. Diese abstrahieren die direkten Registerzugriffe und stellen den übergeordneten Softwarekomponenten einheitliche Funktionen zur Verfügung. Zu den grundlegenden Komponenten gehören insbesondere die Taktsteuerung, die Konfiguration der Ein- und Ausgänge sowie Treiber für UART, Timer und I2C.
 
@@ -445,7 +445,7 @@ Die Implementierung greift auf den Cortex Microcontroller Software Interface Sta
 
 Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden. \cite[s. 3-4]{washizakiWasedaUniversityIEEE}.
 
-\subsection{Aufbau der Embedded-Software}
+\subsection{Aufbau der Embedded-Software}\label{sub:embedded-software-aufbau}
 
 Mit der Integration der Kamera, des Displays, der externen Speicher und der neuronalen Netze umfasst die Firmware mehrere Komponenten mit unterschiedlichen Aufgaben und Hardwareabhängigkeiten. Der Quellcode wurde daher in getrennte Bereiche gegliedert. Die Struktur orientiert sich an den Prinzipien der Modularisierung und der Trennung von Zuständigkeiten. Dabei werden unterschiedliche Funktionen in eigenständigen Komponenten mit definierten Schnittstellen zusammengefasst und Implementierungsdetails gegenüber den übergeordneten Komponenten gekapselt \cite[s. 3-4]{washizakiWasedaUniversityIEEE}. Listing 7.9 zeigt die grundlegende Projektstruktur:
 
@@ -476,7 +476,7 @@ Sign_Language_Translator/
             \-- ST/AI/              <- ST Neural-ART NPU-Middleware
 \end{lstlisting}
 
-\subsection{Zentrale Konfiguration und Systeminitialisierung}
+\subsection{Zentrale Konfiguration und Systeminitialisierung}\label{sub:systeminitialisierung}
 
 Die Konfiguration und Initialisierung der Systemkomponenten werden an zentralen Stellen der Software zusammengeführt. Dadurch müssen hardwarespezifische Parameter nicht innerhalb der einzelnen Anwendungskomponenten festgelegt werden. Gleichzeitig wird eine definierte Initialisierungsreihenfolge sichergestellt, da mehrere Komponenten von zuvor eingerichteten Taktquellen, Speicherbereichen oder Basistreibern abhängig sind.
 
@@ -560,7 +560,7 @@ Im Anschluss wird die KI-Laufzeitumgebung initialisiert. Dabei werden die NPU, d
     \hline
 \end{longtable}
 
-\subsection{Registerbasierte Treiberentwicklung}
+\subsection{Registerbasierte Treiberentwicklung}\label{sub:registerbasierte-treiber}
 
 Die Hardwareanbindung wurde überwiegend durch projektspezifische, registerbasierte Treiber umgesetzt. Diese greifen mithilfe der von CMSIS bereitgestellten Registerstrukturen und Bitmasken direkt auf die Peripherieregister des Mikrocontrollers zu. Die Konfiguration erfolgt entsprechend den Vorgaben des Referenzhandbuchs des STM32N6570. Die direkten Registerzugriffe werden hinter einheitlichen Treiberfunktionen gekapselt. Übergeordnete Komponenten müssen daher weder die verwendeten Register noch die Position der einzelnen Registerfelder kennen. Konfigurationsparameter werden überwiegend in Strukturen zusammengefasst und bei der Initialisierung an den jeweiligen Treiber übergeben.
 
@@ -591,7 +591,7 @@ Die Konfiguration erfolgt mithilfe der Struktur \texttt{GPIO\_cfg\_TypeDef}. Die
 
 Dieses Prinzip wird auch bei weiteren Treibern verwendet. Hardwareparameter werden in Konfigurationsstrukturen zusammengefasst, während die Treiberfunktionen deren Prüfung und Übertragung in die Register übernehmen. Dadurch können unterschiedliche Instanzen derselben Peripherie mit einer gemeinsamen Implementierung konfiguriert werden. Gleichzeitig bleiben die hardwarespezifischen Registerzugriffe auf die jeweilige Treiberschicht begrenzt.
 
-\subsection{Grundlegende Systemtreiber}
+\subsection{Grundlegende Systemtreiber}\label{sub:systemtreiber}
 
 Die projektspezifische Treiberschicht umfasst sowohl grundlegende Systemtreiber als auch funktionsspezifische Komponenten. Als grundlegende Systemtreiber werden im Rahmen dieser Arbeit diejenigen Komponenten eingeordnet, die von mehreren übergeordneten Modulen verwendet werden und zunächst keinen eigenständigen Anwendungszweck erfüllen. Sie stellen unter anderem die Taktversorgung, den Zugriff auf Ein- und Ausgänge, Zeitfunktionen sowie serielle Kommunikations- und Speicherschnittstellen bereit. Die Treiber für Kamera, DCMIPP, Display und Benutzereingabe bauen auf diesen grundlegenden Funktionen auf. Ebenso werden die Komponenten für den Software-Scheduler und die NPU-Anbindung getrennt behandelt. Tabelle 7.7 beschränkt sich daher auf die allgemeinen Systemtreiber der Software.
 
@@ -629,7 +629,7 @@ Die projektspezifische Treiberschicht umfasst sowohl grundlegende Systemtreiber 
 
 Die grundlegenden Systemtreiber bauen teilweise aufeinander auf. Der RCC-Treiber aktiviert zunächst die benötigten Peripherietakte, während der RIFSC die erforderlichen Zugriffsrechte auf Speicher- und Peripheriebereiche bereitstellt. Darauf aufbauend konfiguriert der GPIO-Treiber die Ein- und Ausgänge sowie die alternativen Pin-Funktionen für Schnittstellen wie USART, I²C und XSPI. Die Timer-, Kommunikations- und Speichertreiber können anschließend von den übergeordneten Komponenten verwendet werden. Die funktionsspezifischen Treiber für Kamera, Display, Ablaufsteuerung und NPU werden in den folgenden Kapiteln im Zusammenhang mit ihrer jeweiligen Verwendung beschrieben.
 
-\subsection{Einordnung der Basistreiber in die übergeordneten Komponenten}
+\subsection{Einordnung der Basistreiber in die übergeordneten Komponenten}\label{sub:treiber-einordnung}
 
 Die funktionsspezifischen Komponenten der Firmware bauen jeweils auf mehreren grundlegenden Systemtreibern auf. Tabelle 7.8 ordnet den übergeordneten Komponenten die von ihnen verwendeten Basistreiber zu.
 
@@ -663,21 +663,21 @@ Die funktionsspezifischen Komponenten der Firmware bauen jeweils auf mehreren gr
 
 Die Zuordnung zeigt, dass insbesondere die RCC-, und GPIO-Treiber von mehreren Systembereichen gemeinsam verwendet werden. Die Basistreiber stellen damit die gemeinsame hardwarenahe Grundlage bereit, während die übergeordneten Komponenten deren Funktionen zu anwendungsspezifischen Abläufen kombinieren.
 
-\section{Kamera - Display Pipeline}
+\section{Kamera - Display Pipeline}\label{sec:kamera-display-pipeline}
 Die Kamera-Display-Pipeline bildet die Grundlage für die Erfassung, Aufbereitung und Ausgabe der Kamerabilder. Sie verbindet den IMX335-Kamerasensor über die CSI-Schnittstelle mit der DCMIPP und überträgt die daraus erzeugten Bilddaten in die vorgesehenen Pufferbereiche im externen PSRAM. Das von Pipe 1 bereitgestellte Kamerabild wird anschließend über den LTDC auf dem angeschlossenen Display ausgegeben. Parallel erzeugt Pipe 2 die Eingabebilder für die Handdetektion. Die folgenden Abschnitte beschreiben die Initialisierung des Kamerasensors, die Übertragung der Bilddaten über CSI und DCMIPP, die Verwaltung der verwendeten Bildpuffer sowie die Konfiguration der Displayausgabe. Die innerhalb der DCMIPP ausgeführten Bildverarbeitungsschritte werden getrennt davon in Abschnitt 7.8.1 erläutert.
 
-\subsection{Initialisierung des Kamerasensors}
+\subsection{Initialisierung des Kamerasensors}\label{sub:kamera-init}
 
 Als Kamerasensor wird der IMX335 verwendet. Die Initialisierung ist in \texttt{CAM\_Init()} zusammengefasst. Zunächst werden die GPIO-Pins für die Spannungsversorgung und den Hardware-Reset konfiguriert. Der Sensor wird durch eine festgelegte Schaltfolge mit zeitlichen Abständen in einen definierten Ausgangszustand versetzt. Die Konfiguration der Sensorregister erfolgt über \texttt{I2C}. Hierzu werden die zugehörigen GPIO-Pins für ihre I²C-Funktion eingerichtet und die Schnittstelle mit einer Übertragungsrate von 400 kHz initialisiert. Mit \texttt{IMX335\_Probe()} wird anschließend geprüft, ob der Sensor erreichbar ist und die erwartete Gerätekennung besitzt. Bei einer fehlerhaften Identifikation wird die Kamerainitialisierung abgebrochen.
 
 Nach der Einrichtung von CSI und DCMIPP werden die Sensorregister durch \texttt{IMX335\_Init()} für den vorgesehenen Betriebsmodus konfiguriert. Der Sensor stellt die Bilddaten mit einer Auflösung von 2592 × 1944 Pixeln im RAW10-Format bereit. Abschließend wird die automatische Belichtungsregelung initialisiert und eine anfängliche Belichtungszeit an den Sensor übertragen.
 
-\subsection{Übertragung der Kameradaten über CSI und DCMIPP}
+\subsection{Übertragung der Kameradaten über CSI und DCMIPP}\label{sub:csi-dcmipp}
 
 Die vom IMX335 aufgenommenen Bilddaten werden über eine MIPI-CSI-2-Verbindung an den Mikrocontroller übertragen. Die CSI-Schnittstelle verwendet zwei Datenleitungen, den virtuellen Kanal 0 und den CSI-2-Datentyp `0x2B` für RAW10-Bilddaten. Nach der grundlegenden Initialisierung werden die Übertragungsparameter konfiguriert und der virtuelle Kanal aktiviert. Die empfangenen Bilddaten werden an die DCMIPP weitergegeben. Diese verteilt den gemeinsamen Kameradatenstrom auf zwei Ausgabepfade. Pipe 1 erzeugt das 800 × 480 Pixel große Displaybild, das gleichzeitig als Ausgangsbild für die Landmark-Erkennung verwendet wird. Pipe 2 stellt ein 192 × 192 Pixel großes Eingabebild für die Handdetektion bereit. Dadurch können beide Bildformate unabhängig voneinander aus demselben Kameradatenstrom erzeugt werden.
 
 Die beiden Pipelines werden durch \texttt{CAM\_DisplayPipe\_Start()} und \texttt{CAM\_NNPipe\_Start()} gestartet. Für beide Ausgabepfade wird jeweils ein Frame-Interrupt aktiviert. Dieser signalisiert, dass die Übertragung eines vollständigen Bildes in den vorgesehenen Puffer abgeschlossen wurde. Anschließend kann der jeweilige Puffer für die Displayausgabe beziehungsweise die KI-Verarbeitung verwendet werden. 
-\subsection{Verwaltung der Bildpuffer}
+\subsection{Verwaltung der Bildpuffer}\label{sub:bildpuffer}
 
 Aufgrund des hohen Speicherbedarfs werden die Bildpuffer im externen PSRAM abgelegt. Dieser wird über die XSPI-Schnittstelle angebunden und im Memory-Mapped-Modus betrieben. Dadurch können alle beteiligten Komponenten über feste Speicheradressen auf die Bilddaten zugreifen. 
 
@@ -685,7 +685,7 @@ Für das von Pipe 1 erzeugte Displaybild werden vier Hintergrundbildpuffer verwe
 
 Pipe 2 verwendet zwei separate Eingabebildpuffer für die Handdetektion. Diese werden im Double-Buffer-Modus abwechselnd durch die DCMIPP beschrieben. Während ein Puffer mit neuen Bilddaten gefüllt wird, kann der bereits fertiggestellte Puffer durch die KI-Verarbeitung verwendet werden. Der Frame-Interrupt kennzeichnet den jeweils vollständig übertragenen Puffer als bereit. Zusätzlich werden zwei Vordergrundpuffer für die Benutzeroberfläche bereitgestellt. Sie ermöglichen es, eine neue Darstellung vorzubereiten, während der LTDC weiterhin den vorherigen Stand ausgibt. Nach Abschluss der Zeichenoperationen werden die beiden Puffer getauscht.
 
-\subsection{LTDC-Konfiguration und Verwaltung der Displayebenen}
+\subsection{LTDC-Konfiguration und Verwaltung der Displayebenen}\label{sub:ltdc-konfig}
 
 Die Ausgabe der Bilddaten erfolgt über den LCD-TFT Display Controller (LTDC). Dieser liest die im externen PSRAM abgelegten Bildpuffer aus und überträgt deren Inhalt kontinuierlich an das angeschlossene Display. Für die Darstellung werden zwei übereinander liegende Displayebenen verwendet.
 
@@ -700,9 +700,9 @@ Layer 1 bildet die Hintergrundebene und zeigt das von Pipe 1 erzeugte Kamerabild
 
 Die Abbildung veranschaulicht die Zusammensetzung der Displayausgabe. Zunächst wird Layer 1 über dem konfigurierten LTDC-Hintergrund dargestellt. Da Layer 1 das vollständige Display im RGB888-Format abdeckt, bildet er im regulären Betrieb den sichtbaren Hintergrund. Anschließend wird Layer 2 unter Berücksichtigung der im ARGB4444-Format enthaltenen Alphawerte darübergelegt. Transparente Bereiche von Layer 2 lassen das Kamerabild von Layer 1 sichtbar, während nicht transparente Bereiche die Elemente der Benutzeroberfläche darstellen. Das Ergebnis beider Ebenen wird anschließend als gemeinsames Bild an das Display ausgegeben. Die genaue Gestaltung und Aktualisierung der Benutzeroberfläche wird in Abschnitt 7.9 beschrieben.
 
-\section{Ablaufsteuerung und Software Scheduler}
+\section{Ablaufsteuerung und Software Scheduler}\label{sec:scheduler}
 
-\subsection{Architektur-Übersicht}
+\subsection{Architektur-Übersicht}\label{sub:scheduler-architektur}
 Mit der zunehmenden Komplexität einzelner Komponenten verlängert sich die Laufzeit dieser. Dies führt bei sequenzieller Ausführung zu dem Problem, dass Komponenten, die in einer bestimmten Frequenz ausgeführt werden müssen, nicht mehr rechtzeitig bedient werden können. Ein Beispiel hierfür ist das Display, das bei zu langsamer Zykluszeit nicht mehr interaktionsfähig bleibt, während beispielsweise die Kamera-Erfassung oder Sensorabfragen deutlich mehr Rechenzeit beanspruchen. Eine rein sequenzielle Schleife (super-loop) kann diese unterschiedlichen Anforderungen nicht mehr befriedigen.
 
 Als Lösung wurde ein prioritätsbasierter preemptiver Scheduler implementiert, der als Nicht-RTOS-Lösung auf dem ARM Cortex-M55 direct auf dem bare-metal läuft. Der Scheduler verwaltet maximal 9 Tasks, wobei Slot 8 fest dem Idle-Task zugewiesen ist, der im WFI-Zustand (Wait For Interrupt) verharrt und bei Bedarf Statistiken ausgibt.
@@ -715,7 +715,7 @@ Stack-Management: Tasks erhalten einen variablen Stack, der aus einem statischen
 
 Preemption: Tasks können durchhöherpriorisierte Tasks unterbrochen werden. Die Prioritäten reichen von 0 (höchste) bis 0xFF (niedrigste, Idle-Task). Die Kontextwahl erfolgt über PendSV (Pending supervisor call) mit der niedrigsten Interruptpriorität (0xFF), sodass alle anderen Interrupts zuerst abgearbeitet werden. Die Selektion des nächsten Tasks erfolgt mittels Round-Robin mit Prioritätssuche: Es wird ab dem aktuellen Task-Index zirkulär gesucht und der höchstpriorisierte bereite Task ausgewählt.
 
-\subsection{Task-Lebenszyklus (State machine)}
+\subsection{Task-Lebenszyklus (State machine)}\label{sub:task-lebenszyklus}
 
 \begin{figure}[H]
     \centering
@@ -734,11 +734,11 @@ Ein Task hat vier Zustände:
 
 \ref{fig:task-states} stellt die Übergänge zwischen Zuständen dar.
 
-\subsection{Interrupt-Hierrarchie \& Context Switching}
+\subsection{Interrupt-Hierrarchie \& Context Switching}\label{sub:interrupt-hierarchie}
 
 Die Kontextwaehlerung ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 auf drei Ebenen: dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentlichen Contextwaehlerung via PendSV\_Handler
 
-\subsubsection{Anfänglicher Context-Start (Bootstrapping)}
+\subsubsection{Anfänglicher Context-Start (Bootstrapping)}\label{ssub:bootstrap}
 Der Start des ersten Tasks erfolgt nicht ueber PendSV, sondern ueber einen SVC-Aufruf (Supervisor Call). Der Ablauf in \texttt{SCHEDULER\_Tasks\_run()} ist wie folgt:
 
 \begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap prozess}, label={lst:sw-dir-structure}]
@@ -775,13 +775,13 @@ SCHEDULER_Tasks_run()
     9. bx lr -> Sprung zur Task-Funktion (PC aus Exception-Frame)
 \end{lstlisting}
 
-\subsubsection{Periodische Aktivierung (Tim7\_IRQhandler)}
+\subsubsection{Periodische Aktivierung (Tim7\_IRQhandler)}\label{ssub:tim7-irq}
 Alle 1ms löst der TIM7-Interrupt aus und steuert den Scheduling-Ablauf.
 Jeder registrierte Task welcher nicht \texttt{TaskDeleted} oder \texttt{TaskSuspended} ist wird auf Ablauf des Ausführungs Intervalls geprüft. Tasks dessen Intervalle abgelaufen sind werden in \texttt{TaskReady} zustand versetzt. Damit der Task auswahl Algorithmus diese Auswählen kann. Im Anschluss wird die PendSV Ausführung angefordert.
 
 PendSV wird nicht sofort ausgeführt, sondern läuft erst, wenn alle anderen ISRs abgearbeitet sind.
 
-\subsubsection{Preemptiver Context-Switch (PendSV\_Handler)}
+\subsubsection{Preemptiver Context-Switch (PendSV\_Handler)}\label{ssub:pendsv-handler}
 
 Die eigentliche Kontextwahl erfolgt im \texttt{PendSV\_Handler}in reiner Assembler-Implementierung. PendSV hat die niedrigste NVIC-Priorität (0xFF), wird also erst nach Abschluss aller anderen Interrupts ausgeführt.
 
@@ -828,7 +828,7 @@ PendSV\_Handler:
 
 \end{lstlisting}
 
-\subsection{Task-Selektion}
+\subsection{Task-Selektion}\label{sub:task-selektion}
 
 \begin{lstlisting}[language=pseudocode, numbers=none, caption={Selection of the next task to execute}, label={lst:sw-dir-structure}]
 Task_SelectNext():
@@ -853,7 +853,7 @@ Task_SelectNext():
 
 Bei gleicher Priorität entscheidet die Reihenfolge der Slot-Indizes (implizierter Round-Robin). Der Algorithmus scannt zirkulär ab dem nächsten Slot und wählt den Task mit der niedrigsten Prioritätszahl (0 = höchste).
 
-\subsection{Fault handling}
+\subsection{Fault handling}\label{sub:fault-handling}
 
 Während der Ausführung der Tasks können sogenannte \emph{Faults} (Ausnahmezustaende) auftreten, die vom Cortex-M55-Prozessor erkannt und an den registrierten Fault-Handler weitergeleitet werden. Der Cortex-M55 unterscheidet zwischen mehreren Fault-Klassen, von denen vier relevant sind:
 \begin{itemize}
@@ -867,7 +867,7 @@ Während der Ausführung der Tasks können sogenannte \emph{Faults} (Ausnahmezus
 
 Diese Faults werden durch den Scheduler abgefangen. Dazu registriert der Scheduler in \texttt{SCHEDULER\_Tasks\_run()} die entsprechenden Fault-Handler (\texttt{HardFault\_Handler}, \texttt{UsageFault\_Handler}, \texttt{BusFault\_Handler}, \texttt{MemManage\_Handler}) als naked-Assemble-Funktionen, die den aktiven Stack-Frame (MSP oder PSP) ermitteln und an die C-Funktion \texttt{\_FaultHandler\_C()} übergeben. Der Handler erfasst den vollstaendigen diagnostischen Zustand des Systems, einschliesslich aller SCB-Register (\texttt{CFSR}, \texttt{HFSR}, \texttt{MMFAR}, \texttt{BFAR}), der Stack-Pointer (\texttt{MSP}, \texttt{PSP}, \texttt{PSPLIM}), des \texttt{CONTROL}-Registers, des \texttt{EXC\_RETURN}-Wertes sowie der gesicherten Register \texttt{R0--R3}, \texttt{R12}, \texttt{LR}, \texttt{PC} und \texttt{xPSR} und übertraegt diese Information per USART als Diagnoseausgabe. Anschliessend wird das Programm mittels Breakpoint-Befehl (\texttt{\_\_BKPT(0)}) für den Debugging-Prozess angehalten. Eine automatische Fehlerbehandlung oder Wiederherstellung des Betriebs findet nicht statt.
 
-\subsection{CPU-Zyklen-Messung \& Statistik}
+\subsection{CPU-Zyklen-Messung \& Statistik}\label{sub:cpu-statistik}
 
 Um die Laufzeiteigenschaften der einzelnen Tasks zur Laufzeit bewerten zu können, implementiert der Scheduler eine hardwaregestützte CPU-Zyklen-Messung. Als Messquelle dient der DWT (Data Watchpoint and Trace) Modul des Cortex-M55-Prozessors, dessen Zykelzähler \texttt{DWT->CYCCNT} bei Systemtaktfrequenz (200\,MHz) hochauflösend incremental zählt. Die Aktivierung erfolgt in \texttt{SCHEDULER\_System\_init()} durch Setzen der \texttt{DEMCR\_TRCENA} und \texttt{DWT\_CYCCNTENA} Bits.
 
@@ -887,13 +887,13 @@ Um Interrupt-Zyklen sauber von Task-Zyklen zu trennen, muss jede Peripheral-ISR 
 \textbf{Ausgabe} \newline
 Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit den Spalten \texttt{Name}, \texttt{cycle} (Gesamt-Zyklen), \texttt{min}, \texttt{max}, \texttt{avg} (durchschnittliche Zyklen pro Invocation), \texttt{\%ACT} (Aktiv-Anteil in Prozent), \texttt{Prempt} (Preemption-Zaehler) und \texttt{Invoc} (Invocation-Anzahl). Zusätzlich werden der Gesamtanteil idle-Zeit, der ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jedem Druckvorgang zurückgesetzt, sodass jeder Messzeitraum den Zeitraum zwischen zwei aufeinanderfolgenden Ausgaben repräsentiert.
 
-\section{Integration der NPU und einheitliche KI-Schnittstelle}
+\section{Integration der NPU und einheitliche KI-Schnittstelle}\label{sec:npu-integration}
 
 Die Ausführung der drei neuronalen Netze erfolgt überwiegend auf dem im STM32N657 integrierten Neural-ART Accelerator. Für dessen Verwendung müssen zunächst die zugehörigen Takt- und Speicherbereiche sowie die ATON-Laufzeitumgebung eingerichtet werden. Anschließend werden die drei konvertierten Netzwerkinstanzen für die Handdetektion, Landmark-Erkennung und Fingeralphabetklassifikation initialisiert.
 
 Um die Middleware-spezifischen Aufrufe nicht unmittelbar in der Ablaufsteuerung verwenden zu müssen, wurde mit \texttt{simple\_ai} eine gemeinsame KI-Schnittstelle umgesetzt. Diese fasst die Initialisierung der KI-Komponenten zusammen, vereinheitlicht die Statusrückgaben und stellt Funktionen für die Ausführung der neuronalen Netze bereit.
 
-\subsection{Initialisierung des Neural-ART Accelerators}
+\subsection{Initialisierung des Neural-ART Accelerators}\label{sub:npu-init}
 
 Die Initialisierung der KI-Komponenten erfolgt zentral durch \texttt{AI\_Init()}. Die Funktion prüft zunächst, ob die Initialisierung bereits durchgeführt wurde. In diesem Fall wird unmittelbar \texttt{AI\_\allowbreak STATUS\_OK} zurückgegeben. Dadurch kann die Funktion mehrfach aufgerufen werden, ohne die Laufzeitumgebung und Netzwerkinstanzen erneut einzurichten. Zu Beginn werden die benötigten Takt- und Speicherbereiche aktiviert.
 
@@ -911,7 +911,7 @@ Nach erfolgreicher Einrichtung der Hardware wird \texttt{LL\_ATON\_RT\_RuntimeIn
 
 Jede Initialisierungsfunktion ermittelt die vom jeweiligen Netzwerk verwendeten Ein- und Ausgabepuffer und bereitet dessen internen Zustand vor. Gibt eine der Funktionen einen Fehlerstatus zurück, wird die weitere Initialisierung abgebrochen und der Status an die aufrufende Komponente weitergereicht. Erst nach erfolgreicher Initialisierung aller drei Modelle wird \texttt{ai\_initialized} gesetzt und \texttt{AI\_STATUS\_OK} zurückgegeben.
 
-\subsection{Einheitliche KI-Schnittstelle}
+\subsection{Einheitliche KI-Schnittstelle}\label{sub:ki-schnittstelle}
 
 Die von der ATON-Middleware bereitgestellten Funktionen sind an die Laufzeitumgebung und die jeweils erzeugten Netzwerkinstanzen gekoppelt. Um diese Abhängigkeiten nicht unmittelbar in die Ablaufsteuerung und die Vor- bzw. Nachverarbeitung zu übernehmen, wurde mit \texttt{simple\_ai} eine gemeinsame KI-Schnittstelle implementiert. Sie bündelt die allgemeinen Funktionen zur Initialisierung und Ausführung der neuronalen Netze und stellt einheitliche Statuswerte für alle Modellkomponenten bereit.
 
@@ -957,11 +957,11 @@ Die modellspezifischen Komponenten kapseln darauf aufbauend die jeweiligen Netzw
 
 Damit bildet \texttt{simple\_ai} die gemeinsame Verbindung zwischen den erzeugten Netzwerkinstanzen und der übergeordneten Ablaufsteuerung. Middleware-spezifische Details der Netzwerkausführung bleiben innerhalb dieser Schnittstelle gekapselt, während die modellspezifischen Unterschiede weiterhin in den zugehörigen Komponenten behandelt werden.
 
-\section{Vor- und Nachverarbeitungsschritte}
+\section{Vor- und Nachverarbeitungsschritte}\label{sec:vor-nachverarbeitung}
 
 Die drei neuronalen Netze verwenden unterschiedliche Eingabedaten und liefern Ausgaben, die nicht unmittelbar durch das jeweils nachfolgende Modell verarbeitet werden können. Daher sind zwischen den einzelnen Inferenzschritten mehrere Vor- und Nachverarbeitungen erforderlich. Diese umfassen sowohl hardwaregestützte Operationen innerhalb der DCMIPP als auch durch den Hauptprozessor ausgeführte Transformationen der Bild- und Landmark-Daten.
 
-\subsection{DCMIPP-gestützte Bildvorverarbeitung}
+\subsection{DCMIPP-gestützte Bildvorverarbeitung}\label{sub:dcmipp-vorverarbeitung}
 
 Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592x1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung \cite[s. 1815 ff.]{rm0486}.
 
@@ -1025,14 +1025,14 @@ Für Pipe 2 wird der Double-Buffer-Modus der DCMIPP verwendet. Die erzeugten Bil
 
 Durch die hardwaregestützte Vorverarbeitung werden nur die tatsächlich benötigten Bildauflösungen in den externen Speicher geschrieben. Dies reduziert sowohl den Speicherbedarf als auch die vom Hauptprozessor zu verarbeitende Datenmenge. Die weiteren auf der CPU ausgeführten Vor- und Nachverarbeitungsschritte können dadurch unmittelbar auf den bereits aufbereiteten RGB888-Bilddaten arbeiten.
 
-\subsection{Nachverarbeitung der Handdetektion}
-\subsubsection{Ankerbasierte Modellausgabe}
+\subsection{Nachverarbeitung der Handdetektion}\label{sub:nachverarbeitung-palm}
+\subsubsection{Ankerbasierte Modellausgabe}\label{ssub:ankerbasierung}
 
 Das Modell zur Handdetektion verwendet ein ankerbasiertes Detektionsverfahren. Hierfür sind in der Ankertabelle \texttt{pd\_anchors} insgesamt 2016 Ankerpositionen definiert. Diese repräsentieren unterschiedliche Positionen und Größen möglicher Handregionen innerhalb des 192x192 Pixel großen Eingabebildes. Für jeden Anker gibt das Modell einen Konfidenzwert sowie mehrere Regressionswerte aus. Der Konfidenzwert beschreibt, wie wahrscheinlich sich im Bereich des jeweiligen Ankers eine Hand befindet. Die Regressionswerte enthalten die Abweichungen zwischen dem Anker und der vorhergesagten Handregion sowie die Positionen der zugehörigen Schlüsselpunkte \cite{zhangMediaPipeHandsOndevice2020}.
 
 Die Anker bilden damit ein festes Suchraster über dem Eingabebild. Das Modell muss die Position und Ausdehnung einer Hand nicht vollständig unabhängig bestimmen, sondern sagt für jeden Anker die räumlichen Abweichungen zur tatsächlichen Handregion voraus. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen üblicherweise mehrere ähnliche Erkennungskandidaten, die in der anschließenden Nachverarbeitung bereinigt werden müssen.
 
-\subsubsection{Auswahl und Filterung der Erkennungskandidaten}
+\subsubsection{Auswahl und Filterung der Erkennungskandidaten}\label{ssub:kandidaten-filterung}
 Für jeden der 2016 Anker wird zunächst geprüft, ob der ausgegebene Konfidenzwert den festgelegten Schwellwert erreicht. Die Konfidenzwerte liegen als Logits vor und müssen für die weitere Bewertung durch eine Sigmoidfunktion in einen Wahrscheinlichkeitswert zwischen 0 und 1 überführt werden \cite{sharmaACTIVATIONFUNCTIONSNEURAL2020}:
 $$ \sigma(x) = \frac{1}{1 + \mathrm{e}^{-x}} $$
 Eine direkte Berechnung würde die Exponentialfunktion \texttt{expf()} erfordern. Da die verwendete Floating Point Unit keine Exponentialfunktion als direkte Hardwareoperation bereitstellt, müsste diese durch eine mathematische Bibliotheksroutine softwareseitig berechnet werden. Zur Verringerung des Rechenaufwands wird die Sigmoidfunktion daher durch die folgende rationale Funktion approximiert:
@@ -1049,7 +1049,7 @@ Die Kandidaten werden in absteigender Reihenfolge ihrer Wahrscheinlichkeit verar
 
 Um kurzzeitige Fehldetektionen und einzelne Aussetzer zu reduzieren, wird das Ergebnis zusätzlich über mehrere Ausführungen hinweg gefiltert. Eine Hand gilt erst dann als bestätigt, wenn in zwei aufeinanderfolgenden Auswertungen eine gültige Detektion vorliegt. Bei einer ungültigen Detektion wird der positive Zähler zurückgesetzt. Umgekehrt wird der erkannte Zustand erst aufgehoben, wenn in drei aufeinanderfolgenden Auswertungen keine gültige Handdetektion vorliegt. Einzelne Aussetzer führen dadurch nicht unmittelbar zum Verlust der erkannten Handregion.
 
-\subsubsection{Erzeugung der initialen Region of Interest}
+\subsubsection{Erzeugung der initialen Region of Interest}\label{ssub:initiale-roi}
 
 Aus der bestätigten Handdetektion wird die initiale Region of Interest für das Handlandmark-Modell erzeugt. Die Handdetektion wird auf dem von Pipe 2 bereitgestellten Bild ausgeführt, während der Eingabeausschnitt für das Landmark-Modell aus dem Displaybild von Pipe 1 entnommen wird. Aufgrund der unterschiedlichen Auflösungen und Bildausschnitte müssen die normierten Koordinaten der Handdetektion zunächst in das Koordinatensystem von Pipe 1 transformiert werden. In horizontaler Richtung bilden beide Bildpfade die vollständige Sensorbreite ab. Die horizontale Position und Breite können deshalb unmittelbar mit der Breite des Displaybildes skaliert werden. Pipe 1 verwendet jedoch einen vertikal zentrierten Ausschnitt des Sensorbildes. Bei der Transformation der vertikalen Koordinaten müssen daher zusätzlich die Höhe und der Offset dieses Ausschnitts berücksichtigt werden. Diese Koordinatentransformation wurde aus der Konfiguration der beiden DCMIPP-Pipelines abgeleitet.
 
@@ -1059,7 +1059,7 @@ Dabei bezeichnen $\Delta x$  und $\Delta y$ die Koordinatendifferenzen zwischen 
 
 Da die Begrenzungsbox der Handdetektion hauptsächlich die Handfläche umfasst, wird sie für die Landmark-Erkennung erweitert. Ihr Mittelpunkt wird entlang der rotierten lokalen Vertikalachse um die Hälfte der ursprünglichen Höhe in Richtung der Finger verschoben. Anschließend wird die längere Seite der Begrenzungsbox bestimmt und mit dem Faktor 2,6 skaliert. Der berechnete Wert wird für die Breite und Höhe verwendet, sodass eine quadratische Region entsteht. Die Verschiebung, Skalierung und quadratische Ausrichtung orientieren sich ebenfalls an der MediaPipe-Referenzimplementierung \cite{srccode_mediapipe}. Aus dem Mittelpunkt, der Seitenlänge und dem Rotationswinkel werden abschließend die vier Eckpunkte der Region berechnet. Die so erzeugte Region bildet die Grundlage für den 224x224 Pixel großen Eingabeausschnitt des Handlandmark-Modells. Dessen Erzeugung wird im folgenden Abschnitt zur Vorverarbeitung der Landmark-Erkennung beschrieben.
 
-\subsection{Vorverarbeitung der Landmark-Erkennung}
+\subsection{Vorverarbeitung der Landmark-Erkennung}\label{sub:landmark-vorverarbeitung}
 
 Die aus der Handdetektion erzeugte Region of Interest besitzt eine variable Position, Größe und Rotation innerhalb des von Pipe 1 bereitgestellten Kamerabildes. Das Handlandmark-Modell erwartet dagegen ein quadratisches Eingabebild mit einer festen Auflösung von 224x224 Pixeln. Daher muss die Region aus dem Kamerabild entnommen, entsprechend ihrer Rotation ausgerichtet und auf die Eingangsgröße des Modells übertragen werden. Hierzu wird für jedes Pixel des Zielbildes die zugehörige Position innerhalb der Region bestimmt. Die Zielkoordinaten werden zunächst auf den Bereich von {-}0,5 bis 0,5 normiert und anschließend mit der Breite und Höhe der Region skaliert. Unter Berücksichtigung des Rotationswinkels werden die lokalen Koordinaten in das Koordinatensystem des Kamerabildes überführt:
 $$\begin{aligned}
@@ -1077,17 +1077,17 @@ Dabei beschreiben $c_x$ und $c_y$ den Mittelpunkt und $\alpha$ den Rotationswink
 
 Die Transformation führt häufig zu Quellkoordinaten, die zwischen den ganzzahligen Pixelpositionen des Kamerabildes liegen. Der benötigte Farbwert wird deshalb durch eine bilineare Interpolation aus den vier benachbarten Pixeln berechnet. Dadurch werden Skalierungs- und Rotationsartefakte gegenüber einer einfachen Auswahl des nächstgelegenen Pixels reduziert (Getreuer, 2011). Reicht die Region über den Rand des Kamerabildes hinaus, werden die außerhalb des Bildes liegenden Bereiche im Modelleingang schwarz aufgefüllt. Bei der Adressierung der Bilddaten wird außerdem die im Speicher verwendete Zeilenlänge berücksichtigt. 
 
-\subsection{Nachverarbeitung der Landmark-Erkennung}
+\subsection{Nachverarbeitung der Landmark-Erkennung}\label{sub:landmark-nachverarbeitung}
 
 
 
-\subsubsection{Rücktransformation der Landmarks}
+\subsubsection{Rücktransformation der Landmarks}\label{ssub:landmark-ruecktransformation}
 
 Das Handlandmark-Modell gibt für jeden der 21 Handlandmarks drei Koordinaten innerhalb des 224x224 Pixel großen Modelleingangs aus. Da dieser Eingabeausschnitt gegenüber dem ursprünglichen Kamerabild skaliert, verschoben und rotiert wurde, können die ausgegebenen Koordinaten nicht unmittelbar für die Anzeige oder die nachfolgende Zeichenklassifikation verwendet werden. Sie werden deshalb zunächst in das Koordinatensystem des von Pipe 1 bereitgestellten Kamerabildes zurücktransformiert.
 
 Hierzu werden die x- und y-Koordinaten der Landmarks auf den Mittelpunkt des Modelleingangs bezogen und entsprechend der Größe der aktuellen Region of Interest skaliert. Anschließend werden sie anhand des Rotationswinkels der Region ausgerichtet und um deren Mittelpunkt verschoben. Die Transformation entspricht damit der Umkehrung der zuvor durchgeführten Erzeugung des Modelleingangs. Abschließend werden die x- und y-Koordinaten durch die Breite beziehungsweise Höhe des Kamerabildes geteilt und dadurch auf den Bereich des gesamten Bildes normiert. Die vom Modell ausgegebene z-Koordinate wird unverändert übernommen. Die zurücktransformierten Landmark-Koordinaten werden sowohl für die Anzeige und Zeichenklassifikation als auch für die Aktualisierung der Region of Interest verwendet. Dadurch kann die Hand in den nachfolgenden Kamerabildern anhand der bereits ermittelten Landmarks weiterverfolgt werden, ohne erneut eine vollständige Handdetektion ausführen zu müssen.
 
-\subsubsection{Aktualisierung der Tracking-Region}
+\subsubsection{Aktualisierung der Tracking-Region}\label{ssub:tracking-aktualisierung}
 
 Für die Bestimmung der nächsten Tracking-Region werden nicht alle 21 Landmarks verwendet. Insbesondere die Fingerspitzen haben sich in Tests abhängig vom dargestellten Handzeichen stark bewegt und haben dadurch die Größe und Position der Region unnötig verändert. Stattdessen werden zwölf vergleichsweise stabile Punkte aus dem Bereich des Handgelenks, der Handfläche und der Fingerbasen berücksichtigt. Aus ihren minimalen und maximalen x- und y-Koordinaten wird zunächst eine Bounding-Box bestimmt. Deren Mittelpunkt, Breite und Höhe bilden die Grundlage der neuen Region.
 
@@ -1097,7 +1097,7 @@ Abschließend wird die Region entlang ihrer lokalen vertikalen Achse leicht in R
 
 Die aktualisierte Region wird im folgenden Kamerabild erneut zur Erzeugung des 224x224 Pixel großen Modelleingangs verwendet. Erst wenn die Landmark-Erkennung über mehrere Durchläufe keine gültige Ausgabe mehr liefert, wird das Tracking zurückgesetzt und erneut die Handdetektion ausgeführt.
 
-\subsection{Vorverarbeitung des Klassifizierungsmodells}
+\subsection{Vorverarbeitung des Klassifizierungsmodells}\label{sub:klassifikation-vorverarbeitung}
 
 Das Klassifikationsmodell verarbeitet nicht das Kamerabild selbst, sondern die vom Handlandmark-Modell bestimmten Koordinaten. Der Modelleingang umfasst insgesamt 88 Merkmale und ist in zwei Bereiche mit jeweils 44 Merkmalen für die linke und rechte Hand unterteilt. Zu Beginn der Vorverarbeitung werden beide Bereiche mit den für eine fehlende Hand vorgesehenen Werten initialisiert. Anschließend wird anhand des vom Landmark-Modell ausgegebenen \texttt{Handedness}-Wertes bestimmt, welchem Bereich die erkannte Hand zugeordnet wird. Werte ab einem Schwellwert von 0,5 werden der rechten Hand und kleinere Werte der linken Hand zugeordnet. Für jede Hand werden die x- und y-Koordinaten der 21 Landmarks verwendet. Die z-Koordinaten werden bei der Zeichenklassifikation nicht berücksichtigt. Vor der weiteren Verarbeitung werden die horizontalen Koordinaten gespiegelt. Diese Transformation stellt die Koordinatenorientierung her, die auch bei der Erzeugung der Trainingsdaten verwendet wurde. Werte außerhalb des normierten Bereichs werden zuvor auf den Bereich von 0 bis 1 begrenzt. Um den Einfluss der Position der Hand innerhalb des Bildausschnitts zu verringern, werden die Landmark-Koordinaten relativ zum Handgelenk angegeben. Hierzu wird die Position des ersten Landmarks, das dem Handgelenk entspricht, von allen Landmark-Koordinaten abgezogen:
 $$x_i^{\mathrm{rel}}=x_i-x_0,\qquad y_i^{\mathrm{rel}}=y_i-y_0$$
@@ -1118,23 +1118,23 @@ z
 $$
 Dabei bezeichnet $v$  das 16-Bit-Merkmal, $s=0,007842$ den Quantisierungsfaktor und $z = 127$ den Nullpunkt. Das Ergebnis wird auf den gültigen Bereich von 0 bis 255 begrenzt und als \texttt{uint8\_t} in den Eingabepuffer des Klassifikationsmodells geschrieben.
 
-\subsection{Nachverarbeitung des Klassifikationsmodells}
+\subsection{Nachverarbeitung des Klassifikationsmodells}\label{sub:klassifikation-nachverarbeitung}
 
 Das Klassifikationsmodell gibt für jede unterstützte Zeichenklasse einen quantisierten Ausgabewert zurück. Dieser beschreibt die relative Bewertung der jeweiligen Klasse durch das Modell. Da die Werte als \texttt{uint8\_t} vorliegen, können sie ohne vorherige Dequantisierung miteinander verglichen werden. Zur Bestimmung des Klassifikationsergebnisses werden sämtliche Ausgabewerte durchlaufen. Der Index des größten Wertes wird als vorhergesagte Klasse ausgewählt. Nach Abschluss der Suche wird der ermittelte Klassenindex über das Array \texttt{ai\_labels} dem entsprechenden Fingeralphabetzeichen zugeordnet. Das zurückgegebene Ergebnis enthält somit den Klassenindex, den quantisierten Ausgabewert und die zugehörige Klassenbezeichnung.
 
-\section{Visualisierung und Benutzerausgabe}
+\section{Visualisierung und Benutzerausgabe}\label{sec:visualisierung}
 
 Für die Bedienbarkeit unnd Feedback für von dem Nutzers unternommene Handlungen sind visuelle Indikatoren auf dem Display notwendig. Das Projekt erhält zum einen Darstellungen der Erkennungsergebnisse und die Kontolle über diese Ergebnisse mittels einer Benutzeroberfläche. 
 
-\subsection{Darstellung der Erkennungsergebnisse}
+\subsection{Darstellung der Erkennungsergebnisse}\label{sub:darstellung-ergebnisse}
 
 Für die Entwicklung mussten die Inferenzergebnisse in einer simpel verständlichen repräsentation Dargestellt werden. Ihre Sichtbarkeit sowie Aktivität kann mittels der UI gesteuert.
 
-\subsubsection{Handdedektion}
+\subsubsection{Handdedektion}\label{ssub:darstellung-palm}
 
 Das Palm-Detektionsmodell erzeugt eine einzelne Bounding-Box um die erkannte Hand. Dieser wird als rotes rotiertes Rechteck auf dem Display dargestellt. Die vier Eckpunkte der ROI (Region of Interest) werden aus den Normalisierten-Koordinaten im 192$\times$192 Inferenzraum in den 800$\times$480 Displayraum transformiert. Dabei werden die unterschiedlichen Crop-Pipelines der Kamera (Sensorkoordinaten vs. Displaykoordinaten) berücksichtigt. Die ROI wird um einen Faktor von 2{,}6 vergrößert und um $-0{,}5$ in y-Richtung verschoben, um die Gesamtheit der Hand einzuschließen. Die Rotation wird aus den Handgelenkpunkten (Keypoint 0 und 2; \ref{fig:hand-landmarks}) berechnet. Die Darstellung erfolgt über vier Linien, die die Eckpunkte des Rechtecks in Rotationsrichtung verbinden. Jede Linie wird mit dem Bresenham-Algorithmus gerendert und die Eckpunkte werden auf die Displaygrenzen begrenzt, um Überläufe zu verhindern. Im reinen Palm-Modus (\texttt{ai\_mode == 0}) wird ausschließlich die ROI dargestellt. Im Tracking-Modus wird die ROI zusätzlich zu den Handlandmarks gezeichnet. Um Flackern zu vermeiden, wird die ROI bei jedem Frame-Interrupt (im \texttt{DCMIPP\_PIPE\_FrameEventCallback}) in den nächsten Display-Buffer kopiert und erneut gezeichnet, falls seit dem letzten gültigen Inferenzergebnis kein neues vorliegt.
 
-\subsubsection{Handlandmarks}
+\subsubsection{Handlandmarks}\label{ssub:darstellung-landmarks}
 
 Das Hand-Landmark-Modell erzeugt 21 Landmarkpunkte, die als Skelettstruktur auf dem Display dargestellt werden. Die Darstellung umfasst zwei Komponenten: Verbindungslinien zwischen den Gelenkpunkten und kreisförmige Marker an den Gelenkpositionen. Die 21 Landmarkpunkte werden aus dem normalisierten Koordinatenraum \([0,1]\) in die Pixelkoordinaten des 800$\times$480 Displays transformiert. Vor der Darstellung werden die Punkte einer Geschwindigkeitsvorhersage und einer exponentiellen Glättung unterzogen: Es wird eine lineare Extrapolation mit einer Vorhersagezeit von 25\,ms durchgeführt, wobei die Geschwindigkeit auf $\pm 0{,}08$ pro Frame begrenzt wird. Anschließend wird ein exponentieller Mittelwert mit $\alpha = 0{,}75$ angewendet, um instabile Schwankungen zu dämpfen.
 
@@ -1145,7 +1145,7 @@ Die Farben sind wie folgt definiert: Verbindungslinien in Grün, Landmark-Marker
 
 Um Flackern zu vermeiden, werden die geglätteten Punkte in ISR-sichere Speicherbereiche (\texttt{\_isr\_landmark\_points}) kopiert und bei jedem Frame-Interrupt in den jeweils nächsten Display-Buffer neu gezeichnet, solange kein neues Inferenzergebnis vorliegt.
 
-\subsubsection{Fingeralphabetmodell}
+\subsubsection{Fingeralphabetmodell}\label{ssub:darstellung-fingeralphabet}
 
 Das Fingeralphabetmodell klassifiziert die erkannte Handpose in eine von 26 Klassen (Buchstaben A–Z sowie \textit{NONE} und \textit{SCH}). Das Modell erhält als Eingabe keine Bilddaten, sondern die quantisierten Handlandmark-Koordinaten. Die Inferenz wird einmal pro Sekunde (\texttt{FINGERALPHABET\_INTERVAL\_MS = 1000\,ms}) durchgeführt und nur im Sign-Modus (\texttt{ai\_mode >= 2}) visuell ausgegeben.
 
@@ -1153,7 +1153,7 @@ Das Ergebnis wird über eine reine Argmax-Operation extrahiert: Die Klasse mit d
 
 Das Ergebnis wird als Textbox über das Display und per String über die serielle Schnittstelle (\texttt{DEBUG\_PRINTF}) ausgegeben, sofern der UI-Toggle „Sign“ aktiviert ist.
 
-\subsection{Benutzeroberfläche und Bedienung}
+\subsection{Benutzeroberfläche und Bedienung}\label{sub:benutzeroberflaeche}
 
 Eine Benutzeroberfläche musste entworfen werden, um die Darstellungen der Erkennungsergebnisse zu steuern. Bei Aktivität aller Modelle und der Darstellung ihrer Inferenzergebnisse ist das ausgegebene Bild unübersichtlich geworden. Bei der Umsetzung einer permanent sichtbaren UI war diese eher störend, da ein großer Teil des Displays bedeckt wurde. Um dies zu lösen, wurde das UI zu einem Drawer umstrukturiert. Ein Button öffnet und schließt das UI-Overlay.
 
@@ -1168,7 +1168,7 @@ Geöffnet bietet der Drawer mehr Optionen:
     \item Toggle zur Darstellung von Systeminformationen
 \end{itemize}
 
-\subsubsection{Grafikschicht-Architektur}
+\subsubsection{Grafikschicht-Architektur}\label{ssub:grafikschicht}
 
 Die grafische Darstellung basiert auf dem LTDC-Controller (LCD-TFT Display Controller) des STM32N6570, der zwei unabhängige Overlay-Schichten simultaneously auf das Display legt.
 
@@ -1178,7 +1178,7 @@ Die grafische Darstellung basiert auf dem LTDC-Controller (LCD-TFT Display Contr
 
 Die Speicherbelegung umfasst auf Schicht 1 vier rotierende Hintergrundbuffer (je 800$\times$480$\times$3\,B = 1{,}15\,MB), die über den DCMIPP-DMA gefüllt werden. Schicht 2 besitzt zwei Vordergrundbuffer (je 800$\times$480$\times$2\,B = 750\,KB), von denen einer den geöffneten und einer den geschlossenen Zustand des Drawer vorgerendert enthält. Das Umschalten zwischen den Zuständen erfolgt durch ein Setzen der Framebuffer-Adresse im LTDC-Register bei der nächsten vertikalen Austastlücke, wodurch der Übergang flackerfrei erfolgt.
 
-\subsubsection{Drawer-System}
+\subsubsection{Drawer-System}\label{ssub:drawer-system}
 
 Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite von 220\,Pixeln. Er wird als Struktur (\texttt{UI\_Drawer\_TypeDef}) verwaltet, die den aktuellen Zustand (geöffnet/geschlossen), die Farbgebung, die Position sowie ein Array von maximal 12 Elementen speichert.
 
@@ -1197,7 +1197,7 @@ Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite
 
 \textbf{Elementhöhe und Anordnung:} Jedes Element besitzt eine Höhe von 46\,Pixeln mit einem 4\,Pixel großen Abstand zwischen den Elementen. Die y-Position des $i$-ten Elements berechnet sich als $y_{\text{pos}} + 52 + i \cdot 50$ Pixel.
 
-\subsubsection{UI-Elemente}
+\subsubsection{UI-Elemente}\label{ssub:ui-elemente}
 
 Der Drawer enthält vier Elementtypen:
 
@@ -1209,7 +1209,7 @@ Der Drawer enthält vier Elementtypen:
 
 \textbf{Label:} Ein statisches Textelement ohne Interaktion. Wird für die Versionsanzeige („v1.0.0") verwendet.
 
-\subsubsection{Touch-Controller (GT911)}
+\subsubsection{Touch-Controller (GT911)}\label{ssub:touch-controller}
 
 Die Eingabe erfolgt über einen Goodix GT911 kapazitiven Touch-Controller, der über den I2C-Bus (I2C2) mit dem Mikrocontroller kommuniziert.
 
@@ -1219,7 +1219,7 @@ Die Eingabe erfolgt über einen Goodix GT911 kapazitiven Touch-Controller, der �
 
 \textbf{Abtastung und Weiterleitung:} Ein Scheduler-Task (\texttt{vTouchTask}) läuft alle 20\,ms und prüft das Pending-Flag. Bei einer Berührung werden die Koordinaten und der Berührungsstatus ausgelesen und an die Drawer-Logik (\texttt{UI\_Drawer\_HandleTouch}) übergeben. Zusätzlich wird als visuelles Feedback ein blauer Kreis (Radius 5\,Pixel) an der Berührungsposition auf Schicht 1 gezeichnet.
 
-\subsubsection{Touch-Event-Verarbeitung}
+\subsubsection{Touch-Event-Verarbeitung}\label{ssub:touch-event-verarbeitung}
 
 Die Touch-Verarbeitung arbeitet in zwei Phasen:
 

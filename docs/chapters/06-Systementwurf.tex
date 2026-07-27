@@ -1,10 +1,10 @@
-\chapter{Systementwurf}
+\chapter{Systementwurf}\label{ch:systementwurf}
 
 Auf Grundlage der zuvor definierten Anforderungen wird in diesem Kapitel der Entwurf des Gesamtsystems beschrieben. Zunächst wird ein übergeordnetes Systemkonzept vorgestellt, das die zentralen Komponenten und deren Zusammenwirken darstellt. Anschließend werden die Funktionen den verfügbaren Hardwarekomponenten der Zielplattform zugeordnet. Abschließend wird die mehrstufige KI-Verarbeitungskette von der Bilderfassung bis zur Klassifikation des dargestellten Fingeralphabetzeichens beschrieben.
 
 Der Systementwurf legt damit die grundlegende Architektur und die Schnittstellen zwischen den einzelnen Komponenten fest. Die konkrete technische Umsetzung, darunter die Konfiguration der Peripherie, die Speicherverwaltung sowie die Vor- und Nachverarbeitung der Modelldaten, wird im nachfolgenden Implementierungskapitel behandelt.
 
-\section{Systemkonzept}
+\section{Systemkonzept}\label{sec:systemkonzept}
 
 Ausgehend von den zuvor definierten Anforderungen wurde ein Systemkonzept entwickelt, das die funktionalen Komponenten des Gesamtsystems und den zwischen ihnen stattfindenden Datenfluss beschreibt. Das Konzept stellt zunächst eine weitgehend von der konkreten Zielplattform unabhängige Betrachtung des Systems dar. Dadurch können die erforderlichen Verarbeitungsschritte festgelegt werden, bevor diese im Hardware- und Softwareentwurf konkreten Komponenten der Zielplattform zugeordnet werden. Das in Abbildung 6.1 dargestellte Blockdiagramm veranschaulicht den Datenfluss von der Aufnahme eines Kamerabildes bis zur Ausgabe des erkannten Fingeralphabetzeichens auf dem Display.
 
@@ -25,7 +25,7 @@ Das dritte Modell klassifiziert die aufbereiteten Handlandmarks und ordnet die d
 
 Die Verarbeitungskette wird zyklisch ausgeführt, sodass Änderungen der Handposition und des dargestellten Handzeichens fortlaufend berücksichtigt werden können. Eine übergeordnete Ablaufsteuerung koordiniert dabei die Bildaufnahme, die Ausführung der Modelle, die Vor- und Nachverarbeitung sowie die Aktualisierung der grafischen Ausgabe.
 
-\section{Hardwarekonzept}
+\section{Hardwarekonzept}\label{sec:hardwarekonzept}
 
 Das Hardwarekonzept überführt die im Systemkonzept festgelegten Funktionen auf die Komponenten der eingebetteten Zielplattform. Als zentrale Verarbeitungseinheit wird das STM32N6570 Discovery Kit verwendet. Neben dem Mikrocontroller umfasst der Hardwareaufbau das Kameramodul MB1854B mit dem Bildsensor IMX335, das Displaymodul MB1860B sowie die auf dem Board vorhandenen externen Speicher \cite{STM32N6570DKProductSTMicroelectronics}.
 
@@ -33,7 +33,7 @@ Die Kameradaten werden über die CSI-Schnittstelle empfangen und mithilfe der Di
 
 Die grafische Ausgabe erfolgt über den LCD-TFT Display Controller. Dieser liest die darzustellenden Bild- und Ergebnisdaten aus den zugeordneten Speicherbereichen und überträgt sie an das angeschlossene Display. Dadurch können das aktuelle Kamerabild und das ermittelte Klassifikationsergebnis gemeinsam dargestellt werden.
 
-\section{KI-Verarbeitungskette}
+\section{KI-Verarbeitungskette}\label{sec:ki-verarbeitungskette}
 
 Die KI-Verarbeitungskette besteht aus drei aufeinander aufbauenden Modellen zur Handdetektion, Handlandmark-Erkennung und Klassifikation des dargestellten Fingeralphabetzeichens. Abbildung 6.2 zeigt die einzelnen Verarbeitungsschitte sowie die beiden durch die DCMIPP bereitgestellten Bildpfade.
 
@@ -52,7 +52,7 @@ Für die anschließende Zeichenklassifikation werden ausschließlich die ermitte
 
 Das Klassifikationsmodell ordnet die aufbereiteten Landmark-Koordinaten einer der für den Prototyp festgelegten Zeichenklassen zu. Zusätzlich wird die Klasse NONE berücksichtigt, wenn keine der unterstützten Handformen vorliegt. Das ermittelte Klassifikationsergebnis wird anschließend an die grafische Ausgabe übergeben und auf dem Display dargestellt.
 
-\section{Speicher- und Datenflusskonzept}
+\section{Speicher- und Datenflusskonzept}\label{sec:speicher-datenfluss}
 
 Die im Gesamtsystem anfallenden Daten unterscheiden sich deutlich hinsichtlich ihres Umfangs, ihrer Lebensdauer und ihrer Verwendung. Aus diesem Grund werden die Kamerabilder, Modellgewichte, Modellein- und -ausgaben sowie Steuerungsdaten auf unterschiedliche Speicherbereiche der Zielplattform verteilt. Abbildung 6.3 zeigt die vorgesehene Zuordnung der Daten zu den verfügbaren Speichern sowie den Datenfluss zwischen den beteiligten Hardware- und Softwarekomponenten.
 
@@ -105,7 +105,7 @@ Kleinere Steuerungs- und Zustandsdaten verbleiben im internen SRAM des Mikrocont
     \hline
 \end{longtable}
 
-\section{Ablauf vom Kamerabild bis zum Erkennungsergebnis}
+\section{Ablauf vom Kamerabild bis zum Erkennungsergebnis}\label{sec:ablauft}
 
 In den vorherigen Abschnitten wurden zunächst die Komponenten des Gesamtsystems, deren Zuordnung zur Zielplattform sowie die KI-Verarbeitungskette und der zwischen den Komponenten stattfindende Datenfluss beschrieben. Darauf aufbauend stellt dieser Abschnitt den zyklischen Ablauf und die dabei auftretenden Entscheidungen von der Erfassung eines Kamerabildes bis zur Ausgabe des Klassifikationsergebnisses dar. Der Ablauf berücksichtigt insbesondere den Wechsel zwischen der erstmaligen Handdetektion und dem anschließenden Landmark-Tracking.
 

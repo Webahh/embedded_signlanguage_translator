@@ -1,6 +1,6 @@
-\chapter{Methodik und Entwicklungsprozess}
+\chapter{Methodik und Entwicklungsprozess}\label{ch:methodik}
 
-\section{Vorgehensweise bei der Literatur- und Technologierecherche}
+\section{Vorgehensweise bei der Literatur- und Technologierecherche}\label{sec:literaturrecherche}
 
 Die Literatur- und Technologierecherche dient dazu, die fachlichen Grundlagen der Arbeit zu erarbeiten, bestehende Lösungsansätze zu untersuchen und geeignete Technologien für die Umsetzung des Systems auszuwählen. Die Auswahl des Rechercheansatzes richtet sich nach dem Zweck der Literaturauswertung und der zugrunde liegenden Fragestellung \cite[s. 334]{snyderLiteratureReviewResearch2019}. Die Literaturrecherche bildete in dieser Arbeit keinen eigenständigen Untersuchungsgegenstand, sondern diente der fachlichen Fundierung und der Begleitung des Entwicklungsprozesses. Daher wurde keine systematische Literaturstudie mit dem Anspruch auf eine vollständige Erfassung und Synthese aller Veröffentlichungen durchgeführt. Stattdessen erfolgte eine zielgerichtete und entwicklungsbegleitende Recherche, die sich an den jeweils zu lösenden fachlichen und technischen Fragestellungen orientierte.
 
@@ -24,7 +24,7 @@ Die Technologierecherche konzentrierte sich überwiegend auf die verwendete Plat
 
 Die Recherche wurde parallel zum Entwicklungsprozess fortgeführt. Technische Fragestellungen, die während der Implementierung oder Integration auftraten, führten zu einer gezielten Vertiefung einzelner Themenbereiche. Die daraus gewonnenen Erkenntnisse flossen unmittelbar in die Auswahl und Anpassung der Modelle, die Entwicklung der Verarbeitungspipeline sowie die hardwarenahe Umsetzung auf der Zielplattform ein.
 
-\section{Iterativer Entwicklungs- und Integrationsprozess}
+\section{Iterativer Entwicklungs- und Integrationsprozess}\label{sec:iterativer-prozess}
 
 Eine vollständig vorausgeplante und sequenzielle Entwicklung war für das Gesamtsystem nur eingeschränkt geeignet, da sich viele technische Anforderungen und Wechselwirkungen erst bei der praktischen Integration auf der Zielplattform beurteilen ließen. Dies betraf insbesondere das Zusammenspiel zwischen Kamerapipeline, neuronalen Netzen, Speicherverwaltung, Ablaufsteuerung und grafischer Ausgabe. Die Entwicklung erfolgte daher iterativ und prototypisch. In jeder Iteration wurde ein abgegrenzter Funktionsumfang umgesetzt, in den bestehenden Entwicklungsstand integriert und anschließend praktisch überprüft. Die dabei gewonnenen Erkenntnisse bildeten die Grundlage für nachfolgende Anpassungen und weitere Entwicklungsschritte \cite[s. 70]{lopezIterativePrototypingMethodology2018}.
 
@@ -35,13 +35,13 @@ Zur Versionsverwaltung des Quellcodes wurde Git eingesetzt. Git ermöglicht es, 
 
 Durch die Kombination aus iterativer Prototypentwicklung, klarer Aufgabenverteilung, regelmäßiger Abstimmung und gemeinsamer Versionsverwaltung konnte der Entwicklungsfortschritt fortlaufend nachvollzogen werden. Gleichzeitig blieb das Vorgehen flexibel genug, um auf technische Schwierigkeiten und neue Erkenntnisse während der Entwicklung reagieren zu können.
 
-\section{Vorgehen bei der Modellentwicklung}
+\section{Vorgehen bei der Modellentwicklung}\label{sec:modellentwicklung}
 
 Die Entwicklung des Klassifikationsmodells erfolgte in mehreren aufeinander aufbauenden Schritten. Zunächst wurden die zu erkennenden Handzeichen festgelegt und ein eigener Datensatz erstellt. Die aufgenommenen Daten wurden anschließend aufbereitet und in Trainings-, Validierungs- und Testdaten unterteilt. Auf Grundlage des Datensatzes wurden verschiedene Modellvarianten entwickelt und trainiert. Dabei wurden sowohl die Modellarchitektur als auch die Trainingsparameter schrittweise angepasst. Zur Erweiterung des Datensatzes kamen unterschiedliche Augmentationsverfahren zum Einsatz. Diese sollten die Variabilität der Trainingsdaten erhöhen und das Modell gegenüber unterschiedlichen Ausführungen der Handzeichen robuster machen.
 
 Das Modell mit der besten Erkennungsgenauigkeit wurde ausgewählt und abschließend für die eingebettete Plattform verfügbar gemacht und integriert. Dabei wurde geprüft, ob und in welchem Umfang sich die Erkennungsleistung durch die Anpassungen verändert hatte.
 
-\section{Verifikation- und Evaluationskonzept}
+\section{Verifikation- und Evaluationskonzept}\label{sec:verifikation}
 
 Die Verifikation und Evaluation des entwickelten Systems erfolgten sowohl entwicklungsbegleitend als auch abschließend anhand der zuvor festgelegten Anforderungen. Im Rahmen dieser Arbeit bezeichnet die Verifikation die Überprüfung, ob die einzelnen Komponenten und Funktionen entsprechend ihrer Festlegung umgesetzt wurden. Die Evaluation dient dagegen der abschließenden Bewertung des integrierten Gesamtsystems anhand der definierten Anforderungen und Abnahmekriterien. Auf diese Weise wurden sowohl die technische Funktionsfähigkeit als auch die Eignung des entstandenen Prototyps für den vorgesehenen Anwendungsfall untersucht.
 

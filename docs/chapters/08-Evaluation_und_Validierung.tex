@@ -1,12 +1,12 @@
-\chapter{Evaluation und Validierung}
+\chapter{Evaluation und Validierung}\label{ch:evaluation}
 
 In diesem Kapitel wird das entwickelte Gesamtsystem anhand der in Kapitel 5 definierten Anforderungen und Abnahmekriterien bewertet. Ziel ist es, sowohl die Erkennungsleistung der KI-Verarbeitungskette als auch die technische Leistungsfähigkeit des eingebetteten Systems zu untersuchen. Dazu werden die Erkennungsgenauigkeit, das Verhalten unter unterschiedlichen Umgebungsbedingungen, die Verarbeitungsgeschwindigkeit sowie der Speicher- und Ressourcenverbrauch betrachtet.
 
 Die Evaluation umfasst sowohl das Klassifikationsmodell als auch den integrierten Prototyp. Die Bewertung des Modells erfolgt anhand zuvor nicht für das Training verwendeter Testdaten. Ergänzend wird das Gesamtsystem unter festgelegten realen Einsatzbedingungen untersucht. Dadurch kann zwischen der isolierten Modellleistung und der Erkennungsleistung der vollständig integrierten Kamera- und KI-Verarbeitungskette unterschieden werden. Die ermittelten Ergebnisse werden abschließend den festgelegten Anforderungen und Abnahmekriterien gegenübergestellt. Auf dieser Grundlage wird beurteilt, welche Anforderungen vollständig, teilweise oder nicht erfüllt wurden.
 
-\section{Erkennungsgenauigkeit}
+\section{Erkennungsgenauigkeit}\label{sec:erkennungsgenauigkeit}
 
-\section{Konfusionsmatrix und klassenbezogene Ergebnisse}
+\section{Konfusionsmatrix und klassenbezogene Ergebnisse}\label{sec:konfusionsmatrix}
 
 \begin{longtable}{|p{0.4\textwidth}|p{0.2\textwidth}|}
     \caption{Trainingsergebnisse des Klassifizierungsmodells}
@@ -48,7 +48,7 @@ Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt 
 
 
 
-\section{Versuchsaufbau und Testbedingungen}
+\section{Versuchsaufbau und Testbedingungen}\label{sec:versuchsaufbau}
 
 Das System wird während der Versuche in einer festen Position aufgestellt. Die Handzeichen werden einzeln innerhalb des Erfassungsbereichs der Kamera dargestellt. Um die Versuche Vergleichbar zu gestalten, werden der Abstand zur Kamera, die Beleuchtung, der Hintergrund und die Anzahl der Wiederholungen dokumentiert. Soweit ein Parameter nicht gezielt untersucht wird, bleiben die Bedingungen während der jeweiligen Versuchsreihe unverändert.
 
@@ -78,12 +78,12 @@ Das System wird während der Versuche in einer festen Position aufgestellt. Die 
     \hline
 \end{longtable}
 
-\section{Feldversuch}
+\section{Feldversuch}\label{sec:feldversuch}
 
 
 
-\section{Einfluss von Beleuchtung und Hintergrund}
-\section{Inferenzlatenz und Ende-zu-Ende-Latenz}
-\section{Bildrate und Datendurchsatz}
-\section{Speicher- und Ressourcenverbrauch}
-\section{Abgleich mit den definierten Anforderungen}
+\section{Einfluss von Beleuchtung und Hintergrund}\label{sec:beleuchtung}
+\section{Inferenzlatenz und Ende-zu-Ende-Latenz}\label{sec:inferenzlatenz}
+\section{Bildrate und Datendurchsatz}\label{sec:bildrate}
+\section{Speicher- und Ressourcenverbrauch}\label{sec:speicherverbrauch}
+\section{Abgleich mit den definierten Anforderungen}\label{sec:abgleich-anforderungen}

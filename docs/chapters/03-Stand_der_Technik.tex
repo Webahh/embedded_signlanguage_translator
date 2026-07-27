@@ -1,8 +1,8 @@
-\chapter{Stand der Technik}
+\chapter{Stand der Technik}\label{ch:stand-der-technik}
 
 Dieses Kapitel befasst sich mit bereits bestehenden Ansätzen auf welche die Arbeit basiert oder fortführt. Es werden Bestehende Ansätze benannt und aktuelle Embedded-AI-Lösungen vorgestellt. Zudem wird die Abgrenzung des Projekts beschrieben.
 
-\section{Bestehende Ansätze zur Erkennung von Handzeichen}
+\section{Bestehende Ansätze zur Erkennung von Handzeichen}\label{sec:bestehende-ansaetze}
 
 Die Forschung zur automatischen Erkennung und Übersetzung von Gebärdensprache verfolgt im Wesentlichen drei zentrale Ansätze, die sich in der Art der Datenerfassung unterscheiden: kamerabasierte Systeme, datenhandschuhbasierte Systeme und armbandbasierte Systeme (EMG/sEMG). Jeder Ansatz nutzt unterschiedliche Sensormodalitäten, um Handkonfigurationen und Bewegungen zu erfassen. Diese werden anschließend durch Machine-Learning-Modelle in Buchstaben, Wörter oder Sätze übersetzt (Rastgoo et al., 2021).
 
@@ -12,11 +12,11 @@ Datenhandschuh-basierte Systeme verwenden physische Handschuhe mit eingebetteten
 
 Armbandbasierte Systeme erfassen die elektrische Aktivität der Muskeln an dem Unterarm mittels Oberflächen-Elektromyographie (sEMG). Das verbreitetste Gerät in der Forschung ist das Myo-Armband von Thalmic Labs, das acht sEMG-Sensoren sowie eine inertielle Messeinheit (IMU) integriert. Kürzliche Arbeiten zeigen, dass sEMG-basierte Systeme in Kombination mit Deep-Learning-Verfahren wie Random Forest oder LSTM-Netzwerken Genauigkeiten von über 99\% bei der Erkennung einzelner Gebärden erreichen können (Umut \& Kumdereli, 2024).
 
-\section{Kamerabasierte Fingeralphabet- und Gebärdenerkennung}
+\section{Kamerabasierte Fingeralphabet- und Gebärdenerkennung}\label{sec:kamerabasierte-erkennung}
 
 Kamerabasierte Erkennungssysteme verwenden meist ein nicht ressourcenbeschränktes System (z.B. PC oder Server), auf dem die Inferenz durchgeführt und das Ergebnis ausgegeben wird. Die Erkennungspipeline besteht typischerweise aus einer Verkettung von Machine-Learning-Modellen. Ein Palm-Detection-Modell erkennt die Handfläche im Bild. Ein Hand-Landmark-Modell bestimmt die Fingerpositionen. Ein abschließendes Sign-Language-Modell übersetzt die erkannten Handkonfigurationen in Buchstaben oder Wörter (Lugaresi et al., n.d.).
 
-\section{Aktuelle Embedded-AI-Lösungen}
+\section{Aktuelle Embedded-AI-Lösungen}\label{sec:embedded-ai-loesungen}
 
 Aktuelle Embedded-AI-Lösungen lassen sich grundsätzlich in zwei Kategorien einteilen: Single-Board Computer (SBC) und Mikrocontroller (MCU). Beide Plattformentypen werden für die Inferenz neuronaler Netze eingesetzt, unterscheiden sich jedoch hinsichtlich ihrer Ressourcenverfügbarkeit, Programmierumgebung und des Entwicklungsansatzes erheblich.
 
@@ -28,7 +28,7 @@ Mikrocontroller-basierte Ansätze sind in der Forschung zur Gebärdenspracherken
 
 Eine Nische stellt die Verwendung von MCUs mit integriertem Neural Processing Unit (NPU) dar. Der STM32N6 von STMicroelectronics integriert einen dedizierten NPU (Neural-ART Accelerator) mit 6 GOPS und ermöglicht die Inferenz quantisierter INT8-Modelle auf einem Mikrocontroller. Damit schließt die Plattform die Lücke zwischen ressourcenbeschränkten MCUs und leistungsstarken SBCs. In der Forschung wird der STM32N6 jedoch bisher kaum eingesetzt, was zum Teil an der erstmaligen Verfügbarkeit seit 2024 sowie an der Komplexität der Bare-Metal-Programmierung liegt.
 
-\section{Einordnung der Arbeit und Abgrenzung der eigenen Arbeit}
+\section{Einordnung der Arbeit und Abgrenzung der eigenen Arbeit}\label{sec:einordnung}
 Die vorliegende Arbeit ordnet sich im Bereich kamerabasierter Embedded-AI-Lösungen ein. Einerseits wird die Zielplattform STM32N6570 Discovery Kit von STMicroelectronics Bare-Metal programmiert, andererseits wird ein Sign-Language-Modell entworfen, das Hand-Landmarks dem Fingeralphabet zuordnet.
 
 Die Machine-Learning-Grundlage der Arbeit bildet ein von MediaPipe bereitgestelltes Hand-Landmark- und Palm-Detection-Modell, das Bare-Metal auf der STM32N6570DK Plattform verwendet wird. Die bestehende Inferenzpipeline (Palm-, Hand-Landmark-Modell) wird um ein selbstentwickeltes Sign-Language-Modell erweitert, das die erkannten Handlandmarks dem Fingeralphabet zuordnet. Für das Sign-Language-Modell wird ein Datensatz erstellt. Aus dem Datensatz werden die Hand-Landmarks extrahiert und augmentiert. Die entstandenen Daten werden zum Training des Modells verwendet. Das Modell wird anschließend INT8-quantisiert und als Modellbinary auf der Zielplattform integriert.
