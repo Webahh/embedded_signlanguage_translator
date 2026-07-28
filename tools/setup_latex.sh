@@ -32,7 +32,8 @@ $PACMAN -S --needed --noconfirm \
 echo "[2/4] Installing build tools..."
 $PACMAN -S --needed --noconfirm \
     python-pygments \
-    inkscape
+    inkscape \
+    okular
 
 echo "[3/4] Verifying installation..."
 command -v pdflatex >/dev/null 2>&1 && echo "  pdflatex:  OK" || echo "  pdflatex:  MISSING"
@@ -40,8 +41,10 @@ command -v biber >/dev/null 2>&1 && echo "  biber:     OK" || echo "  biber:    
 command -v makeglossaries >/dev/null 2>&1 && echo "  makeglossaries: OK" || echo "  makeglossaries: MISSING"
 command -v pygmentize >/dev/null 2>&1 && echo "  pygmentize: OK" || echo "  pygmentize: MISSING"
 command -v inkscape >/dev/null 2>&1 && echo "  inkscape:  OK" || echo "  inkscape:  MISSING"
+command -v okular >/dev/null 2>&1 && echo "  okular:    OK" || echo "  okular:    MISSING"
+command -v latexmk >/dev/null 2>&1 && echo "  latexmk:   OK" || echo "  latexmk:   MISSING"
 
 echo "[4/4] Done!"
 echo ""
 echo "To compile the thesis, run:"
-echo "  cd docs-latex && make"
+echo "cd ../docs && make clean && make"
