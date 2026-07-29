@@ -50,9 +50,13 @@ def process_video(video_path: str, label: str) -> Gesture:
     return [Gesture(label=label, frames=frames, fps=fps).upscale_fps()]
 
 
-def save_gesture(savedir: str, gesture: Gesture, augtype: str = "orig"):
-    uid = uuid.uuid4().hex[:4]
-    filename = f"{gesture.label}_{augtype}_{uid}.pkl"
+def save_gesture(savedir: str, gesture: Gesture, augtype: str = "orig", uid: str = None):
+    if uid is None:
+        uid = uuid.uuid4().hex[:4]
+    if augtype == "orig":
+        filename = f"{gesture.label}_{augtype}_{uid}.pkl"
+    else:
+        filename = f"{gesture.label}_{augtype}_{uid}_{uuid.uuid4().hex[:4]}.pkl"
     path = os.path.join(savedir, filename)
 
     with open(path, "wb") as f:
@@ -133,15 +137,12 @@ def generate_gestures(
     pipeline.add("rzoom", pip_func_random_zoom, count=5, min_factor=0.5, max_factor=1.5)
 
     for gesture in base_gestures:
-        save_gesture(output_dir, gesture, augtype="orig")
+        orig_uid = uuid.uuid4().hex[:4]
+        save_gesture(output_dir, gesture, augtype="orig", uid=orig_uid)
 
-    def augment_gesture(gesture):
         print(f"Augmenting {gesture.label}...")
         for aug_gesture, augtype in pipeline.augment(gesture):
-            save_gesture(output_dir, aug_gesture, augtype=augtype)
-
-    for gesture in base_gestures:
-        augment_gesture(gesture)
+            save_gesture(output_dir, aug_gesture, augtype=augtype, uid=orig_uid)
 
     print(
         f"{len(base_gestures)} Augmentation done and saved."

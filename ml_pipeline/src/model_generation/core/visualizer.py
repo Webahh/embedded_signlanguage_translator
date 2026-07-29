@@ -17,8 +17,7 @@ def draw_skeleton(img, pose: Hand, joints=True, bones=True, info=True):
 
     """
 
-    # Make left hand joints blue and right hand joints red
-    col_joint = (0, 0, 255) if pose.left_hand else (255, 0, 0)
+    col_joint = pose.color if pose.color is not None else ((0, 0, 255) if pose.left_hand else (255, 0, 0))
 
     # Make the bones white
     col_bone = (255, 255, 255)

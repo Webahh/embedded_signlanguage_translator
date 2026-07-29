@@ -108,6 +108,9 @@ class Hand:
     # landmark positions in px within the image
     landmark_pos: []
 
+    # Optional BGR color override for visualization
+    color: tuple = None
+
     def __post_init__(self):
         super().__setattr__("left_hand", bool(self.left_hand))
 
@@ -122,6 +125,7 @@ class Hand:
             landmarks={name: np.array([0, 0, 0]) for name in LANDMARK_NAMES},
             hand_area=(0, 0, 0, 0),
             landmark_pos=[],
+            color=None,
         )
 
 

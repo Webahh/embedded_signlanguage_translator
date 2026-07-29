@@ -61,6 +61,9 @@ ml_pipeline/model/*.h5
 ml_pipeline/model/*.pt
 /ml_pipeline/.venv
 
+# Exported visualization frames
+ml_pipeline/model/export_*/
+
 STM32N6570DK_LL/STM32N6570DK_TEST
 STM32N6570DK_LL/STM32N6570DK/FSBL/Debug/
 STM32N6570DK_LL/STM32N6570DK/APPLI/Debug/
