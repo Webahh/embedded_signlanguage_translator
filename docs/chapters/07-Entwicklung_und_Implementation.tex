@@ -739,7 +739,7 @@ Die Kontextwaehlerung ist der Kernmechanismus des Schedulers und erfolgt auf ARM
 \subsubsection{Anfänglicher Context-Start (Bootstrapping)}\label{ssub:bootstrap}
 Der Start des ersten Tasks erfolgt nicht ueber PendSV, sondern ueber einen SVC-Aufruf (Supervisor Call). Der Ablauf in \texttt{SCHEDULER\_Tasks\_run()} ist wie folgt:
 
-\begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap prozess}, label={lst:sw-dir-structure}]
+\begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap prozess}, label={lst:bootstrap}]
 SCHEDULER_Tasks_run()
   |- IRQs deaktivieren (__disable_irq)
   |- Idle-Task registrieren (Slot 8, WFI-Loop)
@@ -783,7 +783,7 @@ PendSV wird nicht sofort ausgeführt, sondern läuft erst, wenn alle anderen ISR
 
 Die eigentliche Kontextwahl erfolgt im \texttt{PendSV\_Handler}in reiner Assembler-Implementierung. PendSV hat die niedrigste NVIC-Priorität (0xFF), wird also erst nach Abschluss aller anderen Interrupts ausgeführt.
 
-\begin{lstlisting}[language=bash, numbers=none, caption={PendSV\_Handler() in Hochsprache}, label={lst:sw-dir-structure}]
+\begin{lstlisting}[language=bash, numbers=none, caption={PendSV\_Handler() in Hochsprache}, label={lst:pendsv-handler}]
 PendSV\_Handler:
     1. IRQs deaktivieren (cpsid i) -> Verhindert Race-Condition während Context-Save
     2. Aktuellen PSP lesen (mrs r0, psp)
@@ -828,7 +828,7 @@ PendSV\_Handler:
 
 \subsection{Task-Selektion}\label{sub:task-selektion}
 
-\begin{lstlisting}[language=pseudocode, numbers=none, caption={Selection of the next task to execute}, label={lst:sw-dir-structure}]
+\begin{lstlisting}[language=pseudocode, numbers=none, caption={Selection of the next task to execute}, label={lst:task-select}]
 Task_SelectNext():
     start = (_task_current + 1) mod IDLE_INDEX
 

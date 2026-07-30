@@ -15,7 +15,7 @@ Das Training des Gebärdensprachenmodells wurde über den Verlauf von \textit{Ac
     \centering
     \includegraphics[width=0.9\linewidth]{material/Figure_1.png}
     \caption{Gebärdensprachen-Model Accuracy | Training}
-    \label{fig:placeholder}
+    \label{fig:train-accuracy}
 \end{figure}
 
 Zu Beginn des Trainings (Epoche 0) liegt die Trainings-Accuracy bei etwa 20\,\%, während die Validierungs-Accuracy bereits rund 27\,\% beträgt. In den ersten Epochen steigt die Accuracy beider Datensätze deutlich an. Besonders die Validierungs-Accuracy verbessert sich sehr schnell und erreicht bereits nach etwa drei bis fünf Epochen Werte von über 95\,\%.
@@ -30,7 +30,7 @@ Auffällig ist, dass die Validierungs-Accuracy während des gesamten Trainings g
     \centering
     \includegraphics[width=0.9\linewidth]{material/Figure_2.png}
     \caption{Gebärdensprachen-Model Loss | Training}
-    \label{fig:placeholder}
+    \label{fig:train-loss}
 \end{figure}
 
 Der Trainings-Loss beginnt bei einem hohen Wert von etwa 2{,}8 und sinkt während der ersten Epochen sehr stark. Anschließend nimmt sie langsamer ab und erreicht am Ende des Trainings einen Wert von ungefähr 0{,}06.
@@ -90,7 +90,7 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
     \hline
 \end{longtable}
 
-\begin{figure}[!h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.4\textwidth]{material/figures/confusion_matrix.png}
     \includegraphics[width=0.4\textwidth]{material/figures/confusion_matrix_normalized.png}
@@ -98,8 +98,13 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
     \label{fig:confusion-matrix}
 \end{figure}
 
-Das Modell zeigt keine Anzeichen von Overfitting: Der Validierungsverlust sinkt kontinuierlich über alle 20 Epochen.
+Die Konfusionsmatrizen basierent auf 371.547 Testdaten mit einer 99,28\% Accuracy.
+Die Matrix zeigt verschiedene Probleme des Modells auf.
+\texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D,F,H,N,S,T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
+ Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}). Eine weitere ausführlichere Aufschlüsselungen im Anhang \ref{tab:confusion-matrix}
 
+ Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-Erkennung ist mit \~73\% der größte Schwachpunkt.
+ 
 \subsection{Praktischer Versuch zur Erkennungsgenauigkeit}\label{sec:praktischerversuch}
 
 \subsubsection{Versuchsaufbau und Testbedingungen}\label{sec:versuchsaufbau}
@@ -181,10 +186,33 @@ Die Beobachtungen zeigen insgesamt, dass die Erkennungsleistung nicht ausschlie�
 
 \subsection{Vergleich der Konfusionsmatritzen}\label{matrixvergleich}
 
-Vergleich...
+Die normalisierten Konfusionsmatrizen zeigen deutliche Unterschiede zwischen der isolierten Auswertung des Klassifikationsmodells und der praktischen Evaluation des Gesamtsystems. Auf dem Testdatensatz wurden nahezu alle untersuchten Zeichenklassen vollständig korrekt erkannt. Lediglich das Zeichen N wurde in 2\,\% der Fälle als M klassifiziert. Im praktischen Versuch wurde dagegen eine Gesamterkennungsgenauigkeit von 91,2\,\% erreicht und es traten mehrere zusätzliche klassenbezogene Verwechslungen auf.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{material/figures/prak_confusion.png}
+    \caption{Normierte Versuchs-Konfusionsmatrix}
+    \label{fig:konfversuch}
+\end{figure}
+
+Die stärkste Abweichung zeigt sich beim Zeichen M. Während sämtliche M-Beispiele des Testdatensatzes korrekt klassifiziert wurden, erreichte die Klasse im praktischen Versuch lediglich eine Genauigkeit von 52,5\,\%. Die übrigen 47,5\,\% wurden vollständig der Klasse N zugeordnet. Umgekehrt wurde N im praktischen Versuch zu 7,5\,\% als M erkannt. Die bereits im Testdatensatz erkennbare Ähnlichkeit zwischen beiden Klassen verstärkte sich somit unter den praktischen Aufnahmebedingungen deutlich. Weitere im Testdatensatz nicht vorhandene Verwechslungen traten zwischen A und S sowie zwischen V und R auf. A wurde im praktischen Versuch zu 10\,\% als S erkannt, während S zu 7,5\,\% als A klassifiziert wurde. Das Zeichen V wurde zu 15\,\% der Klasse R zugeordnet. Demgegenüber wurden die Klassen C, E, R, Y und SCH in beiden Auswertungen vollständig korrekt erkannt. Auch B, F, I, L und X zeigten im praktischen Versuch mit jeweils 97,5\,\% nur eine geringe Abweichung gegenüber dem Testdatensatz.
+
+Zusammenfassend zeigt der Vergleich, dass die hohe Erkennungsleistung auf dem Testdatensatz im praktischen Gesamtsystem nicht für alle Zeichenklassen gleichermaßen 
+erreicht wurde. Die Abweichungen konzentrieren sich auf einzelne Klassenpaare, während ein
+Großteil der Zeichen weiterhin zuverlässig erkannt wurde. Die möglichen Ursachen für die 
+Unterschiede zwischen der isolierten Modellauswertung und der praktischen Evaluation werden in Abschnitt~\ref{sec:interpretation} diskutiert.
 
 \section{Einfluss von Beleuchtung und Hintergrund}\label{sec:beleuchtung}
-kleinere Tests mit unterschiedlichen Lichtquellen im Bild, ggf. selber Testaufbau wie oben.
+Ergänzend zur praktischen Evaluation wurde untersucht, welchen Einfluss eine sichtbare Lichtquelle und der Hintergrund im Kamerabild auf die initiale Handdetektion und das anschließende Landmark-Tracking besitzt. Eine Bewertung der Zeichenklassifikation erfolgte in diesem Versuch nicht. 
+
+\subsection{Einfluss von Beleuchtung}
+
+Für diesen Versuch wurden die zuvor verwendeten Versuchsbedingungen beibehalten. Zusätzlich wurde aber eine weitere Lichtquelle in verschiedenen Bereichen des Bildes hinzugefügt. Nach jedem Durchlauf wurde die Hand aus dem Kamerabild entfernt.
+
+Ohne sichtbare Lichtquelle im Kamerabild wurde die Hand wie vorgesehen detektiert und das Landmark-Tracking anschließend stabil ausgeführt. Befand sich die Lichtquelle innerhalb des Kamerabildes, verschlechterte sich insbesondere die initiale Detektion. Der stärkste Einfluss wurde bei einer mittigen Positionierung der Lichtquelle beobachtet. Die Hand wurde in dieser Situation teilweise verzögert oder nicht erkannt, sodass die nachfolgende Verarbeitungskette nicht gestartet werden konnte. Lichtquellen im linken oder rechten Bildbereich beeinträchtigten die Detektion ebenfalls, der beobachtete Einfluss war jedoch geringer als bei der mittigen Positionierung.
+
+\subsection{Einfluss des Hintergrunds}
+
 
 \section{Inferenzlatenz und Ende-zu-Ende-Latenz}\label{sec:inferenzlatenz}
 Ausgabe der Logs
