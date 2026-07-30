@@ -22,7 +22,6 @@
 #include "simple_ae.h"
 #include "config.h"
 #include "simple_timer.h"
-#include "simple_text.h"
 #include "simple_touch.h"
 #include "palm_detection.h"
 #include "hand_landmark.h"
@@ -45,6 +44,9 @@ static HandROI_TypeDef 			_isr_landmark_roi;
 /* ISR-safe mirrors of UI visibility toggles (updated by AI pipeline task) */
 static volatile uint8_t _isr_palm_vis = 1U;
 static volatile uint8_t _isr_hand_vis = 1U;
+static volatile uint8_t _isr_palm_alpha = 0xFFU;
+static volatile uint8_t _isr_hand_alpha = 0xFFU;
+static volatile uint8_t _isr_sign_alpha = 0xFFU;
 volatile uint8_t isr_systime_vis = 0U;
 volatile uint8_t isr_sysinfo_vis = 0U;
 volatile uint8_t isr_sign_vis = 1U;
@@ -59,6 +61,8 @@ static char _sign_str[16];
 static volatile int 	ltdc_fg_disp_idx = 1;
 static volatile uint8_t nn_frame_ready = 0U;
 static volatile uint8_t nn_completed_buffer_idx = 0U;
+
+static uint32_t _alpha_modulate(uint32_t color, uint8_t alpha);
 
 void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
 {
@@ -91,10 +95,13 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         // to prevent flicker when the AI pipeline misses a frame.
         if (_isr_landmark_valid) {
             if (_isr_hand_vis) {
-                LTDC_Layer_Draw_LandmarksDirect(&isr_draw_cfg, _isr_landmark_points);
+                uint32_t line_color = _alpha_modulate(LTDC_LAYER_COLOR_GREEN, _isr_hand_alpha);
+                uint32_t point_color = _alpha_modulate(LTDC_LAYER_COLOR_RED, _isr_hand_alpha);
+                LTDC_Layer_Draw_LandmarksDirectAlpha(&isr_draw_cfg, _isr_landmark_points, line_color, point_color);
             }
             if (_isr_palm_vis) {
-                LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, LTDC_LAYER_COLOR_BLUE);
+                uint32_t palm_color = _alpha_modulate(LTDC_LAYER_COLOR_BLUE, _isr_palm_alpha);
+                LTDC_Layer_Draw_ROIDirect(&isr_draw_cfg, &_isr_landmark_roi, palm_color);
             }
         }
 
@@ -112,8 +119,10 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         }
 
         if (isr_sign_vis) {
-            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 96, 80, 16, 0x00000000U);
-            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 96, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            uint32_t sign_bg = _alpha_modulate(0x00000000U, _isr_sign_alpha);
+            uint32_t sign_fg = _alpha_modulate(LTDC_LAYER_COLOR_WHITE, _isr_sign_alpha);
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 96, 80, 16, sign_bg);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 96, sign_fg, sign_bg);
         }
 
         // Clean so LTDC sees drawn content (Landmarks/Palm/Systemtime/Systeminfo/Sign)
@@ -189,6 +198,9 @@ typedef struct {
     uint8_t palm_vis;
     uint8_t hand_vis;
     uint8_t sign_vis;
+    uint8_t palm_alpha;
+    uint8_t hand_alpha;
+    uint8_t sign_alpha;
 } AIPipelineUi_TypeDef;
 
 
@@ -445,6 +457,15 @@ static void _aiRunFingeralphabetIfDue(const AIPipelineUi_TypeDef *ui)
     }
 }
 
+static uint32_t _alpha_modulate(uint32_t color, uint8_t alpha)
+{
+    uint32_t a = (uint32_t)alpha;
+    uint32_t r = ((color >> 16) & 0xFFU) * a / 255U;
+    uint32_t g = ((color >> 8)  & 0xFFU) * a / 255U;
+    uint32_t b = ( color        & 0xFFU) * a / 255U;
+    return (color & 0xFF000000U) | (r << 16) | (g << 8) | b;
+}
+
 static void _aiUpdateUiContext(AIPipelineUi_TypeDef *ui)
 {
     if (ui == NULL) {
@@ -455,6 +476,14 @@ static void _aiUpdateUiContext(AIPipelineUi_TypeDef *ui)
     ui->palm_vis = _drawer.items[1].composite.visible;
     ui->hand_vis = _drawer.items[2].composite.visible;
     ui->sign_vis = _drawer.items[3].composite.visible;
+    ui->palm_alpha = _drawer.items[1].composite.slider_value;
+    ui->hand_alpha = _drawer.items[2].composite.slider_value;
+    ui->sign_alpha = _drawer.items[3].composite.slider_value;
+
+    /* Map slider 0-100 to alpha 0-255 */
+    _isr_palm_alpha = (uint8_t)((uint32_t)ui->palm_alpha * 255U / 100U);
+    _isr_hand_alpha = (uint8_t)((uint32_t)ui->hand_alpha * 255U / 100U);
+    _isr_sign_alpha = (uint8_t)((uint32_t)ui->sign_alpha * 255U / 100U);
 
     /* Mirror visibility toggles to ISR-safe copies for per-frame redraw */
     _isr_palm_vis = ui->palm_vis;
@@ -528,12 +557,14 @@ static bool _aiRunPalmDetection(uint8_t completed_idx)
     return true;
 }
 
-static void _aiDrawPalmOnly(void)
+static void _aiDrawPalmOnly(const AIPipelineUi_TypeDef *ui)
 {
     LTDC_Layer_Config_TypeDef draw_cfg = LTDC_Layer1Config;
     draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
 
-    LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+    uint32_t palm_color = _alpha_modulate(LTDC_LAYER_COLOR_BLUE,
+        (uint8_t)((uint32_t)ui->palm_alpha * 255U / 100U));
+    LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, palm_color);
     CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx], sizeof(ltdc_layer_bg_buffer[0]));
 }
 
@@ -548,11 +579,17 @@ static void _aiDrawTrackingOverlay(const AIPipelineUi_TypeDef *ui)
     draw_cfg.fb = (volatile uint8_t *)&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx];
 
     if (ui->hand_vis) {
-        LTDC_Layer_Draw_LandmarksDirect(&draw_cfg, predicted_landmark_points);
+        uint32_t line_color = _alpha_modulate(LTDC_LAYER_COLOR_GREEN,
+            (uint8_t)((uint32_t)ui->hand_alpha * 255U / 100U));
+        uint32_t point_color = _alpha_modulate(LTDC_LAYER_COLOR_RED,
+            (uint8_t)((uint32_t)ui->hand_alpha * 255U / 100U));
+        LTDC_Layer_Draw_LandmarksDirectAlpha(&draw_cfg, predicted_landmark_points, line_color, point_color);
     }
 
     if (ui->palm_vis) {
-        LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, LTDC_LAYER_COLOR_BLUE);
+        uint32_t palm_color = _alpha_modulate(LTDC_LAYER_COLOR_BLUE,
+            (uint8_t)((uint32_t)ui->palm_alpha * 255U / 100U));
+        LTDC_Layer_Draw_ROIDirect(&draw_cfg, &landmark_roi, palm_color);
     }
     CACHE_CLEAN(&ltdc_layer_bg_buffer[ltdc_layer_bg_buffer_draw_idx], sizeof(ltdc_layer_bg_buffer[0]));
 }
@@ -665,7 +702,7 @@ static void _aiStatePalmSearch(const AIPipelineUi_TypeDef *ui)
 
     if (ui->ai_mode == 0U) {
         if (ui->palm_vis) {
-            _aiDrawPalmOnly();
+            _aiDrawPalmOnly(ui);
         }
 
         return;

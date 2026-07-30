@@ -474,6 +474,11 @@ void LTDC_BlitRGB888ToARGB4444(const LTDC_Layer_Config_TypeDef *cfg, const uint8
 
 void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT])
 {
+    LTDC_Layer_Draw_LandmarksDirectAlpha(cfg, points, LTDC_LAYER_COLOR_GREEN, LTDC_LAYER_COLOR_RED);
+}
+
+void LTDC_Layer_Draw_LandmarksDirectAlpha(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t line_color, uint32_t point_color)
+{
     if (cfg == NULL || points == NULL) {
         return;
     }
@@ -500,13 +505,13 @@ void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const
         if (valid[a] == 0U || valid[b] == 0U) continue;
         if (!_isLinePlausible(px[a], py[a], px[b], py[b])) continue;
 
-        _drawLineThick(cfg, px[a], py[a], px[b], py[b], LTDC_LAYER_COLOR_GREEN);
+        _drawLineThick(cfg, px[a], py[a], px[b], py[b], line_color);
     }
 
     for (uint32_t i = 0U; i < LANDMARK_POINT_COUNT; i++) {
         if (valid[i] == 0U) continue;
 
-        LTDC_Layer_Draw_Circle(cfg, (uint16_t)px[i], (uint16_t)py[i], _LANDMARK_DRAW_RADIUS, LTDC_LAYER_COLOR_RED);
+        LTDC_Layer_Draw_Circle(cfg, (uint16_t)px[i], (uint16_t)py[i], _LANDMARK_DRAW_RADIUS, point_color);
     }
 }
 

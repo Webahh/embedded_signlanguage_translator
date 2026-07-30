@@ -426,7 +426,7 @@ UI_Status_TypeDef UI_Drawer_AddItem(UI_Drawer_TypeDef *drawer,
 	item->value = (type == UI_DRAWER_ITEM_TOGGLE
 		|| type == UI_DRAWER_ITEM_SELECTOR) ? 0 : 50;
 	item->composite.visible = 1;
-	item->composite.slider_value  = 50;
+	item->composite.slider_value  = 100;
 	item->seg_labels = NULL;
 	item->seg_count = 0;
 	item->callback = cb;

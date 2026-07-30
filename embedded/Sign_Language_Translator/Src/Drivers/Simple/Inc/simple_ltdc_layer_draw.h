@@ -120,6 +120,18 @@ void LTDC_Layer_Draw_Line(const LTDC_Layer_Config_TypeDef *cfg, int32_t x0, int3
 void LTDC_Layer_Draw_LandmarksDirect(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT]);
 
 /**
+ * @brief Draw hand landmarks directly with custom line and point colours
+ *
+ * @param [in] cfg        Target layer configuration
+ * @param [in] points     Array of landmark points
+ * @param [in] line_color ARGB colour for connection lines
+ * @param [in] point_color ARGB colour for landmark dots
+ *
+ * @note D-cache: caller must clean the landmark region on cfg->fb (SCB_CleanDCache_by_Addr) before LTDC reads it.
+ */
+void LTDC_Layer_Draw_LandmarksDirectAlpha(const LTDC_Layer_Config_TypeDef *cfg, const LandmarkPoint_TypeDef points[LANDMARK_POINT_COUNT], uint32_t line_color, uint32_t point_color);
+
+/**
  * @brief Draw a hand ROI bounding box directly onto a layer config
  *
  * @param [in] cfg   Target layer configuration
