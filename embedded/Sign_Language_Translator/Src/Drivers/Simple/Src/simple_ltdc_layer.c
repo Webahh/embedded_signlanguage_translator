@@ -255,7 +255,7 @@ LTDC_Layer_Status_TypeDef LTDC_Layer_ColorToPixel(const LTDC_Layer_Config_TypeDe
         return LTDC_Layer_OK;
     }
     if (cfg->pixel_format == LTDC_PF_RGB888) {
-        *pixel = ((color >> 16) & 0xFF) | (((color >> 8) & 0xFF) << 8) | ((color & 0xFF) << 16);
+        *pixel = color & 0x00FFFFFF;
         return LTDC_Layer_OK;
     }
     *pixel = color | 0xFF000000;
