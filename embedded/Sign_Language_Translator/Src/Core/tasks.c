@@ -53,6 +53,7 @@ static char _sysinfo_p[12];
 static char _sysinfo_h[12];
 static char _sysinfo_s[12];
 static char _sysinfo_t[12];
+static char _sysinfo_fps[12];
 static char _sign_str[16];
 
 static volatile int 	ltdc_fg_disp_idx = 1;
@@ -102,16 +103,17 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         }
 
         if (isr_sysinfo_vis) {
-            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 16, 80, 64, 0x00000000U);
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 16, 80, 80, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_p, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_h, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_s, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_t, 720, 64, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_fps, 720, 80, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
         }
 
         if (isr_sign_vis) {
-            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 80, 80, 16, 0x00000000U);
-            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 80, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 96, 80, 16, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 96, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
         }
 
         // Clean so LTDC sees drawn content (Landmarks/Palm/Systemtime/Systeminfo/Sign)
@@ -768,11 +770,20 @@ static void _printStackUsage(void)
     DEBUG_PRINTF("--------------------------\r\n");
 }
 
+static uint32_t _calcFps(uint32_t duration_ms)
+{
+    if (duration_ms == 0U) return 0U;
+    return (1000U + (duration_ms >> 1U)) / duration_ms;
+}
+
 void vSystemInfoTask(void) {
+    uint32_t fps = _calcFps(_pipeline_duration_ms);
+
     snprintf(_sysinfo_p, sizeof(_sysinfo_p), "P:%lums", (unsigned long)_palm_duration_ms);
     snprintf(_sysinfo_h, sizeof(_sysinfo_h), "H:%lums", (unsigned long)_landmark_duration_ms);
     snprintf(_sysinfo_s, sizeof(_sysinfo_s), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
     snprintf(_sysinfo_t, sizeof(_sysinfo_t), "T:%lums", (unsigned long)_pipeline_duration_ms);
+    snprintf(_sysinfo_fps, sizeof(_sysinfo_fps), "F:%lu", (unsigned long)fps);
 
     static uint32_t last_print = 0U;
     uint32_t now;
@@ -791,10 +802,11 @@ void vSystemInfoTask(void) {
                      "  Fingeralphabet: %lums\r\n"
                      "  Overhead     : %lums\r\n"
                      "  Total        : %lums\r\n"
+                     "  FPS          : %lu\r\n"
                      "---------------------------\r\n",
                      (unsigned long)palm, (unsigned long)landmark,
                      (unsigned long)finger, (unsigned long)overhead,
-                     (unsigned long)total);
+                     (unsigned long)total, (unsigned long)fps);
     }
 
     isr_sysinfo_vis = 1U;
