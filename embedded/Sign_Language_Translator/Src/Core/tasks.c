@@ -52,6 +52,7 @@ static char _systime_str[11];
 static char _sysinfo_p[12];
 static char _sysinfo_h[12];
 static char _sysinfo_s[12];
+static char _sysinfo_t[12];
 static char _sign_str[16];
 
 static volatile int 	ltdc_fg_disp_idx = 1;
@@ -101,15 +102,16 @@ void DCMIPP_PIPE_FrameEventCallback(uint32_t pipe)
         }
 
         if (isr_sysinfo_vis) {
-            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 16, 80, 48, 0x00000000U);
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 16, 80, 64, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_p, 720, 16, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_h, 720, 32, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
             TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_s, 720, 48, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sysinfo_t, 720, 64, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
         }
 
         if (isr_sign_vis) {
-            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 64, 80, 16, 0x00000000U);
-            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 64, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
+            LTDC_Layer_Draw_Rect(&isr_draw_cfg, 720, 80, 80, 16, 0x00000000U);
+            TEXT_StringBg_draw(&isr_draw_cfg, _sign_str, 720, 80, LTDC_LAYER_COLOR_WHITE, 0x00000000U);
         }
 
         // Clean so LTDC sees drawn content (Landmarks/Palm/Systemtime/Systeminfo/Sign)
@@ -225,9 +227,11 @@ static uint8_t _saved_camera_buffer_idx;
 static uint32_t _palm_duration_ms;
 static uint32_t _landmark_duration_ms;
 static uint32_t _fingeralphabet_duration_ms;
+static uint32_t _pipeline_duration_ms;
 static uint32_t _palm_start_tick;
 static uint32_t _landmark_start_tick;
 static uint32_t _fingeralphabet_start_tick;
+static uint32_t _pipeline_start_tick;
 
 static LandmarkPoint_TypeDef previous_landmark_points[LANDMARK_POINT_COUNT];
 static LandmarkPoint_TypeDef smoothed_landmark_points[LANDMARK_POINT_COUNT];
@@ -698,8 +702,13 @@ static void _aiStateLandmarkTracking(const AIPipelineUi_TypeDef *ui)
 void vAIPipelineTask(void)
 {
     AIPipelineUi_TypeDef ui;
+    uint32_t now;
 
     _aiUpdateUiContext(&ui);
+
+    if (nn_frame_ready) {
+        SCHEDULER_Tick_get(&_pipeline_start_tick);
+    }
 
     switch (hand_state) {
         case HAND_STATE_PALM_SEARCH:
@@ -713,6 +722,18 @@ void vAIPipelineTask(void)
         default:
             _resetTracking();
             break;
+    }
+
+    if (_pipeline_start_tick) {
+        SCHEDULER_Tick_get(&now);
+        _pipeline_duration_ms = now - _pipeline_start_tick;
+        _pipeline_start_tick = 0U;
+    }
+
+    if (hand_state == HAND_STATE_PALM_SEARCH) {
+        /* No valid hand: reset hand & sign timings */
+        _landmark_duration_ms = 0U;
+        _fingeralphabet_duration_ms = 0U;
     }
 
     if (ui.ai_mode >= 2U) {
@@ -751,6 +772,31 @@ void vSystemInfoTask(void) {
     snprintf(_sysinfo_p, sizeof(_sysinfo_p), "P:%lums", (unsigned long)_palm_duration_ms);
     snprintf(_sysinfo_h, sizeof(_sysinfo_h), "H:%lums", (unsigned long)_landmark_duration_ms);
     snprintf(_sysinfo_s, sizeof(_sysinfo_s), "S:%lums", (unsigned long)_fingeralphabet_duration_ms);
+    snprintf(_sysinfo_t, sizeof(_sysinfo_t), "T:%lums", (unsigned long)_pipeline_duration_ms);
+
+    static uint32_t last_print = 0U;
+    uint32_t now;
+    SCHEDULER_Tick_get(&now);
+    if (now - last_print >= 3000U) {
+        last_print = now;
+        uint32_t total = _pipeline_duration_ms;
+        uint32_t palm = _palm_duration_ms;
+        uint32_t landmark = _landmark_duration_ms;
+        uint32_t finger = _fingeralphabet_duration_ms;
+        uint32_t overhead = (total > palm + landmark + finger)
+                          ? total - (palm + landmark + finger) : 0U;
+        DEBUG_PRINTF("\r\n--- AI Pipeline Timings ---\r\n"
+                     "  Palm         : %lums\r\n"
+                     "  Landmark     : %lums\r\n"
+                     "  Fingeralphabet: %lums\r\n"
+                     "  Overhead     : %lums\r\n"
+                     "  Total        : %lums\r\n"
+                     "---------------------------\r\n",
+                     (unsigned long)palm, (unsigned long)landmark,
+                     (unsigned long)finger, (unsigned long)overhead,
+                     (unsigned long)total);
+    }
+
     isr_sysinfo_vis = 1U;
     _printStackUsage();
 }
