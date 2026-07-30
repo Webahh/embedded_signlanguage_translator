@@ -1,10 +1,30 @@
 \chapter{Diskussion}\label{ch:diskussion}
 
-\section{Versuchsaufbau und Testbedingungen}
-\section{Erkennungsgenauigkeit}
-\section{Konfusionsmatrix und klassenbezogene Ergebnisse}
-\section{Einfluss von Beleuchtung und Hintergrund}
-\section{Inferenzlatenz und Ende-zu-Ende-Latenz}
-\section{Bildrate und Datendurchsatz}
-\section{Speicher- und Ressourcenverbrauch}
-\section{Abgleich mit den definierten Anforderungen}
+\section{Interpretation der Ergebnisse}\label{sec:interpretation}
+
+Hier noch Einleiten in praktische Evaluation, Vergleich Matrizen, Beleuchtung, Latenz (weitere Metriken) und Abnahmekritrieren, erst dann ausführen...
+...
+
+Die praktische Evaluation zeigt, dass die entwickelte Verarbeitungskette unter den festgelegten Versuchsbedingungen grundsätzlich zur Erkennung der untersuchten Handzeichen geeignet ist. Mit 912 korrekten Klassifikationen bei insgesamt 1000 Einzelversuchen wurde eine Gesamterkennungsgenauigkeit von 91,2\,\% erreicht. Damit liegt das Ergebnis oberhalb der in der Anforderungsanalyse festgelegten Mindestgenauigkeit von 80\,\%. Auch die personenbezogenen Ergebnisse lagen mit Werten zwischen 83,2\,\% und 95,2\,\% bei allen acht Versuchspersonen oberhalb dieses Grenzwerts. Die Unterschiede zwischen den Versuchspersonen zeigen jedoch, dass die Erkennungsleistung von der individuellen Ausführung der Handzeichen beeinflusst wird. Mögliche Einflussgrößen sind die genaue Fingerstellung, die Größe der Hand im Kamerabild und die Orientierung der Handfläche gegenüber der Kamera. Da diese Größen im praktischen Versuch nicht einzeln kontrolliert wurden, lässt sich ihr jeweiliger Einfluss nicht quantitativ bestimmen. Die Spannweite der personenbezogenen Ergebnisse deutet dennoch darauf hin, dass das System gegenüber verschiedenen Personen grundsätzlich funktionsfähig ist, aber noch keine vollständig personenunabhängige Erkennung gewährleistet.
+
+...
+
+\section{Bewertung des entwickelten Gesamtsystems}
+
+Das entwickelte Gesamtsystem demonstriert die technische Umsetzbarkeit eines lokal arbeitenden Fingeralphabet-Trainers auf dem STM32N6570 Discovery Kit. Die vollständige Verarbeitung von der Aufnahme des Kamerabildes über die Handdetektion und Landmark-Erkennung bis zur Zeichenklassifikation wird auf der eingebetteten Zielplattform ausgeführt. Für den Betrieb ist weder eine Verbindung zu einem externen Rechner noch zu einem Cloud-Dienst erforderlich.
+\#TODO Hier am besten noch mehr darauf eingehen dass es sich hierbei nur um einen Prototypen handelt
+
+...
+
+\section{Grenzen und bekannte Einschränkungen}\label{sec:grenzen}
+
+RNN nicht wegen NPU möglich -> nur statische Erkennung möglich. Für einen vollständigen Gebärdendatensatz bräuchte es außerdem mehr Speicher. 
+
+System etwas "unhandlich", ggf. Designanpassungen notwendig aber für Prototyp ausreichend.
+
+\section{Technischer und praktischer Beitrag der Arbeit}\label{sec:beitragderarbeit}
+
+µC als Nische. Nische bedient...
+
+(Testpersonen fanden es interessant und lernten neue Handzeichen)
+

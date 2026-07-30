@@ -215,7 +215,7 @@ Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Spar
 
 \subsection{Metriken}\label{sub:metriken}
 
-Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangezogen (Hastie et al., 2009):
+Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangezogen \cite{fritzHandGestureRecognition}:
 
 \begin{itemize}
     \item \textbf{Accuracy (Genauigkeit):} Anteil der korrekten Vorhersagen an allen Vorhersagen. Für ausgewogene Datensätze aussagekräftig, bei unausgewogenen Klassen jedoch irreführend.
@@ -282,6 +282,7 @@ wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivieru
 \subsection{Aktivierungsfunktionen}\label{sub:aktivierungsfunktionen}
 
 Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind (Kim, 2016):
+\#TODO QUELLE
 
 \begin{itemize}
     \item \textbf{ReLU (Rectified Linear Unit):} $f(x) = \max(0, x)$. Einfach zu berechnen, gradientenfreundlich und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.

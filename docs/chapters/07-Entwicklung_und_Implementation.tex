@@ -11,30 +11,29 @@ Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klass
 
 \subsection{Frame-Extraktion und Handdetektion}\label{sub:frame-extraktion}
 
-\#TODO MediaPipe Hand/Palm Detection
+Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Videocapture einzeln extrahiert und ohne vorherige Vorfilterung der bestehenden Mediapipe Erkennungspipeline zugeführt.
 
-Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Videocapture einzeln extrahiert und ohne vorherige Vorfilterung der Erkennungspipeline zugeführt.
-
-Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors (Lugaresi et al., 2019) in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von 2 Händen pro Frame und einer Mindestkonfidenz von 70. Pro Hand werden 21 Landmarks extrahiert, die den Handgelenkspunkt (WRIST) sowie die Gelenke der fünf Finger (Daumen: CMC, MCP, IP, TIP; Indexfinger: MCP, PIP, DIP, TIP; Mittelfinger: MCP, PIP, DIP, TIP; Ringfinger: MCP, PIP, DIP, TIP; Kleinfinger: MCP, PIP, DIP, TIP) umfassen.
-
+Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors \cite{lugaresiMediaPipeFrameworkPerceiving} in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von 2 Händen pro Frame und einer Mindestkonfidenz von 70. Pro Hand werden 21 Landmarks extrahiert, die den Handgelenkspunkt (WRIST) sowie die Gelenke der fünf Finger (Daumen: CMC, MCP, IP, TIP; Indexfinger: MCP, PIP, DIP, TIP; Mittelfinger: MCP, PIP, DIP, TIP; Ringfinger: MCP, PIP, DIP, TIP; Kleinfinger: MCP, PIP, DIP, TIP) umfassen.
 
 \subsection{Augmentation}\label{sub:augmentation}
+Die Augmentationspipeline wendet sequenzielle Transformationen auf die extrahierten Landmarken an. Jeder Schritt kann mehrere Variationen erzeugen, die kumulativ kombiniert werden:
+Die extrahierten Gestendaten werden im folgenden Schritt mittels Augmentation vervielfacht und gegen Overfitting angepasst. Die Augmentationspipeline bietet die folgenden Augmentationsoptionen:
+\begin{itemize}
+    \item Translate: Fügt einen Offset auf die Gestendaten hinzu
+    \item Spiegelung: Spiegelt Gesten horizontal
+    \item Scale: Skaliert die Gesten
+    \item Jitter: Fügt der Geste zufällige individuelle Fehler hinzu
+    \item Zoom: Zufälliger Zoom der Geste
+    \item DropFrames: Frames der Eingabevideos werden übersprungen, um fehlende Frames zu simulieren
+\end{itemize}
+Die angewandte Augmentation besteht aus 1x Mirror, 2x Translation, 5x Zoom.
 
-Die Augmentationspipeline wendet sequenziell Transformationen auf die extrahierten Landmarks an. Jeder Schritt kann mehrere Variationen erzeugen, die kumulativ kombiniert werden:
-
-Die Extrahierte Gesten Daten werden im folgenden schritt mittels Augmentation vervielfacht und gegen Overfitting angepasst. Die Augmentationspipeline bietet  die folgenden Augmentationsoptionen:
-- Translate: addiert einen Offset auf die Gesture Datem
-- Spiegelung: Spiegelt gesten horizontal
-- Scale: scaliert die gesten
-- Jitter: Fügt der Geste zufälige individuelle  Fehler hinzu
-- Zoom: Zufälliger zoom der Geste
-- DropFrames: Skips frames in order to simulate missing Frames
-Für die verwendeten Optionen sind:
-- Mirror
-- 2xTranslation
-- 5xZoom
-
-\#TODO Pickle Inspect Gegenüberstellung der Gesten nach Augmentation
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{material//figures/Augmentation.png}
+    \caption{Augmentation pipeline Ergebnis (Original Grün | Augmented Orange)}
+    \label{fig:augmentation}
+\end{figure}
 
 \subsection{Normalisierung und Interpolation}\label{sub:normalisierung}
 
@@ -190,8 +189,7 @@ Early Stopping dient der Vermeidung von Overfitting, indem das Training automati
 
 \subsection{Evaluierung}\label{sub:evaluierung}
 
-Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel 8 zu finden.
-\#TODO Füge kapitelreferenz ein!
+Die Evaluierung der Ergebnisse des Machine Learning Modells sind in Kapitel \ref{ch:evaluation} zu finden.
 
 \section{Quantisierung, Konvertierung und Deployment der Modelle}\label{sec:quantisierung-deployment}
 
