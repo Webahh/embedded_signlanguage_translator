@@ -9,9 +9,15 @@
 % Font: Arial 11pt (helvet is closest to Arial in pdflatex)
 \RequirePackage[scaled=0.95]{helvet}
 \renewcommand{\familydefault}{\sfdefault}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{textcomp}
 
 % Graphics
 \RequirePackage{graphicx}
+\RequirePackage[pages=some,scale=1,angle=0,opacity=0.7]{background}
+
+% Mathematik (fuer \text, \operatorname, aligned)
+\RequirePackage{amsmath}
 
 % Section numbering depth
 \setcounter{secnumdepth}{3}
@@ -19,8 +25,6 @@
 
 % Quotations
 \RequirePackage{csquotes}
-
-% Tablepackages
 \RequirePackage{longtable}
 \RequirePackage{float}
 \RequirePackage{booktabs}
@@ -82,11 +86,11 @@
 \addtokomafont{pagehead}{\fontsize{10}{12}\selectfont\normalfont}
 \ofoot*{\pagemark}
 
-% Literaturverzeichnis
-\RequirePackage{csquotes}
-\RequirePackage[style=ieee]{biblatex}
+% Literaturverzeichnis (Zitation und Verzeichnis im DIN-ISO-690-Style, Regeln 3.6.3/3.6.4)
+\RequirePackage[style=iso-authoryear]{biblatex}
 \addbibresource{datenbanken/Literaturverzeichnis.bib}
 \KOMAoptions{bibliography=totocnumbered}
+\AtBeginBibliography{\raggedright\emergencystretch=1em}
 
 % Abbildungsverzeichnis im Inhaltsverzeichnis
 \KOMAoptions{listof=totoc}
@@ -105,12 +109,6 @@
     linkcolor=black,
     urlcolor=black
 }
-
-% Abkürzungsverzeichnis
-\RequirePackage[acronym,nomain]{glossaries-extra}
-\setabbreviationstyle[acronym]{long-short}
-\makeglossaries
-\loadglsentries{datenbanken/Abkuerzungsverzeichnis.tex}
 
 % Code Listings
 \RequirePackage{xcolor}

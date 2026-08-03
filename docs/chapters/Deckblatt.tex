@@ -1,4 +1,12 @@
 \begin{titlepage}
+    \backgroundsetup{
+        contents={\includegraphics[width=\paperwidth,height=0.3\paperheight]{material/figures/fhlogo_grayscale.png}},
+        scale=1.5,
+        angle=0,
+        opacity=0.3
+    }
+    \BgThispage
+
     \raisebox{\dimexpr\ht\strutbox-\height\relax}{\includegraphics[height=0.94cm]{material/figures/fhlogo}}\hfill
     \begin{minipage}[t]{.825\linewidth}
         \raggedright\Large
@@ -23,7 +31,9 @@
             \vspace{4\baselineskip}
 
             \fontsize{20}{20}\normalfont\ThesisTitle\\
-            \fontsize{20}{20}\normalfont\ThesisSubject
+            \ifx\ThesisSubject\empty\else
+                \fontsize{20}{20}\normalfont\ThesisSubject
+            \fi
         \end{spacing}
     \end{center}
 
