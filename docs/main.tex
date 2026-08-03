@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Anfang                                         %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\documentclass[a4paper, fontsize=10pt]{scrreprt}
+\documentclass[a4paper, fontsize=11pt]{scrreprt}
 \input{meta}
 \RequirePackage{styling/custom}
 \begin{document}
@@ -38,9 +38,15 @@
 \listoftables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Listingsverzeichnis                            %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\lstlistoflistings
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Abkürzungsverzeichnis                          %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\printacronyms[title={Abkürzungsverzeichnis}]
+%\printacronyms[title={Abkürzungsverzeichnis}]
+\input{chapters/abkürzungsverzeichnis}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Einleitung                                     %

@@ -1,0 +1,30 @@
+\babel@toc {ngerman}{}\relax 
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {lstlisting}{\numberline {7.1}Vollständige INT8-Quantisierung des Fingeralphabet-Modells}{48}{lstlisting.7.1}%
+\contentsline {lstlisting}{\numberline {7.2}Verzeichnisstruktur der Modellgenerierung}{49}{lstlisting.7.2}%
+\contentsline {lstlisting}{\numberline {7.3}Modellprofil in user\_neuralart.json}{49}{lstlisting.7.3}%
+\contentsline {lstlisting}{\numberline {7.4}Globale Speicher einschränkung in .mpool}{50}{lstlisting.7.4}%
+\contentsline {lstlisting}{\numberline {7.5}STedgeAI Modellgenerierung}{51}{lstlisting.7.5}%
+\contentsline {lstlisting}{\numberline {7.6}Vom Linker exportierte Basissymbole}{54}{lstlisting.7.6}%
+\contentsline {lstlisting}{\numberline {7.7}Flashen eines Modells über STM32\_Programmer\_CLI}{55}{lstlisting.7.7}%
+\contentsline {lstlisting}{\numberline {7.8}Verzeichnisstruktur der Embedded-Software}{56}{lstlisting.7.8}%
+\contentsline {lstlisting}{\numberline {7.9}GPIO-Konfigurationsfunktion}{58}{lstlisting.7.9}%
+\contentsline {lstlisting}{\numberline {7.10}Bootstrap prozess}{64}{lstlisting.7.10}%
+\contentsline {lstlisting}{\numberline {7.11}PendSV\_Handler() in Hochsprache}{65}{lstlisting.7.11}%
+\contentsline {lstlisting}{\numberline {7.12}Selection of the next task to execute}{66}{lstlisting.7.12}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\def \@chapapp {\appendixname }
+\addvspace {10\p@ }
+\contentsline {lstlisting}{\numberline {A.1}Datenfluss der Inferenz-Pipeline}{103}{lstlisting.A.1}%
+\contentsline {lstlisting}{\numberline {A.2}CPU-Adressraum des Cortex-M55}{104}{lstlisting.A.2}%
+\contentsline {lstlisting}{\numberline {A.3}Vom Linker exportierte Basissymbole}{106}{lstlisting.A.3}%
+\providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

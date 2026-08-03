@@ -50,23 +50,7 @@ Aus den dargestellten Trainingskurven lassen sich folgende Erkenntnisse ableiten
     \item Es sind keine Anzeichen für Overfitting erkennbar, da die Validierungs-Loss nicht ansteigt und die Validierungs-Accuracy nicht abfällt.
 \end{itemize}
 
-\section{Erkennungsgenauigkeit}\label{sec:erkennungsgenauigkeit}
 
-Die Erkennungsgenauigkeit wird zunächst anhand des bei der Modellentwicklung zurückgehaltenen Testdatensatzes und anschließend anhand der praktischen Evaluation des integrierten Gesamtsystems untersucht.
-Die erste Auswertung betrachtet ausschließlich die Klassifikationsleistung des Modells auf bereits 
-ermittelten Landmark-Daten. Die praktische Evaluation berücksichtigt dagegen die vollständige Verarbeitungskette von der Bildaufnahme über die Handdetektion und Landmark-Erkennung bis zur Zeichenklassifikation.
-
-Zur klassenbezogenen Auswertung werden für beide Versuchsreihen Konfusionsmatrizen erstellt. In einer Konfusionsmatrix werden die tatsächlichen Zeichenklassen den vorhergesagten Klassen gegenübergestellt. Die Einträge auf der Hauptdiagonalen entsprechen korrekten Klassifikationen, während Einträge außerhalb der Hauptdiagonalen Verwechslungen zwischen den Klassen darstellen. \cite{fritzHandGestureRecognition}
-
-Da der Testdatensatz und die praktische Evaluation eine unterschiedliche Anzahl an Beispielen enthalten können, werden für die Gegenüberstellung insbesondere die zeilenweise normalisierten Konfusionsmatrizen verwendet. Dadurch wird für jede tatsächliche Klasse der relative Anteil der jeweiligen Vorhersagen betrachtet. Auf dieser Grundlage kann untersucht werden, ob die im Testdatensatz auftretenden klassenbezogenen Verwechslungen auch unter realen Aufnahmebedingungen auftreten oder ob durch die vorgelagerten Verarbeitungsschritte zusätzliche Fehler entstehen.
-
-\subsection{Erkennungsgenauigkeit auf dem Testdatensatz}\label{sec:genauigkeittestdatensatz}
-
-Nach Fertigstellung des Gebärdensprachmodells wurde eine Analyse mittels Konfusionsmatrix auf einem separaten Testdatensatz durchgeführt, der weder Teil der Trainings- noch der Validierungsdaten war. Dadurch wurde sichergestellt, dass das Modell zuvor keinen Kontakt zu dieser Stichproben hatte. Es wurden zwei Arten von Konfusionsmatrizen erstellt:
-Roh-Konfusionsmatrix (absolute Werte): Die Methode \texttt{evaluate\_confusion\_matrix} berechnet die Roh-Konfusionsmatrix durch Aufruf von \texttt{sklearn.metrics.confusion\_matrix(test\_labels, predicted\_labels, labels=label\_ids)} \cite{ScikitlearnMachineLearning}. Dabei entsteht eine Kontingenztabelle, in der jede Zeile der tatsächlichen Klasse und jede Spalte der vorhergesagten Klasse entspricht. Die Zellenwerte geben die absolute Anzahl der Teststichproben an, deren tatsächliches Label einem bestimmten vorhergesagten Label zugeordnet wurde. Die resultierende Matrix wird als  \texttt{confusion\_matrix.npy} serialisiert und als \texttt{confusion\_matrix.png} visualisiert, wobei die Werte als Ganzzahlen formatiert sind.
-Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung derselben Methode mit dem Parameter \texttt{normalize=true} erstellt. Hierbei wird jede Zeile durch ihre Zeilensumme dividiert. Jede Zeile stellt somit die anteilige Verteilung der Vorhersagen über alle Klassen für eine bestimmte tatsächliche Klasse dar, ausgedrückt in Prozent. Diese Matrix wird als \texttt{confusion\_matrix\_normalized.png} visualisiert, wobei die Werte als Dezimalzahlen formatiert sind und eine Farbskala (Colorbar) zur besseren Interpretierbarkeit hinzugefügt wird.
-
-\subsubsection{Konfusionsmatrix und klassenbezogene Ergebnisse}\label{sec:konfusionsmatrix}
 
 \begin{longtable}{|p{0.4\textwidth}|p{0.2\textwidth}|}
     \caption{Trainingsergebnisse des Klassifizierungsmodells}
@@ -84,11 +68,31 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
     \hline
     Validierungsgenauigkeit     & 99,21\,\% \\
     \hline
-    Finaler Trainingsverlust    & 0,0754 \\
+    Trainingsverlust    & 0,0754 \\
     \hline
-    Finaler Validierungsverlust & 0,0319 \\
+    Validierungsverlust & 0,0319 \\
     \hline
 \end{longtable}
+
+Abschließend bestätigen diese Erkenntnisse die finalen Trainingsergebnisse der Trainingsgenauigkeit, Validierungsgenauigkeit, Trainingsverlust und Validierungsverlust.
+
+\section{Erkennungsgenauigkeit}\label{sec:erkennungsgenauigkeit}
+
+Die Erkennungsgenauigkeit wird zunächst anhand des bei der Modellentwicklung zurückgehaltenen Testdatensatzes und anschließend anhand der praktischen Evaluation des integrierten Gesamtsystems untersucht.
+Die erste Auswertung betrachtet ausschließlich die Klassifikationsleistung des Modells auf bereits 
+ermittelten Landmark-Daten. Die praktische Evaluation berücksichtigt dagegen die vollständige Verarbeitungskette von der Bildaufnahme über die Handdetektion und Landmark-Erkennung bis zur Zeichenklassifikation.
+
+Zur klassenbezogenen Auswertung werden für beide Versuchsreihen Konfusionsmatrizen erstellt. In einer Konfusionsmatrix werden die tatsächlichen Zeichenklassen den vorhergesagten Klassen gegenübergestellt. Die Einträge auf der Hauptdiagonalen entsprechen korrekten Klassifikationen, während Einträge außerhalb der Hauptdiagonalen Verwechslungen zwischen den Klassen darstellen. \cite{fritzHandGestureRecognition}
+
+Da der Testdatensatz und die praktische Evaluation eine unterschiedliche Anzahl an Beispielen enthalten können, werden für die Gegenüberstellung insbesondere die zeilenweise normalisierten Konfusionsmatrizen verwendet. Dadurch wird für jede tatsächliche Klasse der relative Anteil der jeweiligen Vorhersagen betrachtet. Auf dieser Grundlage kann untersucht werden, ob die im Testdatensatz auftretenden klassenbezogenen Verwechslungen auch unter realen Aufnahmebedingungen auftreten oder ob durch die vorgelagerten Verarbeitungsschritte zusätzliche Fehler entstehen.
+
+\subsection{Erkennungsgenauigkeit auf dem Testdatensatz}\label{sec:genauigkeittestdatensatz}
+
+Nach Fertigstellung des Gebärdensprachmodells wurde eine Analyse mittels Konfusionsmatrix auf einem separaten Testdatensatz durchgeführt, der weder Teil der Trainings- noch der Validierungsdaten war. Dadurch wurde sichergestellt, dass das Modell zuvor keinen Kontakt zu dieser Stichproben hatte. Es wurden zwei Arten von Konfusionsmatrizen erstellt:
+Roh-Konfusionsmatrix (absolute Werte): Die Methode \texttt{evaluate\_confusion\_matrix} berechnet die Roh-Konfusionsmatrix durch Aufruf von \texttt{sklearn.metrics.confusion\_matrix(test\_labels, \allowbreak predicted\_labels, \allowbreak labels\allowbreak = label\_ids)} \cite{ScikitlearnMachineLearning}. Dabei entsteht eine Kontingenztabelle, in der jede Zeile der tatsächlichen Klasse und jede Spalte der vorhergesagten Klasse entspricht. Die Zellenwerte geben die absolute Anzahl der Teststichproben an, deren tatsächliches Label einem bestimmten vorhergesagten Label zugeordnet wurde. Die resultierende Matrix wird als  \texttt{confusion\_matrix.npy} serialisiert und als \texttt{confusion\_matrix.png} visualisiert, wobei die Werte als Ganzzahlen formatiert sind.
+Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung derselben Methode mit dem Parameter \texttt{normalize=true} erstellt. Hierbei wird jede Zeile durch ihre Zeilensumme dividiert. Jede Zeile stellt somit die anteilige Verteilung der Vorhersagen über alle Klassen für eine bestimmte tatsächliche Klasse dar, ausgedrückt in Prozent. Diese Matrix wird als \texttt{confusion\_matrix\_normalized.png} visualisiert, wobei die Werte als Dezimalzahlen formatiert sind und eine Farbskala (Colorbar) zur besseren Interpretierbarkeit hinzugefügt wird.
+
+\subsubsection{Konfusionsmatrix und klassenbezogene Ergebnisse}\label{sec:konfusionsmatrix}
 
 \begin{figure}[H]
     \centering
@@ -101,9 +105,9 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
 Die Konfusionsmatrizen basierent auf 371.547 Testdaten mit einer 99,28\% Accuracy.
 Die Matrix zeigt verschiedene Probleme des Modells auf.
 \texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D,F,H,N,S,T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
- Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}). Eine weitere ausführlichere Aufschlüsselungen im Anhang \ref{tab:confusion-matrix}
+ Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}).
 
- Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-Erkennung ist mit \~73\% der größte Schwachpunkt.
+ Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-Erkennung ist mit \~73\% der größte Schwachpunkt. Eine weitere ausführlichere Aufschlüsselungen im Anhang \ref{tab:confusion-matrix}
  
 \subsection{Praktischer Versuch zur Erkennungsgenauigkeit}\label{sec:praktischerversuch}
 
@@ -176,7 +180,7 @@ Von den insgesamt 1000 durchgeführten Einzelversuchen wurden 912 Handzeichen ko
 
 Die Erkennungsleistung unterschied sich zwischen den einzelnen Zeichenklassen. Die Zeichen C, E, R, Y und SCH wurden in allen 40 Versuchen korrekt erkannt. Ebenfalls hohe Ergebnisse von mindestens 95\,\% erreichten B, F, I, L, T, U und X. Die geringste Erkennungsgenauigkeit wurde für das Zeichen M mit 52,5\,\% festgestellt. Von den 40 dargestellten M-Zeichen wurden 19 als N klassifiziert. Damit bildet die Verwechslung von M und N die deutlich häufigste Fehlklassifikation des Versuchs.
 
-Weitere auffällige Verwechslungen traten zwischen V und R sowie zwischen A und S auf. Das Zeichen V wurde in sechs Fällen als R klassifiziert. Bei A erfolgte viermal eine Zuordnung zu S. Für das Zeichen H wurde eine Genauigkeit von 75\,\% erreicht; dabei wurde es unter anderem viermal als G klassifiziert. Das Zeichen D erreichte mit 80\,\% genau den zuvor festgelegten Mindestwert der Abnahmekriterien. Auch zwischen den Versuchspersonen zeigten sich Unterschiede. Die personenbezogene Erkennungsgenauigkeit lag zwischen 83,2\,\% und 95,2\,\%. Damit erreichten alle acht Versuchspersonen eine Erkennungsgenauigkeit oberhalb des festgelegten Mindestwerts von 80\,\%. Die Unterschiede weisen jedoch darauf hin, dass die individuelle Ausführung der Handzeichen einen Einfluss auf das Erkennungsergebnis besitzt.
+Weitere auffällige Verwechslungen traten zwischen V und R sowie zwischen A und S auf. Das Zeichen V wurde in sechs Fällen als R klassifiziert. Bei A erfolgte viermal eine Zuordnung zu S. Für das Zeichen H wurde eine Genauigkeit von 75\,\% erreicht. Dabei wurde es unter anderem viermal als G klassifiziert. Das Zeichen D erreichte mit 80\,\% genau den zuvor festgelegten Mindestwert der Abnahmekriterien. Auch zwischen den Versuchspersonen zeigten sich Unterschiede. Die personenbezogene Erkennungsgenauigkeit lag zwischen 83,2\,\% und 95,2\,\%. Damit erreichten alle acht Versuchspersonen eine Erkennungsgenauigkeit oberhalb des festgelegten Mindestwerts von 80\,\%. Die Unterschiede weisen jedoch darauf hin, dass die individuelle Ausführung der Handzeichen einen Einfluss auf das Erkennungsergebnis besitzt.
 
 Ergänzend zu den protokollierten Klassifikationsergebnissen wurden während der Versuchsdurchführung qualitative Beobachtungen zum Verhalten der Verarbeitungskette festgehalten. Wiederholt zeigte sich, dass sich die dargestellte Region of Interest während des Landmark-Trackings verkleinerte oder vollständig zusammenbrach. In diesen Fällen konnte die Hand teilweise nicht weiterverfolgt und folglich kein gültiges Klassifikationsergebnis ausgegeben werden. Dieses Verhalten wurde insbesondere bei einzelnen Versuchspersonen sowie bei einer vergleichsweise kleinen dargestellten Hand beobachtet. Damit können die Instabilitäten des Landmark-Trackings einen Teil der 31 Versuche ohne gültiges Ergebnis erklären.
 
@@ -202,26 +206,175 @@ erreicht wurde. Die Abweichungen konzentrieren sich auf einzelne Klassenpaare, w
 Großteil der Zeichen weiterhin zuverlässig erkannt wurde. Die möglichen Ursachen für die 
 Unterschiede zwischen der isolierten Modellauswertung und der praktischen Evaluation werden in Abschnitt~\ref{sec:interpretation} diskutiert.
 
-\section{Einfluss von Beleuchtung und Hintergrund}\label{sec:beleuchtung}
-Ergänzend zur praktischen Evaluation wurde untersucht, welchen Einfluss eine sichtbare Lichtquelle und der Hintergrund im Kamerabild auf die initiale Handdetektion und das anschließende Landmark-Tracking besitzt. Eine Bewertung der Zeichenklassifikation erfolgte in diesem Versuch nicht. 
+\section{Einfluss von Beleuchtung und Hintergrund}\label{sec:beleuchtunghintergrund}
+Ergänzend zur praktischen Evaluation wurde untersucht, welchen Einfluss eine sichtbare Lichtquelle sowie unterschiedliche Hintergründe auf die initiale Handdetektion und das anschließende Landmark-Tracking haben. Eine Bewertung der Zeichenklassifikation erfolgte dabei nicht. Diese Einflussgrößen wurden ausgewählt, da bereits während der Entwicklung wiederholt Veränderungen der Detektions- und Trackingstabilität in Abhängigkeit von der Aufnahmesituation beobachtet worden waren.
 
-\subsection{Einfluss von Beleuchtung}
+\subsection{Einfluss von Beleuchtung}\label{sec:beleuchtung}
 
-Für diesen Versuch wurden die zuvor verwendeten Versuchsbedingungen beibehalten. Zusätzlich wurde aber eine weitere Lichtquelle in verschiedenen Bereichen des Bildes hinzugefügt. Nach jedem Durchlauf wurde die Hand aus dem Kamerabild entfernt.
+Für diesen Versuch wurden die zuvor festgelegten Versuchsbedingungen beibehalten. Zusätzlich wurde eine weitere Lichtquelle nacheinander im linken, mittleren und rechten Bereich des Kamerabildes positioniert. Nach jedem Durchlauf wurde die Hand vollständig aus dem Kamerabild entfernt, sodass das Tracking zurückgesetzt wurde und erneut eine initiale Handdetektion erforderlich war.
 
-Ohne sichtbare Lichtquelle im Kamerabild wurde die Hand wie vorgesehen detektiert und das Landmark-Tracking anschließend stabil ausgeführt. Befand sich die Lichtquelle innerhalb des Kamerabildes, verschlechterte sich insbesondere die initiale Detektion. Der stärkste Einfluss wurde bei einer mittigen Positionierung der Lichtquelle beobachtet. Die Hand wurde in dieser Situation teilweise verzögert oder nicht erkannt, sodass die nachfolgende Verarbeitungskette nicht gestartet werden konnte. Lichtquellen im linken oder rechten Bildbereich beeinträchtigten die Detektion ebenfalls, der beobachtete Einfluss war jedoch geringer als bei der mittigen Positionierung.
+Ohne sichtbare Lichtquelle im Kamerabild wurde die Hand wie vorgesehen detektiert und das Landmark-Tracking anschließend weitgehend stabil ausgeführt. Befand sich die Lichtquelle innerhalb des Kamerabildes, wurde insbesondere die initiale Detektion beeinträchtigt. Der stärkste Einfluss wurde bei einer mittigen Positionierung der Lichtquelle beobachtet. Die Hand wurde in dieser Situation teilweise verzögert oder nicht erkannt, sodass die nachfolgende Verarbeitungskette nicht gestartet werden konnte. Lichtquellen im linken oder rechten Bildbereich beeinflussten die Detektion ebenfalls, der beobachtete Effekt war jedoch geringer als bei der mittigen Positionierung.
 
-\subsection{Einfluss des Hintergrunds}
+Auch nach einer erfolgreichen initialen Detektion war das Landmark-Tracking bei einer sichtbaren Lichtquelle weniger stabil. Die Region of Interest und die eingezeichneten Landmarks wurden ungleichmäßiger aktualisiert, wodurch die Darstellung weniger flüssig und teilweise sprunghaft erschien.
+
+\subsection{Einfluss des Hintergrunds}\label{sec:hintergrund}
+
+Für die Untersuchung des Hintergrundeinflusses wurden die übrigen Versuchsbedingungen beibehalten. Auf dem zuvor verwendeten weißen Hintergrund wurden schwarze Stoffflächen an unterschiedlichen Positionen angebracht. Dadurch entstanden klar abgegrenzte und kontrastreiche Bereiche innerhalb des Kamerabildes.
+
+Vor dem freien weißen Hintergrund wurde die Hand zuverlässig detektiert. Nach der initialen Detektion arbeitete auch das Landmark-Tracking stabil. Befanden sich dagegen schwarze oder andere kontrastreiche Bereiche im Hintergrund, wurde die Hand teilweise verzögert oder weniger zuverlässig erkannt. Ein unruhiger beziehungsweise strukturierter Hintergrund beeinträchtigte die initiale Detektion ebenfalls. Nach erfolgreicher Initialisierung zeigte sich bei kontrastreichen Hintergründen außerdem ein weniger stabiles Tracking. Die Region of Interest und die Landmark-Positionen wurden teilweise ungleichmäßig oder sprunghaft aktualisiert.
+
+Die Versuche zeigen insgesamt, dass sowohl sichtbare Lichtquellen als auch kontrastreiche Hintergrundstrukturen die Detektion und das Landmark-Tracking des Prototyps beeinträchtigen können. Da die Beleuchtungsstärke, die Eigenschaften der Hintergründe und die Anzahl erfolgreicher Detektionen nicht quantitativ erfasst wurden, lassen sich aus den Ergebnissen lediglich qualitative Tendenzen ableiten. Die möglichen Ursachen für das beobachtete Verhalten werden in Abschnitt~\ref{sec:interpretation} diskutiert.
 
 
 \section{Inferenzlatenz und Ende-zu-Ende-Latenz}\label{sec:inferenzlatenz}
-Ausgabe der Logs
-\section{Bildrate und Datendurchsatz}\label{sec:bildrate}
-Framerate berechnen. Datendurchsatz? Dazu fehlt mir noch die Idee
 
-\section{Speicher- und Ressourcenverbrauch}\label{sec:speicherverbrauch}
-Analog zum Memorypool. GGF Vergleich mit nicht quantisierten Modellen?
-Aussplittung von Modellen (weights, ecblobs etc.)
+Die Inferenzzeiten wurden mittels des Scheduler\_Tick gemessen und anschließend über \texttt{USART} ausgelesen. Der verwendete \texttt{TIM7} besitzt eine Auflösung von \texttt{1ms}. Im folgenden werden die durchschnittlichen Inferenzzeiten auf 10 Inferenzen dargelegt:
+
+\begin{longtable}{|p{0.3\textwidth}|p{0.3\textwidth}|}
+    \caption{Durchschnittliche Inferenzzeiten pro Modell á 10 Durchläufe}
+    \label{tab:inferenzzeiten} \\
+    \hline
+    \textbf{Modell} & \textbf{Inferenzzeit} \\
+    \hline
+    \endfirsthead
+    \hline
+    \textbf{Modell} & \textbf{Inferenzzeit} \\
+    \hline
+    \endhead
+    \hline
+    \endlastfoot
+    Handdedektion & \textasciitilde 25ms \\
+    \hline
+    Handlandmark & \textasciitilde  18ms \\
+    \hline
+    Signlanguage & \textasciitilde <1ms \\
+\end{longtable}
+
+Die Ende-zu-Ende-Latenz beläuft sich auf 60--80ms. Aus der Messung der einzelnen Modellinferenzzeiten wissen wir das diese ca. 44ms beträgt. Die ergenzenden 16-36ms werden demnach der Vor- bzw. Nachverarbeitung von Inferenzdaten zugeordnet.
+
+\section{Bildrate}\label{sec:bildrate}
+
+Bei der dargestellten Bildrate ist zwischen den unverarbeiteten Kamerabildern und den angezeigten Inferenzergebnissen zu unterscheiden. Beide werden mit einer Bildwiederholrate von 30 fps auf dem Display ausgegeben. Die Aktualisierungsrate der Inferenzergebnisse hängt jedoch von der Inferenzlatenz ab. Da eine Ende-zu-Ende-Latenz von 60–80 ms gemessen wurde, wird die Verarbeitungspipeline effektiv mit etwa 16 Hz ausgeführt. Entsprechend werden die Inferenzergebnisse rund 16-mal pro Sekunde aktualisiert und asynchron auf dem Display dargestellt. Dadurch werden dieselben Inferenzergebnisse in mehreren aufeinanderfolgenden Display-Frames angezeigt, bis neue Ergebnisse vorliegen.
 
 \section{Abgleich mit den definierten Anforderungen}\label{sec:abgleich-anforderungen}
-Tabelle für die Abnahmekritieren durchgehen, prüfen und sagen ob bestanden oder nicht.
+
+Abschließend werden die Ergebnisse der Evaluation den in Kapitel \ref{sec:abnahmekriterien} definierten Abnahmekriterien gegenübergestellt. Die Bewertung unterscheidet zwischen erfüllten, teilweise erfüllten, nicht erfüllten und nicht abschließend bewerteten Kriterien. Ein Kriterium gilt als teilweise erfüllt, wenn die geforderte Funktion grundsätzlich umgesetzt wurde, jedoch Einschränkungen gegenüber den festgelegten Bedingungen bestehen. Als nicht bewertet werden Kriterien gekennzeichnet, für die im Rahmen der Evaluation keine ausreichenden quantitativen Messdaten erhoben wurden.
+
+\begin{longtable}{|c|p{0.30\textwidth}|p{0.40\textwidth}|p{0.12\textwidth}|}
+    \caption{Abgleich mit den definierten Abnahmekriterien}
+    \label{tab:abgleich-abnahmekriterien} \\
+    \hline
+    \texttt{ID} &
+    \texttt{Prüfung/Nachweis} &
+    \texttt{Ergebnis} &
+    \texttt{Bewertung} \\
+    \hline
+    \endfirsthead
+    \hline
+    \texttt{ID} &
+    \texttt{Prüfung/Nachweis} &
+    \texttt{Ergebnis} &
+    \texttt{Bewertung} \\
+    \hline
+    \endhead
+    \hline
+    \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
+    \endfoot
+    \hline
+    \endlastfoot
+
+    AK\_01 &
+    Visuelle Prüfung des Displays &
+    Die Kamerabilder wurden fortlaufend auf dem Display dargestellt. &
+    Erfüllt \\
+    \hline
+
+    AK\_02 &
+    Visualisierung der ROI und der Handlandmarks. &
+    Handdetektion, ROI-Bildung und Landmark-Erkennung funktionierten unter den Referenzbedingungen. Unter ungünstigen Bedingungen traten Einschränkungen auf. &
+    Erfüllt \\
+    \hline
+
+    AK\_03 &
+    Praktischer Versuch mit 1000 Einzelversuchen. &
+    912 Versuche wurden korrekt klassifiziert. Die Gesamtgenauigkeit beträgt 91,2\,\% und überschreitet den Grenzwert von 80\,\%. &
+    Erfüllt \\
+    \hline
+
+    AK\_04 &
+    Visuelle Prüfung der Displayausgabe während des praktischen Versuchs. &
+    Die erkannten Zeichen wurden lesbar dargestellt, ggf. etwas klein &
+    Erfüllt \\
+    \hline
+
+    AK\_05 &
+    Wiederholte Darstellung unterschiedlicher Zeichen während des praktischen Versuchs. &
+    Die Anzeige wurde ohne Neustart entsprechend dem jeweils erkannten Zeichen aktualisiert. &
+    Erfüllt \\
+    \hline
+
+    AK\_06 &
+    Entfernen der Hand aus dem Kamerabild und Darstellung nicht unterstützter Handformen. &
+    Ohne erkannte Hand wurde \texttt{SEARCHING...} ausgegeben, bei nicht unterstützen Handformen wurde \texttt{NONE} ausgegeben. &
+    Erfüllt \\
+    \hline
+
+    AK\_07 &
+    Ausgabe und Kontrolle der Messwerte über die Debug-Schnittstelle. &
+    Laufzeit-, Status- und Speicherinformationen können via USART ausgelesen werden. &
+    Erfüllt \\
+    \hline
+
+    AK\_08 & 
+    Berechnung der mittleren Verarbeitungsrate  &
+    Die mittlere Verarbeitungsrate beträgt 16 Bilder pro Sekunde. &
+    Erfüllt \\
+    \hline
+
+    AK\_09 &
+    Zeitmessung zwischen der Bereitstellung des Kamerabildes und der Ausgabe des Klassifikationsergebnisses. &
+    Die gemessene Ende-zu-Ende-Latenz beträgt ca. 60 bis 80ms. &
+    Erfüllt \\
+    \hline
+
+    AK\_10 &
+    Kontinuierlicher Systembetrieb über einen Zeitraum von mindestens 20 Minuten. &
+    Das System arbeitete bei während des praktischen Versuchs ca. fünf Stunden ohne Absturz oder Neustart. &
+    Erfüllt \\
+    \hline
+
+    AK\_11 &
+    Praktischer Versuch & Unter den Testbedingungen wurde die Hand zu mind. 90\% erfolgreich lokalisiert. Die Lokalisierung in Bezug auf die Anzahl der Bilder erfolgte nicht. &
+    Teilweise erfüllt\\
+    \hline
+
+    AK\_12 &
+    Überprüfung des Quellcodes &
+    Die Kameradaten werden über die vorgesehenen Schnittstellen aufgenommen und verarbeitet. &
+    Erfüllt \\
+    \hline
+
+    AK\_13 &
+    Überprüfung der linker-Map-Datei und durch STMProgrammer &
+    Modellgewichte liegen im NOR-Flash. Kamera- und Bildpuffer befinden sich im PSRAM. &
+    Erfüllt \\
+    \hline
+
+    AK\_14 &
+    Durchführung der Systemtests auf dem STM32N6570 Discovery Kit. &
+    Das Gesamtsystem wird vollständig auf der festgelegten Zielplattform ausgeführt. &
+    Erfüllt \\
+    \hline
+
+    AK\_15 &
+    Code-Review der Projektstruktur und der verwendeten Treiber. &
+    Der Quellcode ist modular und überwiegend registerbasiert aufgebaut. Für die NPU wird ein HAL-Treiber eingesetzt. &
+    Teilweise erfüllt \\
+    \hline
+
+    AK\_16 &
+    Überprüfung der Modellformate, Konvertierungseinstellungen und Netzwerkausführung. &
+    Die Modelle sind quantisiert, für die Zielplattform konvertiert und werden überwiegend über die NPU ausgeführt. &
+    Erfüllt \\
+    \hline
+\end{longtable}

@@ -178,11 +178,11 @@ Beispielhafte Beschreibung einiger Zeichen:
 \section{Grundlagen des maschinellen Lernens}\label{sec:ml-grundlagen}
 \subsection{Begriffsbildung}\label{sub:ml-begriffsbildung}
 
-Maschinelles Lernen (ML, engl. *machine learning*) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet. \cite{MachineLearning1st}
+Maschinelles Lernen (ML, engl. machine learning) ist ein Teilgebiet der künstlichen Intelligenz, das Systeme befähigt, in Daten komplexe Muster und Zusammenhänge zu lernen und darauf basierend Vorhersagen oder Entscheidungen zu treffen, ohne explizit programmiert zu werden Anstelle fester Regeln wird dem Algorithmus ein Trainingsdatensatz zur Verfügung gestellt, aus dem er statistische Muster und Zusammenhänge ableitet. \cite{MachineLearning1st}
 
 \subsection{Supervised Learning}\label{sub:supervised-learning}
 
-Im "überwachten Lernen" (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert \cite{hastieElementsStatisticalLearning2009, MachineLearning1st}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+Im "überwachten Lernen"  (supervised learning) wird dem Modell ein Datensatz bestehend aus Eingabedaten (Features) und zugehörigen korrekten Ausgaben (Labels) präsentiert \cite{hastieElementsStatisticalLearning2009, MachineLearning1st}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
 
 \subsection{Klassifikation}\label{sub:klassifikation}
 
@@ -281,8 +281,7 @@ wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivieru
 
 \subsection{Aktivierungsfunktionen}\label{sub:aktivierungsfunktionen}
 
-Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind (Kim, 2016):
-\#TODO QUELLE
+Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind \cite{kimBookReviewDeep2016}:
 
 \begin{itemize}
     \item \textbf{ReLU (Rectified Linear Unit):} $f(x) = \max(0, x)$. Einfach zu berechnen, gradientenfreundlich und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.
@@ -290,21 +289,22 @@ Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen 
 \end{itemize}
 
 \subsection{Architektur: Multi-Layer Perceptron (MLP)}\label{sub:mlp}
-Ein Multi-Layer Perceptron (MLP) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht (Kim, 2016). Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen.
-\cite{}
+Ein Multi-Layer Perceptron ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht \cite{kimBookReviewDeep2016}. Die Daten durchlaufen das Netz in eine Richtung, von der Eingabeschicht über die versteckten Schichten zur Ausgabeschicht, ohne Rückkopplungen.
 
 \subsection{Architektur: Convolutional Neural Networks (CNN)}\label{sub:cnn}
 
-Ein Convolutional Neural network (CNN) ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung. \cite{burkovMachineLearningKompakt2019}
+Ein Convolutional Neural Network ist ein vorwärtsgerichtetes Neuronales Netz (FNN) mit mindestens einer versteckten Schicht. Die Struktur klassischer Convolutional Neural Networks besteht aus mehreren Convolutional layer gefolgt von einem Pooling layer. Diese Struktur kann beliebig oft innerhalb des Model seriell aufgerufen werden. Typische Eingabevektoren kommen aus den Bereichen Bildverarbeitung, Bildklassifizierung und Objekterkennung und Lokalisierung. \cite{burkovMachineLearningKompakt2019}
 
 \subsection{Backpropagation und Gradient Descent}\label{sub:backpropagation}
 
-Das Training neuronaler Netze erfolgt mittels *Backpropagation* (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie Stochastic Gradient Descent (SGD) oder Varianten davon (Adam, RMSprop) \cite{kimBookReviewDeep2016, raschkaMachineLearningPyTorch2022}:
+Das Training neuronaler Netze erfolgt mittels \texttt{Backpropagation} (Rückpropagierung des Fehlers) in Kombination mit einem Optimierungsalgorithmus wie Stochastic Gradient Descent (SGD) oder Varianten davon (Adam, RMSprop) \cite{kimBookReviewDeep2016, raschkaMachineLearningPyTorch2022}:
 
-1. Forward Pass: Die Eingabedaten durchlaufen das Netz, und die Vorhersage wird berechnet. \newline
-2. Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert. \newline
-3. Backward Pass: Die Ableitungen des Loss nach den Gewichten werden über die Schichten zurückgerechnet (Kettenregel der Differentiation).\newline
-4. Gewichts-Update: Die Gewichte werden in Richtung des negativen Gradienten angepasst, um den Loss zu minimieren.
+\begin{enumerate}
+    \item Forward Pass: Die Eingabedaten durchlaufen das Netz, und die Vorhersage wird berechnet.
+    \item Loss-Berechnung: Die Abweichung zwischen Vorhersage und tatsächlichem Label wird mittels einer Loss-Funktion (z.B. Categorical Cross-Entropy für Multi-Class-Klassifikation) quantifiziert.
+    \item Backward Pass: Die Ableitungen des Loss nach den Gewichten werden über die Schichten zurückgerechnet (Kettenregel der Differentiation).
+    \item Gewichts-Update: Die Gewichte werden in Richtung des negativen Gradienten angepasst, um den Loss zu minimieren.
+\end{enumerate}
 
 Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensatz) wiederholt, bis das Modell eine zufriedenstellende Güte erreicht.
 
@@ -366,7 +366,7 @@ Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildau
 
 Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich um eine linke oder rechte Hand handelt.
 
-\subsection{ROI}\label{sub:roi}
+\subsection{Region of Interest}\label{sub:roi}
 
 Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll.
 Dies kann verwendet werden um Modelle gezielt auszuführen.
