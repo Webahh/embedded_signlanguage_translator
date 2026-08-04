@@ -94,9 +94,7 @@
 
 % ======================================================================================
 \section{Memorylayout}\label{sec:Memorylayout}
-
-% ============================================================================
-\section{Datenfluss - Modell-Inferenz-Pipeline}\label{sec:datenfluss}
+\subsection{Datenfluss - Modell-Inferenz-Pipeline}\label{sec:datenfluss}
 
 \begin{lstlisting}[language={}, caption={Datenfluss der Inferenz-Pipeline}, label={lst:datenfluss}, numbers=none]
   OctoSPI Flash (XSPI2)                    Internal SRAM (AXISRAM1)
@@ -227,7 +225,6 @@
 
 % ============================================================================
 \subsection{Linker-Regionen}\label{sub:Linker-Regionen}
-\section{Linker-Regionen}\label{sec:linker-regionen}
 
 \begin{longtable}{|l|l|l|p{0.45\textwidth}|}
     \caption{Linker-Regionen}
@@ -263,4 +260,28 @@
 _mem_pool_xSPI2_fingeralphabet_model_v3 = 0x71000000;
 _mem_pool_xSPI2_palm_detection_model_v3 = 0x71200000;
 _mem_pool_xSPI2_hand_landmark_model_v3  = 0x71600000;
+\end{lstlisting}
+
+\section{Clock Configuration}\label{sec:clock}
+\begin{lstlisting}[language={}, caption={Microcontroller Clock Konfiguration}, label={lst:clock-configuratiob}]
+HSI (64 MHz)
+  |
+  +-- PLL1 (M=2, N=25) -- 800 MHz -+ IC1/1 -- CPUCLK    800 MHz
+  |                                +-- IC2/2 -- AXI     400 MHz
+  |                                |              +-- HCLK/2 -- 200 MHz
+  |                                |              |    +-- PCLK1 (APB1)  200 MHz
+  |                                |              |    +-- PCLK2 (APB2)  200 MHz
+  |                                |              |    +-- PCLK4 (APB4)  200 MHz
+  |                                |              |    \-- PCLK5 (APB5)  200 MHz
+  |                                |              \-- GPU2D,DMA2D,GFXMMU 400 MHz
+  |                                \-- IC18/40 - CSI                      20 MHz
+  |
+  +-- PLL2 (M=8, N=125) - 1000 MHz -- IC6/1 --- NPU        1000 MHz
+  |                                +-- IC17/3 -- DCMIPP    333 MHz
+  |                                \-- IC7 (SAI1 BSP)      variable
+  |
+  +-- PLL3 (M=8, N=225) - 900 MHz -- IC11/1 -- AXISRAM3-6  900 MHz
+  |                                    (NPU RAMs)
+  |
+  \-- PLL4 (M=8, N=225) - 50 MHz -- IC16/2 -- LTDC         25 MHz
 \end{lstlisting}

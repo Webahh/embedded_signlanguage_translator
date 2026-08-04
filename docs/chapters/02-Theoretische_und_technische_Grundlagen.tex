@@ -33,11 +33,11 @@ Eingebettete Systeme (engl. embedded systems) sind Computersysteme, die als Best
 Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller (MCU, engl.\ \texttt{Microcontroller Unit}). Ein Mikrocontroller integriert auf einem einzigen Halbleiterchip alle für einen vollständigen Computer wesentlichen Komponenten \cite{wolfComputersComponentsPrinciples2012}:
 
 \begin{itemize}
-    \item \textbf{CPU:} Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehreren hundert MHz.
-    \item \textbf{Programmspeicher (Flash):} Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
-    \item \textbf{Arbeitsspeicher (RAM):} Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigen hundert Kilobyte.
-    \item \textbf{Taktgeber:} Interner Oszillator (HSI, engl.\ \texttt{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \texttt{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
-    \item \textbf{Peripherie-Einheiten:} Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt 2.1.3).
+    \item CPU: Recheneinheit mit Instruktionssatz (z.\,B.\ Arm Cortex-M, RISC-V). Die Taktfrequenz bestimmt die Verarbeitungsgeschwindigkeit und reicht von wenigen MHz bis zu mehreren hundert MHz.
+    \item Programmspeicher (Flash): Nichtflüchtiger Speicher für den Programmcode und konstante Daten. Die Größe variiert von einigen Kilobyte bis zu mehreren Megabyte.
+    \item Arbeitsspeicher (RAM): Flüchtiger Speicher für Laufzeitdaten, Variablen und Stack. Typisch sind wenige Kilobyte bis einigen hundert Kilobyte.
+    \item Taktgeber: Interner Oszillator (HSI, engl.\ \texttt{High-Speed Internal}) oder externer Quarz (HSE, engl.\ \texttt{High-Speed External}) als Zeitbasis für die CPU und Peripherie.
+    \item Peripherie-Einheiten: Hardwaremodule für Ein-/Ausgabe, Kommunikation und Zeitsteuerung (siehe Abschnitt \ref{sub:peripherieschnittstellen}).
 \end{itemize}
 
 \begin{figure}[htbp]
@@ -49,7 +49,7 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 
 \subsection{Peripherieschnittstellen}\label{sub:peripherieschnittstellen}
 
-Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind \cite{STM32N6570DKProductSTMicroelectronics}\cite{Mikrocontroller}:
+Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind \cite{STM32N6570DKProductSTMicroelectronics, Mikrocontroller}:
 
 
 \begin{itemize}
@@ -66,20 +66,20 @@ Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der 
 
 \subsection{Speicherarchitektur}\label{sub:speicherarchitektur}
 
-Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen Rechnern ab. Die wesentlichen Speichertypen sind \cite{wolfComputersComponentsPrinciples2012},\cite{STM32N6570DKProductSTMicroelectronics},\cite{rm0486}:
+Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen Rechnern ab. Die wesentlichen Speichertypen sind \cite[s. 193-227 (Wolf)]{wolfComputersComponentsPrinciples2012, STM32N6570DKProductSTMicroelectronics, rm0486}:
 
 \begin{itemize}
     \item \texttt{Flash-Speicher (On-Chip): } Nichtflüchtig, integriert auf dem MCU-Chip. Dient als Programmspeicher (Code) und für konstante Daten (Konstanten-Tabelle, lookup tables). Schreibzugriffe sind langsam und erfordern einen Löschzyklus.
-    \item \texttt{SRAM (On-Chip): } Flüchtig, sehr schneller Zugriff (im Takt der CPU). Dient als Hauptspeicher für Variablen, Heap und Stack. Auf Cortex-M85-Systemen ist SRAM in mehrere Banken aufgeteilt (AXISRAM), um parallele Zugriffe durch CPU, DMA und NPU zu ermöglichen.
+    \item \texttt{SRAM (On-Chip): } Flüchtig, sehr schneller Zugriff (im Takt der CPU). Dient als Hauptspeicher für Variablen, Heap und Stack. Auf ausgewählten Cortex-Systemen ist SRAM in mehrere Banken aufgeteilt (AXISRAM), um parallele Zugriffe durch CPU, DMA und NPU zu ermöglichen.
     \item \texttt{PSRAM (extern): } Pseudo-Static RAM, angeschlossen über OctoSPI oder Quad-SPI. Bietet größere Speicherkapazitäten als On-Chip-SRAM bei moderater Zugriffszeit. Im STM32N6570-System wird PSRAM für Zwischenspeicherung von Bilddaten genutzt.
-    \item \texttt{NOR-Flash (extern): } Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI. Im vorliegenden Projekt werden die vorkompilierten Modellbinaries (Palm Detection, Hand Landmark, Fingeralphabet) in externem NOR-Flash bei festen Adressen gespeichert.
+    \item \texttt{NOR-Flash (extern): } Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI.
 \end{itemize}
 
-Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) \cite{rm0486}\cite{STM32N6ExampleProjects}.
+Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D, GPU2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) \cite{rm0486, STM32N6ExampleProjects}.
 
 \subsection{Clock-Systeme}\label{sub:clock-systeme}
 
-Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers \cite{STM32N6570DKProductSTMicroelectronics}\cite{rm0486}.
+Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers \cite{STM32N6570DKProductSTMicroelectronics, rm0486}.
 
 \begin{itemize}
     \item \texttt{Oszillatoren: }Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16--64\,MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
@@ -90,10 +90,10 @@ Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundam
 \subsection{Bare-Metal-Programmierung}\label{sub:bare-metal}
 
 \begin{itemize}
-    \item  \texttt{Definition und Abgrenzung: }Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) \cite{GbatiIsrael2024BECP}. Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
+    \item  \texttt{Definition und Abgrenzung: }Als Bare-Metal-Programmierung bezeichnet man die Softwareentwicklung auf einem Mikrocontroller ohne Einsatz eines Betriebssystems (OS) oder Echtzeitbetriebssystems (RTOS) \cite[ch. ~2]{GbatiIsrael2024BECP}. Der Programmcode hat direkten Zugriff auf die Hardwareregister, und die Ausführungsreihenfolge wird vollständig durch den eigenen Code bestimmt. Dies steht im Gegensatz zu OS-basierter Programmierung, bei der ein Betriebssystem (z.B. FreeRTOS, Zephyr) die Ressourcenverwaltung, Scheduling und Synchronisierung übernimmt.
     \item \texttt{Startup und Systeminitialisierung: }Nach dem Einschalten oder Reset beginnt die CPU an einer durch die Vektor-Tabelle definierten Adresse (Reset-Handler). Der Startup-Code führt folgende Schritte aus: (1) Kopieren der Initialisierungsdaten aus Flash nach SRAM (.data-Sektion), (2) Löschen der .bss-Sektion (uninitialisierte globale Variablen), (3) Konfiguration des Stack-Pointers, (4) Aufruf der main-Funktion. Die Vektor-Tabelle enthält außerdem Adressen aller Interrupt-Handler (Exceptions).
-    \item \texttt{Register-Level-Programmierung: }Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch.
-    \item \texttt{Vorteile und Trade-Offs: }Bare-Metal bietet minimale Latenz, minimalen Speicherverbrauch und deterministisches Verhalten. Die Nachteile liegen in der höheren Entwicklungskomplexität: Es gibt kein Thread-Management, keine Synchronisationsprimitive (Mutexe, Semaphore) und keine automatische Ressourcenverwaltung. Für ressourcenbeschränkte Systeme mit klar definiertem Ablauf überwiegen jedoch die Vorteile \cite{GbatiIsrael2024BECP}\cite{Mikrocontroller}.
+    \item \texttt{Register-Level-Programmierung: }Im Bare-Metal-Ansatz werden Peripherie-Einheiten über Memory-Mapped I/O-Register konfiguriert. Jedes Register hat eine fest definierte Adresse im Speicherbereich. Die Konfiguration erfolgt durch Setzen oder Löschen einzelner Bits mit Bitmasken. Beispielsweise wird ein GPIO-Pin als Ausgang konfiguriert, indem im Mode-Register die entsprechenden Bits gesetzt werden. Der Vorteil gegenüber einer Hardware-Abstraktionsschicht (HAL) liegt in der vollen Kontrolle über die Ausführungszeit und den Speicherverbrauch. \cite[ch. ~2]{GbatiIsrael2024BECP}
+    \item \texttt{Vorteile und Trade-Offs: }Bare-Metal bietet minimale Latenz, minimalen Speicherverbrauch und deterministisches Verhalten. Die Nachteile liegen in der höheren Entwicklungskomplexität: Es gibt kein Thread-Management, keine Synchronisationsprimitive (Mutexe, Semaphore) und keine automatische Ressourcenverwaltung. Für ressourcenbeschränkte Systeme mit klar definiertem Ablauf überwiegen jedoch die Vorteile \cite{GbatiIsrael2024BECP, Mikrocontroller}.
 \end{itemize}
 
 \subsection{Hardware-Beschleunigung}\label{sub:hardware-beschleunigung}
@@ -101,7 +101,7 @@ Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundam
 Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte Operationen mit hoher Effizienz ausführen:
 
 \begin{itemize}
-    \item \texttt{DMA:} Entlastet die CPU bei Datenübertragungen (siehe Abschnitt 2.1.3).
+    \item \texttt{DMA:} Entlastet die CPU bei Datenübertragungen.
     \item \texttt{DMA2D:} Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteiligung.
     \item \texttt{NPU (Neural Processing Unit):} Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32N6570-DK arbeitet die NPU mit einer Taktfrequenz von 1000\,MHz und nativer INT8-Arithmetik (siehe Abschnitt 2.7) \cite[s. 1011 ff.]{rm0486}.
 \end{itemize}
@@ -109,12 +109,12 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 \section{Deutsches Einhand-Fingeralphabet}\label{sec:fingeralphabet}
 
 \subsection{Gebärdensprache als eigenständige Sprache}\label{sub:gebaerdensprache}
-Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren \cite{DeutscheGebaerdensprache}. Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache.
+Gebärdensprachen sind natürlich entstandene, vollwertige Sprachen, die auf visuell-manuellen Mitteln basieren. Sie unterscheiden sich von Lautsprachen nicht nur in der Modaliät (Gestik und Mimik statt Laut und Klang), sondern verfügen über eigene grammatische Strukturen, Syntax und Semantik. Gebärdensprachen sind eigenständige Sprachen und keine abgeleiteten oder vereinfachten Formen der jeweiligen Lautsprache. \cite{DeutscheGebaerdensprache}
 
-Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache \cite{DeutscheGebaerdensprache}.
+Die Deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der Gehörlosengemeinschaft in Deutschland. Sie wird vor allem von gehörlosen und schwerhörigen Menschen sowie von deren Angehörigen und Gebärdensprachdolmetschern verwendet. Die DGS unterscheidet sich wesentlich von der deutschen Lautsprache in Grammatik, Satzbau und Ausdruck. Gebärdensprachliche Äußerungen bestehen aus einer Kombination von Handformen, Handbewegungen, Handpositionen im Raum sowie Mimik und Körpersprache. \cite{DeutscheGebaerdensprache}
 
 \subsection{Das Fingeralphabet}\label{sub:fingeralphabet-detail}
-Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache \cite{aktion-mensch},\cite{DeutscheGebaerdensprache}. Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum.
+Das Fingeralphabet ist ein Teilgebiet der Deutschen Gebärdensprache \cite{aktion-mensch, DeutscheGebaerdensprache}. Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum. \cite{DeutscheGebaerdensprache}
 
 \subsection{Das deutsche Einhand-Fingeralphabet}\label{sub:deutsches-fingeralphabet}
 
@@ -137,7 +137,7 @@ Jedes Zeichen des Fingeralphabets wird durch eine spezifische Konfiguration der 
 
 \begin{itemize}
     \item Beteiligte Finger: Welche Finger sind gestreckt, welche sind gebeugt oder angeballt?
-    \item Fingerkonfiguration: Sind Finger together (zusammengedrückt) oder gespreizt?
+    \item Fingerkonfiguration: Sind Finger zusammengedrückt oder gespreizt?
     \item Daumenposition: Liegt der Daumen über den Fingern, neben ihnen, oder ist er abgespreizt?
     \item Handfläche: Zeigt die Handfläche zum Betrachter (ventral) oder weg (dorsal)?
     \item Fingerstellung: Zeigen die Finger nach oben, unten oder zur Seite?
