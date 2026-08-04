@@ -91,6 +91,9 @@
 \addbibresource{datenbanken/Literaturverzeichnis.bib}
 \KOMAoptions{bibliography=totocnumbered}
 \AtBeginBibliography{\raggedright\emergencystretch=1em}
+% Zitate im Text parenthetisch ausgeben: (Nachname Jahr, S. x) (Regeln 3.6.3)
+% \cite liefert im iso690/author-date-Style sonst keine Klammern.
+\let\cite\parencite
 
 % Abbildungsverzeichnis im Inhaltsverzeichnis
 \KOMAoptions{listof=totoc}
