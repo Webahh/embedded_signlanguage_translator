@@ -1341,7 +1341,7 @@ Die Speicherbelegung umfasst auf Schicht 1 vier rotierende Hintergrundbuffer \li
 
 \subsubsection{Drawer-System}\label{ssub:drawer-system}
 
-Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite von 220\,Pixeln. Er wird als Struktur (\texttt{UI\_Drawer\_TypeDef}) verwaltet, die den aktuellen Zustand (geöffnet/geschlossen), die Farbgebung, die Position sowie ein Array von maximal 12 Elementen speichert.
+Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite von 220\,Pixeln. Er wird als Struktur (\texttt{UI\_Drawer\_TypeDef}) verwaltet, die den aktuellen Zustand (geöffnet/\-geschlossen), die Farbgebung, die Position sowie ein Array von maximal 12 Elementen speichert.
 
 Initialisierung: Bei Systemstart werden die beiden Framebuffer (offen/geschlossen) mit vollständiger Transparenz (\texttt{0x00000000}) gelöscht. Anschließend wird der Drawer im geschlossenen Zustand gerendert (nur Hamburger-Button), danach im geöffneten Zustand (Panel mit allen Elementen). Der im Ausgangszustand sichtbare Buffer ist der geschlossene Zustand.
 
@@ -1374,7 +1374,7 @@ Composite (Kontrollpanel): Kombiniert ein Beschriftungsfeld, ein Augen-Symbol zu
 
 Die Eingabe erfolgt über einen Goodix GT911 kapazitiven Touch-Controller, der über den I2C-Bus (I2C2) mit dem Mikrocontroller kommuniziert.
 
-Konfiguration: Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \linebreak \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird ein Prüfsumme berechnet um die Korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
+Konfiguration: Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \linebreak \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird eine Prüfsumme berechnet um die Korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
 
 Interruptgestützte Erfassung: Bei Berührung der Displayfläche löst der GT911 einen steigenden Flanken-Interrupt über PQ4 aus. Im Interrupt-Handler (\texttt{EXTI4\_IRQHandler}) wird über I2C der Touch-Status gelesen, der die Anzahl der berührenden Finger (0--5) angibt. Bei mindestens einer Berührung werden die 12-Bit-Koordinaten der ersten Berührung aus den Registern gelesen und in statischen Variablen abgelegt. Anschließend wird eine Pending-Flag gesetzt.
 
