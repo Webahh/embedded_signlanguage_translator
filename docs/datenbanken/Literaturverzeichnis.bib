@@ -33,7 +33,7 @@
   author = {{AktionMensch e.V.}},
   urldate = {2026-07-16},
   abstract = {Die Aktion Mensch unterst\"utzt als gr\"o\ss te private F\"orderorganisation in Deutschland soziale F\"orderprojekte f\"ur Menschen mit und ohne Behinderung.},
-  howpublished = {https://www.aktion-mensch.de/ueber-uns/das-treibt-uns-an/was-ist-inklusion/deutsche-gebaerdensprache},
+  url = {https://www.aktion-mensch.de/ueber-uns/das-treibt-uns-an/was-ist-inklusion/deutsche-gebaerdensprache},
   langid = {ngerman},
 }
 
@@ -96,6 +96,7 @@
   month = dec,
   journal = {Dev.},
   urldate = {2026-07-23},
+  url = {https://blogdeveloperspot.blogspot.com/2025/12/optimizing-edge-ai-from-fp32-to-int8.html},
   abstract = {Optimizing Edge AI: From FP32 to INT8 with TensorFlow Lite Quantization},
   langid = {data:blog.locale},
 }
@@ -119,29 +120,28 @@
 @misc{CMSISIntroduction,
   title = {{{CMSIS}}: {{Introduction}}},
   urldate = {2026-07-24},
-  howpublished = {https://arm-software.github.io/CMSIS\_6/latest/General/index.html},
-}
-
-@misc{CMSISIntroductiona,
-  title = {{{CMSIS}}: {{Introduction}}},
-  urldate = {2026-07-24},
-  howpublished = {https://arm-software.github.io/CMSIS\_6/latest/General/index.html},
+  url = {https://arm-software.github.io/CMSIS_6/latest/General/index.html},
 }
 
 @misc{DeutscheGebaerdensprache,
   title = {{Deutsche Geb\"ardensprache e. V. - Beitrag \"uber die deutsche Geb\"ardensprache}},
   author = {{Deutscher Geh{\"o}rlosen-Bund e.V.}},
   journal = {Deutscher Geh\"orlosen-Bund e.V.},
+  url = {https://gehoerlosenbund.de/service/ratgeber-gehoerlosigkeit/deutsche-gebaerdensprache/},
   urldate = {2026-07-16},
   langid = {german},
 }
 
-@article{fritzHandGestureRecognition,
-  title = {Hand {{Gesture Recognition Using Machine Learning}}},
-  author = {Fritz, Jessica},
-  year = 2025,
-  month = jul,
-  langid = {english},
+@thesis{fritzHandGestureRecognition,
+  author      = {Fritz, Jessica},
+  title       = {Hand Gesture Recognition Using Machine Learning},
+  type        = {Thesis},
+  institution = {Johannes Kepler University Linz, Institute for Telecooperation},
+  location    = {Linz},
+  year        = {2025},
+  url         = {https://epub.jku.at/obvulihs/content/titleinfo/12239718},
+  urldate     = {2026-08-04},
+  langid      = {english}
 }
 
 @article{getreuerLinearMethodsImage2011,
@@ -158,19 +158,29 @@
 }
 
 @book{gurneyIntroductionNeuralNetworks2018,
-  title = {An Introduction to Neural Networks},
-  author = {Gurney, Kevin},
-  year = 2018,
-  publisher = {CRC press},
-  urldate = {2026-07-17}
+  author    = {Gurney, Kevin},
+  title     = {An Introduction to Neural Networks},
+  edition   = {1},
+  publisher = {CRC Press},
+  year      = {2018},
+  doi       = {10.1201/9781315273570},
+  isbn      = {978-1-315-27357-0},
+  langid    = {english}
 }
 
-@misc{hastieElementsStatisticalLearning2009,
-  title = {The Elements of Statistical Learning},
-  author = {Hastie, Trevor and Tibshirani, Robert and Friedman, Jerome},
-  year = 2009,
-  publisher = {Springer series in statistics New-York},
-  urldate = {2026-07-17},
+@book{hastieElementsStatisticalLearning2009,
+  author    = {Hastie, Trevor and Tibshirani, Robert and Friedman, Jerome},
+  title     = {The Elements of Statistical Learning},
+  subtitle  = {Data Mining, Inference, and Prediction},
+  edition   = {2},
+  series    = {Springer Series in Statistics},
+  publisher = {Springer},
+  location  = {New York, NY},
+  year      = {2009},
+  pagetotal = {745},
+  doi       = {10.1007/978-0-387-84858-7},
+  isbn      = {978-0-387-84858-7},
+  langid    = {english}
 }
 
 @article{huenerfauthEvaluationLanguageFeedback2017,
@@ -193,6 +203,8 @@
   title = {{{ISTQB Certified Tester}} - {{Foundation Level Syllabus}} v4.0},
   author = {ISTQB},
   year = 2024,
+  url = {https://istqb.org/wp-content/uploads/2024/11/ISTQB_CTFL_Syllabus_v4.0.1.pdf},
+  urldate = {2026-08-01},
   langid = {english},
 }
 
@@ -226,22 +238,6 @@
   copyright = {Copyright (c) 2023 The Research Publication},
   langid = {english},
   keywords = {ANN,CNN,Forschungsstand,HMM,Sign Language,SVM},
-}
-
-@article{kimBookReviewDeep2016,
-  title = {Book {{Review}}: {{Deep Learning}}},
-  shorttitle = {Book {{Review}}},
-  author = {Kim, Kwang Gi},
-  year = 2016,
-  journal = {Healthcare Informatics Research},
-  volume = {22},
-  number = {4},
-  pages = {351},
-  issn = {2093-3681, 2093-369X},
-  doi = {10.4258/hir.2016.22.4.351},
-  urldate = {2026-07-16},
-  copyright = {http://creativecommons.org/licenses/by-nc/4.0/},
-  langid = {english},
 }
 
 @incollection{kleukerAnforderungsanalyse2025,
@@ -280,8 +276,13 @@
 @article{lugaresiMediaPipeFrameworkPerceiving,
   title = {{{MediaPipe}}: {{A Framework}} for {{Perceiving}} and {{Processing Reality}}},
   author = {Lugaresi, Camillo and Tang, Jiuqiang and Nash, Hadon and McClanahan, Chris and Uboweja, Esha and Hays, Michael and Zhang, Fan and Chang, Chuo-Ling and Yong, Ming Guang and Lee, Juhyun and Chang, Wan-Teh and Hua, Wei and Georg, Manfred and Grundmann, Matthias},
-  abstract = {Building an application that processes perceptual inputs involves more than running an ML model. Developers have to harness the capabilities of a wide range of devices; balance resource usage and quality of results; run multiple operations in parallel and with pipelining; and ensure that time-series data is properly synchronized. The MediaPipe framework addresses these challenges. A developer can use MediaPipe to easily and rapidly combine existing and new perception components into prototypes and advance them to polished cross-platform applications. The developer can configure an application built with MediaPipe to manage resources efficiently (both CPU and GPU) for low latency performance, to handle synchronization of time-series data such as audio and video frames and to measure performance and resource consumption. We show that these features enable a developer to focus on the algorithm or model development, and use MediaPipe as an environment for iteratively improving their application, with results reproducible across different devices and platforms. MediaPipe will be open-sourced at https://github.com/google/mediapipe.},
-  langid = {english},
+  title = {{MediaPipe}: A Framework for Perceiving and Processing Reality},
+  booktitle = {Third Workshop on Computer Vision for AR/VR at IEEE Computer Vision and Pattern Recognition (CVPR)},
+  location = {Long Beach, CA, USA},
+  date = {2019-06-17},
+  url = {https://static1.squarespace.com/static/5c3f69e1cc8fedbc039ea739/t/5e130ff310a69061a71cbd7c/1578307584840/NewTitle_May1_MediaPipe_CVPR_CV4ARVR_Workshop_2019.pdf},
+  urldate = {2026-08-04},
+  langid = {english}
 }
 
 @misc{ManifestoAgileSoftware,
@@ -289,7 +290,7 @@
   author = {Agile Manifesto},
   year = 2001,
   urldate = {2026-07-20},
-  howpublished = {https://agilemanifesto.org/},
+  url = {https://agilemanifesto.org/},
 }
 
 @incollection{marwedel2021,
@@ -316,13 +317,6 @@
   urldate = {2026-07-16},
 }
 
-@misc{Mikrocontroller,
-  title = {{Mikrocontroller}},
-  urldate = {2026-07-16},
-  howpublished = {https://www.elektronik-kompendium.de/sites/com/1907171.htm},
-  langid = {german},
-}
-
 @inproceedings{passoldDynamicWeighingUsing2025,
   title = {Dynamic {{Weighing Using MLP Neural Network Implemented}} on {{ARM Board Equipped}} with {{NPU}}},
   booktitle = {2025 {{IEEE CHILEAN Conference}} on {{Electrical}}, {{Electronics Engineering}}, {{Information}} and {{Communication Technologies}} ({{CHILECON}})},
@@ -337,26 +331,31 @@
   keywords = {Aerospace and electronic systems,artificial neural networks,Circuits,Circuits and systems,dynamic weighing,edge AI,embedded systems,Filtering,Filters,Kalman filters,load cells,Low-pass filters,Microcontrollers,Oscillators,Sensor systems,vibration compensation},
 }
 
-@book{PatternRecognitionMachine,
-  title = {Pattern {{Recognition}} and {{Machine Learning}}},
-  urldate = {2026-07-16},
-  abstract = {Pattern recognition has its origins in engineering, whereas machine learning grew out of computer science. However, these activities can be viewed as two facets of the same field, and together they have undergone substantial development over the past ten years. In particular, Bayesian methods have grown from a specialist niche to become mainstream, while graphical models have emerged as a general framework for describing and applying probabilistic models. Also, the practical applicability of Bayesian methods has been greatly enhanced through the development of a range of approximate inference algorithms such as variational Bayes and expectation pro- gation. Similarly, new models based on kernels have had significant impact on both algorithms and applications. This new textbook reacts these recent developments while providing a comprehensive introduction to the fields of pattern recognition and machine learning. It is aimed at advanced undergraduates or first year PhD students, as wellas researchers and practitioners, and assumes no previous knowledge of pattern recognition or - chine learning concepts. Knowledge of multivariate calculus and basic linear algebra is required, and some familiarity with probabilities would be helpful though not essential as the book includes a self-contained introduction to basic probability theory.},
-  langid = {english},
-  author= {Bishop, Christopher},
-}
-
 @misc{PosttrainingQuantizationTensorFlow,
   title = {Post-Training Quantization \textbar{} {{TensorFlow Model Optimization}}},
   journal = {TensorFlow},
   urldate = {2026-07-16},
-  howpublished = {https://www.tensorflow.org/model\_optimization/guide/quantization/post\_training},
+  url = {https://www.tensorflow.org/model\_optimization/guide/quantization/post\_training},
   langid = {english},
+}
+
+@inproceedings{guoCalibrationModernNeural2017,
+  author    = {Guo, Chuan and Pleiss, Geoff and Sun, Yu and Weinberger, Kilian Q.},
+  title     = {On Calibration of Modern Neural Networks},
+  booktitle = {Proceedings of the 34th International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {70},
+  pages     = {1321--1330},
+  date      = {2017},
+  url       = {https://proceedings.mlr.press/v70/guo17a.html},
+  urldate   = {2026-08-05},
+  langid    = {english}
 }
 
 @misc{PraxiseinstiegMachineLearning,
   title = {Praxiseinstieg {{Machine Learning}} Mit {{Scikit-Learn}}, {{Keras}} Und {{TensorFlow}} - 11727363},
   urldate = {2026-07-24},
-  howpublished = {https://content-select.com/media/moz\_viewer/64d9ca27-1b4c-4537-b870-43e7ac1b0007/language:de},
+  url = {https://content-select.com/media/moz\_viewer/64d9ca27-1b4c-4537-b870-43e7ac1b0007/language:de},
 }
 
 @book{preisselGitDezentraleVersionsverwaltung2019,
@@ -431,9 +430,10 @@
 }
 
 @misc{ResourceIsolationFramework,
-  title = {Resource {{Isolation Framework}} Overview - Stm32mpu},
+  title = {Resource {{Isolation Framework}} Overview},
+  author = {STMicroelectronics},
   urldate = {2026-07-24},
-  howpublished = {https://wiki.st.com/stm32mpu/wiki/Resource\_Isolation\_Framework\_overview},
+  url = {https://wiki.st.com/stm32mpu/wiki/Resource_Isolation_Framework_overview},
   langid = {english},
 }
 
@@ -483,7 +483,7 @@
   month = aug,
   urldate = {2026-07-20},
   abstract = {Edge AI refers to the deployment of AI models directly on local edge devices to enable real-time data processing and analysis without reliance on cloud infrastructure.},
-  howpublished = {https://www.ibm.com/think/topics/edge-ai},
+  url = {https://www.ibm.com/think/topics/edge-ai},
   langid = {english},
 }
 
@@ -505,12 +505,11 @@
 
 @misc{SparseCategoricalCrossentropy18:23:14+00:00,
   title = {Sparse {{Categorical Crossentropy}} vs. {{Categorical Crossentropy}}},
-  year = {18:23:14+00:00},
   journal = {GeeksforGeeks},
   urldate = {2026-07-17},
   abstract = {Your All-in-One Learning Portal: GeeksforGeeks is a comprehensive educational platform that empowers learners across domains-spanning computer science and programming, school education, upskilling, commerce, software tools, competitive exams, and more.},
   chapter = {Deep Learning},
-  howpublished = {https://www.geeksforgeeks.org/deep-learning/sparse-categorical-crossentropy-vs-categorical-crossentropy/},
+  url = {https://www.geeksforgeeks.org/deep-learning/sparse-categorical-crossentropy-vs-categorical-crossentropy/},
   langid = {english},
 }
 
@@ -519,41 +518,32 @@
   author = {STMicroelectronics},
   urldate = {2026-07-16},
   abstract = {The STM32N6570-DK Discovery kit is a complete demonstration and development platform for the Arm\textregistered{} Cortex\textregistered -M55 core-based STM32N657X0H3Q microcontroller.},
-  howpublished = {https://www.st.com/en/evaluation-tools/stm32n6570-dk.html},
+  url = {https://www.st.com/en/evaluation-tools/stm32n6570-dk.html},
   langid = {english},
 }
 
 @misc{STM32N6ExampleProjects,
   title = {{{STM32N6 Example}} Projects \& Tips for Creating New Projects},
+  author = {STMicroelectronics},
   urldate = {2026-07-24},
-  howpublished = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_stm32n6\_projects.html?utm\_source=chatgpt.com},
+  url = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_stm32n6\_projects.html},
 }
 
 @misc{STNeuralARTCompiler,
   title = {{{ST Neural-ART}} Compiler Primer},
+  author = {STMicroelectronics},
   urldate = {2026-07-24},
-  howpublished = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_neural\_art\_compiler.html},
+  url = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_neural\_art\_compiler.html},
 }
 
 @misc{STNeuralARTNPU,
   title = {{{ST Neural-ART NPU}} - {{Supported}} Operators and Limitations},
+  author = {STMicroelectronics},
   urldate = {2026-07-20},
-  howpublished = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_operator\_support.html},
-}
-
-@misc{STNeuralARTNPU,
-  title = {{{ST Neural-ART NPU}} Concepts},
-  urldate = {2026-07-21},
-  howpublished = {https://stm32ai-cs.st.com/assets/embedded-docs/stneuralart\_programming\_model.html},
+  url = {https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart\_operator\_support.html},
 }
 
 @article{tibshiraniValeriePatrickHastie,
-  title = {Valerie and {{Patrick Hastie}}},
-  author = {Tibshirani, Sami and Friedman, Harry},
-  langid = {english},
-}
-
-@article{tibshiraniValeriePatrickHastiea,
   title = {Valerie and {{Patrick Hastie}}},
   author = {Tibshirani, Sami and Friedman, Harry},
   langid = {english},
@@ -619,11 +609,15 @@
   langid = {english}
 }
 
-@article{washizakiWasedaUniversityIEEE,
-  title = {Waseda {{University}}, {{IEEE Computer Society}} 2025 {{President}}},
-  author = {Washizaki, Hironori},
-  year = 2025,
-  langid = {english},
+@book{washizakiWasedaUniversityIEEE,
+  editor    = {Washizaki, Hironori},
+  title     = {Guide to the Software Engineering Body of Knowledge ({SWEBOK} Guide)},
+  edition   = {4.0},
+  publisher = {IEEE Computer Society},
+  year      = {2024},
+  url       = {https://www.computer.org/education/bodies-of-knowledge/software-engineering},
+  urldate   = {2026-08-04},
+  langid    = {english}
 }
 
 @article{wenAIEnabledSign2021,
@@ -647,27 +641,12 @@
 
 @misc{WhatSparseCategorical10:49:00+00:00,
   title = {What Is {{Sparse Categorical Crossentropy}}},
-  year = {10:49:00+00:00},
   journal = {GeeksforGeeks},
   urldate = {2026-07-24},
   abstract = {Your All-in-One Learning Portal: GeeksforGeeks is a comprehensive educational platform that empowers learners across domains-spanning computer science and programming, school education, upskilling, commerce, software tools, competitive exams, and more.},
   chapter = {Machine Learning},
-  howpublished = {https://www.geeksforgeeks.org/machine-learning/what-is-sparse-categorical-crossentropy/},
+  url= {https://www.geeksforgeeks.org/machine-learning/what-is-sparse-categorical-crossentropy/},
   langid = {english},
-}
-
-@book{wolfComputersComponentsPrinciples2012,
-  title = {{{Computers}} as {{Components}}: {{Principles}} of {{Embedded Computing System Design}}},
-  shorttitle = {Computers as {{Components}}},
-  author = {Wolf, Marilyn},
-  year = 2012,
-  month = jun,
-  publisher = {Elsevier},
-  abstract = {Computers as Components: Principles of Embedded Computing System Design, Third Edition, presents essential knowledge on embedded systems technology and techniques. Updated for today's embedded systems design methods, this volume features new examples including digital signal processing, multimedia, and cyber-physical systems. It also covers the latest processors from Texas Instruments, ARM, and Microchip Technology plus software, operating systems, networks, consumer devices, and more. Like the previous editions, this textbook uses real processors to demonstrate both technology and techniques; shows readers how to apply principles to actual design practice; stresses necessary fundamentals that can be applied to evolving technologies; and helps readers gain facility to design large, complex embedded systems. Updates in this edition include: description of cyber-physical systems; exploration of the PIC and TI OMAP processors; high-level representations of systems using signal flow graphs; enhanced material on interprocess communication and buffering in operating systems; and design examples that include an audio player, digital camera, and cell phone. The author maintains a robust ancillary site at http://www.marilynwolf.us/CaC3e/index.html which includes a variety of support materials for instructors and students, including PowerPoint slides for each chapter; lab assignments developed for multiple systems including the ARM-based BeagleBoard computer; downloadable exercises solutions and source code; and links to resources and additional information on hardware, software, systems, and more. This book will appeal to students in an embedded systems design course as well as to researchers and savvy professionals schooled in hardware or software design. - Description of cyber-physical systems: physical systems with integrated computation to give new capabilities - Exploration of the PIC and TI OMAP multiprocessors - High-level representations of systems using signal flow graphs - Enhanced material on interprocess communication and buffering in operating systems - Design examples include an audio player, digital camera, cell phone, and more},
-  googlebooks = {ZwSgRh5qtQ4C},
-  isbn = {978-0-12-388442-8},
-  langid = {english},
-  keywords = {Computers / Computer Architecture,Computers / Hardware / Chips & Processors}
 }
 
 @article{yingOverviewOverfittingIts2019,
@@ -685,11 +664,11 @@
 }
 
 @book{yiuDefinitiveGuideARM2013,
-  title = {[11] {{The Definitive Guide}} to {{ARM}}\textregistered{} {{Cortex}}\textregistered -{{M3}} and {{Cortex}}\textregistered -{{M4 Processors}}},
+  title = {{{The Definitive Guide}} to {{ARM}}\textregistered{} {{Cortex}}\textregistered -{{M3}} and {{Cortex}}\textregistered -{{M4 Processors}}},
   author = {Yiu, Joseph},
+  isbn = {978-0124080829},
   year = 2013,
-  publisher = {Elsevier},
-  urldate = {2026-07-16}
+  publisher = {Elsevier}
 }
 
 @article{zhang3DGeometricFeatures2025,
@@ -738,8 +717,10 @@
 }
 
 @misc{srccode_mediapipe,
-    url = {{https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/hand_landmark/palm_detection_detection_to_roi.pbtxt}},
-    author = {{Google}}
+    url = {https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/modules/hand_landmark/palm_detection_detection_to_roi.pbtxt},
+    author = {{Google}},
+    urldate = {2026-07-23},
+    title = {Media Pipe - Palmdetection Source Code}
 }
 
 @book{zotero-item-138,
@@ -837,6 +818,7 @@ year = {2019},
 
 @video{stmicroelectronics-learningSTM32N6DemoWorkshop2025,
   entrysubtype = {video},
+  author = {STMicroelectronics},
   title = {{{STM32N6}} Demo Workshop - 06 {{Neural Processing Unit}} ({{NPU}}) Theory},
   namea = {{STMicroelectronics - Learning}},
   nameatype = {collaborator},
@@ -844,4 +826,138 @@ year = {2019},
   url = {https://youtu.be/29EUWNwfywI?si=3yNeK7y2DWmzdTHj&t=461},
   urldate = {2026-08-03},
   abstract = {Got any questions or feedback for our experts? Visit the ST Community at https://community.st.com/t5/stm32-onl... Achieve new performance levels in your industrial and consumer applications with the STM32N6}
+}
+
+@incollection{allenaEasyHandGesture2022a,
+  title = {Easy {{Hand Gesture Control}} of~a~{{ROS-Car Using Google MediaPipe}} for~{{Surveillance Use}}},
+  booktitle = {{{HCI}} in {{Business}}, {{Government}} and {{Organizations}}},
+  author = {Allena, Christian Diego and De Leon, Ryan Collin and Wong, Yung-Hao},
+  namea = {Siau, Keng and Fui-Hoon Nah, Fiona},
+  nameatype = {collaborator},
+  date = {2022},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  volume = {13327},
+  pages = {247--260},
+  publisher = {Springer International Publishing AG},
+  location = {Switzerland},
+  issn = {0302-9743},
+  doi = {10.1007/978-3-031-05544-7_19},
+  abstract = {Hand gestures are a relatively new way for humans to communicate with computers. The goal of gesture recognition is to bridge the physical and digital worlds. Hand gestures make it much easier to communicate our intentions and ideas to the computer. There are numerous methods for a computer to recognize a hand gesture, one of which is image recognition. The use of a Convolutional Neural Network (CNN) allows for the detection of human gestures. However, training a CNN necessitates a massive dataset of human gesture images. In this paper, we employ Google MediaPipe, a Machine Learning (ML) pipeline that combines Palm Detection and Hand Landmark Models, to develop a simple hand tracking method to control a Robot Operating System (ROS) based surveillance car with socket programming. The study demonstrates control of a ROS car’s steering direction and speed. Hand-gesture-controlled surveillance vehicles could aid in the improvement of security systems.},
+  isbn = {978-3-031-05543-0},
+  langid = {english}
+}
+
+@online{STMicroelectronicsNUCLEON657X0Q,
+  author  = {{STMicroelectronics}},
+  title   = {{NUCLEO-N657X0-Q} -- {STM32 Nucleo-144 Development Board}},
+  url     = {https://www.st.com/en/evaluation-tools/nucleo-n657x0-q.html},
+  urldate = {2026-08-04},
+  langid  = {english}
+}
+
+@online{CachyOS,
+  author  = {{CachyOS Team}},
+  title   = {{CachyOS}},
+  url     = {https://cachyos.org/},
+  urldate = {2026-08-04},
+  langid  = {english}
+}
+
+@online{TensorFlow,
+  author  = {{TensorFlow Developers}},
+  title   = {{TensorFlow}: An End-to-End Platform for Machine Learning},
+  url     = {https://www.tensorflow.org/},
+  urldate = {2026-08-04},
+  langid  = {english}
+}
+
+@online{Keras,
+  author  = {{Keras Team}},
+  title   = {{Keras}: Deep Learning for Humans},
+  url     = {https://keras.io/},
+  urldate = {2026-08-04},
+  langid  = {english}
+}
+
+@book{valvanoRealtimeOperatingSystems2017,
+  title = {Real-Time Operating Systems for the {{Arm}}® {{Cortex}}({{TM}})-{{M Microcontrollers}}},
+  author = {Valvano, Jonathan W. and Valvano, Jonathan W.},
+  date = {2017},
+  series = {Embedded Systems / {{Jonathan W}}. {{Valvano}}},
+  edition = {Fourth edition},
+  number = {3},
+  publisher = {Eigenverl. d. Verf},
+  location = {s.l.},
+  isbn = {978-1-4664-6886-3},
+  langid = {english}
+}
+
+@book{bernsteinMikrocontroller2026,
+  title = {Mikrocontroller.},
+  author = {{Bernstein}},
+  date = {2026},
+  edition = {3rd ed.},
+  publisher = {Springer Fachmedien Wiesbaden},
+  isbn = {978-3-658-49651-7},
+  langid = {english}
+}
+
+@online{OneHotEncoder,
+  title = {{{OneHotEncoder}}},
+  url = {https://scikit-learn/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html},
+  urldate = {2026-08-05},
+  abstract = {Gallery examples: Time-related feature engineering Column Transformer with Mixed Types Feature transformations with ensembles of trees Categorical Feature Support in Gradient Boosting Common pitfal...},
+  langid = {english},
+  organization = {scikit-learn},
+  file = {/home/oliver/Zotero/storage/QPMQFSBU/sklearn.preprocessing.OneHotEncoder.html}
+}
+
+@book{goodfellowDeepLearning2016,
+  title = {Deep Learning},
+  author = {Goodfellow, Ian},
+  namea = {Bengio, Yoshua and Courville, Aaron},
+  nameatype = {collaborator},
+  date = {2016},
+  series = {Adaptive Computation and Machine Learning},
+  publisher = {The MIT Press},
+  location = {Cambridge, Massachusetts ; London, England},
+  isbn = {978-0-262-03561-3},
+  langid = {english},
+  keywords = {Machine learning,Maschinelles Lernen}
+}
+
+@online{OnDeviceRealTimeHand,
+  title = {On-{{Device}}, {{Real-Time Hand Tracking}} with {{MediaPipe}}},
+  url = {https://research.google/blog/on-device-real-time-hand-tracking-with-mediapipe/},
+  urldate = {2026-08-05}
+}
+
+@book{pointerPyTorchFuerDeep2020,
+  title = {PyTorch für Deep Learning},
+  author = {Pointer, Ian},
+  date = {2020-10-03},
+  url = {https://content-select.com/de/portal/media/view/5f4a4d24-3e08-4501-86ba-0ee6b0dd2d03},
+  urldate = {2026-08-05},
+  isbn = {978-3-96010-399-8},
+  langid = {ngerman},
+  file = {/home/oliver/Zotero/storage/IGN3DGRJ/5f4a4d24-3e08-4501-86ba-0ee6b0dd2d03.html}
+}
+
+@article{biglariReviewEmbeddedMachine2023,
+  title = {A {{Review}} of {{Embedded Machine Learning Based}} on {{Hardware}}, {{Application}}, and {{Sensing Scheme}}},
+  author = {Biglari, Amin and Tang, Wei},
+  date = {2023-01},
+  journaltitle = {Sensors},
+  volume = {23},
+  number = {4},
+  pages = {2131},
+  publisher = {Multidisciplinary Digital Publishing Institute},
+  issn = {1424-8220},
+  doi = {10.3390/s23042131},
+  url = {https://www.mdpi.com/1424-8220/23/4/2131},
+  urldate = {2026-08-05},
+  abstract = {Machine learning is an expanding field with an ever-increasing role in everyday life, with its utility in the industrial, agricultural, and medical sectors being undeniable. Recently, this utility has come in the form of machine learning implementation on embedded system devices. While there have been steady advances in the performance, memory, and power consumption of embedded devices, most machine learning algorithms still have a very high power consumption and computational demand, making the implementation of embedded machine learning somewhat difficult. However, different devices can be implemented for different applications based on their overall processing power and performance. This paper presents an overview of several different implementations of machine learning on embedded systems divided by their specific device, application, specific machine learning algorithm, and sensors. We will mainly focus on NVIDIA Jetson and Raspberry Pi devices with a few different less utilized embedded computers, as well as which of these devices were more commonly used for specific applications in different fields. We will also briefly analyze the specific ML models most commonly implemented on the devices and the specific sensors that were used to gather input from the field. All of the papers included in this review were selected using Google Scholar and published papers in the IEEExplore database. The selection criterion for these papers was the usage of embedded computing systems in either a theoretical study or practical implementation of machine learning models. The papers needed to have provided either one or, preferably, all of the following results in their studies—the overall accuracy of the models on the system, the overall power consumption of the embedded machine learning system, and the inference time of their models on the embedded system. Embedded machine learning is experiencing an explosion in both scale and scope, both due to advances in system performance and machine learning models, as well as greater affordability and accessibility of both. Improvements are noted in quality, power usage, and effectiveness.},
+  langid = {english},
+  keywords = {computer vision,embedded systems,Google Coral,machine learning,Nvidia Jetson,Raspberry Pi,RGB camera,sensors},
+  file = {/home/oliver/Zotero/storage/TPLIPVHS/Biglari and Tang - 2023 - A Review of Embedded Machine Learning Based on Hardware, Application, and Sensing Scheme.pdf}
 }

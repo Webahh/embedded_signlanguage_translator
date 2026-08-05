@@ -53,16 +53,15 @@ Aus den dargestellten Trainingskurven lassen sich folgende Erkenntnisse ableiten
 
 
 \begin{longtable}{|p{0.4\textwidth}|p{0.2\textwidth}|}
-    \caption{Trainingsergebnisse des Klassifizierungsmodells}
-    \label{tab:trainingsergebnisse} \\
     \hline
-    \texttt{Metrik} & \texttt{Wert} \\
+    \textbf{Metrik} & \textbf{Wert} \\
     \hline
     \endfirsthead
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Trainingsergebnisse des Klassifizierungsmodells}
+    \label{tab:trainingsergebnisse} \\
     \endlastfoot
     Trainingsgenauigkeit        & 98,34\,\% \\
     \hline
@@ -80,17 +79,15 @@ Abschließend bestätigen diese Erkenntnisse die finalen Trainingsergebnisse der
 
 Die Erkennungsgenauigkeit wird zunächst anhand des bei der Modellentwicklung zurückgehaltenen Testdatensatzes und anschließend anhand der praktischen Evaluation des integrierten Gesamtsystems untersucht.
 Die erste Auswertung betrachtet ausschließlich die Klassifikationsleistung des Modells auf bereits 
-ermittelten Landmark-Daten. Die praktische Evaluation berücksichtigt dagegen die vollständige Verarbeitungskette von der Bildaufnahme über die Handdetektion und Landmark-Erkennung bis zur Zeichenklassifikation.
-
-Zur klassenbezogenen Auswertung werden für beide Versuchsreihen Konfusionsmatrizen erstellt. In einer Konfusionsmatrix werden die tatsächlichen Zeichenklassen den vorhergesagten Klassen gegenübergestellt. Die Einträge auf der Hauptdiagonalen entsprechen korrekten Klassifikationen, während Einträge außerhalb der Hauptdiagonalen Verwechslungen zwischen den Klassen darstellen. \cite{fritzHandGestureRecognition}
+ermittelten Landmark-Daten. Die praktische Evaluation berücksichtigt dagegen die vollständige Verarbeitungskette von der Bildaufnahme über die Handdetektion und Landmark-Erkennung bis zur Zeichenklassifikation. Zur klassenbezogenen Auswertung werden für beide Versuchsreihen Konfusionsmatrizen erstellt.
 
 Da der Testdatensatz und die praktische Evaluation eine unterschiedliche Anzahl an Beispielen enthalten können, werden für die Gegenüberstellung insbesondere die zeilenweise normalisierten Konfusionsmatrizen verwendet. Dadurch wird für jede tatsächliche Klasse der relative Anteil der jeweiligen Vorhersagen betrachtet. Auf dieser Grundlage kann untersucht werden, ob die im Testdatensatz auftretenden klassenbezogenen Verwechslungen auch unter realen Aufnahmebedingungen auftreten oder ob durch die vorgelagerten Verarbeitungsschritte zusätzliche Fehler entstehen.
 
 \subsection{Erkennungsgenauigkeit auf dem Testdatensatz}\label{sec:genauigkeittestdatensatz}
 
 Nach Fertigstellung des Gebärdensprachmodells wurde eine Analyse mittels Konfusionsmatrix auf einem separaten Testdatensatz durchgeführt, der weder Teil der Trainings- noch der Validierungsdaten war. Dadurch wurde sichergestellt, dass das Modell zuvor keinen Kontakt zu dieser Stichproben hatte. Es wurden zwei Arten von Konfusionsmatrizen erstellt:
-Roh-Konfusionsmatrix (absolute Werte): Die Methode \texttt{evaluate\_confusion\_matrix} berechnet die Roh-Konfusionsmatrix durch Aufruf von \texttt{sklearn.metrics.confusion\_matrix(test\_labels, \allowbreak predicted\_labels, \allowbreak labels\allowbreak = label\_ids)} \cite{ScikitlearnMachineLearning}. Dabei entsteht eine Kontingenztabelle, in der jede Zeile der tatsächlichen Klasse und jede Spalte der vorhergesagten Klasse entspricht. Die Zellenwerte geben die absolute Anzahl der Teststichproben an, deren tatsächliches Label einem bestimmten vorhergesagten Label zugeordnet wurde. Die resultierende Matrix wird als  \texttt{confusion\_matrix.npy} serialisiert und als \texttt{confusion\_matrix.png} visualisiert, wobei die Werte als Ganzzahlen formatiert sind.
-Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung derselben Methode mit dem Parameter \texttt{normalize=true} erstellt. Hierbei wird jede Zeile durch ihre Zeilensumme dividiert. Jede Zeile stellt somit die anteilige Verteilung der Vorhersagen über alle Klassen für eine bestimmte tatsächliche Klasse dar, ausgedrückt in Prozent. Diese Matrix wird als \texttt{confusion\_matrix\_normalized.png} visualisiert, wobei die Werte als Dezimalzahlen formatiert sind und eine Farbskala (Colorbar) zur besseren Interpretierbarkeit hinzugefügt wird.
+Roh-Konfusionsmatrix (absolute Werte): Die Methode \texttt{evaluate\_confusion\_matrix} berechnet die Roh-Konfusionsmatrix durch Aufruf von \texttt{sklearn.metrics.confusion\_matrix(test\_ \allowbreak  labels, \allowbreak predicted\_labels, \allowbreak labels \= label\_ids)} \cite{ScikitlearnMachineLearning}. Dabei entsteht eine Kontingenztabelle, in der jede Zeile der tatsächlichen Klasse und jede Spalte der vorhergesagten Klasse entspricht. Die Zellenwerte geben die absolute Anzahl der Teststichproben an, deren tatsächliches Label einem bestimmten vorhergesagten Label zugeordnet wurde. Die resultierende Matrix wird als  \texttt{confusion\_matrix.npy} serialisiert und als \texttt{confusion\_matrix.png} visualisiert, wobei die Werte als Ganzzahlen formatiert sind.
+Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung derselben Methode mit dem Parameter \texttt{normalize=true} erstellt. Hierbei wird jede Zeile durch ihre Zeilensumme dividiert. Jede Zeile stellt somit die anteilige Verteilung der Vorhersagen über alle Klassen für eine bestimmte tatsächliche Klasse dar, ausgedrückt in Prozent. Diese Matrix wird als \texttt{confusion\_matrix\_\linebreak normalized.png} visualisiert, wobei die Werte als Dezimalzahlen formatiert sind und eine Farbskala (Colorbar) zur besseren Interpretierbarkeit hinzugefügt wird.
 
 \subsubsection{Konfusionsmatrix und klassenbezogene Ergebnisse}\label{sec:konfusionsmatrix}
 
@@ -104,10 +101,10 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
 
 Die Konfusionsmatrizen basierent auf 371.547 Testdaten mit einer 99,28\% Accuracy.
 Die Matrix zeigt verschiedene Probleme des Modells auf.
-\texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D,F,H,N,S,T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
+\texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D, F, H, N, S, T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
  Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}).
 
- Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-Erkennung ist mit \~73\% der größte Schwachpunkt. Eine weitere ausführlichere Aufschlüsselungen im Anhang \ref{tab:confusion-matrix}
+ Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-Erkennung ist mit ca. 73\% der größte Schwachpunkt. Eine weitere ausführlichere Aufschlüsselungen befindet sich im Anhang \ref{tab:confusion-matrix}
  
 \subsection{Praktischer Versuch zur Erkennungsgenauigkeit}\label{sec:praktischerversuch}
 
@@ -116,16 +113,15 @@ Die Matrix zeigt verschiedene Probleme des Modells auf.
 Das System wird während der Versuche in einer festen Position aufgestellt. Die Handzeichen werden einzeln innerhalb des Erfassungsbereichs der Kamera dargestellt. Um die Versuche Vergleichbar zu gestalten, werden der Abstand zur Kamera, die Beleuchtung, der Hintergrund und die Anzahl der Wiederholungen dokumentiert. Die Bedingungen blieben während der gesamten Versuchsreihe unverändert.
 
 \begin{longtable}{|p{0.4\textwidth}|p{0.45\textwidth}|}
-    \caption{Grundlegende Bedingungen der Systemevaluation}
-    \label{tab:versuchsbedingungen} \\
     \hline
-    \texttt{Parameter} & \texttt{Festlegung} \\
+    \textbf{Parameter} & \textbf{Festlegung} \\
     \hline
     \endfirsthead
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Grundlegende Bedingungen der Systemevaluation}
+    \label{tab:versuchsbedingungen} \\
     \endlastfoot
     Abstand zur Kamera & 50 -- 60 cm \\
     \hline
@@ -154,8 +150,6 @@ Dieser Ablauf wurde für jedes Zeichen fünfmal wiederholt. Danach wurde mit der
 Von den insgesamt 1000 durchgeführten Einzelversuchen wurden 912 Handzeichen korrekt klassifiziert. Dies entspricht einer Gesamterkennungsgenauigkeit von 91,2\,\%. In 57 Fällen wurde eine falsche Zeichenklasse ausgegeben. Bei weiteren 31 Versuchen lag nach der festgelegten Wartezeit kein gültiges Klassifikationsergebnis vor. Diese Fälle wurden ebenfalls als nicht erfolgreiche Erkennungen gewertet.
 
 \begin{longtable}{|p{0.55\textwidth}|p{0.25\textwidth}|}
-    \caption{Gesamtergebnis der praktischen Evaluation}
-    \label{tab:gesamtergebnis-praktische-evaluation} \\
     \hline
     \textbf{Metrik} & \textbf{Ergebnis} \\
     \hline
@@ -164,7 +158,8 @@ Von den insgesamt 1000 durchgeführten Einzelversuchen wurden 912 Handzeichen ko
     \textbf{Metrik} & \textbf{Ergebnis} \\
     \hline
     \endhead
-    \hline
+    \caption{Gesamtergebnis der praktischen Evaluation}
+    \label{tab:gesamtergebnis-praktische-evaluation} \\
     \endlastfoot
     Durchgeführte Einzelversuche & 1000 \\
     \hline
@@ -225,14 +220,12 @@ Vor dem freien weißen Hintergrund wurde die Hand zuverlässig detektiert. Nach 
 
 Die Versuche zeigen insgesamt, dass sowohl sichtbare Lichtquellen als auch kontrastreiche Hintergrundstrukturen die Detektion und das Landmark-Tracking des Prototyps beeinträchtigen können. Da die Beleuchtungsstärke, die Eigenschaften der Hintergründe und die Anzahl erfolgreicher Detektionen nicht quantitativ erfasst wurden, lassen sich aus den Ergebnissen lediglich qualitative Tendenzen ableiten. Die möglichen Ursachen für das beobachtete Verhalten werden in Abschnitt~\ref{sec:interpretation} diskutiert.
 
-
+\newpage
 \section{Inferenzlatenz und Ende-zu-Ende-Latenz}\label{sec:inferenzlatenz}
 
 Die Inferenzzeiten wurden mittels des Scheduler\_Tick gemessen und anschließend über \texttt{USART} ausgelesen. Der verwendete \texttt{TIM7} besitzt eine Auflösung von \texttt{1ms}. Im folgenden werden die durchschnittlichen Inferenzzeiten auf 10 Inferenzen dargelegt:
 
 \begin{longtable}{|p{0.3\textwidth}|p{0.3\textwidth}|}
-    \caption{Durchschnittliche Inferenzzeiten pro Modell á 10 Durchläufe}
-    \label{tab:inferenzzeiten} \\
     \hline
     \textbf{Modell} & \textbf{Inferenzzeit} \\
     \hline
@@ -241,13 +234,15 @@ Die Inferenzzeiten wurden mittels des Scheduler\_Tick gemessen und anschließend
     \textbf{Modell} & \textbf{Inferenzzeit} \\
     \hline
     \endhead
-    \hline
+    \caption{Durchschnittliche Inferenzzeiten pro Modell á 10 Durchläufe}
+    \label{tab:inferenzzeiten} \\
     \endlastfoot
     Handdedektion & \textasciitilde 25ms \\
     \hline
     Handlandmark & \textasciitilde  18ms \\
     \hline
     Signlanguage & \textasciitilde <1ms \\
+    \hline
 \end{longtable}
 
 Die Ende-zu-Ende-Latenz beläuft sich auf 60--80ms. Aus der Messung der einzelnen Modellinferenzzeiten wissen wir das diese ca. 44ms beträgt. Die ergenzenden 16-36ms werden demnach der Vor- bzw. Nachverarbeitung von Inferenzdaten zugeordnet.
@@ -260,27 +255,26 @@ Bei der dargestellten Bildrate ist zwischen den unverarbeiteten Kamerabildern un
 
 Abschließend werden die Ergebnisse der Evaluation den in Kapitel \ref{sec:abnahmekriterien} definierten Abnahmekriterien gegenübergestellt. Die Bewertung unterscheidet zwischen erfüllten, teilweise erfüllten, nicht erfüllten und nicht abschließend bewerteten Kriterien. Ein Kriterium gilt als teilweise erfüllt, wenn die geforderte Funktion grundsätzlich umgesetzt wurde, jedoch Einschränkungen gegenüber den festgelegten Bedingungen bestehen. Als nicht bewertet werden Kriterien gekennzeichnet, für die im Rahmen der Evaluation keine ausreichenden quantitativen Messdaten erhoben wurden.
 
-\begin{longtable}{|c|p{0.30\textwidth}|p{0.40\textwidth}|p{0.12\textwidth}|}
-    \caption{Abgleich mit den definierten Abnahmekriterien}
-    \label{tab:abgleich-abnahmekriterien} \\
+\begin{longtable}{|c|p{0.30\textwidth}|p{0.38\textwidth}|p{0.125\textwidth}|}
     \hline
-    \texttt{ID} &
-    \texttt{Prüfung/Nachweis} &
-    \texttt{Ergebnis} &
-    \texttt{Bewertung} \\
+    \textbf{ID} &
+    \textbf{Prüfung/Nachweis} &
+    \textbf{Ergebnis} &
+    \textbf{Bewertung} \\
     \hline
     \endfirsthead
     \hline
-    \texttt{ID} &
-    \texttt{Prüfung/Nachweis} &
-    \texttt{Ergebnis} &
-    \texttt{Bewertung} \\
+    \textbf{ID} &
+    \textbf{Prüfung/Nachweis} &
+    \textbf{Ergebnis} &
+    \textbf{Bewertung} \\
     \hline
     \endhead
     \hline
     \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Abgleich mit den definierten Abnahmekriterien}
+    \label{tab:abgleich-abnahmekriterien} \\
     \endlastfoot
 
     AK\_01 &

@@ -1,23 +1,23 @@
-\chapter{Entwicklung und Implementation}\label{ch:entwicklung}
+\chapter{Realisierung des Gesamtsystems}\label{ch:entwicklung}
 
-\section{Aufbau und Aufbereitung des Datensatzes}\label{sec:datensatz}
+\section{Aufbau und Aufbereitung des Fingeralphabet-Datensatzes}\label{sec:datensatz}
 \subsection{Rohvideos}\label{sub:rohvideos}
 
-Der Datensatz basiert auf einer eigens erstellten Sammlung von Videoaufnahmen der deutsche Gebärdensprache (DGS) und wurde speziell für die Klassifikation statischer Fingeralphabetzeichen konzipiert. Die Rohvideos wurden manuell aufgezeichnet und liegen im MP4-Format vor.
+Der Datensatz basiert auf einer eigens erstellten Sammlung von Videoaufnahmen der deutschen Gebärdensprache (DGS) und wurde speziell für die Klassifikation statischer Fingeralphabetzeichen konzipiert. Die Rohvideos wurden manuell aufgezeichnet und liegen im MP4-Format vor.
 
 Die Benennungskonvention der Videodateien lautet \texttt{alph\_[og|fw]\_[Label][Nummer].mp4}, wobei \texttt{[og|fw]} den aufzeichnenden protokolliert, \texttt{[Label]} das jeweilige Fingersprachezeichen und \texttt{[Nummer]} die fortlaufende Nummer innerhalb eines Labels spezifiziert. Die Speicherung erfolgt im Verzeichnis \texttt{ml\_pipeline/resources/videos\_prototype/}.
 
-Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klassenauswahl beschränkt sich auf die 24 statischen Buchstaben A–Y (ohne J und Z, da diese dynamische Handbewegungen erfordern und somit mit dem statischen Ansatz des Klassifikators nicht kompatibel sind), das Sonderzeichen SCH sowie die Leerklasse NONE, die die Unbestimmtheit des Ergebnisses darstellt. Die Anzahl der Originaufnahmen pro Klasse variiert zwischen 3 und 5, wobei 16 Klassen mit je 5, 8 Klassen mit je 4 und 2 Klassen (F, NONE) mit je 3 Aufnahmen vertreten sind.
+Der Datensatz umfasst 226 Rohvideos, die auf 26 Klassen verteilt sind. Die Klassenauswahl beschränkt sich auf die 24 statischen Buchstaben A–Y (ohne J und Z, da diese dynamische Handbewegungen erfordern und somit mit dem statischen Ansatz des Klassifikators nicht kompatibel sind), das Sonderzeichen SCH sowie die Leerklasse NONE, die die Unbestimmtheit des Ergebnisses darstellt. Die Anzahl der Originaufnahmen pro Klasse variiert zwischen drei und fünf, wobei 16 Klassen mit je fünf, acht Klassen mit je vier und zwei Klassen (F, NONE) mit je drei Aufnahmen vertreten sind.
 
 \subsection{Frame-Extraktion und Handdetektion}\label{sub:frame-extraktion}
 
-Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Videocapture einzeln extrahiert und ohne vorherige Vorfilterung der bestehenden Mediapipe Erkennungspipeline zugeführt.
+Zur Verarbeitung der Rohvideos wird jeder Einzelrahmen (Frame) mittels OpenCV Videocapture einzeln extrahiert und ohne vorherige Vorfilterung der zweistufigen MediaPipe-Erkennungs\-pipeline zugeführt (vgl.\ Abschnitt~\ref{sub:erkennungspipeline}).
 
-Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors \cite{lugaresiMediaPipeFrameworkPerceiving} in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von 2 Händen pro Frame und einer Mindestkonfidenz von 70. Pro Hand werden 21 Landmarks extrahiert, die den Handgelenkspunkt (WRIST) sowie die Gelenke der fünf Finger (Daumen: CMC, MCP, IP, TIP; Indexfinger: MCP, PIP, DIP, TIP; Mittelfinger: MCP, PIP, DIP, TIP; Ringfinger: MCP, PIP, DIP, TIP; Kleinfinger: MCP, PIP, DIP, TIP) umfassen.
+Die Hand-Erkennung und Landmark-Extraktion erfolgt mithilfe des MediaPipe-Handdetektors \cite{lugaresiMediaPipeFrameworkPerceiving} in der Konfiguration für statische Bildanalyse mit einer maximalen Detektionskapazität von zwei Händen pro Frame und einer Mindestkonfidenz von 70. Pro Hand werden die 21 in Abschnitt~\ref{sub:handlandmarks} beschriebenen Landmarks extrahiert.
 
 \subsection{Augmentation}\label{sub:augmentation}
 Die Augmentationspipeline wendet sequenzielle Transformationen auf die extrahierten Landmarken an. Jeder Schritt kann mehrere Variationen erzeugen, die kumulativ kombiniert werden:
-Die extrahierten Gestendaten werden im folgenden Schritt mittels Augmentation vervielfacht und gegen Overfitting angepasst. Die Augmentationspipeline bietet die folgenden Augmentationsoptionen:
+Die extrahierten Gestendaten werden im folgenden Schritt mittels Augmentation vervielfacht und gegen Overfitting angepasst (Grundlagen der Datenaugmentation siehe Abschnitt~\ref{sub:datenaugmentation}). Die Augmentationspipeline bietet aktuell die folgenden Augmentationsoptionen:
 \begin{itemize}
     \item Translate: Fügt einen Offset auf die Gestendaten hinzu
     \item Spiegelung: Spiegelt Gesten horizontal
@@ -31,13 +31,13 @@ Die angewandte Augmentation besteht aus 1x Mirror, 2x Translation, 5x Zoom.
 \begin{figure}[!h]
     \centering
     \includegraphics[width=0.5\linewidth]{material//figures/Augmentation.png}
-    \caption{Augmentation pipeline Ergebnis (Original Grün | Augmented Orange)}
+    \caption{Augmentationpipeline Ergebnis (Original Grün | Augmented Orange)}
     \label{fig:augmentation}
 \end{figure}
 
 \subsection{Normalisierung und Interpolation}\label{sub:normalisierung}
 
-Die extrahierten Landmarks werden für eine effiziente und positionsinvariante Darstellung normalisiert. Hierbei werden alle Landmark-Koordinaten relativ zum Handgelenk positioniert und in den int16-Zahlenbereich ({-}32.768 bis 32.767) umgerechnet. Die Landmark-Daten werden als Dictionary mit den 21 benannten Schlüsseln und den zugehörigen \([x, y, z]\)-Koordinaten abgebildet. Zusätzlich wird die absolute Handgelenkposition (\texttt{wrist\_pos}) in Skalierung auf den int16-Bereich sowie die Bounding-Box der Hand in Pixelkoordinaten (\texttt{hand\_area}) gespeichert. Die absoluten Landmark-Positionen in Pixelkoordinaten (\texttt{landmark\_pos}) werden ebenfalls erfasst.
+Die extrahierten Landmarks werden für eine effiziente und positionsinvariante Darstellung normalisiert. Hierbei werden alle Landmark-Koordinaten relativ zum Handgelenk positioniert und in den INT16-Zahlenbereich ({-}32.768 bis 32.767) umgerechnet. Die Landmark-Daten werden als Dictionary mit den 21 benannten Schlüsseln und den zugehörigen \([x, y, z]\)-Koordinaten abgebildet. Zusätzlich wird die absolute Handgelenkposition (\texttt{wrist\_pos}) in Skalierung auf den INT16-Bereich sowie die Bounding-Box der Hand in Pixelkoordinaten (\texttt{hand\_area}) gespeichert. Die absoluten Landmark-Positionen in Pixelkoordinaten (\texttt{landmark\_pos}) werden ebenfalls erfasst.
 
 Für eine einheitliche Darstellung aller Sequenzen erfolgt eine FPS-Normalisierung auf 60\,FPS mittels linearer Interpolation zwischen den Frames. Frames, in denen eine Hand nicht erkannt wird, werden durch leere Handstrukturen mit der Sentinel-Koordinate \([{-100}, {-100}]\) repräsentiert und bei der Interpolation als Sprungpunkte behandelt.
 
@@ -45,54 +45,54 @@ Für eine einheitliche Darstellung aller Sequenzen erfolgt eine FPS-Normalisieru
 
 Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen abgebildet:
 
-\paragraph{Gesture} - Repräsentation einer vollständigen Geste-Sequenz:
+Gesture: Repräsentation einer vollständigen Geste-Sequenz
 \begin{itemize}
-    \item \texttt{label}: Klasse der Geste (str)
-    \item \texttt{fps}: Aktuelle Bildwiederholrate (float)
-    \item \texttt{frames}: Liste von Frames, wobei jeder Frame eine Liste von zwei Hand-Objekten \texttt{[left, right]} enthält
+    \item label: Klasse der Geste (str)
+    \item fps: Aktuelle Bildwiederholrate (float)
+    \item frames: Liste von Frames, wobei jeder Frame eine Liste von zwei Hand-Objekten [left, right] enthält
 \end{itemize}
 
-\paragraph{Hand} - Darstellung einer einzelnen Hand in einem Frame (frozen dataclass):
+Hand: Darstellung einer einzelnen Hand in einem Frame (frozen dataclass)
 \begin{itemize}
-    \item \texttt{left\_hand}: Seitenzugehörigkeit (bool)
-    \item \texttt{wrist\_pos}: Absolute Handgelenkposition in int16-Skalierung \texttt{[x, y]}
-    \item \texttt{landmarks}: Dictionary mit 21 benannten Landmarks relativ zum Handgelenk
-    \item \texttt{hand\_area}: Bounding-Box in Pixelkoordinaten \texttt{(x, y, width, height)}
-    \item \texttt{landmark\_pos}: Absolute Landmark-Positionen in Pixelkoordinaten (21 $\times$ \texttt{[x, y]})
+    \item left\_hand: Seitenzugehörigkeit (bool)
+    \item wrist\_pos: Absolute Handgelenkposition in int16-Skalierung \texttt{[x, y]}
+    \item landmarks: Dictionary mit 21 benannten Landmarks relativ zum Handgelenk
+    \item hand\_area: Bounding-Box in Pixelkoordinaten \texttt{(x, y, width, height)}
+    \item landmark\_pos: Absolute Landmark-Positionen in Pixelkoordinaten (21 $\times$ \texttt{[x, y]})
 \end{itemize}
 
 Die verarbeiteten Geste-Daten werden im Pickle-Format (\texttt{.pkl}) abgelegt. Der Dateiname folgt dem Muster \texttt{\{Label\}\_\{Augmentierungstyp\}\_\{UUID\}.pkl}, wobei die UUID die ersten vier Hexadezimalzeichen eines UUID4 darstellt. Die Speicherung erfolgt im Verzeichnis \texttt{resources/gestures/}. Die Verarbeitung der Videodateien und die Speicherung der Ergebnisse werden mittels Multiprocessing unter Auslastung von 80\,\% der verfügbaren CPU-Kerne parallelisiert.
 
-\section{Entwicklung und Training des Klassifikationsmodells}\label{sec:klassifikationsmodell}
+\section{Konfiguration und Training des Klassifikationsmodells}\label{sec:klassifikationsmodell}
 \subsection{Problemdefinition}\label{sub:problemdefinition}
 
-Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Gebärdenalphabet-Zeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
+Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Fingeralphabetzeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
 
 Es liegt keine Binäreklassifikation vor, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
 
 \subsection{Datenanalyse}\label{sub:datenanalyse}
 
-\paragraph{Input-Format:} Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus 44 Werten für die linke Hand (22 Gelenke $\times$ 2 Koordinaten) und 44 Werten für die rechte Hand (22 Gelenke $\times$ 2 Koordinaten) zusammen.
-
-Die 22 Gelenke pro Hand umfassen die 21 MediaPipe-Landmarks sowie die absolute Handgelenkposition. Koordinaten werden wrist-relativ normalisiert und auf den int16-Bereich ({-}32.768 bis 32.767) skaliert.
+\paragraph{Input-Format:} Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus 44 Werten für die linke Hand (22 Gelenke $\times$ 2 Koordinaten) und 44 Werten für die rechte Hand (22 Gelenke $\times$ 2 Koordinaten) zusammen. Die 22 Gelenke pro Hand umfassen die 21 MediaPipe-Landmarks sowie die absolute Handgelenkposition. Koordinaten werden wrist-relativ normalisiert und auf den INT16-Bereich ({-}32.768 bis 32.767) skaliert.
 
 \paragraph{Klassenverteilung:} Der Datensatz umfasst 26 Klassen: NONE (Index 0) für Keine Hand erkannt, A--Y (Indizes 1--24) für 24 statische Buchstaben (J und Z ausgeschlossen, da diese dynamische Handbewegungen erfordern) sowie SCH (Index 25) als Sonderzeichen. Die Klassenverteilung ist leicht ungleichmäßig (16 Klassen mit 185, 8 Klassen mit 148, NONE mit 111, F mit 110 Dateien).
 
-\paragraph{Normalisierung:} Alle Koordinaten werden durch den Maximalwert des int16-Bereichs (POS\_MAX = 32.767) dividiert, sodass die Werte im Bereich \([{-}1, 1]\) liegen.
+\paragraph{Normalisierung:} Alle Koordinaten werden durch den Maximalwert des INT16-Bereichs \linebreak (POS\_MAX = 32.767) dividiert, sodass die Werte im Bereich \([{-}1, 1]\) liegen.
 
 \subsection{Modellauswahl}\label{sub:modellauswahl}
 
 Für die Modellauswahl wurden verschiedene Ansätze evaluiert, wobei die Anforderungen des eingebetteten Systems (schnelle Inferenz, kleine Modellgröße) und die Input-Struktur (88D-feature-Vektor aus MediaPipe-Landmarks) im Vordergrund standen.
 
-Ein mehrschichtiges Perceptron (MLP) wurde als geeignetstes Modell
-identifiziert. Die Input-Struktur war dafür Ausschlaggebend. Die MediaPipe wandelt die räumliche Information der Hand in strukturierte Landmarks um. Daher ist eine convolutionale
-Verarbeitung (CNN) unnötig. Studien belegen, dass CNNs bei
-Landmark-basiertem Input keine signifikanten Genauigkeitsvorteile
-gegenüber MLPs aufweisen. (Fritz, 2025)
+Ein mehrschichtiges Perceptron (MLP) wurde als geeignetes Klassifikationsmodell ausgewählt. Ausschlaggebend hierfür war insbesondere die Struktur der Eingabedaten. Die vorgelagerte Landmark-Erkennung überführt die räumlichen Handinformationen in einen strukturierten Merkmalsvektor, sodass das Klassifikationsmodell nicht das vollständige Kamerabild verarbeitet. Fritz zeigt, dass unterschiedliche Klassifikatoren auf Grundlage solcher MediaPipe-Landmarks hohe Erkennungsleistungen erreichen können. Das untersuchte CNN erzielte zwar eine etwas höhere Genauigkeit als das MLP, erforderte jedoch erheblich mehr Speicherressourcen. Für die ressourcenbeschränkte Zielplattform wurde daher ein MLP als Kompromiss zwischen Klassifikationsleistung und Modellkomplexität gewählt \cite[S. 57 ff.]{fritzHandGestureRecognition}.
 
-Random Forest und SVM wurden ebenfalls in Betracht gezogen, erreichen jedoch in der Literatur geringere Genauigkeiten (70–75\% bzw. 61–76\%) bei vergleichbaren Tasks. Zudem fehlen beiden Modellen nativ kalibrierte Wahrscheinlichkeiten: Random Forest gibt nur harte Klassifikationen aus, während SVM ein zusätzliches Platt-Scaling für Wahrscheinlichkeiten erfordert. (Rahman et al., 2025). Es ist anzumerken das SVM und Random forest auf einer anderen Datenbasis (Photoplethysmography (PPG)) trainiert worden sind.
+Random Forest und SVM wurden ebenfalls in Betracht gezogen, erreichen jedoch in der Literatur geringere Genauigkeiten (70–75\% bzw. 61–76\%) bei vergleichbaren Tasks. Zudem fehlen beiden Modellen nativ kalibrierte Wahrscheinlichkeiten: Random Forest gibt nur harte Klassifikationen aus, während SVM ein zusätzliches Platt-Scaling für Wahrscheinlichkeiten erfordert. \cite{rahmanComparisonSVMRandom2025}. Es ist anzumerken das SVM und Random Forest auf einer anderen Datenbasis (Photoplethysmography (PPG)) trainiert worden sind.
 
-Das MLP erfüllt die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit. Die Softmax-Ausgabeschicht liefert direkt kalibrierte Klassenwahrscheinlichkeiten, die für die nachfolgende Verarbeitung benötigt werden. Während direkte Quantisierung zu Genauigkeitsverlust führen kann, zeigen Studien, dass INT8-Quantisierung bei MLP-Modellen mit geeigneten Techniken (LayerNorm, Kalibrierung) Verluste von unter 1\% erreicht. Ein akzeptabler Kompromiss für den Embedded-Einsatz \cite{blogdeveloperspotOptimizingEdgeAI2025}.
+Das MLP erfüllt die Anforderungen an Ressourcenbeschränkungen und Echtzeitfähigkeit.
+Die Softmax-Ausgabeschicht liefert direkt die für die nachfolgende Verarbeitung benötigten
+Klassenwahrscheinlichkeiten. Während eine direkte Quantisierung zu Genauigkeitsverlusten
+führen kann, zeigen Untersuchungen, dass geeignete Quantisierungsverfahren eine
+INT8-Inferenz bei weitgehend erhaltener Modellgenauigkeit ermöglichen
+\cite{jacobQuantizationTrainingNeural2018}. Dies stellt einen akzeptablen Kompromiss
+für den Embedded-Einsatz dar.
 
 \subsection{Modellarchitektur}\label{sub:modellarchitektur}
 
@@ -109,53 +109,51 @@ Der Input-Layer empfängt einen tensor der Form \texttt{(88,1)}. Dieser Tensor r
 
 Der Flatten-Layer überführt den mehrdimensionalen Input-Tensor in einen eindimensionalen Vektor der Länge 88. Dense-Schichten erwarten als Eingabe einen flachen Vektor, sodass die räumliche Struktur des Tensors (2 Hände x 44 Werte) für die nachfolgende Gewichtsmatrix aufgelöst werden kann.
 
-Der erste Dense-Layer mit 88 Neuronen und ReLU-Aktivierung führt per-Feature-Transformationen durch. Das bedeutet durch die  Gewichtsmatrix (88 × 88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung ($f(x) = \max(0, x)$) fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. (Sharma et al., 2020) Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
+Der erste Dense-Layer mit 88 Neuronen und ReLU-Aktivierung (vgl.\ Abschnitt~\ref{sub:aktivierungsfunktionen}) führt per-Feature-Transformationen durch. Das bedeutet durch die  Gewichtsmatrix (88×88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
 
-Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25\% der Ausgaben des vorherigen Dense-Layers. Jedes Neuron wir mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt. Die Summe über alle Neuronen bleibt dabei Gleich. Dies verhindert die Ko-Adaptierung von Neuronen, bei der sich mehrere Neuronen auf ein einzelnes Eingabemuster spezialisieren und dadurch das Modell anfällig für Overfitting wird. \cite{yingOverviewOverfittingIts2019}
+Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25\% der Ausgaben des vorherigen Dense-Layers. Die zufällige Deaktivierung von Neuronen dient der Regularisierung und verhindert das Overfitting des Modells (vgl.\ Abschnitt~\ref{sub:overfitting}). Jedes Neuron wird mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt. \cite{yingOverviewOverfittingIts2019}
 
 Der zweite Dense-layer mit 128 Neuronen und ReLU-Aktivierung erweitert den Feature-Raum von 88 auf 128 Dimensionen. Durch die Erhöhung der Kapazität kann des Modell Inter-Feature-Beziehungen modellieren, die über die per-Feature-Transformationen des vorherigen Layers hinausgehen. Typische Beziehungen umfassen:
 
 \begin{itemize}
 
-    \item Intra-Hand-Abhängigkeiten: Korrelation zwischen benachbarten Landmarks des Selben fingers (z.B. die Auslenkung von PIP und DIP des Indexfingers), zwischen verschiedenen fingern einer Hand sowie  die Orientierung der Hand und deren Rotation basierend auf der Handflächen features.
+    \item Intra-Hand-Abhängigkeiten: Korrelation zwischen benachbarten Landmarks des selben Fingers (z.B. die Auslenkung von PIP und DIP des Indexfingers), zwischen verschiedenen Fingern einer Hand sowie  die Orientierung der Hand und deren Rotation basierend auf der Handflächen features.
     \item Inter-Hand-Beziehungen: Zusammenhänge zwischen den Landmarks beider Hände, die bei einhändigen Gesten durch symmetrische oder asymmetrische Konfigurationen entstehen können.
     \item Komplexe Muster: Nicht-lineare Kombinationen mehrerer Landmarks, die erst in der erweiterten Repräsentation als discriminative Merkmale erkennbar werden.
 \end{itemize}
 
-Der zweite Dropout-Layer (0.5) wendet eine stärkere Regularisierung an als der erste Dropout-Layer. Die Rate von 50\% ist bewusst höher gewählt, da der vorherige Dense-Layer mit 128 Neuronen eine größere Modellkapazität aufweist und die Gefahr des Overfitting steigt. Die stärkere Regularisierung vor der Ausgabeschicht stellt sicher, dass das Modell nur die robustesten Feature-Repräsentationen für die finale Klassifikation verwendet.
+Der zweite Dropout-Layer (0.5) wendet eine stärkere Regularisierung an als der erste \linebreak Dropout-Layer. Die Rate von 50\% ist bewusst höher gewählt, da der vorherige Dense-Layer mit 128 Neuronen eine größere Modellkapazität aufweist und die Gefahr des Overfitting steigt. Die stärkere Regularisierung vor der Ausgabeschicht stellt sicher, dass das Modell nur die robustesten Feature-Repräsentationen für die finale Klassifikation verwendet.
 
-Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale Klassifikationsschicht. Die 26 Ausgabeneuronen entsprechen den 26 Klassen (NONE, A–Y ohne J und Z, SCH). Die Softmax-Funktion $$\sigma(z_i) = \frac{e^{z_i}}{\sum e^{z_j}}$$normalisiert \cite{sharmaACTIVATIONFUNCTIONSNEURAL2020}. Die Rohausgaben (Logits) in Wahrscheinlichkeiten, deren Summe exakt 1 ergibt. Jedes Ausgabeneuron liefert damit die Wahrscheinlichkeit dafür, dass der Input der entsprechenden Gebärdensprache-Klasse angehört.
+Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale Klassifikationsschicht. Die 26 Ausgabeneuronen entsprechen den 26 Klassen (NONE, A–Y ohne J und Z, SCH). Die Softmax-Funktion (vgl.\ Abschnitt~\ref{sub:aktivierungsfunktionen}) normalisiert die Rohausgaben (Logits) in Wahrscheinlichkeiten, deren Summe exakt eins ergibt. Jedes Ausgabeneuron liefert damit die Wahrscheinlichkeit dafür, dass der Input der entsprechenden Gebärdensprache-Klasse angehört.
 
 \subsection{Verlustfunktion und Optimierung}\label{sub:verlustfunktion}
 
-Für das Training des Modells wird die Verlustfunktion Sparse Categorical Crossentropy verwendet. Diese eignet sich insbesondere, da die Zielklassen als Integer und nicht als One-Hot-Vektoren kodiert vorliegen. Dadurch wird der Speicherbedarf reduziert und gleichzeitig eine numerisch stabile Berechnung der Gradienten ermöglicht. Die Verlustfunktion berechnet die Abweichung zwischen den tatsächlichen Klassen und den durch die Softmax-Ausgabe vorhergesagten Klassenwahrscheinlichkeiten und lässt sich durch folgende Formel beschreiben:
-
+Für das Training des Modells wird die Verlustfunktion Sparse Categorical Crossentropy verwendet, die bereits in Abschnitt~\ref{ssub:sparse-cce} eingeführt wurde. Sie eignet sich insbesondere, da die Zielklassen als Integer und nicht als One-Hot-Vektoren kodiert vorliegen. Die Verlustfunktion berechnet die Abweichung zwischen den tatsächlichen Klassen und den durch die Softmax-Ausgabe vorhergesagten Klassenwahrscheinlichkeiten und lässt sich durch folgende Formel beschreiben:
 $$L = -\log(p_{y_{true}})$$
-(What Is Sparse Categorical Crossentropy, 10:49:00+00:00) wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet.
+wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet. \cite{WhatSparseCategorical10:49:00+00:00}
 
 \subsection{Trainingsprozess}\label{sub:trainingsprozess}
 
-Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden. Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und Frühzeitiges Stoppen.
+Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden (vgl.\ Abschnitt~\ref{sub:parameter-hyperparameter}). Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und Frühzeitiges Stoppen.
 
-Der Adam-Optimizer (Adaptive Moment Estimation) kombiniert die Vorteile von Momentum und adaptiven Lernraten (RMSProp). Er berechnet für jeden Parameter individuelle Lernraten auf Basis des ersten und zweiten Moments der Gradienten. Dadurch konvergiert das Modell in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind. \cite{a.g.TuningHyperparameterADAM2026}
+Als Optimizer wird Adam (Adaptive Moment Estimation) verwendet, dessen Funktionsweise in Abschnitt~\ref{sub:optimierung-training} erläutert wurde. Adam kombiniert die Vorteile von Momentum und adaptiven Lernraten und konvergiert dadurch in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind. \cite{a.g.TuningHyperparameterADAM2026}
 
-Die Lernrate bestimmt die Größe der Aktualisierungsschritte während der Optimierung. Eine sehr kleine Lernrate von $10^{-5}$ reduziert das Risiko, das Minimum der Verlustfunktion zu überschreiten oder instabile Trainingsverläufe zu erzeugen. Der Nachteil einer geringeren Lernrate besteht in einer längeren Trainingsdauer, die jedoch durch eine stabilere Konvergenz ausgeglichen wird.
+Die Lernrate (siehe Abschnitt~\ref{sub:optimierung-training}) bestimmt die Größe der Aktualisierungsschritte während der Optimierung. Eine sehr kleine Lernrate von $10^{-5}$ reduziert das Risiko, das Minimum der Verlustfunktion zu überschreiten oder instabile Trainingsverläufe zu erzeugen. Der Nachteil einer geringeren Lernrate besteht in einer längeren Trainingsdauer, die jedoch durch eine stabilere Konvergenz ausgeglichen wird.
 
-Als Verlustfunktion eignet sich Sparse Categorical Crossentropy für Mehrklassenklassifikationen, bei denen die Zielklassen als Ganzzahlen (z. B. 0, 1, 2, …) codiert sind. Im Gegensatz zur Categorical Crossentropy ist keine One-Hot-Kodierung der Labels erforderlich, wodurch Speicherbedarf und Vorverarbeitungsaufwand reduziert werden. Die Verlustfunktion misst die Abweichung zwischen den vorhergesagten Klassenwahrscheinlichkeiten und den tatsächlichen Klassen und liefert somit eine geeignete Optimierungsgrundlage für Klassifikationsaufgaben.
+Als Verlustfunktion dient die in Abschnitt~\ref{sub:verlustfunktion} eingeführte Sparse Categorical Crossentropy. Im Gegensatz zur Categorical Crossentropy ist keine One-Hot-Kodierung der Labels erforderlich, wodurch Speicherbedarf und Vorverarbeitungsaufwand reduziert werden.
 
-Die Sparse categorical Accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar. Da die Zielklassen als Integer vorliegen, passt sie direkt zur verwendeten Verlustfunktion SparseCategoricalCrossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
+Die Sparse categorical Accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar (vgl.\ Abschnitt~\ref{sub:metriken}). Da die Zielklassen als Integer vorliegen, passt sie direkt zur verwendeten Verlustfunktion SparseCategoricalCrossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
 
-Eine Epoche entspricht einem vollständigen Durchlauf des Trainingsdatensatzes. Die Wahl von 20 Epochen bietet dem Modell ausreichend Möglichkeiten, die zugrunde liegenden Muster zu erlernen, ohne die Trainingszeit unnötig zu verlängern. Da zusätzlich Early Stopping eingesetzt wird, dient dieser Wert als maximale Obergrenze. Das Training endet automatisch früher, sobald keine Verbesserung der Validierungsleistung mehr festgestellt wird.
+Eine Epoche entspricht einem vollständigen Durchlauf des Trainingsdatensatzes (siehe Abschnitt~\ref{sub:optimierung-training}). Die Wahl von 20 Epochen bietet dem Modell ausreichend Möglichkeiten, die zugrunde liegenden Muster zu erlernen, ohne die Trainingszeit unnötig zu verlängern. Da zusätzlich Early Stopping eingesetzt wird, dient dieser Wert als maximale Obergrenze. Das Training endet automatisch früher, sobald keine Verbesserung der Validierungsleistung mehr festgestellt wird.
 
 Ein weiterer Hyperparameter ist die Aufteilung der Trainingsdaten in Training, Validation und Testdaten. Durch die Aufteilung des Datensatzes in 64\% Trainingsdaten, 16\% Validierungsdaten und 20\% Testdaten kann die Generalisierungsfähigkeit des Modells während des Trainings überprüft werden. Die Validierungsdaten werden nicht für das Lernen verwendet und ermöglichen daher eine unabhängige Beurteilung der Modellleistung.
 
-Die Batch Size legt fest, wie viele Trainingsbeispiele gleichzeitig verarbeitet werden, bevor eine Aktualisierung der Modellgewichte erfolgt. Eine Batchgröße von 128 stellt einen guten Kompromiss zwischen Rechenleistung, Speicherbedarf und Trainingsstabilität dar. Größere Batches ermöglichen eine effizientere Nutzung von GPU Hardware dar und liefern stabilere Gradienten, während kleinere Batches zwar stärkeres Rauschen erzeugen, jedoch teilweise eine bessere Generalisierung fördern. Die gewählte Batchgröße bietet daher eine ausgewogene Balance zwischen Trainingsgeschwindigkeit und Modellqualität.
+Die Batch Size legt fest, wie viele Trainingsbeispiele gleichzeitig verarbeitet werden, bevor eine Aktualisierung der Modellgewichte erfolgt (siehe Abschnitt~\ref{sub:optimierung-training}). Eine Batchgröße von 128 stellt einen guten Kompromiss zwischen Rechenleistung, Speicherbedarf und Trainingsstabilität dar. Größere Batches ermöglichen eine effizientere Nutzung von GPU Hardware dar und liefern stabile Gradienten, während kleinere Batches zwar stärkeres Rauschen erzeugen, jedoch teilweise eine bessere Generalisierung fördern. Die gewählte Batchgröße bietet daher eine ausgewogene Balance zwischen Trainingsgeschwindigkeit und Modellqualität.
 
-Early Stopping dient der Vermeidung von Overfitting, indem das Training automatisch beendet wird, sobald sich die Validierungsleistung über mehrere Epochen hinweg nicht mehr verbessert. Mit einer Patience von drei werden kleinere Schwankungen der Validierungsverluste toleriert, bevor das Training gestoppt wird. Dadurch wird verhindert, dass unnötig lange trainiert wird oder das Modell beginnt, sich zu stark an die Trainingsdaten anzupassen. Gleichzeitig wird das Modell mit der besten Validierungsleistung gespeichert bzw. verwendet.
+Early Stopping dient der Vermeidung von Overfitting und beendet das Training vorzeitig, sobald sich die Validierungsleistung über mehrere Epochen nicht mehr verbessert (vgl.\ Abschnitt~\ref{sub:optimierung-training}). Mit einer Patience von drei werden kleinere Schwankungen der Validierungsverluste toleriert, bevor das Training gestoppt wird. Dadurch wird verhindert, dass unnötig lange trainiert wird oder das Modell beginnt, sich zu stark an die Trainingsdaten anzupassen. Gleichzeitig wird das Modell mit der besten Validierungsleistung gespeichert bzw. verwendet.
+
 
 \begin{longtable}{|p{0.35\textwidth}|p{0.55\textwidth}|}
-    \caption{Hyperparameter des Modelltrainings}
-    \label{tab:hyperparameter} \\
     \hline
     \textbf{Parameter} & \textbf{Wert} \\
     \hline
@@ -167,7 +165,8 @@ Early Stopping dient der Vermeidung von Overfitting, indem das Training automati
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Hyperparameter des Modelltrainings}
+    \label{tab:hyperparameter} \\
     \endlastfoot
     Optimizer & Adam \\
     \hline
@@ -191,10 +190,10 @@ Early Stopping dient der Vermeidung von Overfitting, indem das Training automati
 
 Das folgende Kapitel beschreibt die Quantisierung des Tensorflow Fingeralphabet Modells, die Convertierung der Quantisierten Handdedektion-, Landmarkerkennung- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
 
+\newpage
 \subsection{Quantisierung von Tensorflow Modellen}\label{sub:quantisierung-tf}
 
 Der folgende Codeausschnitt zeigt den vollständigen Ablauf der Konvertierung vom trainierten Keras-Modell bis zur gespeicherten INT8-TFLite-Datei:
-
 \begin{lstlisting}[language=python, caption={Vollständige INT8-Quantisierung des Fingeralphabet-Modells}, label={lst:tflite-quantisierung}]
 model = keras.models.load_model(MODEL_DIR)
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -223,17 +222,15 @@ with open("model_int8.tflite", "wb") as f:
     f.write(tflite_model)
 \end{lstlisting}
 
-Zuerst wird das trainierte Keras-Modell geladen und ein TensorFlow-Lite-Konverter erzeugt. Anschließend aktiviert \texttt{converter.optimizations = [tf.lite.Optimize.DEFAULT]} die Standardoptimierungen, die eine verlustbehaftete Post-Training-Quantisierung ermöglichen.
+Zuerst wird das trainierte Keras-Modell geladen und ein TensorFlow-Lite-Konverter erzeugt. Anschließend aktiviert \texttt{converter.optimizations = [tf.lite.Optimize.DEFAULT]} \linebreak die  Standardoptimierungen, die eine verlustbehaftete Post-Training-Quantisierung ermöglichen (siehe Abschnitt~\ref{sub:modellquantisierung}).
 
-Für die Kalibrierung wird mit \texttt{converter.representative\_dataset} ein repräsentativer Datensatz bereitgestellt. Während der Kalibrierung bestimmt TensorFlow Lite anhand dieser Daten die Wertebereiche der Aktivierungen, um geeignete Skalierungsfaktoren und Nullpunkte für die Quantisierung zu berechnen. Sind die Trainingsdaten nicht verfügbar, wird ersatzweise ein Datensatz aus gleichverteilten Zufallswerten im Bereich $[-1, 1]$ verwendet.
+Für die Kalibrierung wird mit \texttt{converter.representative\_dataset} ein repräsentativer Datensatz bereitgestellt, wie er in Abschnitt~\ref{sub:modellquantisierung} beschrieben wurde. Während der Kalibrierung bestimmt TensorFlow Lite anhand dieser Daten die Wertebereiche der Aktivierungen, um geeignete Skalierungsfaktoren und Nullpunkte für die Quantisierung zu berechnen. Sind die Trainingsdaten nicht verfügbar, wird ersatzweise ein Datensatz aus gleichverteilten Zufallswerten im Bereich $[-1, 1]$ verwendet.
 
-Da die Zielhardware ausschließlich INT8-Operationen unterstützt, wird die Konvertierung durch \texttt{TFLITE\_BUILTINS\_INT8} entsprechend eingeschränkt und der Ein- und Ausgabedatentyp des Modells auf 8-Bit-Ganzzahlen festgelegt. Abschließend wird das Modell mit \texttt{converter.convert()} in das TensorFlow-Lite-Format konvertiert und als \texttt{.tflite}-Datei gespeichert.
-
-Ergebnis ist ein vollständig quantisiertes TensorFlow-Lite-Modell, das den Anforderungen der eingesetzten NPU entspricht und anschließend mit STEdgeAI in eine für das Embedded-System ausführbare Binärdatei überführt werden kann. Durch die Quantisierung werden der Speicherbedarf und der Rechenaufwand reduziert, während die Modellgenauigkeit durch die Verwendung repräsentativer Kalibrierungsdaten weitgehend erhalten bleibt.
+Da die Zielhardware ausschließlich INT8-Operationen unterstützt, wird die Konvertierung \linebreak durch \texttt{TFLITE\_BUILTINS\_INT8} entsprechend eingeschränkt und der Ein- und Ausgabedatentyp des Modells auf 8-Bit-Ganzzahlen festgelegt. Abschließend wird das Modell mit \linebreak \texttt{converter.convert()} in das TensorFlow-Lite-Format konvertiert und als \texttt{.tflite}-Datei gespeichert. Ergebnis ist ein vollständig quantisiertes TensorFlow-Lite-Modell, das den Anforderungen der eingesetzten NPU entspricht und anschließend mit STEdgeAI in eine für das Embedded-System ausführbare Binärdatei überführt werden kann. Durch die Quantisierung werden der Speicherbedarf und der Rechenaufwand reduziert, während die Modellgenauigkeit durch die Verwendung repräsentativer Kalibrierungsdaten weitgehend erhalten bleibt.
 
 \subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded binaries}\label{sub:konvertierung}
 
-Nach der Quantisierung liegen alle drei Modelle (Handdetektion, Handlandmark-Erkennung und Fingeralphabet-Klassifikation) im TensorFlow-Lite-Format mit einer INT8-Quantisierung vor. Der nächste Verarbeitungsschritt ist diese Modelle mithilfe der ST Edge AI Core CLI in für die Zielhardware ausführbare Binärdateien zu überführen. Die Verwendung der Kommandozeilenschnittstelle (CLI) wurde bewusst der grafischen Benutzeroberfläche (GUI) vorgezogen, da sich hierdurch der gesamte Konvertierungsprozess automatisieren lässt. Auf diese Weise können Skripte erstellt werden, welche die Generierung aller Modellartefakte reproduzierbar und mit einem einzelnen Aufruf durchführen.
+Nach der Quantisierung liegen alle drei Modelle (Handdetektion, Handlandmark-Erkennung und Fingeralphabet-Klassifikation) im TensorFlow-Lite-Format mit einer INT8-Quantisierung vor. Der nächste Verarbeitungsschritt ist diese Modelle mithilfe der ST Edge AI Core CLI (Kapitel ~\ref{sub:stedge-ai}) in für die Zielhardware ausführbare Binärdateien zu überführen. Die Verwendung der Kommandozeilenschnittstelle (CLI) wurde bewusst der grafischen Benutzeroberfläche (GUI) vorgezogen, da sich hierdurch der gesamte Konvertierungsprozess automatisieren lässt. Auf diese Weise können Skripte erstellt werden, welche die Generierung aller Modellartefakte reproduzierbar und mit einem einzelnen Aufruf durchführen.
 
 Die Verzeichnisstruktur der Modellgenerierung:
 
@@ -285,9 +282,7 @@ Verweist auf die \texttt{.mpool}-Datei, die das Speicherlayout der NPU für dies
 \texttt{options} \newline
 Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werden verwendete Compiler flags in \ref{tab:stedgeai-flags} kurz erläutert.
 
-\begin{longtable}{|p{0.32\textwidth}|p{0.63\textwidth}|}
-    \caption{ST Edge AI Core Compiler Flags}
-    \label{tab:stedgeai-flags} \\
+\begin{longtable}{|p{0.3\textwidth}|p{0.65\textwidth}|}
     \hline
     \textbf{Flag} & \textbf{Effekt} \\
     \hline
@@ -299,7 +294,8 @@ Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werde
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{ST Edge AI Core Compiler Flags}
+    \label{tab:stedgeai-flags} \\
     \endlastfoot
     --enable-epoch-controller & Ermöglicht die epochenbasierte Ausführung der NPU (schichtweise Ablaufplanung) \\
     \hline
@@ -307,7 +303,7 @@ Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werde
     \hline
     --all-buffers-info & Vollständige Puffer-Metadaten für die Laufzeit ausgeben \\
     \hline
-    --cache-maintenance / --Ocache-opt & Befehle zum Leeren/Ungültigmachen des Caches einfügen \\
+    --cache-maintenance / --Ocache-opt & Befehle zum Leeren / Ungültig machen des Caches einfügen \\
     \hline
     --Oauto-sched & Automatisches planen der Epochen (default/Ohne Verweis) \\
     \hline
@@ -315,7 +311,7 @@ Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werde
     \hline
     --enable-virtual-mem-pools & Erlaubt dem Linker Tensoren über mehrere physische Speicherregionen zu verteilen \\
     \hline
-    --Omax-ca-pipe \texttt{<num>} & Legt die maximale Anzahl an Compute-\&-Accumulate-(CA-)Pipelines bzw.\ parallelen Hardware-Ausführungspfaden fest, die der Compiler gleichzeitig zuweisen darf. \\
+    --Omax-ca-pipe \texttt{<num>} & Legt die maximale Anzahl an Compute- \& Accumulate-(CA-) Pipelines bzw.\ parallelen Hardware-Ausführungspfaden fest, die der Compiler gleichzeitig zuweisen darf. \\
     \hline
     --Oconv-split-kw & Aufteilen von Faltungskernen auf die verfügbaren NPU-MAC-Arrays \\
     \hline
@@ -324,23 +320,15 @@ Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werde
 \paragraph{Memory-Pool-Definition}
 Die \texttt{.mpool}-Dateien beschreiben die STM32N6 Hardware Speicherabbild der NPU. Alle \texttt{.mpool}-Dateien haben den identischen Aufbau. Der einzige wesentliche Unterschied zwischen den Modellen besteht in der xSPI2 (flash) Region (Basisadresse und Größe) an welcher die Modelle gespeichert sind.
 
-Hauptbereiche:
-
-\texttt{params}
+Ein Hauptbereich ist die \texttt{params}-Sektion, welche die maximale verfügbare On-Chip-SRAM-Größe auf 1024\,KB für die NPU beschränkt.
 
 \begin{lstlisting}[language=json, caption={Globale Speicher einschränkung in .mpool}, label={lst:mpool-params}]
 { "paramname": "max_onchip_sram_size", "value": "1024", "magnitude": "KBYTES"}
 \end{lstlisting}
 
-Beschränkt die maximale verfügbare On-Chip-SRAM-Größe auf 1024\,KB für die NPU.
-
-\texttt{cacheinfo} Beschreibt den Cache.
-
-\texttt{mempools} Speicherbereich-Konfiguration pro Modell auf der NPU.
+Weitere Sektionen sind \texttt{cacheinfo} und \texttt{mempools}.  Diese beschreiben den zu nutzenden Cache, bzw. die Speicherbereich-Konfiguration pro Modell auf der NPU. Diese ist wie folgt zugeteilt:
 
 \begin{longtable}{|l|l|l|l|p{0.3\textwidth}|}
-    \caption{NPU-Speicherbereich-Konfiguration}
-    \label{tab:npu-mempools} \\
     \hline
     \textbf{Name} & \textbf{Region} & \textbf{Adresse} & \textbf{Größe} & \textbf{Rolle} \\
     \hline
@@ -352,7 +340,8 @@ Beschränkt die maximale verfügbare On-Chip-SRAM-Größe auf 1024\,KB für die 
     \hline
     \multicolumn{5}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{NPU-Speicherbereich-Konfiguration}
+    \label{tab:npu-mempools} \\
     \endlastfoot
     npuRAM3 & AXISRAM3 & 0x34200000 & 448\,KB & NPU activation scratch \\
     \hline
@@ -372,34 +361,25 @@ Die vier AXISRAM-Bänke sind On-Chip-SRAM-Speicher mit hohem Durchsatz und gerin
 
 Die Flash-Basisadressen unterscheiden sich je nach Modell, um den 16-MB-xSPI2-Flash zu partitionieren:
 
-\begin{longtable}{|l|l|l|}
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Modell} & \textbf{Flash Start} & \textbf{Flash Size} \\
+        \hline
+        Finger & \texttt{0x71000000} & 2\,MB \\
+        \hline
+        Handdetektion & \texttt{0x71200000} & 4\,MB \\
+        \hline
+        Handlandmark & \texttt{0x71600000} & 10\,MB \\
+        \hline
+    \end{tabular}
     \caption{Flash-Partitionierung je Modell}
-    \label{tab:flash-partitionierung} \\
-    \hline
-    \textbf{Modell} & \textbf{Flash Start} & \textbf{Flash Size} \\
-    \hline
-    \endfirsthead
-    \hline
-    \textbf{Modell} & \textbf{Flash Start} & \textbf{Flash Size} \\
-    \hline
-    \endhead
-    \hline
-    \multicolumn{3}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
-    \endfoot
-    \hline
-    \endlastfoot
-    Finger & 0x71000000 & 2\,MB \\
-    \hline
-    Handdetektion & 0x71200000 & 4\,MB \\
-    \hline
-    Handlandmark & 0x71600000 & 10\,MB \\
-    \hline
-\end{longtable}
+    \label{tab:flash-partitionierung}
+\end{table}
 
 \paragraph{Script - Generierung}
-Das \texttt{generate\_n6\_models.sh}-Script führt für jedes Modell 3 Schritte durch (Konvertierung, Kopieren und Project-Build).
-
-Im ersten Schritt wird die ST Edge AI core CLI zur konvertierung \texttt{TF-Lite $\rightarrow$ NPU-Artefakte} verwendet.
+Das \texttt{generate\_n6\_models.sh}-Script führt für jedes Modell 3 Schritte durch (Konvertierung, Kopieren und Project-Build). Im ersten Schritt wird die ST Edge AI Core CLI zur Konvertierung \texttt{TF-Lite $\rightarrow$ NPU-Artefakte} verwendet.
 
 \begin{lstlisting}[language=bash, caption={STedgeAI Modellgenerierung}, label={lst:stedgeai-generate}]
 stedgeai generate \
@@ -411,7 +391,7 @@ stedgeai generate \
     --output st_ai_output/
 \end{lstlisting}
 
-Dies liest das TensorFlow-Lite-Modell ein, lädt die \texttt{palm\_detection\_model\_v3} Konfiguration in \texttt{user\_neuralart.json} um den Memory-Pool und Compiler-Optionen zu erhalten und generiert Gewichtsdaten als C-Arrays, entsprechende Header mit Attributen für Linker-Sektionen, ST-AI-Runtime-API-Wrapper und einen Binär-Blob mit Gewichten zur Flash-Programmierung. Die genaue Aufspaltung ist in Kapitel \ref{sub:modell-aufsplittung}.
+Dies liest das TensorFlow-Lite-Modell ein, lädt die \texttt{palm\_detection\_model\_v3} Konfiguration in \texttt{user\_neuralart.json} um den Memory-Pool und Compiler-Optionen zu erhalten und generiert Gewichtsdaten als C-Arrays, entsprechende Header mit Attributen für Linker-Sek-tionen, ST-AI-Runtime-API-Wrapper und einen Binär-Blob mit Gewichten zur Flash-Programm-ierung. Die genaue Aufspaltung ist in Kapitel \ref{sub:modell-aufsplittung}.
 
 Der zweite Schritt Konvertiert \texttt{.raw} Gewichts-Blob in eine Intel \texttt{.hex}-Datei mit der korrekten Basisadresse (z.\,B.\ 0x71000000). Diese Hex-Datei kann via STM32CubeProgrammer auf den Mikrocontroller geflashed werden.
 
@@ -435,54 +415,22 @@ Zudem wird \texttt{\*\_ecblobs.h} gepatcht, um \verb|#include "ecblob_sections.h
 \subsection{Aufsplittung der Modelle}\label{sub:modell-aufsplittung}
 
 Die drei verwendeten Modelle (Fingeralphabet-Klassifikation, Handdetektion und
-Handlandmark-Erkennung) werden mit dem ST Edge AI Core Compiler nicht als ein zusammenhängendes Artefakt erzeugt. Das Resultat ist in mehrere getrennte Speicherobjekte aufgesplittet. Ursache hierfür ist die Speicherhierarchie des STM32N6570: Der Chip besitzt keinen internen Flash, lediglich ca.\ 4{,}2\,MB On-Chip-SRAM, zwei externe Speicherschnittstellen
+Hand- \linebreak landmark-Erkennung) werden mit dem ST Edge AI Core Compiler nicht als ein zusammenhängendes Artefakt erzeugt. Das Resultat ist in mehrere getrennte Speicherobjekte aufgesplittet. Ursache hierfür ist die Speicherhierarchie des STM32N6570: Der Chip besitzt keinen internen Flash, lediglich ca.\ 4{,}2\,MB On-Chip-SRAM, zwei externe Speicherschnittstellen
 (XSPI1/PSRAM, XSPI2/NOR-Flash) sowie einen dedizierten NPU-Beschleuniger.
 Ein kompiliertes Modell zerfällt daher in die folgenden vier Bestandteile:
 
 \begin{enumerate}
-  \item \textbf{Gewichte und Konstanten}: Die Quantisierungs- und
-        Gewichtsdaten werden vom Compiler als roher Binär-Blob
-        (\texttt{*\_atonbuf.xSPI2.bin}) ausgegeben. Der Namenszusatz
-        \texttt{xSPI2} verweist auf den Speicherpool \texttt{octoFlash}, dem
-        die Konstanten durch die \texttt{.mpool}-Konfiguration zugewiesen
-        werden. Der Pool ist zur Laufzeit schreibgeschützt
-        (\texttt{ACC\_READ}) und mit \texttt{constants\_preferred: true}
-        markiert, sodass der Compiler alle konstanten Daten dort ablegt. Die
-        Gewichte werden im externen NOR-Flash abgelegt und von der NPU
-        über ihren AXI-Cache als Datenströme gelesen.
+  \item Gewichte und Konstanten: Die Quantisierungs- und Gewichtsdaten werden vom Compiler als roher Binär-Blob (\texttt{*\_atonbuf.xSPI2.bin}) ausgegeben. Der Namenszusatz \texttt{xSPI2} verweist auf den Speicherpool \texttt{octoFlash}, dem die Konstanten durch die \texttt{.mpool}-Konfiguration zugewiesen werden. Der Pool ist zur Laufzeit schreibgeschützt (\texttt{ACC\_READ}) und mit \texttt{constants\_preferred: true} markiert, sodass der Compiler alle konstanten Daten dort ablegt. Die Gewichte werden im externen NOR-Flash abgelegt und von der NPU über ihren AXI-Cache als Datenströme gelesen.
 
-  \item \textbf{EC-Blobs (Epoch-Controller-Blobs)}: Zusätzlich zu den
-        Gewichten erzeugt der Compiler pro ausgeführter Epoche einen
-        Microinstruktions-Blob, der den Epoch Controller der NPU schichtweise
-        ablaufen lässt. Diese Blobs werden als C-Arrays in den Dateien
-        \texttt{*\_model\_v3\_ecblobs.h} generiert. Über die Attribute
-        \texttt{ECBLOB\_CONST\_SECTION} und \texttt{ECBLOB\_RUNTIME\_SECTION}
-        (siehe \texttt{ecblob\_sections.h}) werden sie den
-        Linker-Abschnitten \texttt{.ecblobs\_const} bzw.
-        \texttt{.ecblobs\_runtime} zugeordnet und damit in die On-Chip-SRAM
-        Regionen \texttt{EC\_CONST} und \texttt{EC\_RUNTIME} eingebettet.
-        Tabelle~\ref{tab:ecblob-umfang} fasst die Anzahl und Größe der
-        Konstanten-Blobs je Modell zusammen.
+  \item EC-Blobs (Epoch-Controller-Blobs): Zusätzlich zu den Gewichten erzeugt der Compiler pro ausgeführter Epoche einen Microinstruktions-Blob, der den Epoch Controller der NPU schichtweise ablaufen lässt. Diese Blobs werden als C-Arrays in den Dateien \texttt{*\_model\_v3\_ecblobs.h} generiert. Über die Attribute \texttt{ECBLOB\_CONST\_SECTION} und \texttt{ECBLOB\_RUNTIME\_SECTION} (siehe \texttt{ecblob\_sections.h}) werden sie den Linker- \linebreak Abschnitten \texttt{.ecblobs\_const} bzw. \texttt{.ecblobs\_runtime} zugeordnet und damit in die On-Chip-SRAM Regionen \texttt{EC\_CONST} und \texttt{EC\_RUNTIME} eingebettet. Tabelle~\ref{tab:ecblob-umfang} fasst die Anzahl und Größe der Konstanten-Blobs je Modell zusammen.
 
-  \item \textbf{Aktivierungsdaten (Zwischentensoren)}: Die während der
-        Inferenz anfallenden Aktivierungen werden vom Compiler auf die vier
-        NPU-tauglichen SRAM-Bänke \texttt{AXISRAM3} bis \texttt{AXISRAM6}
-        (in der NPU-Konfiguration \texttt{npuRAM3} bis \texttt{npuRAM6},
-        je 448\,KB) verteilt. Das Compiler-Flag
-        \texttt{--enable-virtual-mem-pools} erlaubt dabei das Verteilen
-        einzelner Tensoren über mehrere physische Speicherregionen
-        (virtuelle Pools).
+  \item Aktivierungsdaten (Zwischentensoren): Die während der Inferenz anfallenden Aktivierungen werden vom Compiler auf die vier NPU-tauglichen SRAM-Bänke \texttt{AXISRAM3} bis \texttt{AXISRAM6} (in der NPU-Konfiguration \texttt{npuRAM3} bis \texttt{npuRAM6}, je 448\,KB) verteilt. Das Compiler-Flag \texttt{--enable-virtual-mem-pools} erlaubt dabei das Verteilen einzelner Tensoren über mehrere physische Speicherregionen (virtuelle Pools).
 
-  \item \textbf{Ein- und Ausgabepuffer}: Die Eingabebilder der Modelle
-        (\texttt{nn\_in}, z.\,B.\ 192$\times$192\,px für die Handdetektion)
-        und die Ausgabetensoren (\texttt{nn\_out}, z.\,B.\ Heatmaps der
-        Handlandmark-Erkennung) werden als benutzerspezifische Puffer in
-        RAM beziehungsweise in die dafür vorgesehenen AXISRAM-Bänke gelegt.
+  \item Ein- und Ausgabepuffer: Die Eingabebilder der Modelle (\texttt{nn\_in}, z.\,B.\ 192$\times$192\,px für die Handdetektion) und die Ausgabetensoren (\texttt{nn\_out}, z.\,B.\ Heatmaps der Handlandmark-Erkennung) werden als benutzerspezifische Puffer in RAM beziehungsweise in die dafür vorgesehenen AXISRAM-Bänke gelegt.
 \end{enumerate}
 
 \begin{table}[htbp]
   \centering
-  \caption{Umfang der Epoch-Controller-Blobs (\texttt{.ecblobs\_const}) je Modell}
   \label{tab:ecblob-umfang}
   \begin{tabular}{lrrr}
     \toprule
@@ -495,6 +443,7 @@ Ein kompiliertes Modell zerfällt daher in die folgenden vier Bestandteile:
     Gesamt           & 12 & 469\,824\,B ($\approx$ 458{,}8\,KiB) & \textbf{89{,}6\,\%} \\
     \bottomrule
   \end{tabular}
+  \caption{Umfang der Epoch-Controller-Blobs (\texttt{.ecblobs\_const}) je Modell}
 \end{table}
 
 % ============================================================================
@@ -508,8 +457,6 @@ festgelegt. Tabelle~\ref{tab:linker-regionen} listet die Regionen mit ihrer
 reservierten Größe und der tatsächlich belegten Größe auf:
 
 \begin{longtable}{l l l r r}
-    \caption{Tatsächliche Speicherbelegung der Linker-Regionen}
-    \label{tab:linker-regionen} \\
     \hline
     \textbf{Region} & \textbf{Basisadresse} & \textbf{reserviert} & \textbf{tatsächlich belegt} & \textbf{Auslastung} \\
     \hline
@@ -521,13 +468,14 @@ reservierten Größe und der tatsächlich belegten Größe auf:
     \hline
     \multicolumn{5}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Tatsächliche Speicherbelegung der Linker-Regionen}
+    \label{tab:linker-regionen} \\
     \endlastfoot
     ROM         & \texttt{0x34000400} & 2047\,KB & aus \texttt{.map} & -- \\
     \hline
     RAM         & \texttt{0x34180000} & 512\,KB  & aus \texttt{.map} & -- \\
     \hline
-    EC\_RUNTIME & \texttt{0x34080000} & 512\,KB  & 0\,B (NOLOAD, Laufzeit-Scratch) & -- \\
+    EC\_RUNTIME & \texttt{0x34080000} & 512\,KB  & 0\,B & -- \\
     \hline
     EC\_CONST   & \texttt{0x34100000} & 512\,KB  & 469\,824\,B & \textbf{89{,}6\,\%} \\
     \hline
@@ -554,7 +502,7 @@ initialisierten Daten (\texttt{.data}), die nicht initialisierten Daten
 
 \paragraph{EC\_RUNTIME und EC\_CONST}
 
-Die Region \texttt{EC\_CONST} (512\,KB) beherbergt die als
+Die Region \texttt{EC\_CONST} (512\,KB) beherbergt die als \linebreak
 \texttt{.ecblobs\_const} markierten Microinstruktionen der drei Modelle.
 Wie Tabelle~\ref{tab:ecblob-umfang} zeigt, werden insgesamt 469\,824\,B
 von 524\,288\,B benötigt, die Region ist damit zu \textbf{89{,}6\,\%}
@@ -573,7 +521,6 @@ hinaus ausreichend Reserven für zusätzliche Puffer bereit.
 
 \begin{table}[H]
   \centering
-  \caption{Tatsächliche PSRAM-Belegung durch Bild- und Anzeigepuffer}
   \label{tab:psram-belegung}
   \begin{tabular}{lr r}
     \toprule
@@ -586,48 +533,27 @@ hinaus ausreichend Reserven für zusätzliche Puffer bereit.
     Gesamt                                                                        & ca.\ 6{,}07\,MiB \\
     \bottomrule
   \end{tabular}
+  \caption{Tatsächliche PSRAM-Belegung durch Bild- und Anzeigepuffer}
 \end{table}
 
 \paragraph{Begründung der Speicherzuordnung}
 
-Die Zuordnung der Daten auf die einzelnen Speicherbereiche folgt
+Die Zuordnung der Daten auf die einzelnen \linebreak Speicherbereiche folgt
 systematisch aus den Anforderungen der jeweiligen Datenkategorie:
 
-\begin{description}
-  \item[XSPI2 (NOR-Flash):] Die Modellgewichte sind groß (das
-        Handlandmark-Modell belegt 3{,}04\,MB) und ausschließlich
-        lesend. Würden sie in den On-Chip-SRAM gelegt, stünde dieser für
-        Aktivierungen nicht mehr zur Verfügung. Die Ablage im externen
-        NOR-Flash im Memory-Mapped-Modus ermöglicht die Ausführung direkt
-        vom Flash (Execute-in-Place), wobei die NPU die Gewichte über ihren
-        AXI-Cache als Datenströme bezieht.
-  \item[XSPI1 (PSRAM):] Die Framebuffer sind mit insgesamt ca.\ 6\,MB
-        ebenfalls zu groß für das On-Chip-SRAM und werden von LTDC, DMA2D
-        und der Kamerapipeline häufig beschrieben und gelesen. Der externe
-        PSRAM stellt dafür eine große, beschreibbare Fläche bereit. Die
-        Region beginnt bei \texttt{0x91000000}, sodass der Bereich
-        \texttt{0x90000000} für die (im \texttt{.mpool} als deaktiviert
-        konfigurierte) HyperRAM-Relokation der NPU frei bleibt.
-  \item[AXISRAM1 (EC\_CONST/EC\_RUNTIME):] Die EC-Blobs sind mit ca.\
-        470\,KB insgesamt klein genug für das On-Chip-SRAM und für die
-        epochenbasierte Ausführung latenzkritisch. Zudem müssen sie
-        beschreibbar und für die NPU ohne Umweg über den externen Bus
-        erreichbar sein.
-  \item[AXISRAM3--6 (npuRAM3--6):] Die Aktivierungstensoren werden mit
-        höchstem Durchsatz und geringster Latenz benötigt. Die vier
-        dedizierten SRAM-Bänke (je 448\,KB) sind direkt über den AXI-Bus an
-        die NPU angebunden. Die \texttt{.mpool}-Parameter begrenzen die
-        maximale On-Chip-SRAM-Nutzung auf 1024\,KB. die tatsächliche
-        Belegung beträgt je nach Modell zwischen 344\,B (Fingeralphabet)
-        und ca.\ 1{,}59\,MB über einen virtuellen Pool (Handdetektion).
-\end{description}
+\begin{itemize}
+  \item XSPI2 (NOR-Flash): Die Modellgewichte sind groß (das Handlandmark-Modell belegt 3{,}04\,MB) und ausschließlich lesend. Würden sie in den On-Chip-SRAM gelegt, stünde dieser für Aktivierungen nicht mehr zur Verfügung. Die Ablage im externen NOR-Flash im Memory-Mapped-Modus ermöglicht die Ausführung direkt vom Flash (Execute-in-Place), wobei die NPU die Gewichte über ihren AXI-Cache als Datenströme bezieht.
+  \item XSPI1 (PSRAM): Die Framebuffer sind mit insgesamt ca.\ 6\,MB ebenfalls zu groß für das On-Chip-SRAM und werden von LTDC, DMA2D und der Kamerapipeline häufig beschrieben und gelesen. Der externe PSRAM stellt dafür eine große, beschreibbare Fläche bereit. Die Region beginnt bei \texttt{0x91000000}, sodass der Bereich \texttt{0x90000000} für die (im \texttt{.mpool} als deaktiviert konfigurierte) HyperRAM-Relokation der NPU frei bleibt.
+  \item AXISRAM1 (EC\_CONST/EC\_RUNTIME): Die EC-Blobs sind mit ca.\ 470\,KB insgesamt klein genug für das On-Chip-SRAM und für die epochenbasierte Ausführung latenzkritisch. Zudem müssen sie beschreibbar und für die NPU ohne Umweg über den externen Bus erreichbar sein.
+  \item AXISRAM3--6 (npuRAM3--6): Die Aktivierungstensoren werden mit höchstem Durchsatz und geringster Latenz benötigt. Die vier dedizierten SRAM-Bänke (je 448\,KB) sind direkt über den AXI-Bus an die NPU angebunden. Die \texttt{.mpool}-Parameter begrenzen die maximale On-Chip-SRAM-Nutzung auf 1024\,KB. die tatsächliche Belegung beträgt je nach Modell zwischen 344\,B (Fingeralphabet) und ca.\ 1{,}59\,MB über einen virtuellen Pool (Handdetektion).
+\end{itemize}
 
 % ============================================================================
 \subsection{Flash-Layout des externen NOR-Flash}\label{sec:flash-layout}
 
-Auf dem STM32N6570-DK ist ein externer 128\,MB-NOR-Flash vom Typ Macronix
+Auf dem STM32N6570-DK ist ein externer 128 MB-NOR-Flash vom Typ Macronix \linebreak
 \texttt{MX66UW1G45G} verbaut, der über XSPI2 im Memory-Mapped-Modus an der
-Basisadresse \texttt{0x70000000} eingeblendet wird. Der Flash wird in
+Basisadresse \linebreak \texttt{0x70000000} eingeblendet wird. Der Flash wird in
 feste Partitionen aufgeteilt, deren Basisadressen vom Linker-Skript als
 Symbole exportiert und von \texttt{flash\_models.sh} beim Flashen
 verwendet werden:
@@ -644,11 +570,8 @@ Klammern angegebenen Größen (\texttt{+2\,MB} usw.) sind die für das jeweilige
 Modell reservierten Partitionsgrößen und dienen als Wachstumsreserve. die
 tatsächlich belegte Größe ist deutlich geringer.
 
-\begin{longtable}{l l l r}
-    \caption{Flash-Layout des externen NOR-Flash (XSPI2)}
-    \label{tab:flash-layout} \\
-    \hline
-    \textbf{Adresse} & \textbf{Inhalt} & \textbf{Partition} & \textbf{tatsächlich belegt} \\
+\begin{longtable}{l p{5cm} r r}
+    \textbf{Adresse} & \textbf{Inhalt} & \textbf{Partition} & \textbf{Belegt} \\
     \hline
     \endfirsthead
     \hline
@@ -658,15 +581,16 @@ tatsächlich belegte Größe ist deutlich geringer.
     \hline
     \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Flash-Layout des externen NOR-Flash (XSPI2)}
+    \label{tab:flash-layout} \\
     \endlastfoot
-    \texttt{0x70000000} & Firmware / FSBL (nicht durch dieses Skript geflasht) & --          & -- \\
+    \texttt{0x70000000} & Firmware / FSBL & --          & -- \\
     \hline
-    \texttt{0x71000000} & \texttt{fingeralphabet\_model\_v3\_atonbuf.xSPI2.bin}      & +2\,MB      & ca.\ 21{,}95\,KB \\
+    \texttt{0x71000000} & \texttt{fingeralphabet\_model\_v3} \texttt{\_atonbuf.xSPI2.bin}      & 2\,MB      & ca.\ 21{,}95\,KB \\
     \hline
-    \texttt{0x71200000} & \texttt{palm\_detection\_model\_v3\_atonbuf.xSPI2.bin}     & +4\,MB      & ca.\ 1{,}07\,MB \\
+    \texttt{0x71200000} & \texttt{palm\_detection\_model\_v3} \texttt{\_atonbuf.xSPI2.bin}    & 4\,MB      & ca.\ 1{,}07\,MB \\
     \hline
-    \texttt{0x71600000} & \texttt{hand\_landmark\_model\_v3\_atonbuf.xSPI2.bin}      & +10\,MB     & ca.\ 3{,}04\,MB \\
+    \texttt{0x71600000} & \texttt{hand\_landmark\_model\_v3} \texttt{\_atonbuf.xSPI2.bin}      & 10\,MB     & ca.\ 3{,}04\,MB \\
     \hline
     \texttt{0x72000000} & \texttt{ecblobs.bin}                                     & 8\,MB       & Rest \\
     \hline
@@ -696,11 +620,11 @@ Die Umsetzung der Kamera-, Display- und KI-Verarbeitung setzt zunächst eine fun
 
 Die Implementierung greift auf den Cortex Microcontroller Software Interface Standard (CMSIS) zurück. Das sind bereitgestellte Prozessor- und Gerätedefinitionen für Cortex Microcontroller. CMSIS stellt dabei unter anderem die Registerstrukturen, Interruptnummern und Funktionen für den Zugriff auf den Cortex-M55-Prozessorkern bereit \cite{CMSISIntroduction}. Die eigentliche Konfiguration der Peripherie wurde dagegen überwiegend durch projektspezifische Treiber umgesetzt. Dadurch konnten die benötigten Funktionen gezielt an die Anforderungen des Systems angepasst und nicht benötigte Bestandteile umfangreicherer Abstraktionsschichten vermieden werden.
 
-Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden. \cite[s. 3-4]{washizakiWasedaUniversityIEEE}.
+Die Basissoftware bildet die unterste anwendungsspezifische Softwareschicht des Systems. Auf ihr bauen die Treiber und Komponenten für Kamera, Display, externe Speicher und neuronalen Beschleuniger auf. Erst durch diese Schichtung können die übergeordneten Funktionen, beispielsweise die Kamera-Display-Pipeline und die KI-Verarbeitungskette, unabhängig von einzelnen Registerzugriffen strukturiert umgesetzt werden. \cite[S. 3-4]{washizakiWasedaUniversityIEEE}.
 
 \subsection{Aufbau der Embedded-Software}\label{sub:embedded-software-aufbau}
 
-Mit der Integration der Kamera, des Displays, der externen Speicher und der neuronalen Netze umfasst die Firmware mehrere Komponenten mit unterschiedlichen Aufgaben und Hardwareabhängigkeiten. Der Quellcode wurde daher in getrennte Bereiche gegliedert. Die Struktur orientiert sich an den Prinzipien der Modularisierung und der Trennung von Zuständigkeiten. Dabei werden unterschiedliche Funktionen in eigenständigen Komponenten mit definierten Schnittstellen zusammengefasst und Implementierungsdetails gegenüber den übergeordneten Komponenten gekapselt \cite[s. 3-4]{washizakiWasedaUniversityIEEE}. Listing \ref{lst:sw-dir-structure} zeigt die grundlegende Projektstruktur:
+Mit der Integration der Kamera, des Displays, der externen Speicher und der neuronalen Netze umfasst die Firmware mehrere Komponenten mit unterschiedlichen Aufgaben und Hardwareabhängigkeiten. Der Quellcode wurde daher in getrennte Bereiche gegliedert. Die Struktur orientiert sich an den Prinzipien der Modularisierung und der Trennung von Zuständigkeiten. Dabei werden unterschiedliche Funktionen in eigenständigen Komponenten mit definierten Schnittstellen zusammengefasst und Implementierungsdetails gegenüber den übergeordneten Komponenten gekapselt \cite[S. 3-4]{washizakiWasedaUniversityIEEE}. Listing \ref{lst:sw-dir-structure} zeigt die grundlegende Projektstruktur:
 
 \begin{lstlisting}[language=bash, numbers=none, caption={Verzeichnisstruktur der Embedded-Software}, label={lst:sw-dir-structure}]
 Sign_Language_Translator/                     
@@ -735,9 +659,9 @@ Die Konfiguration und Initialisierung der Systemkomponenten werden an zentralen 
 
 Die Dateien \texttt{config.c/h} enthalten die systemweit verwendeten Konfigurationswerte und Konfigurationsstrukturen. Dazu gehören unter anderem Bildauflösungen, Speicherzuordnungen, Schnittstellenparameter sowie Einstellungen der Kamera-, DCMIPP- und Displaykomponenten. Die Konfiguration wird damit von der eigentlichen Treiberimplementierung getrennt. Die jeweiligen Treiber erhalten die benötigten Parameter über definierte Strukturen und übertragen sie während der Initialisierung in die zugehörigen Hardwareregister.
 
-\begin{longtable}{|p{0.2\textwidth}|p{0.75\textwidth}|}
-    \caption{Aufgaben der zentralen Core-Dateien}
-    \label{tab:core-dateien} \\
+\newpage
+
+\begin{longtable}{|p{0.15\textwidth}|p{0.75\textwidth}|}
     \hline
     \textbf{Datei} & \textbf{Aufgabe} \\
     \hline
@@ -749,33 +673,32 @@ Die Dateien \texttt{config.c/h} enthalten die systemweit verwendeten Konfigurati
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Aufgaben der zentralen Core-Dateien}
+    \label{tab:core-dateien} \\
     \endlastfoot
     \texttt{main.c} & Einstiegspunkt der Software und Übergabe an die übergeordnete Anwendungsinitialisierung. \\
     \hline
     \texttt{app.c} & Koordination der Initialisierung der einzelnen Hardware- und Softwarekomponenten. \\
     \hline
-    \texttt{config.c/h} & Definition \& Instanzierung zentraler Konfigurationsstrukturen. \\
+    \texttt{config.c/h} & Definition \& Instanziierung zentraler Konfigurationsstrukturen. \\
     \hline
     \texttt{tasks.c} & Definition der später durch den Software-Scheduler ausgeführten Verarbeitungsaufgaben. \\
     \hline
 \end{longtable}
 
-Nach dem Systemstart wird zunächst die Adresse der Interruptvektortabelle in das Vector Table Offset Register des Prozessors eingetragen. Anschließend erfolgt die Konfiguration des Resource Isolation Framework Security Controllers (RIFSC). Dieser verwaltet die Zugriffsrechte auf interne Speicherbereiche und Peripheriekomponenten des STM32N6570. Eine fehlerhafte Zuordnung kann dazu führen, dass einzelne Komponenten trotz aktivierter Taktversorgung nicht auf benötigte Register oder Speicherbereiche zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die entsprechenden Hardwarekomponenten initialisiert werden \cite{ResourceIsolationFramework}.
+Nach dem Systemstart wird zunächst die Adresse der Interruptvektortabelle in das Vector Table Offset Register des Prozessors eingetragen. Anschließend erfolgt die Konfiguration des Resource Isolation Framework Security Controllers (RIFSC). Dieser verwaltet die Zugriffsrechte auf interne Speicherbereiche und Peripheriekomponenten des STM32N6570. Eine fehlerhafte Zuordnung kann dazu führen, dass einzelne Komponenten trotz aktivierter Taktversorgung nicht auf benötigte Register oder Speicherbereiche zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die entsprechenden Hardwarekomponenten initialisiert werden \cite{ResourceIsolationFramework}, \cite[S. 248 ff.]{rm0486}.
 
 Darauf folgen die Konfiguration der Spannungsversorgung sowie die Einrichtung der System- und Peripherietakte. Zusätzlich werden die benötigten Takte für den Energiesparmodus aktiviert. Dies ist insbesondere für die asynchrone Ausführung der neuronalen Netze relevant, da der Prozessorkern während der Inferenz durch Warteanweisungen vorübergehend in einen Energiesparzustand wechseln kann. Die von der NPU und den externen Speichern benötigten Takte müssen währenddessen weiterhin aktiv bleiben. Dieses Verhalten wird auch in der Dokumentation zur Ausführung neuronaler Netze auf dem STM32N6 beschrieben \cite{STM32N6ExampleProjects}.
 
 Nach der grundlegenden Systemkonfiguration werden der Instructions- und der Datencache aktiviert. Der Instructioncache reduziert die Zugriffszeiten beim Laden von Programmcode. Der Datencache beschleunigt den Zugriff auf häufig verwendete Daten, erfordert jedoch bei gemeinsam durch Prozessor und Peripherie genutzten Speicherbereiche eine explizite Cache-Synchronisation. Dies betrifft beispielsweise die Ein- und Ausgabepuffer der neuronalen Netze. Die erforderlichen Cache-Operationen werden deshalb innerhalb der jeweiligen Treiber bzw. Modulschnittstellen ausgeführt.
 
-Anschließend werden der externe PSRAM- und der NOR-Flash-Speicher über die XSPI-Schnitt-stellen eingerichtet. Der PSRAM wird vor allem für die Aufnahme der Bild- und Anzeigepuffer verwendet, während der NOR-Flash die für die neuronalen Netze benötigten Modell- und Laufzeitdaten enthält. Da das Display und die Kamerapipeline auf diese Speicherbereiche zugreifen, müssen die externen Speicher vor diesen Komponenten initialisiert werden. Beide Speicher werden im Memory-mapped-Modus betrieben und damit in den Adressraum des Mikrocontrollers eingebunden. Zugriffe können dadurch über reguläre Speicheradressen erfolgen, ohne dass für jeden Lese- oder Schreibvorgang eine separate XSPI-Übertragung angestoßen werden muss. Die Umsetzung der Speicherzugriffe in die erforderlichen XSPI-Kommandos übernimmt der jeweilige Schnittstellencontroller. Für die übergeordneten Softwarekomponenten erscheinen die externen Speicher somit wie direkt adressierbare Speicherbereiche. Dabei wird der PSRAM lesend und schreibend verwendet, während aus dem NOR-Flash hauptsächlich die Modellparameter ausgelesen werden.
+Anschließend werden der externe PSRAM- und der NOR-Flash-Speicher über die XSPI-Schnitt-stellen eingerichtet. Der PSRAM wird vor allem für die Aufnahme der Bild- und Anzeigepuffer verwendet, während der NOR-Flash die für die neuronalen Netze benötigten Modell- und Laufzeitdaten enthält. Da das Display und die Kamerapipeline auf diese Speicherbereiche zugreifen, müssen die externen Speicher vor diesen Komponenten initialisiert werden. Beide Speicher werden im Memory-mapped-Modus betrieben und damit in den Adressraum des Mikrocontrollers eingebunden (vgl.\ Abschnitt~\ref{sub:speicherarchitektur}). Zugriffe können dadurch über reguläre Speicheradressen erfolgen, ohne dass für jeden Lese- oder Schreibvorgang eine separate XSPI-Übertragung angestoßen werden muss. Die Umsetzung der Speicherzugriffe in die erforderlichen XSPI-Kommandos übernimmt der jeweilige Schnittstellencontroller. Für die übergeordneten Softwarekomponenten erscheinen die externen Speicher somit wie direkt adressierbare Speicherbereiche. Dabei wird der PSRAM lesend und schreibend verwendet, während aus dem NOR-Flash hauptsächlich die Modellparameter ausgelesen werden.
 
 Daraufhin wird die Kamera initialisiert und die Bildverarbeitung über die DCMIPP-Komponente gestartet. Dabei werden zwei Verarbeitungspfade verwendet. Der erste Pfad stellt die aufgenommenen Kamerabilder für die Anzeige bereit. Der zweite Pfad erzeugt die Eingabebilder für die Verarbeitung durch die neuronalen Netze. Durch diese Trennung können Anzeige und KI-Pipeline unterschiedliche Bildauflösungen und Speicherbereiche verwenden. Nach dem Start der Kamerapipeline werden der Touchcontroller und die grafische Benutzeroberfläche eingerichtet. Die Benutzeroberfläche stellt unter anderem Auswahl- und Anzeigeelemente für die einzelnen Verarbeitungsstufen bereit. Über diese können die Ergebnisse der Handerkennung, der Landmarkenerkennung und der Fingeralphabetklassifikation getrennt dargestellt und konfiguriert werden.
 
 Im Anschluss wird die KI-Laufzeitumgebung initialisiert. Dabei werden die NPU, die zugehörige Middleware sowie die Ein- und Ausgabepuffer der eingebundenen neuronalen Netze vorbereitet. Schlägt dieser Schritt fehl, wird der weitere Programmablauf gestoppt, da die eigentliche Anwendung ohne die neuronalen Netze nicht vollständig ausgeführt werden kann. Abschließend wird der Software-Scheduler gestartet, um die eigentliche Ablaufsteuerung zu verwalten. Dazu wird Genaueres in Abschnitt~\ref{sec:scheduler} beschrieben. Die Initialisierungsreihenfolge lässt sich damit wie folgt zusammenfassen:
 
-\begin{longtable}{|c|p{0.35\textwidth}|p{0.5\textwidth}|}
-    \caption{Initialisierungsreihenfolge nach Systemstart}
-    \label{tab:init-reihenfolge} \\
+\begin{longtable}{|c|p{0.28\textwidth}|p{0.55\textwidth}|}
     \hline
     \textbf{Schritt} & \textbf{Komponente} & \textbf{Zweck} \\
     \hline
@@ -787,7 +710,8 @@ Im Anschluss wird die KI-Laufzeitumgebung initialisiert. Dabei werden die NPU, d
     \hline
     \multicolumn{3}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Initialisierungsreihenfolge nach Systemstart}
+    \label{tab:init-reihenfolge} \\
     \endlastfoot
     1  & Interruptvektortabelle      & Zuordnung der verwendeten Interruptbehandlungen \\
     \hline
@@ -842,15 +766,13 @@ Durch die Maskierung werden ausschließlich die zum ausgewählten Anschluss geh�
 
 Die Konfiguration erfolgt mithilfe der Struktur \texttt{GPIO\_cfg\_TypeDef}. Diese fasst den Betriebsmodus, den Ausgangstyp, die Pull-up- beziehungsweise Pull-down-Konfiguration, die Ausgangsgeschwindigkeit und die Nummer der Alternativfunktion zusammen. Für wiederkehrende Anwendungsfälle werden passende Konfigurationen vorab definiert und anschließend gemeinsam mit dem GPIO-Port und der Pinnummer an \texttt{GPIO\_Config()} übergeben. Dadurch bleibt die eigentliche Registerkonfiguration unabhängig von der späteren Verwendung des Anschlusses. Der GPIO-Treiber muss beispielsweise nicht wissen, ob ein Anschluss für I²C, USART oder eine andere Peripherie vorgesehen ist. Er überträgt lediglich die in der Konfigurationsstruktur enthaltenen Parameter in die entsprechenden Register. Die Zuordnung einer konkreten Schnittstelle zu den benötigten Anschlüssen und Alternativfunktionen erfolgt außerhalb des Treibers.
 
-Dieses Prinzip wird auch bei weiteren Treibern verwendet. Hardwareparameter werden in Konfigurationsstrukturen zusammengefasst, während die Treiberfunktionen deren Prüfung und Übertragung in die Register übernehmen. Dadurch können unterschiedliche Instanzen derselben Peripherie mit einer gemeinsamen Implementierung konfiguriert werden. Gleichzeitig bleiben die hardwarespezifischen Registerzugriffe auf die jeweilige Treiberschicht begrenzt.
+Dieses Prinzip wird auch bei weiteren Treibern verwendet. Hardwareparameter werden in Konfigurationsstrukturen zusammengefasst, während die Treiberfunktionen deren Prüfung \linebreak und Übertragung in die Register übernehmen. Dadurch können unterschiedliche Instanzen derselben Peripherie mit einer gemeinsamen Implementierung konfiguriert werden. Gleichzeitig bleiben die hardwarespezifischen Registerzugriffe auf die jeweilige Treiberschicht begrenzt.
 
 \subsection{Grundlegende Systemtreiber}\label{sub:systemtreiber}
 
 Die projektspezifische Treiberschicht umfasst sowohl grundlegende Systemtreiber als auch funktionsspezifische Komponenten. Als grundlegende Systemtreiber werden im Rahmen dieser Arbeit diejenigen Komponenten eingeordnet, die von mehreren übergeordneten Modulen verwendet werden und zunächst keinen eigenständigen Anwendungszweck erfüllen. Sie stellen unter anderem die Taktversorgung, den Zugriff auf Ein- und Ausgänge, Zeitfunktionen sowie serielle Kommunikations- und Speicherschnittstellen bereit. Die Treiber für Kamera, DCMIPP, Display und Benutzereingabe bauen auf diesen grundlegenden Funktionen auf. Ebenso werden die Komponenten für den Software-Scheduler und die NPU-Anbindung getrennt behandelt. Tabelle \ref{tab:systemtreiber} beschränkt sich daher auf die allgemeinen Systemtreiber der Software.
 
 \begin{longtable}{|p{0.2\textwidth}|p{0.65\textwidth}|}
-    \caption{Grundlegende Systemtreiber der Embedded-Software}
-    \label{tab:systemtreiber} \\
     \hline
     \textbf{Datei} & \textbf{Aufgabe} \\
     \hline
@@ -862,7 +784,8 @@ Die projektspezifische Treiberschicht umfasst sowohl grundlegende Systemtreiber 
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Grundlegende Systemtreiber der Embedded-Software}
+    \label{tab:systemtreiber} \\
     \endlastfoot
     \texttt{simple\_rcc.c}   & Konfiguration der Energieversorgung sowie Aktivierung und Auswahl der System- und Peripheretakte. \\
     \hline
@@ -887,8 +810,6 @@ Die grundlegenden Systemtreiber bauen teilweise aufeinander auf. Der RCC-Treiber
 Die funktionsspezifischen Komponenten der Firmware bauen jeweils auf mehreren grundlegenden Systemtreibern auf. Tabelle \ref{tab:treiber-zuordnung} ordnet den übergeordneten Komponenten die von ihnen verwendeten Basistreiber zu.
 
 \begin{longtable}{|p{0.35\textwidth}|p{0.55\textwidth}|}
-    \caption{Zuordnung der Basistreiber zu den übergeordneten Softwarekomponenten}
-    \label{tab:treiber-zuordnung} \\
     \hline
     \textbf{Übergeordnete Komponente} & \textbf{Verwendete Basistreiber} \\
     \hline
@@ -900,7 +821,8 @@ Die funktionsspezifischen Komponenten der Firmware bauen jeweils auf mehreren gr
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Zuordnung der Basistreiber zu den übergeordneten Softwarekomponenten}
+    \label{tab:treiber-zuordnung} \\
     \endlastfoot
     Kamera- und Bildpipeline               & RCC, RIFSC, GPIO, I2C, Timer, XSPI und USART \\
     \hline
@@ -921,13 +843,13 @@ Die Kamera-Display-Pipeline bildet die Grundlage für die Erfassung, Aufbereitun
 
 \subsection{Initialisierung des Kamerasensors}\label{sub:kamera-init}
 
-Als Kamerasensor wird der IMX335 verwendet. Die Initialisierung ist in \texttt{CAM\_Init()} zusammengefasst. Zunächst werden die GPIO-Pins für die Spannungsversorgung und den Hardware-Reset konfiguriert. Der Sensor wird durch eine festgelegte Schaltfolge mit zeitlichen Abständen in einen definierten Ausgangszustand versetzt. Die Konfiguration der Sensorregister erfolgt über \texttt{I2C}. Hierzu werden die zugehörigen GPIO-Pins für ihre I²C-Funktion eingerichtet und die Schnittstelle mit einer Übertragungsrate von 400 kHz initialisiert. Mit \texttt{IMX335\_Probe()} wird anschließend geprüft, ob der Sensor erreichbar ist und die erwartete Gerätekennung besitzt. Bei einer fehlerhaften Identifikation wird die Kamerainitialisierung abgebrochen.
+Als Kamerasensor wird der IMX335 verwendet. Die Initialisierung ist in \texttt{CAM\_Init()} zusammengefasst. Zunächst werden die GPIO-Pins für die Spannungsversorgung und den Hardware-Reset konfiguriert. Der Sensor wird durch eine festgelegte Schaltfolge mit zeitlichen Abständen in einen definierten Ausgangszustand versetzt. Die Konfiguration der Sensorregister erfolgt über I2C. Hierzu werden die zugehörigen GPIO-Pins für ihre I²C-Funktion eingerichtet und die Schnittstelle mit einer Übertragungsrate von 400 kHz initialisiert. Mit \texttt{IMX335\_Probe()} wird anschließend geprüft, ob der Sensor erreichbar ist und die erwartete Gerätekennung besitzt. Bei einer fehlerhaften Identifikation wird die Kamerainitialisierung abgebrochen.
 
-Nach der Einrichtung von CSI und DCMIPP werden die Sensorregister durch \texttt{IMX335\_Init()} für den vorgesehenen Betriebsmodus konfiguriert. Der Sensor stellt die Bilddaten mit einer Auflösung von 2592 × 1944 Pixeln im RAW10-Format bereit. Abschließend wird die automatische Belichtungsregelung initialisiert und eine anfängliche Belichtungszeit an den Sensor übertragen.
+Nach der Einrichtung von CSI und DCMIPP werden die Sensorregister durch \texttt{IMX335\_Init()} für den vorgesehenen Betriebsmodus konfiguriert. Der Sensor stellt die Bilddaten mit einer Auflösung von 2592×1944 Pixeln im RAW10-Format bereit. Abschließend wird die automatische Belichtungsregelung initialisiert und eine anfängliche Belichtungszeit an den Sensor übertragen.
 
 \subsection{Übertragung der Kameradaten über CSI und DCMIPP}\label{sub:csi-dcmipp}
 
-Die vom IMX335 aufgenommenen Bilddaten werden über eine CSI-Verbindung an den Mikrocontroller übertragen. Die CSI-Schnittstelle verwendet zwei Datenleitungen, den virtuellen Kanal 0 und den CSI-Datentyp \texttt{0x2B} für RAW10-Bilddaten. Nach der grundlegenden Initialisierung werden die Übertragungsparameter konfiguriert und der virtuelle Kanal aktiviert. Die empfangenen Bilddaten werden an die DCMIPP weitergegeben. Diese verteilt den gemeinsamen Kameradatenstrom auf zwei Ausgabepfade. Pipe 1 erzeugt das 800 × 480 Pixel große Displaybild, das gleichzeitig als Ausgangsbild für die Landmark-Erkennung verwendet wird. Pipe 2 stellt ein 192 × 192 Pixel großes Eingabebild für die Handdetektion bereit. Dadurch können beide Bildformate unabhängig voneinander aus demselben Kameradatenstrom erzeugt werden.
+Die vom IMX335 aufgenommenen Bilddaten werden über eine CSI-Verbindung an den Mikrocontroller übertragen. Die CSI-Schnittstelle verwendet zwei Datenleitungen, den virtuellen Kanal 0 und den CSI-Datentyp \texttt{0x2B} für RAW10-Bilddaten. Nach der grundlegenden Initialisierung werden die Übertragungsparameter konfiguriert und der virtuelle Kanal aktiviert. Die empfangenen Bilddaten werden an die DCMIPP weitergegeben. Diese verteilt den gemeinsamen Kameradatenstrom auf zwei Ausgabepfade. Pipe 1 erzeugt das 800×480 Pixel große Displaybild, das gleichzeitig als Ausgangsbild für die Landmark-Erkennung verwendet wird. Pipe 2 stellt ein 192×192 Pixel großes Eingabebild für die Handdetektion bereit. Dadurch können beide Bildformate unabhängig voneinander aus demselben Kameradatenstrom erzeugt werden.
 
 Die beiden Pipelines werden durch \texttt{CAM\_DisplayPipe\_Start()} und \texttt{CAM\_NNPipe\_Start()} gestartet. Für beide Ausgabepfade wird jeweils ein Frame-Interrupt aktiviert. Dieser signalisiert, dass die Übertragung eines vollständigen Bildes in den vorgesehenen Puffer abgeschlossen wurde. Anschließend kann der jeweilige Puffer für die Displayausgabe beziehungsweise die KI-Verarbeitung verwendet werden. 
 \subsection{Verwaltung der Bildpuffer}\label{sub:bildpuffer}
@@ -956,7 +878,7 @@ Die Abbildung veranschaulicht die Zusammensetzung der Displayausgabe. Zunächst 
 \section{Ablaufsteuerung und Software Scheduler}\label{sec:scheduler}
 
 \subsection{Architektur-Übersicht}\label{sub:scheduler-architektur}
-Mit der zunehmenden Komplexität einzelner Komponenten verlängert sich die Laufzeit dieser. Dies führt bei sequenzieller Ausführung zu dem Problem, dass Komponenten, die in einer bestimmten Frequenz ausgeführt werden müssen, nicht mehr rechtzeitig bedient werden können. Ein Beispiel hierfür ist das Display, das bei zu langsamer Zykluszeit nicht mehr interaktionsfähig bleibt, während beispielsweise die Kamera-Erfassung oder Sensorabfragen deutlich mehr Rechenzeit beanspruchen. Eine rein sequenzielle Schleife (super-loop) kann diese unterschiedlichen Anforderungen nicht mehr befriedigen.
+Mit der zunehmenden Komplexität einzelner Komponenten verlängert sich die Laufzeit dieser. Dies führt bei sequenzieller Ausführung zu dem Problem, dass Komponenten, die in einer bestimmten Frequenz ausgeführt werden müssen, nicht mehr rechtzeitig bedient werden können. Ein Beispiel hierfür ist das Display, das bei zu langsamer Zykluszeit nicht mehr interaktionsfähig bleibt, während beispielsweise die Kamera-Erfassung oder Sensorabfragen deutlich mehr Rechenzeit beanspruchen. Eine rein sequenzielle Schleife (super-loop, vgl.\ Abschnitt~\ref{sub:bare-metal}) kann diese unterschiedlichen Anforderungen nicht mehr befriedigen.
 
 Als Lösung wurde ein prioritätsbasierter preemptiver Scheduler implementiert, der als Nicht-RTOS-Lösung auf dem ARM Cortex-M55 direct auf dem bare-metal läuft. Der Scheduler verwaltet maximal 9 Tasks, wobei Slot 8 fest dem Idle-Task zugewiesen ist, der im WFI-Zustand (Wait For Interrupt) verharrt und bei Bedarf Statistiken ausgibt.
 
@@ -991,10 +913,12 @@ Ein Task hat vier Zustände:
 
 Die Kontextwaehlerung ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 auf drei Ebenen: dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentlichen Contextwaehlerung via PendSV\_Handler
 
-\subsubsection{Anfänglicher Context-Start (Bootstrapping)}\label{ssub:bootstrap}
-Der Start des ersten Tasks erfolgt nicht ueber PendSV, sondern ueber einen SVC-Aufruf (Supervisor Call). Der Ablauf in \texttt{SCHEDULER\_Tasks\_run()} ist wie folgt:
+\newpage
 
-\begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap prozess}, label={lst:bootstrap}]
+\subsubsection{Anfänglicher Context-Start (Bootstrapping)}\label{ssub:bootstrap}
+Der Start des ersten Tasks erfolgt nicht ueber PendSV, sondern ueber einen SVC-Aufruf (Supervisor Call). Der Ablauf in \texttt{SCHEDULER\_Tasks\_run()} ist wie folgt
+
+\begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap Prozess}, label={lst:bootstrap}]
 SCHEDULER_Tasks_run()
   |- IRQs deaktivieren (__disable_irq)
   |- Idle-Task registrieren (Slot 8, WFI-Loop)
@@ -1081,6 +1005,8 @@ PendSV\_Handler:
 
 \end{lstlisting}
 
+\newpage
+
 \subsection{Task-Selektion}\label{sub:task-selektion}
 
 \begin{lstlisting}[language=pseudocode, numbers=none, caption={Selection of the next task to execute}, label={lst:task-select}]
@@ -1108,36 +1034,28 @@ Bei gleicher Priorität entscheidet die Reihenfolge der Slot-Indizes (impliziert
 
 \subsection{Fault handling}\label{sub:fault-handling}
 
-Während der Ausführung der Tasks können sogenannte \emph{Faults} (Ausnahmezustaende) auftreten, die vom Cortex-M55-Prozessor erkannt und an den registrierten Fault-Handler weitergeleitet werden. Der Cortex-M55 unterscheidet zwischen mehreren Fault-Klassen, von denen vier relevant sind:
-\begin{itemize}
-    \item \textbf{UsageFault:} Wird bei Ausführungsfehlern ausgelöst, wie etwa dem Versuch einer Division durch Null, dem Ausfuehren eines ungueltigen oder nicht vorhandenen Befehls, oder bei einer Stack-Grenzverletzung (\texttt{PSPLIM}-Violation), die auf einen Stack Overflow hinweist.
-    \item \textbf{BusFault:} Entsteht bei Speichertransaktionsfehlern, etwa dem Zugriff auf einen nicht vorhandenen Speicherbereich oder einem fehlerhaften Buszugriff waehrend einer Lese- oder Schreiboperation.
-    \item \textbf{MemManage Fault:}
-    % TODO: MPU ist hier nicht konfiguriert — pruefen ob dieser Absatz sinnvoll ist
-    Wird bei Verletzungen der Speicher Protection Unit (MPU) ausgeloest, beispielsweise bei unerlaubten Speicherzugriffen auf geschuetzte Bereiche. \textbf{Anmerkung:} Da in dieser Konfiguration keine MPU aktiv ist, wird dieser Fault hauptsachlich durch Eskalation aus anderen Fault-Typen oder durch Speicherzugriffe auf ungueltige Adressen (z.\,B. Null-Pointer-Dereferenzierung) ausgeloest.
-    \item \textbf{HardFault:} Dient als Abfang-Interrupt fuer schwere Programmfehler und wird ausgeloest, wenn ein aufgetretener Fault nicht vom entsprechenden spezialisierten Fault-Handler (UsageFault, BusFault oder MemManage) behandelt werden kann, etwa weil dieser deaktiviert ist oder der Fehler eskaliert.
-\end{itemize}
+Während der Ausführung der Tasks können sogenannte \emph{Faults} (Ausnahmezustaende) auftreten, die vom Cortex-M55-Prozessor erkannt und an den registrierten Fault-Handler weitergeleitet werden. Der Cortex-M55 unterscheidet zwischen mehreren Fault-Klassen (UsageFault, BusFault, MemManage Fault und HardFault | Abschnitt~\ref{sub:bare-metal}). Von den dort beschriebenen Auslösern ist in dieser Konfiguration insbesondere anzumerken, dass keine Memory Protection Unit (MPU) aktiv ist. Der MemManage-Fault wird daher hauptsächlich durch Eskalation aus anderen Fault-Typen oder durch Speicherzugriffe auf ungültige Adressen (z.\,B.\ Null-Pointer-Dereferenzierung) ausgelöst.
 
-Diese Faults werden durch den Scheduler abgefangen. Dazu registriert der Scheduler in \texttt{SCHEDULER\_\allowbreak Tasks\_run()} die entsprechenden Fault-Handler (\texttt{HardFault\_Handler},  \texttt{UsageFault\_Handler}, \allowbreak  \texttt{Bus\allowbreak Fault\_Handler},  \texttt{MemManage\_Handler}) als naked-Assemble-Funktionen, die den aktiven \allowbreak Stack-Frame (MSP oder PSP) ermitteln und an die C-Funktion \texttt{\_FaultHandler\_C()} übergeben. Der Handler erfasst den vollstaendigen diagnostischen Zustand des Systems, einschliesslich aller SCB-Register (\texttt{CFSR}, \texttt{HFSR}, \texttt{MMFAR}, \texttt{BFAR}), der Stack-Pointer (\texttt{MSP}, \texttt{PSP}, \texttt{PSPLIM}), des \texttt{CONTROL}-Registers, des \texttt{EXC\_RETURN}-Wertes sowie der gesicherten Register \texttt{R0--R3}, \texttt{R12}, \texttt{LR}, \texttt{PC} und \texttt{xPSR} und übertraegt diese Information per USART als Diagnoseausgabe. Anschliessend wird das Programm mittels Breakpoint-Befehl (\texttt{\_\_BKPT(0)}) für den Debugging-Prozess angehalten. Eine automatische Fehlerbehandlung oder Wiederherstellung des Betriebs findet nicht statt.
+Diese Faults werden durch den Scheduler abgefangen. Dazu registriert der Scheduler in \texttt{SCHEDULER\_\allowbreak Tasks\_run()} die entsprechenden Fault-Handler (\texttt{HardFault\_Handler}, \linebreak \texttt{UsageFault\_Handler}, \texttt{Bus\allowbreak Fault\_Handler},  \texttt{MemManage\_Handler}) als naked-Assemble- \linebreak Funktionen, die den aktiven \allowbreak Stack-Frame (MSP oder PSP) ermitteln und an die C-Funktion \texttt{\_FaultHandler\_C()} übergeben. Der Handler erfasst den vollstaendigen diagnostischen Zustand des Systems, einschliesslich aller SCB-Register (\texttt{CFSR}, \texttt{HFSR}, \texttt{MMFAR}, \texttt{BFAR}), der Stack-Pointer (\texttt{MSP}, \texttt{PSP}, \texttt{PSPLIM}), des \texttt{CONTROL}-Registers, des \texttt{EXC\_RETURN}-Wertes sowie der gesicherten Register \texttt{R0--R3}, \texttt{R12}, \texttt{LR}, \texttt{PC} und \texttt{xPSR} und übertraegt diese Information per USART als Diagnoseausgabe. Anschliessend wird das Programm mittels Breakpoint-Befehl (\texttt{\_\_BKPT(0)}) für den Debugging-Prozess angehalten. Eine automatische Fehlerbehandlung oder Wiederherstellung des Betriebs findet nicht statt.
 
 \subsection{CPU-Zyklen-Messung \& Statistik}\label{sub:cpu-statistik}
 
-Um die Laufzeiteigenschaften der einzelnen Tasks zur Laufzeit bewerten zu können, implementiert der Scheduler eine hardwaregestützte CPU-Zyklen-Messung. Als Messquelle dient der DWT (Data Watchpoint and Trace) Modul des Cortex-M55-Prozessors, dessen Zykelzähler \texttt{DWT->CYCCNT} bei Systemtaktfrequenz (200\,MHz) hochauflösend incremental zählt. Die Aktivierung erfolgt in \texttt{SCHEDULER\_System\_init()} durch Setzen der \texttt{DEMCR\_TRCENA} und \texttt{DWT\_CYCCNTENA} Bits.
+Um die Laufzeiteigenschaften der einzelnen Tasks zur Laufzeit bewerten zu können, implementiert der Scheduler eine hardwaregestützte CPU-Zyklen-Messung. Als Messquelle dient der DWT (Data Watchpoint and Trace) Modul des Cortex-M55-Prozessors, dessen Zykelzähler \texttt{DWT->CYCCNT} bei Systemtaktfrequenz (200\,MHz) hochauflösend incremental zählt. Die Aktivierung erfolgt in \texttt{SCHEDULER\_System\_init()} durch Setzen der \texttt{DEMCR\_TRCENA} und \linebreak \texttt{DWT\_CYCCNTENA} Bits.
 
-\textbf{Per-Task-Erfassung} \newline
+\paragraph{Per-Task-Erfassung}
 Für jeden Task werden in der Struktur \texttt{\_Task\_Stats\_TypeDef} folgende Metriken geführt:
 \begin{itemize}
-    \item \texttt{total\_cycles}: Summe der reinen Applikations-Zyklen abzüglich der in Interrupt-Kontext verbrachten Zeit
+    \item \texttt{total\_cycles}: Summe der reinen Applikations-Zyklen abzüglich der in Interrupt-Kon-text verbrachten Zeit
     \item \texttt{total\_preempts}: Anzahl der Unterbrechungen durch höherpriorisierte Tasks
     \item \texttt{total\_invocations}: Gesamtzahl der Task-Aufrufe
     \item \texttt{min\_cycles} / \texttt{max\_cycles}: Minimaler und maximaler Zykelverbrauch pro Aufruf
 \end{itemize}
 Die Messung erfolgt bei jedem Context-Switch im \texttt{\_Task\_SelectNext()}: Der seit dem letzten Start vergangene Zeitraum wird ermittelt und von den im \texttt{\_task\_isr\_cycles}-Array kumulierten ISR-Zyklen subtrahiert. Das Ergebnis repräsentiert den reinen Applikationsanteil (\texttt{\%ACT}) des vorherigen Tasks.
 
-\textbf{ISR-Cycle-Tracking} \newline
-Um Interrupt-Zyklen sauber von Task-Zyklen zu trennen, muss jede Peripheral-ISR am Ein- und Ausgang die Funktionen \texttt{SCHEDULER\_ISR\_enter()} und \texttt{SCHEDULER\_ISR\_exit()} aufrufen. Bei Einstieg wird der aktuelle \texttt{DWT->CYCCNT}-Wert gespeichert. Bei Ausgang wird die Differenz berechnet und dem unterbrochenen Task in \texttt{\_task\_isr\_cycles} zugeordnet.
+\paragraph{ISR-Cycle-Tracking}
+Um Interrupt-Zyklen sauber von Task-Zyklen zu trennen, muss jede Peripheral-ISR am Ein- und Ausgang die Funktionen \texttt{SCHEDULER\_ISR\_enter()} und \linebreak \texttt{SCHEDULER\_ISR\_exit()} aufrufen. Bei Einstieg wird der aktuelle \texttt{DWT->CYCCNT}-Wert gespeichert. Bei Ausgang wird die Differenz berechnet und dem unterbrochenen Task in \linebreak \texttt{\_task\_isr\_cycles} zugeordnet.
 
-\textbf{Ausgabe} \newline
+\paragraph{Ausgabe}
 Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit den Spalten \texttt{Name}, \texttt{cycle} (Gesamt-Zyklen), \texttt{min}, \texttt{max}, \texttt{avg} (durchschnittliche Zyklen pro Invocation), \texttt{\%ACT} (Aktiv-Anteil in Prozent), \texttt{Prempt} (Preemption-Zaehler) und \texttt{Invoc} (Invocation-Anzahl). Zusätzlich werden der Gesamtanteil idle-Zeit, der ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jedem Druckvorgang zurückgesetzt, sodass jeder Messzeitraum den Zeitraum zwischen zwei aufeinanderfolgenden Ausgaben repräsentiert.
 
 \section{Integration der NPU und einheitliche KI-Schnittstelle}\label{sec:npu-integration}
@@ -1168,11 +1086,9 @@ Jede Initialisierungsfunktion ermittelt die vom jeweiligen Netzwerk verwendeten 
 
 Die von der ATON-Middleware bereitgestellten Funktionen sind an die Laufzeitumgebung und die jeweils erzeugten Netzwerkinstanzen gekoppelt. Um diese Abhängigkeiten nicht unmittelbar in die Ablaufsteuerung und die Vor- bzw. Nachverarbeitung zu übernehmen, wurde mit \texttt{simple\_ai} eine gemeinsame KI-Schnittstelle implementiert. Sie bündelt die allgemeinen Funktionen zur Initialisierung und Ausführung der neuronalen Netze und stellt einheitliche Statuswerte für alle Modellkomponenten bereit.
 
-Für die Rückgabe von Fehlerzuständen wird der gemeinsame Aufzählungstyp \texttt{AI\_Status\_TypeDef} verwendet. Dadurch können die zentralen und modellspezifischen KI-Funktionen ihre Ergebnisse in einer einheitlichen Form an die aufrufenden Komponenten weitergeben. Die Ablaufsteuerung muss somit keine unterschiedlichen Fehlerdarstellungen der einzelnen Modelle auswerten.
+Für die Rückgabe von Fehlerzuständen wird der gemeinsame Aufzählungstyp \texttt{AI\_Status\_\allowbreak TypeDef} verwendet. Dadurch können die zentralen und modellspezifischen KI-Funktionen ihre Ergebnisse in einer einheitlichen Form an die aufrufenden Komponenten weitergeben. Die Ablaufsteuerung muss somit keine unterschiedlichen Fehlerdarstellungen der einzelnen Modelle auswerten.
 
 \begin{longtable}{|p{0.4\textwidth}|p{0.5\textwidth}|}
-    \caption{Einheitliche Statuswerte der KI-Komponenten}
-    \label{tab:ki-statuswerte} \\
     \hline
     \textbf{Statuswert} & \textbf{Bedeutung} \\
     \hline
@@ -1184,7 +1100,8 @@ Für die Rückgabe von Fehlerzuständen wird der gemeinsame Aufzählungstyp \tex
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Einheitliche Statuswerte der KI-Komponenten}
+    \label{tab:ki-statuswerte} \\
     \endlastfoot
     \texttt{AI\_STATUS\_OK}                & Die aufgerufene Funktion wurde erfolgreich ausgeführt. \\
     \hline
@@ -1202,7 +1119,7 @@ Für die Rückgabe von Fehlerzuständen wird der gemeinsame Aufzählungstyp \tex
     \hline
 \end{longtable}
 
-Die eigentliche Ausführung einer Netzwerkinstanz wird durch \texttt{AI\_RuntimeRunNetwork()} gekapselt. Der Funktion wird ein Zeiger auf die jeweilige \texttt{NN\_Instance\_TypeDef} übergeben. Dadurch kann dieselbe Funktion für die Handdetektion, die Landmark-Erkennung und die Fingeralphabetklassifikation verwendet werden. Ist der übergebene Zeiger ungültig, wird die Ausführung unmittelbar abgebrochen. Intern ruft die Funktion wiederholt \texttt{LL\_ATON\_RT\_RunEpochBlock()} auf. Die ATON-Laufzeitumgebung verarbeitet das Netzwerk dabei abschnittsweise und liefert nach jedem Aufruf einen Status zurück. Mit \texttt{LL\_ATON\_RT\_WFE} wird signalisiert, dass zunächst auf ein Hardwareereignis gewartet werden muss. In diesem Fall erfolgt das Warten über \texttt{LL\_ATON\_OSAL\_WFE()}. Der Status \texttt{LL\_ATON\_RT\_NO\_WFE} zeigt dagegen an, dass die Verarbeitung ohne vorheriges Warten fortgesetzt werden kann. Die Aufrufe werden wiederholt, bis die Laufzeitumgebung einen abschließenden Status zurückgibt.
+Die eigentliche Ausführung einer Netzwerkinstanz wird durch \texttt{AI\_RuntimeRunNetwork()} gekapselt. Der Funktion wird ein Zeiger auf die jeweilige \texttt{NN\_Instance\_TypeDef} übergeben. Dadurch kann dieselbe Funktion für die Handdetektion, die Landmark-Erkennung und die Fingeralphabetklassifikation verwendet werden. Ist der übergebene Zeiger ungültig, wird die Ausführung unmittelbar abgebrochen. Intern ruft die Funktion wiederholt \texttt{LL\_ATON\_RT\_RunEpoch\allowbreak Block()} auf. Die ATON-Laufzeitumgebung verarbeitet das Netzwerk dabei abschnittsweise und liefert nach jedem Aufruf einen Status zurück. Mit \texttt{LL\_ATON\_RT\_WFE} wird signalisiert, dass zunächst auf ein Hardwareereignis gewartet werden muss. In diesem Fall erfolgt das Warten über \texttt{LL\_ATON\_OSAL\_WFE()}. Der Status \texttt{LL\_ATON\_RT\_NO\_WFE} zeigt dagegen an, dass die Verarbeitung ohne vorheriges Warten fortgesetzt werden kann. Die Aufrufe werden wiederholt, bis die Laufzeitumgebung einen abschließenden Status zurückgibt.
 
 Die Funktion liefert nur dann \texttt{true}, wenn die Netzwerkausführung mit \texttt{LL\_ATON\_RT\_DONE} beendet wurde. Alle anderen abschließenden Zustände werden als fehlgeschlagene Ausführung behandelt und durch \texttt{false} signalisiert. Für die aufrufenden Modellkomponenten entsteht dadurch eine vereinfachte Schnittstelle, bei der die einzelnen ATON-Rückgabewerte nicht außerhalb von \texttt{simple\_ai} ausgewertet werden müssen.
 
@@ -1216,7 +1133,7 @@ Die drei neuronalen Netze verwenden unterschiedliche Eingabedaten und liefern Au
 
 \subsection{DCMIPP-gestützte Bildvorverarbeitung}\label{sub:dcmipp-vorverarbeitung}
 
-Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592x1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung. Die DCMIPP wandelt die RAW-Bayer-Daten zunächst in ein RGB-Bild um. Hierzu werden die Demosaikierung der RAW10-Bilddaten, die Farbkorrektur, die Belichtungsanpassung und die Gammakorrektur innerhalb der Bildpipeline durchgeführt \cite[s. 1815 ff.]{rm0486}. Das Ergebnis wird im RGB888-Format ausgegeben. Dadurch müssen diese rechenintensiven Verarbeitungsschritte nicht nachträglich durch den Hauptprozessor auf den bereits gespeicherten Kamerabildern ausgeführt werden.
+Die Kamera überträgt die aufgenommenen Bilder als RAW-Bayer-Daten mit einer Auflösung von 2592x1944 Pixeln über die CSI-Schnittstelle. Da weder die Displayausgabe noch die neuronalen Netze diese Daten unmittelbar verarbeiten können, übernimmt die Digital Camera Interface Pixel Pipeline (DCMIPP) einen wesentlichen Teil der erforderlichen Bildvorverarbeitung. Die DCMIPP wandelt die RAW-Bayer-Daten zunächst in ein RGB-Bild um. Hierzu werden die Demosaikierung der RAW10-Bilddaten, die Farbkorrektur, die Belichtungsanpassung und die Gammakorrektur innerhalb der Bildpipeline durchgeführt \cite[S. 1815 ff.]{rm0486}. Das Ergebnis wird im RGB888-Format ausgegeben. Dadurch müssen diese rechenintensiven Verarbeitungsschritte nicht nachträglich durch den Hauptprozessor auf den bereits gespeicherten Kamerabildern ausgeführt werden.
 
 Die verwendeten Parameterwerte wurden empirisch bestimmt. Hierzu wurden die entsprechenden DCMIPP-Register schrittweise angepasst und die Auswirkungen auf das ausgegebene Kamerabild visuell bewertet. Einstellungen, die unter den vorgesehenen Einsatzbedingungen eine geeignete Bilddarstellung ergaben, wurden anschließend in die feste Konfiguration der Bildpipeline übernommen.
 
@@ -1226,9 +1143,7 @@ Für Pipe 1 wird das Sensorbild zunächst auf das Seitenverhältnis des Displays
 
 Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild für die Handdetektion. Da deren Eingangsauflösung mit 192x192 Pixeln deutlich unterhalb der Sensorauflösung liegt, wird das Bild vor der eigentlichen Skalierung horizontal und vertikal dezimiert. Dadurch reduziert sich die Auflösung zunächst von 2592x1944 auf 1296x972 Pixel. Anschließend übernimmt der DCMIPP-Downsizer die Skalierung auf 192x192 Pixel. Da vor der Skalierung kein quadratischer Bildausschnitt gebildet wird, wird das Seitenverhältnis des vollständigen Sensorbildes dabei an die quadratische Modelleingabe angepasst. Auch dieser Ausgabepfad verwendet das RGB888-Format. Für Pipe 2 wird der Double-Buffer-Modus der DCMIPP verwendet. Die erzeugten Bilder werden abwechselnd in zwei Eingabebildpuffern gespeichert. Während die DCMIPP einen Puffer mit einem neuen Bild beschreibt, kann der zuvor fertiggestellte Puffer für die Handdetektion verwendet werden. Der jeweils abgeschlossene Puffer wird über den Frame-Callback bestimmt und für die weitere Verarbeitung markiert.
 
-\begin{longtable}{|p{0.2\textwidth}|p{0.125\textwidth}|p{0.1\textwidth}|p{0.45\textwidth}|}
-    \caption{Konfigurationsparameter der DCMIPP-Bildpfade}
-    \label{tab:dcmipp-konfig} \\
+\begin{longtable}{|p{0.18\textwidth}|p{0.125\textwidth}|p{0.125\textwidth}|p{0.45\textwidth}|}
     \hline
     \textbf{Parameter} & \textbf{Pipe 1} & \textbf{Pipe 2} & \textbf{Begründung} \\
     \hline
@@ -1240,7 +1155,8 @@ Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild 
     \hline
     \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Konfigurationsparameter der DCMIPP-Bildpfade}
+    \label{tab:dcmipp-konfig} \\
     \endlastfoot
     \texttt{output\_width} / \texttt{output\_height} & 800x480 & 192x192 & Entsprechen der Displayauflösung, bzw. Eingangsgröße der Handdetektion. \\
     \hline
@@ -1258,9 +1174,9 @@ Pipe 2 verarbeitet den vollständigen Sensorbereich und erzeugt das Eingabebild 
     \hline
     \texttt{crop\_height} & 1555 & 1944 & Pipe 1 erhält das Displayseitenverhältnis 5:3. Pipe 2 behält die vollständige Sensorhöhe. \\
     \hline
-    \texttt{enable\_downsize} & aktiviert & aktiviert & Beide Ausgaben sind wesentlich kleiner als das Sensorbild. \\
+    \texttt{enable\_\linebreak downsize} & aktiviert & aktiviert & Beide Ausgaben sind wesentlich kleiner als das Sensorbild. \\
     \hline
-    \texttt{enable\_decimate} & deaktiviert & aktiviert & Nur Pipe 2 benötigt vor dem Downscaling eine zusätzliche Halbierung. \\
+    \texttt{enable\_\linebreak decimate} & deaktiviert & aktiviert & Nur Pipe 2 benötigt vor dem Downscaling eine zusätzliche Halbierung. \\
     \hline
     \texttt{decimate\_h} / \texttt{decimate\_v} & -- & 1, 1 & Die Auflösung wird horizontal und vertikal jeweils durch zwei geteilt. \\
     \hline
@@ -1284,15 +1200,15 @@ Die Anker bilden damit ein festes Suchraster über dem Eingabebild. Das Modell m
 \subsubsection{Auswahl und Filterung der Erkennungskandidaten}\label{ssub:kandidaten-filterung}
 Für jeden der 2016 Anker wird zunächst geprüft, ob der ausgegebene Konfidenzwert den festgelegten Schwellwert erreicht. Die Konfidenzwerte liegen als Logits vor und müssen für die weitere Bewertung durch eine Sigmoidfunktion in einen Wahrscheinlichkeitswert zwischen 0 und 1 überführt werden \cite{sharmaACTIVATIONFUNCTIONSNEURAL2020}:
 $$ \sigma(x) = \frac{1}{1 + \mathrm{e}^{-x}} $$
-Eine direkte Berechnung würde die Exponentialfunktion \texttt{expf()} erfordern. Da die verwendete Floating Point Unit keine Exponentialfunktion als direkte Hardwareoperation bereitstellt, müsste diese durch eine mathematische Bibliotheksroutine softwareseitig berechnet werden. Zur Verringerung des Rechenaufwands wird die Sigmoidfunktion daher durch die folgende rationale Funktion approximiert:
+Eine direkte Berechnung würde die Exponentialfunktion \texttt{expf()} erfordern. Da die verwendete Floating Point Unit keine Exponentialfunktion als direkte Hardwareoperation bereitstellt, müsste diese softwareseitig berechnet werden. Zur Verringerung des Rechenaufwands wird die Sigmoidfunktion daher durch die folgende rationale Funktion approximiert:
 $$\hat{\sigma}(x)=\frac{0{,}5+0{,}25x}{1-0{,}25x+0{,}125x^2}$$
-Um die Sigmoidapproximation nicht für alle 2016 Anker ausführen zu müssen, wird der festgelegte Konfidenzschwellwert zunächst in den Logit-Raum überführt \cite[s. 340 ff.]{athavaleVerifyingGlobalTwoSafety2024}:
+Um die Sigmoidapproximation nicht für alle 2016 Anker ausführen zu müssen, wird der festgelegte Konfidenzschwellwert zunächst in den Logit-Raum überführt \cite[S. 340 ff.]{athavaleVerifyingGlobalTwoSafety2024}:
 $$ t_{\mathrm{Logit}} = \ln\left(\frac{t}{1-t}\right) $$
 Die vom Modell ausgegebenen Logits können dadurch unmittelbar mit dem berechneten Logit-Schwellwert verglichen werden. Nur Kandidaten, die diesen Schwellwert erreichen oder überschreiten, werden vollständig dekodiert und mithilfe der approximierten Sigmoidfunktion in einen Wahrscheinlichkeitswert umgerechnet. Anschließend werden die Regressionswerte der verbleibenden Kandidaten unter Berücksichtigung der jeweils zugehörigen Ankerposition dekodiert. Dabei werden der Mittelpunkt, die Breite und Höhe der vorhergesagten Handregion sowie die vom Modell ausgegebenen Schlüsselpunkte bestimmt. Die berechneten Koordinaten und Abmessungen werden auf die Größe des Modelleingangs normiert. Kandidaten mit einer ungültigen Breite oder Höhe sowie nicht endlichen Zahlenwerten werden verworfen.
 
 Um den Speicherbedarf und den Rechenaufwand der weiteren Verarbeitung zu begrenzen, werden höchstens 20 Erkennungskandidaten zwischengespeichert. Diese Obergrenze wird durch die Konstante \texttt{PALM\_PP\_MAX\_CANDIDATES} festgelegt. Solange die maximale Anzahl noch nicht erreicht ist, wird jeder gültige Kandidat übernommen. Ist der Kandidatenspeicher bereits vollständig belegt, wird zunächst der Kandidat mit der geringsten Wahrscheinlichkeit ermittelt. Dieser wird nur dann ersetzt, wenn der neue Kandidat eine höhere Wahrscheinlichkeit aufweist. Auf diese Weise werden aus den Ergebnissen der 2016 Ankerpositionen ausschließlich die 20 wahrscheinlichsten Kandidaten für die weitere Verarbeitung berücksichtigt.
 
-Die ausgewählten Kandidaten werden anschließend absteigend nach ihrer Wahrscheinlichkeit sortiert. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen häufig mehrere stark überlappende Handregionen. Zur Entfernung dieser Mehrfacherkennungen wird eine Non-Maximum Suppression (NMS) durchgeführt \cite{bodlaSoftNMSImprovingObject2017}. Hierzu wird jeder Kandidat mit den bereits übernommenen Handregionen verglichen. Als Maß für ihre räumliche Überschneidung dient die Intersection over Union (IoU). Sie beschreibt das Verhältnis zwischen der Schnittfläche und der Vereinigungsfläche zweier Begrenzungsrahmen \cite[s. 3]{rezatofighiGeneralizedIntersectionUnion2019}:
+Die ausgewählten Kandidaten werden anschließend absteigend nach ihrer Wahrscheinlichkeit sortiert. Da mehrere benachbarte Anker auf dieselbe Hand reagieren können, entstehen häufig mehrere stark überlappende Handregionen. Zur Entfernung dieser Mehrfacherkennungen wird eine Non-Maximum Suppression (NMS) durchgeführt \cite{bodlaSoftNMSImprovingObject2017}. Hierzu wird jeder Kandidat mit den bereits übernommenen Handregionen verglichen. Als Maß für ihre räumliche Überschneidung dient die Intersection over Union (IoU). Sie beschreibt das Verhältnis zwischen der Schnittfläche und der Vereinigungsfläche zweier Begrenzungsrahmen \cite[S. 3]{rezatofighiGeneralizedIntersectionUnion2019}:
 $$ \operatorname{IoU}(A,B) =\frac{\left|A \cap B\right|} {\left|A \cup B\right|} $$
 Die Kandidaten werden in absteigender Reihenfolge ihrer Wahrscheinlichkeit verarbeitet. Erreicht oder überschreitet die IoU eines Kandidaten mit einer bereits übernommenen Handregion den festgelegten Schwellwert, wird der Kandidat verworfen. Dadurch bleibt von mehreren stark überlappenden Erkennungen in der Regel nur der Kandidat mit der höchsten Wahrscheinlichkeit erhalten. Nach Abschluss der Non-Maximum Suppression wird der stärkste verbleibende Kandidat als Ergebnis der Handdetektion übernommen. Das Ergebnis enthält die Wahrscheinlichkeit, den Mittelpunkt und die Abmessungen der erkannten Handregion, die zugehörigen Schlüsselpunkte sowie den verwendeten Ankerindex.
 
@@ -1310,7 +1226,7 @@ Da die Begrenzungsbox der Handdetektion hauptsächlich die Handfläche umfasst, 
 
 \subsection{Vorverarbeitung der Landmark-Erkennung}\label{sub:landmark-vorverarbeitung}
 
-Die aus der Handdetektion erzeugte Region of Interest besitzt eine variable Position, Größe und Rotation innerhalb des von Pipe 1 bereitgestellten Kamerabildes. Das Handlandmark-Modell erwartet dagegen ein quadratisches Eingabebild mit einer festen Auflösung von 224x224 Pixeln. Daher muss die Region aus dem Kamerabild entnommen, entsprechend ihrer Rotation ausgerichtet und auf die Eingangsgröße des Modells übertragen werden. Hierzu wird für jedes Pixel des Zielbildes die zugehörige Position innerhalb der Region bestimmt. Die Zielkoordinaten werden zunächst auf den Bereich von {-}0,5 bis 0,5 normiert und anschließend mit der Breite und Höhe der Region skaliert. Unter Berücksichtigung des Rotationswinkels werden die lokalen Koordinaten in das Koordinatensystem des Kamerabildes überführt:
+Die aus der Handdetektion erzeugte Region of Interest besitzt eine variable Position, Größe und Rotation innerhalb des von Pipe 1 bereitgestellten Kamerabildes. Das Handlandmark-Modell erwartet dagegen ein quadratisches Eingabebild mit einer festen Auflösung von 224x 224 Pixeln. Daher muss die Region aus dem Kamerabild entnommen, entsprechend ihrer Rotation ausgerichtet und auf die Eingangsgröße des Modells übertragen werden. Hierzu wird für jedes Pixel des Zielbildes die zugehörige Position innerhalb der Region bestimmt. Die Zielkoordinaten werden zunächst auf den Bereich von {-}0,5 bis 0,5 normiert und anschließend mit der Breite und Höhe der Region skaliert. Unter Berücksichtigung des Rotationswinkels werden die lokalen Koordinaten in das Koordinatensystem des Kamerabildes überführt:
 $$\begin{aligned}
 x_{\mathrm{Quelle}}
 &=
@@ -1348,7 +1264,7 @@ Die aktualisierte Region wird im folgenden Kamerabild erneut zur Erzeugung des 2
 
 \subsection{Vorverarbeitung des Klassifizierungsmodells}\label{sub:klassifikation-vorverarbeitung}
 
-Das Klassifikationsmodell verarbeitet nicht das Kamerabild selbst, sondern die vom Handlandmark-Modell bestimmten Koordinaten. Der Modelleingang umfasst insgesamt 88 Merkmale und ist in zwei Bereiche mit jeweils 44 Merkmalen für die linke und rechte Hand unterteilt. Zu Beginn der Vorverarbeitung werden beide Bereiche mit den für eine fehlende Hand vorgesehenen Werten initialisiert. Anschließend wird anhand des vom Landmark-Modell ausgegebenen \texttt{Handedness}-Wertes bestimmt, welchem Bereich die erkannte Hand zugeordnet wird. Werte ab einem Schwellwert von 0,5 werden der rechten Hand und kleinere Werte der linken Hand zugeordnet. Für jede Hand werden die x- und y-Koordinaten der 21 Landmarks verwendet. Die z-Koordinaten werden bei der Zeichenklassifikation nicht berücksichtigt. Vor der weiteren Verarbeitung werden die horizontalen Koordinaten gespiegelt. Diese Transformation stellt die Koordinatenorientierung her, die auch bei der Erzeugung der Trainingsdaten verwendet wurde. Werte außerhalb des normierten Bereichs werden zuvor auf den Bereich von 0 bis 1 begrenzt. Um den Einfluss der Position der Hand innerhalb des Bildausschnitts zu verringern, werden die Landmark-Koordinaten relativ zum Handgelenk angegeben. Hierzu wird die Position des ersten Landmarks, das dem Handgelenk entspricht, von allen Landmark-Koordinaten abgezogen:
+Das Klassifikationsmodell verarbeitet nicht das Kamerabild selbst, sondern die vom Hand- landmark-Modell bestimmten Koordinaten. Der Modelleingang umfasst insgesamt 88 Merkmale und ist in zwei Bereiche mit jeweils 44 Merkmalen für die linke und rechte Hand unterteilt. Zu Beginn der Vorverarbeitung werden beide Bereiche mit den für eine fehlende Hand vorgesehenen Werten initialisiert. Anschließend wird anhand des vom Landmark-Modell ausgegebenen \texttt{Handedness}-Wertes bestimmt, welchem Bereich die erkannte Hand zugeordnet wird. Werte ab einem Schwellwert von 0,5 werden der rechten Hand und kleinere Werte der linken Hand zugeordnet. Für jede Hand werden die x- und y-Koordinaten der 21 Landmarks verwendet. Die z-Koordinaten werden bei der Zeichenklassifikation nicht berücksichtigt. Vor der weiteren Verarbeitung werden die horizontalen Koordinaten gespiegelt. Diese Transformation stellt die Koordinatenorientierung her, die auch bei der Erzeugung der Trainingsdaten verwendet wurde. Werte außerhalb des normierten Bereichs werden zuvor auf den Bereich von 0 bis 1 begrenzt. Um den Einfluss der Position der Hand innerhalb des Bildausschnitts zu verringern, werden die Landmark-Koordinaten relativ zum Handgelenk angegeben. Hierzu wird die Position des ersten Landmarks, das dem Handgelenk entspricht, von allen Landmark-Koordinaten abgezogen:
 $$x_i^{\mathrm{rel}}=x_i-x_0,\qquad y_i^{\mathrm{rel}}=y_i-y_0$$
 Dadurch beschreiben die 42 resultierenden Merkmale überwiegend die geometrische Anordnung der Handpunkte zueinander. Zusätzlich werden die absoluten x- und y-Koordinaten des Handgelenks als zwei weitere Merkmale übernommen. Für jede Hand entstehen somit 44 Werte:
 
@@ -1415,23 +1331,23 @@ Geöffnet bietet der Drawer mehr Optionen:
 
 \subsubsection{Grafikschicht-Architektur}\label{ssub:grafikschicht}
 
-Die grafische Darstellung basiert auf dem LTDC-Controller (LCD-TFT Display Controller) des STM32N6570, der zwei unabhängige Overlay-Schichten simultaneously auf das Display legt.
+Die grafische Darstellung basiert auf dem LTDC-Controller (LCD-TFT Display Controller) \linebreak des STM32N6570, der zwei unabhängige Overlay-Schichten simultaneously auf das Display legt.
 
-\textbf{Schicht 1 (Hintergrund)} wird als RGB888 mit 3 Bytes pro Pixel betrieben und zeigt den Kamerabildfeed (800$\times$480 Pixel). Auf diese Schicht werden die Inferenz-Overlays (ROI-Bounding-Box, Handlandmarks, Touch-Feedback, Systemtext) direkt in den Framebuffer gezeichnet.
+Schicht 1 (Hintergrund): wird als RGB888 mit 3 Bytes pro Pixel betrieben und zeigt den Kamerabildfeed (800$\times$480 Pixel). Auf diese Schicht werden die Inferenz-Overlays (ROI-Bounding-Box, Handlandmarks, Touch-Feedback, Systemtext) direkt in den Framebuffer gezeichnet.
 
-\textbf{Schicht 2 (Vordergrund)} verwendet das ARGB4444-Pixelformat (2 Bytes pro Pixel) mit aktiviertem per-Pixel-Alpha. Die UI wird auf dieser Schicht dargestellt und über Alpha-Blending mit dem Kamerabild kombiniert. Das ARGB4444-Format kodiert 4 Bits für Alpha, Rot, Grün und Blau, wobei die halbtransparente Darstellung (\texttt{0x80} = 50\,\% Alpha) des Drawer-Elements den Kamerabildfeed durchscheinen lässt.
+Schicht 2 (Vordergrund): verwendet das ARGB4444-Pixelformat (2 Bytes pro Pixel) mit aktiviertem per-Pixel-Alpha. Die UI wird auf dieser Schicht dargestellt und über Alpha-Blending mit dem Kamerabild kombiniert. Das ARGB4444-Format kodiert 4 Bits für Alpha, Rot, Grün und Blau, wobei die halbtransparente Darstellung (\texttt{0x80} = 50\,\% Alpha) des Drawer-Elements den Kamerabildfeed durchscheinen lässt.
 
-Die Speicherbelegung umfasst auf Schicht 1 vier rotierende Hintergrundbuffer (je 800$\times$480$\times$3\,B = 1{,}15\,MB), die über den DCMIPP-DMA gefüllt werden. Schicht 2 besitzt zwei Vordergrundbuffer (je 800$\times$480$\times$2\,B = 750\,KB), von denen einer den geöffneten und einer den geschlossenen Zustand des Drawer vorgerendert enthält. Das Umschalten zwischen den Zuständen erfolgt durch ein Setzen der Framebuffer-Adresse im LTDC-Register bei der nächsten vertikalen Austastlücke, wodurch der Übergang flackerfrei erfolgt.
+Die Speicherbelegung umfasst auf Schicht 1 vier rotierende Hintergrundbuffer \linebreak (je 800$\times$480$\times$3\,B = 1{,}15\,MB), die über den DCMIPP-DMA gefüllt werden. Schicht 2 besitzt zwei Vordergrundbuffer (je 800$\times$480$\times$2\,B = 750\,KB), von denen einer den geöffneten und einer den geschlossenen Zustand des Drawer vorgerendert enthält. Das Umschalten zwischen den Zuständen erfolgt durch ein Setzen der Framebuffer-Adresse im LTDC-Register bei der nächsten vertikalen Austastlücke, wodurch der Übergang flackerfrei erfolgt.
 
 \subsubsection{Drawer-System}\label{ssub:drawer-system}
 
 Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite von 220\,Pixeln. Er wird als Struktur (\texttt{UI\_Drawer\_TypeDef}) verwaltet, die den aktuellen Zustand (geöffnet/geschlossen), die Farbgebung, die Position sowie ein Array von maximal 12 Elementen speichert.
 
-\textbf{Initialisierung:} Bei Systemstart werden die beiden Framebuffer (offen/geschlossen) mit vollständiger Transparenz (\texttt{0x00000000}) gelöscht. Anschließend wird der Drawer im geschlossenen Zustand gerendert (nur Hamburger-Button), danach im geöffneten Zustand (Panel mit allen Elementen). Der im Ausgangszustand sichtbare Buffer ist der geschlossene Zustand.
+Initialisierung: Bei Systemstart werden die beiden Framebuffer (offen/geschlossen) mit vollständiger Transparenz (\texttt{0x00000000}) gelöscht. Anschließend wird der Drawer im geschlossenen Zustand gerendert (nur Hamburger-Button), danach im geöffneten Zustand (Panel mit allen Elementen). Der im Ausgangszustand sichtbare Buffer ist der geschlossene Zustand.
 
-\textbf{Öffnen und Schließen:} Ein Tippen auf den Hamburger-Button (44$\times$44\,Pixel, oben links) toggled den Zustand. Der Wechsel erfolgt durch ein simples Umschalten des Framebuffer-Zeigers im LTDC-Layer-2-Konfigurationsregister (\texttt{LTDC\_Layer\_Address\_Set}), ohne Neurenderung. Der Hamburger-Button (drei horizontale Balken, je 20$\times$3\,Pixel) ist in beiden Zuständen sichtbar.
+Öffnen und Schließen: Ein Tippen auf den Hamburger-Button (44$\times$44\,Pixel, oben links) toggled den Zustand. Der Wechsel erfolgt durch ein simples Umschalten des Framebuffer-Zei\-gers im LTDC-Layer-2-Konfigurationsregister (\texttt{LTDC\_Layer\_Address\_Set}), ohne Neurenderung. Der Hamburger-Button (drei horizontale Balken, je 20$\times$3\,Pixel) ist in beiden Zuständen sichtbar.
 
-\textbf{Farbschema:} Die Elemente des Drawer verwenden eine halbtransparente Farbgebung, um den Kamerabildfreigabe durchscheinen zu lassen:
+Farbschema: Die Elemente des Drawer verwenden eine halbtransparente Farbgebung, um den Kamerabildfreigabe durchscheinen zu lassen:
 \begin{itemize}
     \item Hintergrund: Dunkelgrau mit 50\,\% Alpha (\texttt{0x802B2B2B})
     \item Elementflächen: Mittelgrau mit 50\,\% Alpha (\texttt{0x80383838})
@@ -1440,17 +1356,17 @@ Der Drawer ist eine vertikale Leiste an der linken Displaykante mit einer Breite
     \item Rahmen: Hellgrau mit 50\,\% Alpha (\texttt{0x80777777})
 \end{itemize}
 
-\textbf{Elementhöhe und Anordnung:} Jedes Element besitzt eine Höhe von 46\,Pixeln mit einem 4\,Pixel großen Abstand zwischen den Elementen. Die y-Position des $i$-ten Elements berechnet sich als $y_{\text{pos}} + 52 + i \cdot 50$ Pixel.
+Elementhöhe und Anordnung: Jedes Element besitzt eine Höhe von 46\,Pixeln mit einem 4\,Pixel großen Abstand zwischen den Elementen. Die y-Position des $i$-ten Elements berechnet sich als $y_{\text{pos}} + 52 + i \cdot 50$ Pixel.
 
 \subsubsection{UI-Elemente}\label{ssub:ui-elemente}
 
 Der Drawer enthält vier Elementtypen:
 
-\textbf{Selektor (Modus):} Ein segmentierter Steuerknopf mit drei Segmenten („Palm", „Hand", „Sign"). Die Breite jedes Segments ergibt sich aus der nutzbaren Fläche von 200\,Pixeln geteilt durch die Segmentanzahl. Das aktive Segment wird in der Akzentfarbe (Grün) dargestellt. Die Touch-Position wird auf den entsprechenden Segmentindex gemappt. Der selektierte Modus steuert den Inferenz-Pipeline-Zustandsautomaten.
+Selektor (Modus): Ein segmentierter Steuerknopf mit drei Segmenten („Palm", „Hand", „Sign"). Die Breite jedes Segments ergibt sich aus der nutzbaren Fläche von 200\,Pixeln geteilt \linebreak durch die Segmentanzahl. Das aktive Segment wird in der Akzentfarbe (Grün) dargestellt. \linebreak Die Touch-Position wird auf den entsprechenden Segmentindex gemappt. Der selektierte Modus steuert den Inferenz-Pipeline-Zustandsautomaten.
 
-\textbf{Toggle:} Ein Schalter mit beschrifteter Fläche und rundem Schieberegister (Radius 7\,Pixel). Der Toggle hat zwei Zustände (ein/aus). Die Systemzeit-Toggle fügt oder entfernt dynamisch einen Scheduler-Task, der die aktuelle Systemzeit im oberen rechten Bereich (Position $x = 720$) auf Schicht 1 anzeigt. Der Systeminformationen-Toggle steuert analog die Einblendung der Inferenzzeiten aller drei Modelle.
+Toggle: Ein Schalter mit beschrifteter Fläche und rundem Schieberegister (Radius 7\,Pixel). Der Toggle hat zwei Zustände (ein/aus). Die Systemzeit-Toggle fügt oder entfernt dynamisch einen Scheduler-Task, der die aktuelle Systemzeit im oberen rechten Bereich (Position $x = 720$) auf Schicht 1 anzeigt. Der Systeminformationen-Toggle steuert analog die Einblendung der Inferenzzeiten aller drei Modelle.
 
-\textbf{Composite (Kontrollpanel):} Kombiniert ein Beschriftungsfeld, ein Augen-Symbol zur Umschaltung der Sichtbarkeit und einen Inline-Slider zur Einstellung der Deckkraft. Das Augen-Symbol zeigt einen gefüllten Kreis (sichtbar) oder eine horizontale Linie (unsichtbar). Tippen auf das Augen-Symbol toggled die Sichtbarkeit des zugehörigen Modell-Overlays. Der Slider nach dem Augen-Symbol erlaubt eine feinere Einstellung des Wertes.
+Composite (Kontrollpanel): Kombiniert ein Beschriftungsfeld, ein Augen-Symbol zur Umschaltung der Sichtbarkeit und einen Inline-Slider zur Einstellung der Deckkraft. Das Augen-Symbol zeigt einen gefüllten Kreis (sichtbar) oder eine horizontale Linie (unsichtbar). Tippen auf das Augen-Symbol toggled die Sichtbarkeit des zugehörigen Modell-Overlays. Der Slider nach dem Augen-Symbol erlaubt eine feinere Einstellung des Wertes.
 
 \textbf{Label:} Ein statisches Textelement ohne Interaktion. Wird für die Versionsanzeige („v1.0.0") verwendet.
 
@@ -1458,19 +1374,19 @@ Der Drawer enthält vier Elementtypen:
 
 Die Eingabe erfolgt über einen Goodix GT911 kapazitiven Touch-Controller, der über den I2C-Bus (I2C2) mit dem Mikrocontroller kommuniziert.
 
-\textbf{Konfiguration:} Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird ein Prüfsumme berechnet um die Korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
+Konfiguration: Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \linebreak \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird ein Prüfsumme berechnet um die Korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
 
-\textbf{Interruptgestützte Erfassung:} Bei Berührung der Displayfläche löst der GT911 einen steigenden Flanken-Interrupt über PQ4 aus. Im Interrupt-Handler (\texttt{EXTI4\_IRQHandler}) wird über I2C der Touch-Status gelesen, der die Anzahl der berührenden Finger (0--5) angibt. Bei mindestens einer Berührung werden die 12-Bit-Koordinaten der ersten Berührung aus den Registern gelesen und in statischen Variablen abgelegt. Anschließend wird eine Pending-Flag gesetzt.
+Interruptgestützte Erfassung: Bei Berührung der Displayfläche löst der GT911 einen steigenden Flanken-Interrupt über PQ4 aus. Im Interrupt-Handler (\texttt{EXTI4\_IRQHandler}) wird über I2C der Touch-Status gelesen, der die Anzahl der berührenden Finger (0--5) angibt. Bei mindestens einer Berührung werden die 12-Bit-Koordinaten der ersten Berührung aus den Registern gelesen und in statischen Variablen abgelegt. Anschließend wird eine Pending-Flag gesetzt.
 
-\textbf{Abtastung und Weiterleitung:} Ein Scheduler-Task (\texttt{vTouchTask}) läuft alle 20\,ms und prüft das Pending-Flag. Bei einer Berührung werden die Koordinaten und der Berührungsstatus ausgelesen und an die Drawer-Logik (\texttt{UI\_Drawer\_HandleTouch}) übergeben. Zusätzlich wird als visuelles Feedback ein blauer Kreis (Radius 5\,Pixel) an der Berührungsposition auf Schicht 1 gezeichnet.
+Abtastung und Weiterleitung: Ein Scheduler-Task (\texttt{vTouchTask}) läuft alle 20\,ms und prüft das Pending-Flag. Bei einer Berührung werden die Koordinaten und der Berührungsstatus ausgelesen und an die Drawer-Logik (\texttt{UI\_Drawer\_HandleTouch}) übergeben. Zusätzlich wird als visuelles Feedback ein blauer Kreis (Radius 5\,Pixel) an der Berührungsposition auf Schicht 1 gezeichnet.
 
 \subsubsection{Touch-Event-Verarbeitung}\label{ssub:touch-event-verarbeitung}
 
 Die Touch-Verarbeitung arbeitet in zwei Phasen:
 
-\textbf{Drückphase:} Bei Berührung wird geprüft, ob die Berührung innerhalb des Hamburger-Buttons oder eines geöffneten Drawer-Elements liegt. Die Trefferzone jedes Elements wird über die vorab berechnete y-Position und die konstante Elementhöhe bestimmt. Der Index des getroffenen Elements wird zwischengespeichert.
+Drückphase: Bei Berührung wird geprüft, ob die Berührung innerhalb des Hamburger-Buttons oder eines geöffneten Drawer-Elements liegt. Die Trefferzone jedes Elements wird über die vorab berechnete y-Position und die konstante Elementhöhe bestimmt. Der Index des getroffenen Elements wird zwischengespeichert.
 
-\textbf{Loslassphase:} Beim Loslassen wird der zuvor gespeicherte Elementtyp ausgewertet:
+Loslassphase: Beim Loslassen wird der zuvor gespeicherte Elementtyp ausgewertet:
 \begin{itemize}
     \item \textit{Hamburger-Button:} Der Drawer wird umgeschaltet.
     \item \textit{Toggle:} Der Wert wird invertiert.
@@ -1480,5 +1396,5 @@ Die Touch-Verarbeitung arbeitet in zwei Phasen:
 \end{itemize}
 Nach der Verarbeitung wird das betroffene Element in den geöffneten Framebuffer neu gerendert.
 
-\textbf{Datenfluss:} Die AI-Pipeline liest den Drawer-Zustand direkt aus den Element-Werten aus (\texttt{\_drawer\allowbreak .items[]}). Die Sichtbarkeits-Flags (\texttt{palm\_vis}, \texttt{hand\_vis}, \texttt{sign\_vis}) werden in ISR-sichere Variablen gespiegelt, damit der Frame-Interrupt-Callback sie im laufenden Frame-Zyklus verwenden kann, ohne einen Zugriffskonflikt mit dem Scheduler-Task zu riskieren.
+Datenfluss: Die AI-Pipeline liest den Drawer-Zustand direkt aus den Element-Werten \linebreak aus (\texttt{\_drawer.items[]}). Die Sichtbarkeits-Flags (\texttt{palm\_vis}, \texttt{hand\_vis}, \texttt{sign\_vis}) werden in ISR-sichere Variablen gespiegelt, damit der Frame-Interrupt-Callback sie im laufenden Frame-Zyklus verwenden kann, ohne einen Zugriffskonflikt mit dem Scheduler-Task zu riskieren.
 

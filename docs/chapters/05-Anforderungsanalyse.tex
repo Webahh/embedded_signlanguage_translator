@@ -1,15 +1,15 @@
 \chapter{Anforderungsanalyse}\label{ch:anforderungen}
 
-Die Anforderungsanalyse bildet die Grundlage für den Entwurf, die Implementierung und die anschließende Bewertung des zu entwickelnden Systems. Die festgelegten Anforderungen beeinflussen den Aufbau des Systems und bestimmen, welche Funktionen und Eigenschaften bei der Entwicklung besonders berücksichtigt werden müssen \cite[s. 53 ff.]{kleukerAnforderungsanalyse2025}.
+Die Anforderungsanalyse bildet die Grundlage für den Entwurf, die Implementierung und die anschließende Bewertung des zu entwickelnden Systems. Die festgelegten Anforderungen beeinflussen den Aufbau des Systems und bestimmen, welche Funktionen und Eigenschaften bei der Entwicklung besonders berücksichtigt werden müssen \cite[S. 53 ff.]{kleukerAnforderungsanalyse2025}.
 
-Zur Ermittlung und Beschreibung der Anforderungen werden zunächst das vorgesehene Anwendungsszenario und die daraus abgeleiteten Anwendungsfälle betrachtet. Darauf aufbauend werden die funktionalen und nichtfunktionalen Anforderungen sowie die durch die Zielplattform vorgegebenen Randbedingungen festgelegt. Abschließend werden überprüfbare Abnahmekriterien definiert, die im weiteren Verlauf der Arbeit als Grundlage für die Verifikation und Evaluation des Gesamtsystems dienen.
+Zur Ermittlung und Beschreibung der Anforderungen werden zunächst das vorgesehene Anwendungsszenario und die daraus abgeleiteten Anwendungsfälle betrachtet. Darauf aufbauend werden die funktionalen und nichtfunktionalen Anforderungen sowie die durch die Zielplattform vorgegebenen Randbedingungen festgelegt. Abschließend werden überprüfbare \linebreak Abnahmekriterien definiert, die im weiteren Verlauf der Arbeit als Grundlage für die Verifikation und Evaluation des Gesamtsystems dienen.
 
 \section{Anwendungsszenario}\label{sec:anwendungsszenario}
 Das entwickelte System ist als prototypischer Fingeralphabet-Trainer vorgesehen. Es soll Personen beim selbständigen Üben ausgewählter statischer Handzeichen des deutschen Fingeralphabets unterstützen. Die nutzende Person positioniert hierzu eine Hand im Erfassungsbereich der Kamera und führt ein Zeichen aus. Das Kamerabild wird vom System aufgenommen und lokal verarbeitet.
 
 Die Verarbeitung erfolgt in mehreren aufeinanderfolgenden Schritten. Zunächst wird die Hand im Kamerabild lokalisiert. Anschließend werden charakteristische Handlandmarks bestimmt und für die Klassifikation aufbereitet. Auf Grundlage dieser Merkmale ordnet das Klassifikationsmodell die dargestellte Handform einer der unterstützten Zeichenklassen zu. Das ermittelte Ergebnis wird über das Display des Systems ausgegeben und ermöglicht eine unmittelbare Rückmeldung zur dargestellten Handform. Das System ist für die Verwendung durch jeweils eine Person und die Erfassung einer einzelnen Hand vorgesehen. Die Handzeichen werden nacheinander und innerhalb eines geeigneten Abstands zur Kamera dargestellt. Die Verarbeitung setzt ausreichende Lichtverhältnisse und eine weitgehend freie Sicht auf die Hand voraus. Verdeckte Hände, mehrere gleichzeitig dargestellte Hände sowie dynamische Bewegungsabläufe gehören nicht zum vorgesehenen Anwendungsszenario.
 
-Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgeführt. Eine Verbindung zu einem externen Rechner oder einem Cloud-Dienst ist für den Betrieb des fertigen Prototyps nicht vorgesehen. Abbildung 5.1 stellt das Anwendungsszenario des Fingeralphabet-Trainers als Use-Case-Diagramm dar \cite[s. 61 ff.]{kleukerAnforderungsanalyse2025}. Die übende Person startet das System und zeigt ein Handzeichen im Erfassungsbereich der Kamera. Der Anwendungsfall „Handzeichen erkennen“ umfasst die Erfassung des Kamerabildes, die Lokalisierung der Hand, die Bestimmung der Handlandmarks und die Klassifikation des dargestellten Zeichens. Das ermittelte Erkennungsergebnis wird anschließend auf dem Display ausgegeben.
+Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgeführt. Eine Verbindung zu einem externen Rechner oder einem Cloud-Dienst ist für den Betrieb des fertigen Prototyps nicht vorgesehen. Abbildung \ref{fig:use-case} stellt das Anwendungsszenario des Finger-alphabet-Trainers als Use-Case-Diagramm dar \cite[S. 61 ff.]{kleukerAnforderungsanalyse2025}. Die übende Person startet das System und zeigt ein Handzeichen im Erfassungsbereich der Kamera. Der Anwendungsfall „Handzeichen erkennen“ umfasst die Erfassung des Kamerabildes, die Lokalisierung der Hand, die Bestimmung der Handlandmarks und die Klassifikation des dargestellten Zeichens. Das ermittelte Erkennungsergebnis wird anschließend auf dem Display ausgegeben.
 
 \begin{figure}[H]
     \centering
@@ -20,13 +20,11 @@ Sämtliche Verarbeitungsschritte werden auf einem eingebetteten System ausgefüh
 
 \section{Anforderungen \& Randbedingungen}\label{sec:anforderungen-randbedingungen}
 
-Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diagramm lassen sich die folgenden funktionalen, nichtfunktionalen und technischen Anforderungen, bzw. Randbedingungen ableiten \cite[s. 73 ff.]{kleukerAnforderungsanalyse2025}.
+Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-\linebreak Diagramm lassen sich die folgenden funktionalen, nichtfunktionalen und technischen Anforderungen, bzw. Randbedingungen ableiten \cite[S. 73 ff.]{kleukerAnforderungsanalyse2025}.
 
 \subsection{Funktionale Anforderungen}\label{sub:func-anforderungen}
 
 \begin{longtable}{|c|p{0.85\textwidth}|}
-    \caption{Funktionale Anforderungen}
-    \label{tab:funktionale-anforderungen} \\
     \hline
     \textbf{ID} & \textbf{Funktionale Anforderung} \\
     \hline
@@ -38,7 +36,8 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Funktionale Anforderungen}
+    \label{tab:funktionale-anforderungen} \\
     \endlastfoot
     FA\_01 & Das System muss über die angeschlossene Kamera laufend Bilddaten erhalten können. \\
     \hline
@@ -58,15 +57,15 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     FA\_09 & Das System muss mit Situationen umgehen können, in denen keine Hand oder kein eindeutig klassifizierbares Handzeichen erkannt wird. \\
     \hline
-    FA\_10 & Das System muss die für die Bewertung relevanten Ergebnisse und Laufzeitinformationen erfassen oder zur Auswertung bereitstellen können. \\
+    FA\_10 & Das System muss für die Evaluation die ausgegebene Zeichenklasse, die Laufzeiten der einzelnen Inferenzschritte, die Ende-zu-Ende-Latenz und die Anzahl der verarbeiteten Kamerabilder über eine Debug-Schnittstelle bereitstellen können. \\
     \hline
 \end{longtable}
 
 \subsection{Nichtfunktionale Anforderungen}\label{sub:nonfunc-anforderungen}
 
+Die nachfolgend angegebenen Grenzwerte stellen projektspezifische Zielwerte für den entwickelten Prototyp dar. Sie wurden im Rahmen der Arbeit festgelegt, um eine nachvollziehbare und quantitative Abnahme des Systems zu ermöglichen. Die Werte beruhen nicht auf einer normativen Vorgabe. Ihre Überprüfung erfolgt unter den im Evaluationskapitel definierten Versuchsbedingungen.
+
 \begin{longtable}{|c|p{0.85\textwidth}|}
-    \caption{Nichtfunktionale Anforderungen}
-    \label{tab:nichtfunktionale-anforderungen} \\
     \hline
     \textbf{ID} & \textbf{Nichtfunktionale Anforderung} \\
     \hline
@@ -78,9 +77,10 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Nichtfunktionale Anforderungen}
+    \label{tab:nichtfunktionale-anforderungen} \\
     \endlastfoot
-    NFA\_01 & Das System muss unter den festgelegten Bedingungen eine Erkennungsgenauigkeit von mindestens 80\,\% erreichen. \\
+    NFA\_01 & Das System muss unter den im Evaluationskonzept festgelegten Versuchsbedingungen eine Gesamtgenauigkeit von mindestens 80\,\% erreichen. \\
     \hline
     NFA\_02 & Das System muss eine Bild- bzw.\ Verarbeitungsrate von mindestens 15 Bildern pro Sekunde erreichen. \\
     \hline
@@ -88,7 +88,7 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     NFA\_04 & Das System muss mindestens 20 Minuten kontinuierlich arbeiten können, ohne abzustürzen oder einen Neustart zu erfordern. \\
     \hline
-    NFA\_05 & Das System muss die Hand unter den festgelegten Testbedingungen auch bei Positionsänderungen und veränderten Lichtverhältnissen ausreichend zuverlässig lokalisieren und verfolgen können. \\
+    NFA\_05 & Das System muss unter den festgelegten Testszenarien bei Positionsänderungen und veränderten Lichtverhältnissen in mindestens 70\,\% der ausgewerteten Kamerabilder eine gültige Handregion und Landmark-Ausgabe bereitstellen. \\
     \hline
     NFA\_06 & Das Erkennungsergebnis muss auf dem Display eindeutig und für die nutzende Person verständlich dargestellt werden. \\
     \hline
@@ -101,8 +101,6 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
 \subsection{Technische Anforderungen}\label{sub:tech-anforderungen}
 
 \begin{longtable}{|c|p{0.85\textwidth}|}
-    \caption{Technische Anforderungen}
-    \label{tab:technische-anforderungen} \\
     \hline
     \textbf{ID} & \textbf{Technische Anforderung} \\
     \hline
@@ -114,7 +112,8 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Technische Anforderungen}
+    \label{tab:technische-anforderungen} \\
     \endlastfoot
     TA\_01 & Als Zielplattform muss das STM32N6570 Discovery Kit verwendet werden. \\
     \hline
@@ -145,8 +144,6 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
 \subsection{Randbedingungen}\label{sub:randbedingungen}
 
 \begin{longtable}{|c|p{0.85\textwidth}|}
-    \caption{Randbedingungen}
-    \label{tab:randbedingungen} \\
     \hline
     \textbf{ID} & \textbf{Randbedingung} \\
     \hline
@@ -158,7 +155,8 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
     \hline
     \multicolumn{2}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Randbedingungen}
+    \label{tab:randbedingungen} \\
     \endlastfoot
     RB\_01 & Als Zielplattform steht ausschließlich das STM32N6570 Discovery Kit mit dem Mikrocontroller STM32N657X0H3Q zur Verfügung. \\
     \hline
@@ -178,23 +176,22 @@ Aus dem zuvor festgelegten Anwendungsszenario und dem zugehörigen Use-Case-Diag
 
 \section{Abnahmekriterien}\label{sec:abnahmekriterien}
 
-Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet. Sie legen fest, anhand welcher Prüfungen und Grenzwerte beurteilt wird, ob das entwickelte Gesamtsystem die jeweiligen Anforderungen erfüllt. Inhaltlich zusammengehörige Anforderungen können dabei gemeinsam überprüft werden \cite[s. 85 ff.]{kleukerAnforderungsanalyse2025}.
+Die Abnahmekriterien werden aus den zuvor festgelegten Anforderungen abgeleitet. Sie legen fest, anhand welcher Prüfungen und Grenzwerte beurteilt wird, ob das entwickelte Gesamtsystem die jeweiligen Anforderungen erfüllt. Inhaltlich zusammengehörige Anforderungen können dabei gemeinsam überprüft werden \cite[S. 85 ff.]{kleukerAnforderungsanalyse2025}.
 
-\begin{longtable}{|c|p{2.75cm}|p{0.40\textwidth}|p{0.28\textwidth}|}
-    \caption{Abnahmekriterien}
-    \label{tab:abnahmekriterien} \\
+\begin{longtable}{|c|p{1.65cm}|p{0.35\textwidth}|p{0.35\textwidth}|}
     \hline
-    \textbf{ID} & \textbf{Zugeordnete Anforderungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
+    \textbf{ID} & \textbf{Anforder-ungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
     \hline
     \endfirsthead
     \hline
-    \textbf{ID} & \textbf{Zugeordnete Anforderungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
+    \textbf{ID} & \textbf{Anforder-ungen} & \textbf{Abnahmekriterium} & \textbf{Prüfverfahren} \\
     \hline
     \endhead
     \hline
     \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Abnahmekriterien}
+    \label{tab:abnahmekriterien} \\
     \endlastfoot
     AK\_01 & FA\_01 & Das System erfasst fortlaufend gültige Kamerabilder. & Visuelle Überprüfung des Displays. \\
     \hline

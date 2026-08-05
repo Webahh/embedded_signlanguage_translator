@@ -3,20 +3,20 @@
 \section{Gebärdensprachenmodell} \label{sec:Gebärdensprachenmodell}
 
 \begin{longtable}{lccrr}
-\caption{Alle Fehlklassifikationen der Confusion Matrix (26 Klassen, 371.547 Samples)}\label{tab:confusion-matrix}\\
 \toprule
-\textbf{Erwartet} & \textbf{Vorhergesagt} & \textbf{Absolut} & \textbf{Relativ (vom Erw.)} & \textbf{Anteil Gesamtfehler} \\
+\textbf{Erwartet} & \textbf{Vorhergesagt} & \textbf{Absolut} & \textbf{Relativ (vom Erw.)} & \textbf{Gesamtfehler} \\
 \midrule
 \endfirsthead
 \multicolumn{5}{c}{\tablename\ \thetable\ -- Fortsetzung} \\
 \toprule
-\textbf{Erwartet} & \textbf{Vorhergesagt} & \textbf{Absolut} & \textbf{Relativ (vom Erw.)} & \textbf{Anteil Gesamtfehler} \\
+\textbf{Erwartet} & \textbf{Vorhergesagt} & \textbf{Absolut} & \textbf{Relativ (vom Erw.)} & \textbf{Gesamtfehler} \\
 \midrule
 \endhead
 \midrule
 \multicolumn{5}{r}{Fortsetzung nächste Seite} \\
 \endfoot
 \bottomrule
+\caption{Alle Fehlklassifikationen der Confusion Matrix (26 Klassen, 371.547 Samples)}\label{tab:confusion-matrix}\\
 \endlastfoot
 
 \multirow{22}{*}{NONE}
@@ -227,8 +227,6 @@
 \subsection{Linker-Regionen}\label{sub:Linker-Regionen}
 
 \begin{longtable}{|l|l|l|p{0.45\textwidth}|}
-    \caption{Linker-Regionen}
-    \label{tab:linker-regionen} \\
     \hline
     \textbf{Region} & \textbf{Adresse} & \textbf{Größe} & \textbf{Beschreibung} \\
     \hline
@@ -240,7 +238,8 @@
     \hline
     \multicolumn{4}{r}{\texttt{Fortsetzung auf nächster Seite}} \\
     \endfoot
-    \hline
+    \caption{Linker-Regionen}
+    \label{tab:linker-regionen} \\
     \endlastfoot
     ROM         & \texttt{0x34000400} & 2047\,KB & \texttt{.isr\_vector}, \texttt{.text}, \texttt{.rodata} \\
     \hline
@@ -255,6 +254,8 @@
     ECBLOBS     & \texttt{0x72000000} & 8\,MB    & Externer Flash (roher EC-Blob-Binärblob) \\
     \hline
 \end{longtable}
+
+\newpage
 
 \begin{lstlisting}[language=C, caption={Vom Linker exportierte Basissymbole}, label={lst:linker-symbole}]
 _mem_pool_xSPI2_fingeralphabet_model_v3 = 0x71000000;
