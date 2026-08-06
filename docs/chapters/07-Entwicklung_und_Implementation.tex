@@ -45,7 +45,7 @@ Für eine einheitliche Darstellung aller Sequenzen erfolgt eine FPS-Normalisieru
 
 Die verarbeiteten Geste- und Handdaten werden in den folgenden Datenstrukturen abgebildet:
 
-Gesture: Repräsentation einer vollständigen Geste-Sequenz
+Gesture: Repräsentation einer vollständigen Geste
 \begin{itemize}
     \item label: Klasse der Geste (str)
     \item fps: Aktuelle Bildwiederholrate (float)
@@ -68,13 +68,13 @@ Die verarbeiteten Geste-Daten werden im Pickle-Format (\texttt{.pkl}) abgelegt. 
 
 Das zu entwickelnde Modell soll die Fähigkeit besitzen, Gesten bestimmten Gruppen zuzuordnen. Eine Gruppe entspricht dabei immer einer Geste. Diese Einteilung von Datenpunkten (Gesten) in vordefinierte Klassen (Fingeralphabetzeichen) beschreibt Klassifikationsmodelle. Für jede Geste sollen die Wahrscheinlichkeiten für die zuzuordnenden Klassen ausgegeben werden.
 
-Es liegt keine Binäreklassifikation vor, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
+Es handelt sich um keine Binärklassifikation, da mehr als zwei Klassen zu unterscheiden sind. Mit den 26 Klassen (NONE, A–Y ohne J und Z, SCH) handelt es sich um eine Multiklassen-Klassifikation.
 
 \subsection{Datenanalyse}\label{sub:datenanalyse}
 
 \paragraph{Input-Format:} Der Klassifikator empfängt einen 88-dimensionalen Feature-Vektor. Dieser setzt sich nach Ausgabe des Hand-Landmark Modells aus 44 Werten für die linke Hand (22 Gelenke $\times$ 2 Koordinaten) und 44 Werten für die rechte Hand (22 Gelenke $\times$ 2 Koordinaten) zusammen. Die 22 Gelenke pro Hand umfassen die 21 MediaPipe-Landmarks sowie die absolute Handgelenkposition. Koordinaten werden wrist-relativ normalisiert und auf den INT16-Bereich ({-}32.768 bis 32.767) skaliert.
 
-\paragraph{Klassenverteilung:} Der Datensatz umfasst 26 Klassen: NONE (Index 0) für Keine Hand erkannt, A--Y (Indizes 1--24) für 24 statische Buchstaben (J und Z ausgeschlossen, da diese dynamische Handbewegungen erfordern) sowie SCH (Index 25) als Sonderzeichen. Die Klassenverteilung ist leicht ungleichmäßig (16 Klassen mit 185, 8 Klassen mit 148, NONE mit 111, F mit 110 Dateien).
+\paragraph{Klassenverteilung:} Der Datensatz umfasst 26 Klassen. \texttt{NONE} (Index 0) für keine erkannte Geste, \texttt{A--Y} (Indizes 1--24) für 24 statische Buchstaben (\texttt{J} und \texttt{Z} ausgeschlossen, da diese dynamische Handbewegungen erfordern) sowie \texttt{SCH} (Index 25) als Sonderzeichen. Die Klassenverteilung ist leicht ungleichmäßig (16 Klassen mit 185, 8 Klassen mit 148, \texttt{NONE} mit 111, \texttt{F} mit 110 Dateien).
 
 \paragraph{Normalisierung:} Alle Koordinaten werden durch den Maximalwert des INT16-Bereichs \linebreak (POS\_MAX = 32.767) dividiert, sodass die Werte im Bereich \([{-}1, 1]\) liegen.
 
@@ -105,19 +105,18 @@ für den Embedded-Einsatz dar.
 
 Das Klassifikationsmodell setzt sich aus sieben Schichten zusammen, die sequenziell eine direkte Informationsflussrichtung von der Eingabe zur Ausgabe aufweisen. Die Architektur folgt dem Prinzip der schrittweisen Transformation und Abstraktion der Eingabemerkmale. Nachdem der Input-Tensor in eine eindimensionale Darstellung überführt wurde, transformiert die erste Dense-Schicht die Rohmerkmale in einen repräsentativen Feature-Raum. Die nachfolgende Dense-Schicht erweitert diesen Raum, um komplexere Inter-Feature-Beziehungen modellieren zu können. Zwischen den Dense-Schichten werden Dropout-Schichten eingebunden um Zufall in das Modell zu bringen, um Overfitting zu verhindern. Die finale Dense-Schicht projeziert die gelernten Repräsentationen auf die 26 Ausgabeklassen.
 
-Der Input-Layer empfängt einen tensor der Form \texttt{(88,1)}. Dieser Tensor repräsentiert die normalisierten Merkmale zweier Hände mit je 44 Werten. Pro enthalten sind 21 MediaPipe-Hand-Landmarks jeweils als \texttt{(x,y)}-Koordinate sowie die absolute Handgelenkposition ebenfalls als \texttt{(x,y)}. Alle Koordianten sind Handgelenksrelativ normalisiert und auf den int15-Bereich skaliert, sodass der Input-Wertebereich [-1, 1] beträgt.
+Der Input-Layer empfängt einen tensor der Form \texttt{(88,1)}. Dieser Tensor repräsentiert die normalisierten Merkmale zweier Hände mit je 44 Werten. Pro enthalten sind 21 MediaPipe-Hand-Landmarks jeweils als \texttt{(x,y)}-Koordinate sowie die absolute Handgelenkposition ebenfalls als \texttt{(x,y)}. Alle Koordianten sind Handgelenksrelativ normalisiert sodass der Input-Wertebereich [-1, 1] beträgt.
 
 Der Flatten-Layer überführt den mehrdimensionalen Input-Tensor in einen eindimensionalen Vektor der Länge 88. Dense-Schichten erwarten als Eingabe einen flachen Vektor, sodass die räumliche Struktur des Tensors (2 Hände x 44 Werte) für die nachfolgende Gewichtsmatrix aufgelöst werden kann.
 
-Der erste Dense-Layer mit 88 Neuronen und ReLU-Aktivierung (vgl.\ Abschnitt~\ref{sub:aktivierungsfunktionen}) führt per-Feature-Transformationen durch. Das bedeutet durch die  Gewichtsmatrix (88×88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
+Der erste Dense-Layer mit 88 Neuronen verwendet die ReLU-Aktivierung (vgl.\ Abschnitt~\ref{sub:aktivierungsfunktionen}). Durch die  Gewichtsmatrix (88×88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
 
 Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25\% der Ausgaben des vorherigen Dense-Layers. Die zufällige Deaktivierung von Neuronen dient der Regularisierung und verhindert das Overfitting des Modells (vgl.\ Abschnitt~\ref{sub:overfitting}). Jedes Neuron wird mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt. \cite{yingOverviewOverfittingIts2019}
 
 Der zweite Dense-layer mit 128 Neuronen und ReLU-Aktivierung erweitert den Feature-Raum von 88 auf 128 Dimensionen. Durch die Erhöhung der Kapazität kann des Modell Inter-Feature-Beziehungen modellieren, die über die per-Feature-Transformationen des vorherigen Layers hinausgehen. Typische Beziehungen umfassen:
 
 \begin{itemize}
-
-    \item Intra-Hand-Abhängigkeiten: Korrelation zwischen benachbarten Landmarks des selben Fingers (z.B. die Auslenkung von PIP und DIP des Indexfingers), zwischen verschiedenen Fingern einer Hand sowie  die Orientierung der Hand und deren Rotation basierend auf der Handflächen features.
+    \item Intra-Hand-Abhängigkeiten: Korrelation zwischen benachbarten Landmarks des selben Fingers (z.B. die Auslenkung von PIP und DIP des Indexfingers), zwischen verschiedenen Fingern einer Hand sowie die Orientierung der Hand.
     \item Inter-Hand-Beziehungen: Zusammenhänge zwischen den Landmarks beider Hände, die bei einhändigen Gesten durch symmetrische oder asymmetrische Konfigurationen entstehen können.
     \item Komplexe Muster: Nicht-lineare Kombinationen mehrerer Landmarks, die erst in der erweiterten Repräsentation als discriminative Merkmale erkennbar werden.
 \end{itemize}
@@ -134,7 +133,7 @@ wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsäc
 
 \subsection{Trainingsprozess}\label{sub:trainingsprozess}
 
-Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden (vgl.\ Abschnitt~\ref{sub:parameter-hyperparameter}). Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und Frühzeitiges Stoppen.
+Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden (vgl.\ Abschnitt~\ref{sub:parameter-hyperparameter}). Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch size und Early stopping.
 
 Als Optimizer wird Adam (Adaptive Moment Estimation) verwendet, dessen Funktionsweise in Abschnitt~\ref{sub:optimierung-training} erläutert wurde. Adam kombiniert die Vorteile von Momentum und adaptiven Lernraten und konvergiert dadurch in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind. \cite{a.g.TuningHyperparameterADAM2026}
 
@@ -142,7 +141,7 @@ Die Lernrate (siehe Abschnitt~\ref{sub:optimierung-training}) bestimmt die Grö�
 
 Als Verlustfunktion dient die in Abschnitt~\ref{sub:verlustfunktion} eingeführte Sparse Categorical Crossentropy. Im Gegensatz zur Categorical Crossentropy ist keine One-Hot-Kodierung der Labels erforderlich, wodurch Speicherbedarf und Vorverarbeitungsaufwand reduziert werden.
 
-Die Sparse categorical Accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar (vgl.\ Abschnitt~\ref{sub:metriken}). Da die Zielklassen als Integer vorliegen, passt sie direkt zur verwendeten Verlustfunktion SparseCategoricalCrossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
+Die Sparse categorical accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar (vgl.\ Abschnitt~\ref{sub:metriken}). Da die Zielklassen als Integer vorliegen, passt sie zur verwendeten Verlustfunktion Sparse categorical crossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
 
 Eine Epoche entspricht einem vollständigen Durchlauf des Trainingsdatensatzes (siehe Abschnitt~\ref{sub:optimierung-training}). Die Wahl von 20 Epochen bietet dem Modell ausreichend Möglichkeiten, die zugrunde liegenden Muster zu erlernen, ohne die Trainingszeit unnötig zu verlängern. Da zusätzlich Early Stopping eingesetzt wird, dient dieser Wert als maximale Obergrenze. Das Training endet automatisch früher, sobald keine Verbesserung der Validierungsleistung mehr festgestellt wird.
 
@@ -188,7 +187,7 @@ Early Stopping dient der Vermeidung von Overfitting und beendet das Training vor
 
 \section{Quantisierung, Konvertierung und Deployment der Modelle}\label{sec:quantisierung-deployment}
 
-Das folgende Kapitel beschreibt die Quantisierung des Tensorflow Fingeralphabet Modells, die Convertierung der Quantisierten Handdedektion-, Landmarkerkennung- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
+Das folgende Kapitel beschreibt die Quantisierung des Fingeralphabet-Modell in TensorFlow Format, die Konvertierung der Quantisierten Handdetektion-, Handlandmark- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
 
 \newpage
 \subsection{Quantisierung von Tensorflow Modellen}\label{sub:quantisierung-tf}
@@ -280,7 +279,7 @@ In der Struktur definiert \texttt{user\_neuralart.json} wie die einzelnen Modell
 Verweist auf die \texttt{.mpool}-Datei, die das Speicherlayout der NPU für dieses Modell definiert (welche SRAM-Bänke, Flash-Bereiche, Adressen und Größen).
 
 \texttt{options} \newline
-Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werden verwendete Compiler flags in \ref{tab:stedgeai-flags} kurz erläutert.
+Definiert pro Modell welche Compilerflags verwendet werden sollen. Folgend werden die verwendeten Compiler flags erläutert:
 
 \begin{longtable}{|p{0.3\textwidth}|p{0.65\textwidth}|}
     \hline
@@ -322,7 +321,7 @@ Die \texttt{.mpool}-Dateien beschreiben die STM32N6 Hardware Speicherabbild der 
 
 Ein Hauptbereich ist die \texttt{params}-Sektion, welche die maximale verfügbare On-Chip-SRAM-Größe auf 1024\,KB für die NPU beschränkt.
 
-\begin{lstlisting}[language=json, caption={Globale Speicher einschränkung in .mpool}, label={lst:mpool-params}]
+\begin{lstlisting}[language=json, caption={Globale Speichereinschränkung in .mpool}, label={lst:mpool-params}]
 { "paramname": "max_onchip_sram_size", "value": "1024", "magnitude": "KBYTES"}
 \end{lstlisting}
 
@@ -357,7 +356,7 @@ Weitere Sektionen sind \texttt{cacheinfo} und \texttt{mempools}.  Diese beschrei
     \hline
 \end{longtable}
 
-Die vier AXISRAM-Bänke sind On-Chip-SRAM-Speicher mit hohem Durchsatz und geringer Latenz, die für Laufzeit-Aktivierungen (Zwischentensoren) genutzt werden. \texttt{octoFlash} ist zur Laufzeit schreibgeschützt (ACC\_READ) und speichert die Modellgewichte bzw.\ -konstanten. Die Einstellung \texttt{constants\_preferred: "true"} weist das Tool an, konstante Daten in diesem Bereich abzulegen.
+Die vier AXISRAM-Bänke sind On-Chip-SRAM-Speicher mit hohem Durchsatz und geringer Latenz, die für Laufzeit-Aktivierungen (Zwischentensoren) genutzt werden. \texttt{octoFlash} ist zur Laufzeit schreibgeschützt (ACC\_READ) und speichert die Modellgewichte bzw.\ -konstanten.
 
 Die Flash-Basisadressen unterscheiden sich je nach Modell, um den 16-MB-xSPI2-Flash zu partitionieren:
 
@@ -596,12 +595,9 @@ tatsächlich belegte Größe ist deutlich geringer.
     \hline
 \end{longtable}
 
-Die Modellpartitionen werden als Rohe Binärdateien (\texttt{.bin}) mit dem
-\texttt{STM32\_Programmer\_CLI} unter Angabe des externen Loaders
-\texttt{MX66UW1G45G\_STM32N6570-DK.stldr} an ihre
-Memory-Mapped-Adresse geschrieben und anschließend verifiziert:
+Die Modellpartitionen werden als Binärdateien (\texttt{.bin}) mit dem \texttt{STM32\_Programmer\_CLI} unter Angabe des externen Loaders \texttt{MX66UW1G45G\_STM32N6570-DK.stldr} an ihre Memory-Mapped-Adresse geschrieben und anschließend verifiziert:
 
-\begin{lstlisting}[language=bash, caption={Flashen eines Modells über STM32\_Programmer\_CLI}, label={lst:flash-cmd}]
+\begin{lstlisting}[language=bash, caption={Flashen von Modellen mittels STM32\_Programmer\_CLI}, label={lst:flash-cmd}]
 STM32_Programmer_CLI -c port=SWD mode=NORMAL \
     -el MX66UW1G45G_STM32N6570-DK.stldr \
     -d hand_landmark_model_v3_atonbuf.xSPI2.bin 0x71600000 -v
@@ -871,7 +867,7 @@ Die Ausgabe der Bilddaten erfolgt über den LCD-TFT Display Controller (LTDC). D
     \label{fig:lcd-tft-layers}
 \end{figure}
 
-Layer 1 bildet die Hintergrundebene und zeigt das von Pipe 1 erzeugte Kamerabild mit einer Auflösung von 800 × 480 Pixeln im RGB888-Format. Auf dieser Ebene werden außerdem die Region of Interest und die erkannten Handlandmarks in das jeweilige Kamerabild eingezeichnet. Layer 2 dient als Vordergrundebene für die grafische Benutzeroberfläche. Sie verwendet das ARGB4444-Format und unterstützt dadurch eine pixelweise Transparenz. Transparente Bereiche geben das darunterliegende Kamerabild frei, während Bedienelemente, Texte und Statusinformationen über diesem dargestellt werden können.
+Layer 1 bildet die Hintergrundebene und zeigt das von Pipe 1 erzeugte Kamerabild mit einer Auflösung von 800×480 Pixeln im RGB888-Format. Auf dieser Ebene werden außerdem die Region of Interest und die erkannten Handlandmarks in das jeweilige Kamerabild eingezeichnet. Layer 2 dient als Vordergrundebene für die grafische Benutzeroberfläche. Sie verwendet das ARGB4444-Format und unterstützt dadurch eine pixelweise Transparenz. Transparente Bereiche geben das darunterliegende Kamerabild frei, während Bedienelemente, Texte und Statusinformationen über diesem dargestellt werden können.
 
 Die Abbildung veranschaulicht die Zusammensetzung der Displayausgabe. Zunächst wird Layer 1 über dem konfigurierten LTDC-Hintergrund dargestellt. Da Layer 1 das vollständige Display im RGB888-Format abdeckt, bildet er im regulären Betrieb den sichtbaren Hintergrund. Anschließend wird Layer 2 unter Berücksichtigung der im ARGB4444-Format enthaltenen Alphawerte darübergelegt. Transparente Bereiche von Layer 2 lassen das Kamerabild von Layer 1 sichtbar, während nicht transparente Bereiche die Elemente der Benutzeroberfläche darstellen. Das Ergebnis beider Ebenen wird anschließend als gemeinsames Bild an das Display ausgegeben. Die genaue Gestaltung und Aktualisierung der Benutzeroberfläche wird in Abschnitt~\ref{sec:visualisierung} beschrieben.
 
@@ -880,15 +876,15 @@ Die Abbildung veranschaulicht die Zusammensetzung der Displayausgabe. Zunächst 
 \subsection{Architektur-Übersicht}\label{sub:scheduler-architektur}
 Mit der zunehmenden Komplexität einzelner Komponenten verlängert sich die Laufzeit dieser. Dies führt bei sequenzieller Ausführung zu dem Problem, dass Komponenten, die in einer bestimmten Frequenz ausgeführt werden müssen, nicht mehr rechtzeitig bedient werden können. Ein Beispiel hierfür ist das Display, das bei zu langsamer Zykluszeit nicht mehr interaktionsfähig bleibt, während beispielsweise die Kamera-Erfassung oder Sensorabfragen deutlich mehr Rechenzeit beanspruchen. Eine rein sequenzielle Schleife (super-loop, vgl.\ Abschnitt~\ref{sub:bare-metal}) kann diese unterschiedlichen Anforderungen nicht mehr befriedigen.
 
-Als Lösung wurde ein prioritätsbasierter preemptiver Scheduler implementiert, der als Nicht-RTOS-Lösung auf dem ARM Cortex-M55 direct auf dem bare-metal läuft. Der Scheduler verwaltet maximal 9 Tasks, wobei Slot 8 fest dem Idle-Task zugewiesen ist, der im WFI-Zustand (Wait For Interrupt) verharrt und bei Bedarf Statistiken ausgibt.
+Als Lösung wurde ein prioritätsbasierter preemptiver Scheduler auf der ARM Cortex-M55 Architektur implementiert. Der Scheduler verwaltet maximal 9 Tasks, wobei Slot 8 fest dem Idle-Task zugewiesen ist, der im WFI-Zustand (Wait For Interrupt) verharrt und bei Bedarf Statistiken ausgibt.
 
-Zeitgeber (Tick-Source): Als Zeitsystem dient TIM7 mit einer Periode von 1 ms, konfiguriert über APB1 mit 200 MHz Taktfrequenz. Der Timer generiert im \texttt{TIM7\_IRQHandler} einen Tick, der den System-Tick-Zaehler (\texttt{\_sys\_tick\_ms}) erhöt und bei abgelaufener Periode die jeweiligen Tasks in den TaskReady-Zustand ueberführt, gefolgt von einer PendSV-Anforderung zur Kontextwahl.
+Zeitgeber (Tick-Source): Als Zeitsystem dient TIM7 mit einer Periode von 1 ms, konfiguriert über APB1 mit 200 MHz Taktfrequenz. Der Timer generiert im \texttt{TIM7\_IRQHandler} einen Tick, der den System-Tick-Zähler (\texttt{\_sys\_tick\_ms}) erhöt und bei abgelaufener Periode die jeweiligen Tasks in den TaskReady-Zustand überführt, gefolgt von einer PendSV-Anforderung zur Kontextwahl.
 
 Kontextmodell: Pro Task wird der vollstaendige ARM-Kontext gespeichert. Der Scheduler nutzt den PSP (Process Stack Pointer) im Thread-Modus, wobei die FPU-Kontextspeicherung mittels lazy-stacking (ASPEN + LSPEN) erfolgt. Der zu speichernde Stack-Frame umfasst 32 Words: die FPU callee-saved Register S16–S31 (16 Words), die Core callee-saved Register R4–R11 (8 Words) sowie den 8-Word Hardware Exception Frame (R0–R3, R12, LR, PC, xPSR).
 
 Stack-Management: Tasks erhalten einen variablen Stack, der aus einem statischen Bump-Allocator Pool mit 8192 Words (32 KB) alloziert wird. Die Stack-Grösse pro Task ist konfigurierbar (min. 144 Words, max. 2048 Words). Jeder Stack wird mit einem Canary-Muster (0xA5A5A5A5) gefüllt, um Stack-Overflows näher betrachten zu können. Der untere Stack-Schutz erfolgt über PSPLIM (Process Stack Limit Register), wobei die Guard-Zone 25\% der Stack-Groesse (64–512 Bytes) plus 32 Bytes Exception-Frame-Marge beträgt. Da der Bump-Allocator keine Deallocation unterstuetzt, wird bei einem Re-Add mit grösserer Stackanforderung der alte Block aufgegeben und ein neuer aus dem Pool allokiert.
 
-Preemption: Tasks können durchhöherpriorisierte Tasks unterbrochen werden. Die Prioritäten reichen von 0 (höchste) bis 0xFF (niedrigste, Idle-Task). Die Kontextwahl erfolgt über PendSV (Pending supervisor call) mit der niedrigsten Interruptpriorität (0xFF), sodass alle anderen Interrupts zuerst abgearbeitet werden. Die Selektion des nächsten Tasks erfolgt mittels Round-Robin mit Prioritätssuche: Es wird ab dem aktuellen Task-Index zirkulär gesucht und der höchstpriorisierte bereite Task ausgewählt.
+Preemption: Tasks können durch höherpriorisierte Tasks unterbrochen werden. Die Prioritäten reichen von 0 (höchste) bis 0xFF (niedrigste, Idle-Task). Die Kontextwahl erfolgt über PendSV (Pending supervisor call) mit der niedrigsten Interruptpriorität (0xFF), sodass alle anderen Interrupts zuerst abgearbeitet werden. Die Selektion des nächsten Tasks erfolgt mittels Round-Robin mit Prioritätssuche: Es wird ab dem aktuellen Task-Index zirkulär gesucht und der höchstpriorisierte bereite Task ausgewählt.
 
 \subsection{Task-Lebenszyklus (State machine)}\label{sub:task-lebenszyklus}
 
@@ -902,32 +898,32 @@ Preemption: Tasks können durchhöherpriorisierte Tasks unterbrochen werden. Die
 Ein Task hat vier Zustände:
 \begin{itemize}
     \item \texttt{Deleted}: Task wartet auf Zuweisung eines Prozesses
-    \item \texttt{Ready}: Task kann Ausgeführt werden. Wartet auf Scheduler Auswahl.
-    \item \texttt{Blocked}: Task warted auf den Ablauf seiner Periode
-    \item \texttt{Suspended}: Task wird an der gehindert Ausgeführt zu werden bis dieser weitergeführt werden kann. DMA2D pausiert Task bis die Speicheroperation erfolgt ist.
+    \item \texttt{Ready}: Task ist Ausführbereit. Wartet auf Scheduler Auswahl.
+    \item \texttt{Blocked}: Task wartet auf Ablauf seiner scheduling Periode
+    \item \texttt{Suspended}: Task wird an der Ausführung gehindert  bis ein externes Event diesen fortsetzt (z.B. DMA2D pausiert Task bis die Speicheroperation vollendet ist).
 \end{itemize}
 
 \ref{fig:task-states} stellt die Übergänge zwischen Zuständen dar.
 
 \subsection{Interrupt-Hierrarchie \& Context Switching}\label{sub:interrupt-hierarchie}
 
-Die Kontextwaehlerung ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 auf drei Ebenen: dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentlichen Contextwaehlerung via PendSV\_Handler
+Die Kontextwahl ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 zu drei Zeitpunken: Dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentliche Kontextwächsel via PendSV\_Handler.
 
 \newpage
 
 \subsubsection{Anfänglicher Context-Start (Bootstrapping)}\label{ssub:bootstrap}
-Der Start des ersten Tasks erfolgt nicht ueber PendSV, sondern ueber einen SVC-Aufruf (Supervisor Call). Der Ablauf in \texttt{SCHEDULER\_Tasks\_run()} ist wie folgt
+Der Start des ersten Tasks erfolgt nicht über PendSV, sondern über einen SVC-Aufruf (Supervisor Call). \texttt{SCHEDULER\_Tasks\_run()}  bildet diesen Startpunkt und läuft wie folgt ab:
 
 \begin{lstlisting}[language=bash, numbers=none, caption={Bootstrap Prozess}, label={lst:bootstrap}]
 SCHEDULER_Tasks_run()
   |- IRQs deaktivieren (__disable_irq)
   |- Idle-Task registrieren (Slot 8, WFI-Loop)
-  |- NVIC-Prioritaeten konfigurieren:
-  |    SVCall  -> 0x00 (hoechste, fuer Bootstrap)
+  |- NVIC-Prioritäten konfigurieren:
+  |    SVCall  -> 0x00 (höchste, für Bootstrap)
   |    TIM7    -> 0x80 (Scheduler-Tick)
   |    PendSV  -> 0xFF (niedrigste, Context-Switch)
   |- FPU lazy-stacking aktivieren (ASPEN + LSPEN)
-  |- _Task_SelectNext() -> waehlt ersten bereiten Task
+  |- _Task_SelectNext() -> wählt ersten bereiten Task
   |- Fault-Handler aktivieren (Hard/Mem/Bus/Usage)
   |- IRQs aktivieren (__enable_irq)
   \- SVC #0 ausführen des SVC_Handler
@@ -953,14 +949,13 @@ SCHEDULER_Tasks_run()
 \end{lstlisting}
 
 \subsubsection{Periodische Aktivierung (Tim7\_IRQhandler)}\label{ssub:tim7-irq}
-Alle 1ms löst der TIM7-Interrupt aus und steuert den Scheduling-Ablauf.
-Jeder registrierte Task welcher nicht \texttt{TaskDeleted} oder \texttt{TaskSuspended} ist wird auf Ablauf des Ausführungs Intervalls geprüft. Tasks dessen Intervalle abgelaufen sind werden in \texttt{TaskReady} zustand versetzt. Damit der Task auswahl Algorithmus diese Auswählen kann. Im Anschluss wird die PendSV Ausführung angefordert.
+Jede Millisekunde löst der TIM7-Interrupt aus und steuert den Scheduling-Ablauf. Jeder registrierte Task welcher nicht \texttt{TaskDeleted} oder \texttt{TaskSuspended} ist wird auf Ablauf des Ausführungs Intervalls geprüft. Ein Task dessen Intervall abgelaufen ist wird in \texttt{TaskReady} Zustand versetzt. Dies ist notwendig um den Task für den scheduling Algorithmus auswählbar zu machen. Im Anschluss wird die PendSV Ausführung angefordert.
 
 PendSV wird nicht sofort ausgeführt, sondern läuft erst, wenn alle anderen ISRs abgearbeitet sind.
 
 \subsubsection{Preemptiver Context-Switch (PendSV\_Handler)}\label{ssub:pendsv-handler}
 
-Die eigentliche Kontextwahl erfolgt im \texttt{PendSV\_Handler}in reiner Assembler-Implementierung. PendSV hat die niedrigste NVIC-Priorität (0xFF), wird also erst nach Abschluss aller anderen Interrupts ausgeführt.
+Die eigentliche Kontextwahl erfolgt im \texttt{PendSV\_Handler} in reiner Assembler-Implementierung. PendSV hat die niedrigste NVIC-Priorität (0xFF), wird somit erst nach Abschluss aller anderen Interrupts ausgeführt.
 
 \begin{lstlisting}[language=bash, numbers=none, caption={PendSV\_Handler() in Hochsprache}, label={lst:pendsv-handler}]
 PendSV\_Handler:
@@ -1056,7 +1051,7 @@ Die Messung erfolgt bei jedem Context-Switch im \texttt{\_Task\_SelectNext()}: D
 Um Interrupt-Zyklen sauber von Task-Zyklen zu trennen, muss jede Peripheral-ISR am Ein- und Ausgang die Funktionen \texttt{SCHEDULER\_ISR\_enter()} und \linebreak \texttt{SCHEDULER\_ISR\_exit()} aufrufen. Bei Einstieg wird der aktuelle \texttt{DWT->CYCCNT}-Wert gespeichert. Bei Ausgang wird die Differenz berechnet und dem unterbrochenen Task in \linebreak \texttt{\_task\_isr\_cycles} zugeordnet.
 
 \paragraph{Ausgabe}
-Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit den Spalten \texttt{Name}, \texttt{cycle} (Gesamt-Zyklen), \texttt{min}, \texttt{max}, \texttt{avg} (durchschnittliche Zyklen pro Invocation), \texttt{\%ACT} (Aktiv-Anteil in Prozent), \texttt{Prempt} (Preemption-Zaehler) und \texttt{Invoc} (Invocation-Anzahl). Zusätzlich werden der Gesamtanteil idle-Zeit, der ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jedem Druckvorgang zurückgesetzt, sodass jeder Messzeitraum den Zeitraum zwischen zwei aufeinanderfolgenden Ausgaben repräsentiert.
+Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit Informationen zu den ausgeführten Tasks. Sie enthält den Namen, die Anzahl der Insgesamt verwendeten CPU-Zyklen sowie die minimale, maximale und durchschnittliche Anzahl an CPU-Zyklen bis zur Beendigung des Tasks, den Aktiv-Anteil in Prozent an der verwendeten CPU-Zeit, die Anzahl der Unterbrechung durch andere Tasks und die Anzahl der Aufrufe des Tasks im Zeitraum. Zusätzlich werden ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jeder Ausgabe zurückgesetzt.
 
 \section{Integration der NPU und einheitliche KI-Schnittstelle}\label{sec:npu-integration}
 
@@ -1289,30 +1284,28 @@ Das Klassifikationsmodell gibt für jede unterstützte Zeichenklasse einen quant
 
 \section{Visualisierung und Benutzerausgabe}\label{sec:visualisierung}
 
-Für die Bedienbarkeit unnd Feedback für von dem Nutzers unternommene Handlungen sind visuelle Indikatoren auf dem Display notwendig. Das Projekt erhält zum einen Darstellungen der Erkennungsergebnisse und die Kontolle über diese Ergebnisse mittels einer Benutzeroberfläche. 
+Für die Gewährleistung einer intuitiven Bedienbarkeit sowie zur Bereitstellung von Rückmeldungen über durch den Nutzer ausgeführte Interaktionen sind visuelle Indikatoren auf dem Display erforderlich. Das Projekt umfasst daher sowohl die Visualisierung der Erkennungsergebnisse als auch die Bereitstellung einer grafischen Benutzeroberfläche, über die diese Ergebnisse dargestellt und vom Nutzer kontrolliert beziehungsweise verwaltet werden können.
 
 \subsection{Darstellung der Erkennungsergebnisse}\label{sub:darstellung-ergebnisse}
 
-Für die Entwicklung mussten die Inferenzergebnisse in einer simpel verständlichen repräsentation Dargestellt werden. Ihre Sichtbarkeit sowie Aktivität kann mittels der UI gesteuert.
+Im Rahmen der Entwicklung mussten die Inferenzergebnisse in einer intuitiv verständlichen Repräsentation visualisiert werden. Die Benutzeroberfläche ermöglicht es, deren Sichtbarkeit sowie ihren Aktivierungszustand zu steuern.
 
 \subsubsection{Handdedektion}\label{ssub:darstellung-palm}
 
-Das Palm-Detektionsmodell erzeugt eine einzelne Bounding-Box um die erkannte Hand. Dieser wird als rotes rotiertes Rechteck auf dem Display dargestellt. Die vier Eckpunkte der ROI (Region of Interest) werden aus den Normalisierten-Koordinaten im 192$\times$192 Inferenzraum in den 800$\times$480 Displayraum transformiert. Dabei werden die unterschiedlichen Crop-Pipelines der Kamera (Sensorkoordinaten vs. Displaykoordinaten) berücksichtigt. Die ROI wird um einen Faktor von 2{,}6 vergrößert und um $-0{,}5$ in y-Richtung verschoben, um die Gesamtheit der Hand einzuschließen. Die Rotation wird aus den Handgelenkpunkten (Keypoint 0 und 2 | \ref{fig:hand-landmarks}) berechnet. Die Darstellung erfolgt über vier Linien, die die Eckpunkte des Rechtecks in Rotationsrichtung verbinden. Jede Linie wird mit dem Bresenham-Algorithmus gerendert und die Eckpunkte werden auf die Displaygrenzen begrenzt, um Überläufe zu verhindern. Im reinen Palm-Modus (\texttt{ai\_mode == 0}) wird ausschließlich die ROI dargestellt. Im Tracking-Modus wird die ROI zusätzlich zu den Handlandmarks gezeichnet. Um Flackern zu vermeiden, wird die ROI bei jedem Frame-Interrupt (im \texttt{DCMIPP\_PIPE\_FrameEventCallback}) in den nächsten Display-Buffer kopiert und erneut gezeichnet, falls seit dem letzten gültigen Inferenzergebnis kein neues vorliegt.
+Das Palm-Detektionsmodell erzeugt eine einzelne Bounding-Box um die erkannte Hand. Dieser wird als rotes rotiertes Rechteck auf dem Display dargestellt. Die vier Eckpunkte der ROI (Region of Interest) werden aus den Normalisierten-Koordinaten im 192x192 Inferenzraum in den 800x480 Displayraum transformiert. Dabei werden die unterschiedlichen Crop-Pipelines der Kamera (Sensorkoordinaten vs. Displaykoordinaten) berücksichtigt. Die ROI wird um einen Faktor von 2{,}6 vergrößert und um $-0{,}5$ in y-Richtung verschoben, um die Gesamtheit der Hand einzuschließen. Die Rotation wird aus den Handgelenkpunkten (0 und 2 | Siehe \ref{fig:hand-landmarks}) berechnet. Die Darstellung erfolgt über vier Linien, die die Eckpunkte des Rechtecks in Rotationsrichtung verbinden. Jede Linie wird mit dem Bresenham-Algorithmus gerendert und die Eckpunkte werden auf die Displaygrenzen begrenzt, um Überläufe zu verhindern. Im reinen Palm-Modus (\texttt{ai\_mode == 0}) wird ausschließlich die ROI dargestellt. Im Tracking-Modus wird die ROI zusätzlich zu den Handlandmarks gezeichnet. Um Flackern zu vermeiden, wird die ROI bei jedem Frame-Interrupt (im \texttt{DCMIPP\_PIPE\_FrameEventCallback}) in den nächsten Display-Buffer kopiert und erneut gezeichnet, falls seit dem letzten gültigen Inferenzergebnis kein neues vorliegt.
 
 \subsubsection{Handlandmarks}\label{ssub:darstellung-landmarks}
 
 Das Hand-Landmark-Modell erzeugt 21 Landmarkpunkte, die als Skelettstruktur auf dem Display dargestellt werden. Die Darstellung umfasst zwei Komponenten: Verbindungslinien zwischen den Gelenkpunkten und kreisförmige Marker an den Gelenkpositionen. Die 21 Landmarkpunkte werden aus dem normalisierten Koordinatenraum \([0,1]\) in die Pixelkoordinaten des 800$\times$480 Displays transformiert. Vor der Darstellung werden die Punkte einer Geschwindigkeitsvorhersage und einer exponentiellen Glättung unterzogen: Es wird eine lineare Extrapolation mit einer Vorhersagezeit von 25\,ms durchgeführt, wobei die Geschwindigkeit auf $\pm 0{,}08$ pro Frame begrenzt wird. Anschließend wird ein exponentieller Mittelwert mit $\alpha = 0{,}75$ angewendet, um instabile Schwankungen zu dämpfen.
 
-Die Verbindungslinien folgen einer festen Knochenstruktur, die 23 Verbindungen umfasst: Für jeden Finger wird die Kette vom Handgelenk über die Mittelhand- und Fingerknochen bis zur Fingerspitze dargestellt, ergänzt durch Verbindungen zwischen den Mittelhandgelenken. Jede Linie wird mit dem Bresenham-Algorithmus gerendert. Linien, deren Länge den Schwellwert von 180\,Pixeln überschreiten, werden als unplausibel verworfen und nicht gezeichnet [\ref{fig:hand-landmarks}].
+Die Verbindungslinien folgen einer festen Knochenstruktur, die 23 Verbindungen umfasst: Für jeden Finger wird die Kette vom Handgelenk über die Mittelhand- und Fingerknochen bis zur Fingerspitze dargestellt, ergänzt durch Verbindungen zwischen den Mittelhandgelenken. Jede Linie wird mit dem Bresenham-Algorithmus gerendert. Linien, deren Länge den Schwellwert von 180\,Pixeln überschreiten, werden als unplausibel verworfen und nicht gezeichnet.
 
 Die 21 Gelenkpositionen werden als Kreise mit einem Radius von 4\,Pixeln dargestellt.
 Die Farben sind wie folgt definiert: Verbindungslinien in Grün, Landmark-Marker in Blau. Die Sichtbarkeit wird über den UI-Toggle „Hand“ gesteuert. Um Flackern zu vermeiden, werden die geglätteten Punkte in ISR-sichere Speicherbereiche (\texttt{\_isr\_landmark\_points}) kopiert und bei jedem Frame-Interrupt in den jeweils nächsten Display-Buffer neu gezeichnet, solange kein neues Inferenzergebnis vorliegt.
 
 \subsubsection{Fingeralphabetmodell}\label{ssub:darstellung-fingeralphabet}
 
-Das Fingeralphabetmodell klassifiziert die erkannte Handpose in eine von 26 Klassen (Buchstaben A–Z sowie \textit{NONE} und \textit{SCH}). Das Modell erhält als Eingabe keine Bilddaten, sondern die quantisierten Handlandmark-Koordinaten. Die Inferenz wird 10 Mal pro Sekunde (\texttt{FINGERALPHABET\_\allowbreak INTERVAL\_MS = 100\,ms}) durchgeführt und nur im Sign-Modus (\texttt{ai\_mode >= 2}) visuell ausgegeben.
-
-Das Ergebnis wird über eine reine Argmax-Operation extrahiert: Die Klasse mit dem höchsten Konfidenzwert (uint8) wird ausgewählt. Das Ergebnis enthält den Klassenindex, den rohen Konfidenzwert und das zugehörige Textlabel. Das Ergebnis wird als Textbox über das Display und per String über die serielle Schnittstelle (\texttt{DEBUG\_PRINTF}) ausgegeben, sofern der UI-Toggle „Sign“ aktiviert ist.
+Das Ergebnis des Fingeralphabetmodell wird über \texttt{USART} und als Textbox auf dem Display ausgegeben.
 
 \subsection{Benutzeroberfläche und Bedienung}\label{sub:benutzeroberflaeche}
 

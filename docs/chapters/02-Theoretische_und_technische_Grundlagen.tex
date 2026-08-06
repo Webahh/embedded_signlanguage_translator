@@ -49,7 +49,7 @@ Als dominierende Hardwareplattform eingebetteter Systeme dienen Mikrocontroller 
 
 \subsection{Peripherieschnittstellen}\label{sub:peripherieschnittstellen}
 
-Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind \cite[S. ~48 ff, S. ~3104 ff., S. ~2153 ff., s. ~2093 ff]{bernsteinMikrocontroller2026, rm0486}:
+Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der Umwelt zu interagieren. Die wesentlichen Peripherietypen sind \cite[S. ~48 ff.]{bernsteinMikrocontroller2026} \cite[S. ~3104 ff., S. ~2153 ff., S. ~2093 ff]{rm0486}:
 
 \begin{itemize}
     \item General Purpose Input/Output (GPIO): GPIO-Pins sind die einfachste Form der digitalen Ein-/Ausgabe. Jeder Pin kann konfiguriert werden als Eingang (Lesen eines logischen Pegels: 0 oder 1) oder als Ausgang (Setzen eines Pegels). GPIO-Pins werden zum Ansteuern von LEDs, Auslesen von Tasten oder als Steuerleitungen für andere Peripheriemodule verwendet.
@@ -60,12 +60,12 @@ Mikrocontroller stellen verschiedene Hardware-Schnittstellen bereit, um mit der 
     Hardware-Timer zählen Taktimpulse und können Interrupts auslösen, wenn ein Zählerwert erreicht wird. Sie dienen als Zeitbasis für periodische Aufgaben, zur Erzeugung von PWM-Signalen (Pulsweitenmodulation) und zur Messung von Signalen (Input Capture). In Echtzeitsystemen stellen Timer den Taktgeber für den Scheduler dar.
     \item Direct Memory Access (DMA): DMA-Einheiten ermöglichen Datenübertragungen zwischen Peripherie und Speicher ohne CPU-Beteiligung. Die CPU gibt lediglich den Startbefehl und kann während der Übertragung andere Aufgaben verarbeiten. DMA ist besonders für große Datenströme (z.\,B.\ Kamerabilder) relevant, da es die CPU erheblich entlastet.
     \item DMA2D (ChromART):  Eine spezielle DMA-Einheit für 2D-Bild-Operationen: Kopieren, Füllen und Alpha-Blending von Bilddaten ohne die CPU zu blockieren (Erweiterung des DMA).
-    \item Interrupts:  Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR)\cite[S. 104 ff.]{yiuDefinitiveGuideARM2013}.
-    \item External Interrupts (EXTI): Der EXTI-Controller erlaubt es, asynchrone Signale auf GPIO-Pins als Interrupts zu behandeln. Er eignet sich für Ereignisse wie Berührungen eines Touch-Controllers, Tastendrücke oder Flankenwechsel externer Sensoren und löst bei einem konfigurierten Ereignis die zugehörige ISR aus \cite[Kap. 7]{yiuDefinitiveGuideARM2013}.
-    \item External Serial Peripheral Interface (XSPI): Hochgeschwindigkeits-Schnittstelle für den Anschluss externer Speicher wie PSRAM und NOR-Flash. Je nach Konfiguration werden vier (Quad-SPI) oder acht Datenleitungen (OctoSPI) verwendet. XSPI erlaubt neben dem seriellen Transfer auch die Einblendung der externen Speicher in den Adressraum des Prozessors (Memory-Mapped-Modus, siehe Abschnitt \ref{sub:speicherarchitektur}) \cite[S. 1288]{rm0486, STM32N6570DKProductSTMicroelectronics}.
-    \item LCD-TFT Display Controller (LTDC): Controller zur Erzeugung des Bildsignals für ein LCD-Display. Er liest die Bilddaten kontinuierlich aus zugeordneten Speicherbereichen (Framebuffern) und kombiniert mehrere übereinanderliegende Layer mit unterschiedlichen Farbformaten und Alpha-Werten (Layer- und Alpha-Blending). Dadurch wird die CPU von der kontinuierlichen Displayaktualisierung entlastet \cite[S. 2093]{rm0486}.
-    \item Camera Serial Interface (CSI): Serielle Schnittstelle zur Übertragung von Bilddaten eines Kamerasensors (z.\,B.\ MIPI-CSI). Sie überträgt die Rohdaten des Sensors (z.\,B.\ RAW-Bayer-Daten) zeilenweise an den Mikrocontroller \cite[S. 2015]{rm0486}.
-    \item Digital Camera Interface Pixel Pipeline (DCMIPP): Hardware-Pipeline zur Verarbeitung des Kameradatenstroms. Sie übernimmt rechenintensive Bildverarbeitungsschritte wie Demosaikierung, Farbkorrektur, Gammakorrektur, Zuschnitt (Crop) und Skalierung (Downscale) und stellt das Ergebnis über mehrere parallele Ausgabepfade (Pipes) in unterschiedlichen Auflösungen und Formaten bereit \cite[S. 1815]{rm0486}.
+    \item Interrupts:  Interrupts ermöglichen es der CPU, auf asynchrone Ereignisse (z.\,B.\ Eingangsimpuls, abgeschlossene Datenübertragung, Timer-Überlauf) zeitnah zu reagieren, ohne den Ereigniszeitpunkt aktiv abfragen zu müssen. Der Interrupt-Controller (NVIC, engl.\ \texttt{Nested Vectored Interrupt Controller} bei Arm Cortex-M) verwaltet Prioritäten und erlaubt Verschachtelung (Nested Interrupts). Nach dem Speichern des laufenden Kontexts (Registersatz) springt die CPU über die Vektortabelle auf die zugehörige Interrupt-Service-Routine (ISR). \cite[S. 104 ff.]{yiuDefinitiveGuideARM2013}
+    \item External Interrupts (EXTI): Der EXTI-Controller erlaubt es, asynchrone Signale auf GPIO-Pins als Interrupts zu behandeln. Er eignet sich für Ereignisse wie Berührungen eines Touch-Controllers, Tastendrücke oder Flankenwechsel externer Sensoren und löst bei einem konfigurierten Ereignis die zugehörige ISR aus. \cite[Kap. 7]{yiuDefinitiveGuideARM2013}
+    \item External Serial Peripheral Interface (XSPI): Hochgeschwindigkeits-Schnittstelle für den Anschluss externer Speicher wie PSRAM und NOR-Flash. Je nach Konfiguration werden vier (Quad-SPI) oder acht Datenleitungen (OctoSPI) verwendet. XSPI erlaubt neben dem seriellen Transfer auch die Einblendung der externen Speicher in den Adressraum des Prozessors (Memory-Mapped-Modus, siehe Abschnitt \ref{sub:speicherarchitektur}). \cite[S. 1288]{rm0486, STM32N6570DKProductSTMicroelectronics}
+    \item LCD-TFT Display Controller (LTDC): Controller zur Erzeugung des Bildsignals für ein LCD-Display. Er liest die Bilddaten kontinuierlich aus zugeordneten Speicherbereichen (Framebuffern) und kombiniert mehrere übereinanderliegende Layer mit unterschiedlichen Farbformaten und Alpha-Werten (Layer- und Alpha-Blending). Dadurch wird die CPU von der kontinuierlichen Displayaktualisierung entlastet. \cite[S. 2093]{rm0486}
+    \item Camera Serial Interface (CSI): Serielle Schnittstelle zur Übertragung von Bilddaten eines Kamerasensors (z.\,B.\ MIPI-CSI). Sie überträgt die Rohdaten des Sensors (z.\,B.\ RAW-Bayer-Daten) zeilenweise an den Mikrocontroller. \cite[S. 2015]{rm0486}
+    \item Digital Camera Interface Pixel Pipeline (DCMIPP): Hardware-Pipeline zur Verarbeitung des Kameradatenstroms. Sie übernimmt rechenintensive Bildverarbeitungsschritte wie Demosaikierung, Farbkorrektur, Gammakorrektur, Zuschnitt (Crop) und Skalierung (Downscale) und stellt das Ergebnis über mehrere parallele Ausgabepfade (Pipes) in unterschiedlichen Auflösungen und Formaten bereit. \cite[S. 1815]{rm0486}
 
 \end{itemize}
 
@@ -80,15 +80,15 @@ Die Speicherarchitektur eingebetteter Systeme weicht wesentlich von klassischen 
     \item NOR-Flash (extern): Nichtflüchtiger Speicher mit seitenweisem Zugriff, angeschlossen über OctoSPI.
 \end{itemize}
 
-Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D, GPU2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate) \cite[S. ~308ff.]{rm0486}.
+Die Speicherhierarchie bestimmt maßgeblich die Systemleistung. Cortex-M55-Kerne verfügen über ein Cachesystem (I-Cache, D-Cache), das den Zugriff auf langsame externe Speicher beschleunigt. Da Peripherie-Einheiten (LTDC, DMA2D, GPU2D) jedoch häufig direkt auf den Speicher zugreifen, muss die Cache-Kohärenz manuell verwaltet werden (Flush/Invalidate). \cite[S. ~308ff.]{rm0486}
 
-Externe Speicher wie PSRAM und NOR-Flash werden über die XSPI-Schnittstellen angebunden und können im \textit{Memory-Mapped-Modus} direkt in den Adressraum des Mikrocontrollers eingeblendet werden. Lese- und Schreibzugriffe erfolgen dann über reguläre Speicheradressen, ohne dass für jede Transaktion separat eine Übertragung über die Schnittstelle angestoßen werden muss. \cite[S. 1288]{rm0486}.
+Externe Speicher wie PSRAM und NOR-Flash werden über die XSPI-Schnittstellen angebunden und können im \textit{Memory-Mapped-Modus} direkt in den Adressraum des Mikrocontrollers eingeblendet werden. Lese- und Schreibzugriffe erfolgen dann über reguläre Speicheradressen, ohne dass für jede Transaktion separat eine Übertragung über die Schnittstelle angestoßen werden muss. \cite[S. 1288]{rm0486}
 
 Bilddaten für Display oder Bildverarbeitung werden üblicherweise in zusammenhängenden Speicherbereichen, den \textit{Framebuffern}, gehalten. Um zu verhindern, dass ein Bild überschrieben wird, während es noch angezeigt oder verarbeitet wird, kommen mehrere Puffer zum Einsatz. Beim \textit{Double-Buffering} werden zwei Puffer abwechselnd befüllt und ausgegeben: Während ein Puffer mit neuen Daten beschrieben wird, kann der andere bereits für die Ausgabe genutzt werden.
 
 \subsection{Clock-Systeme}\label{sub:clock-systeme}
 
-Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers \cite[S. ~411 ff.]{STM32N6570DKProductSTMicroelectronics, rm0486}.
+Das Clock-System bestimmt die Taktfrequenz aller Komponenten und ist eine fundamentale Voraussetzung für den Betrieb des Mikrocontrollers. \cite[S. ~411 ff.]{STM32N6570DKProductSTMicroelectronics, rm0486}
 
 \begin{itemize}
     \item Oszillatoren: Der interne Hochgeschwindigkeitsoszillator (HSI) bietet eine integrierte, quarzfreie Takquelle (typisch 16--64\,MHz). Externe Quarze (HSE) liefern eine höhere Genauigkeit und Stabilität.
@@ -114,14 +114,14 @@ Bei der Register-Level-Programmierung werden Peripherieeinheiten durch direkten 
 Der Cortex Microcontroller Software Interface Standard (CMSIS) ist eine von Arm bereitgestellte Sammlung standardisierter Prozessor- und Gerätedefinitionen für Cortex-Mikro\-controller \cite{CMSISIntroduction}. Sie umfasst unter anderem die Registerstrukturen der Peripherie, die Definition der Interruptnummern sowie Funktionen für den Zugriff auf den Prozessorkern. Die registerbasierte Programmierung des vorliegenden Projekts stützt sich auf diese Definitionen. \cite[Kap. ~2.9]{yiuDefinitiveGuideARM2013}
 
 \paragraph{Resource Isolation Framework Security Controller (RIFSC):}
-Der RIFSC verwaltet die Zugriffsrechte und Sicherheitsattribute auf interne Speicherbereiche und Peripheriekomponenten des STM32N6570. Eine fehlerhafte Konfiguration kann verhindern, dass Komponenten trotz aktiver Taktversorgung auf die benötigten Register zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die jeweiligen Hardwarekomponenten initialisiert werden \cite{ResourceIsolationFramework}.
+Der RIFSC verwaltet die Zugriffsrechte und Sicherheitsattribute auf interne Speicherbereiche und Peripheriekomponenten des STM32N6570. Eine fehlerhafte Konfiguration kann verhindern, dass Komponenten trotz aktiver Taktversorgung auf die benötigten Register zugreifen können. Die Zugriffsrechte werden daher eingerichtet, bevor die jeweiligen Hardwarekomponenten initialisiert werden. \cite{ResourceIsolationFramework}
 
 \paragraph{Software-Scheduling:}
 Eingebettete Software ohne Betriebssystem muss die Ausführung mehrerer Aufgaben selbst organisieren. Der einfachste Ansatz ist die \textit{Super-Loop}, eine sequenzielle Schleife, die alle Aufgaben nacheinander abarbeitet. Dies genügt nur, wenn alle Aufgaben innerhalb ihrer Zeitgrenzen ausgeführt werden können \cite[Kap. 2.5]{yiuDefinitiveGuideARM2013}. Andernfalls kommen Scheduler zum Einsatz:
 \begin{itemize}
     \item Scheduler-Arten: Der \textit{Round-Robin-Scheduler} vergibt die CPU zyklisch an bereite Aufgaben (Tasks). Ein \textit{prioritätsbasierter präemptiver Scheduler} unterbricht (preemptiert) laufende Aufgaben zugunsten höherpriorisierter Tasks.
     \item Task-Zustände: Ein Task durchläuft typischerweise mehrere Zustände, etwa \textit{Ready} (bereit zur Ausführung), \textit{Blocked} (wartend) und \textit{Suspended} (angehalten).
-    \item Kontextwechsel: Der Wechsel zwischen Aufgaben wird als Context Switch bezeichnet. Der Zustand der unterbrochenen Aufgabe (Register, Stack) wird gesichert und der Zustand der nächsten Aufgabe wiederhergestellt. Auf Arm-Cortex-M-Prozessoren erfolgt der initiale Start über einen Supervisor Call (SVC), der eigentliche Wechsel über den PendSV-Interrupt. Der Prozessor unterscheidet zwischen dem Main Stack Pointer (MSP) für Interruptkontexte und dem Process Stack Pointer (PSP) für Aufgabenkontexte. Über das Process Stack Limit Register (PSPLIM) wird die Stack-Grenze überwacht. Bei Nutzung der FPU werden die Gleitkommaregister nur dann gesichert, wenn sie tatsächlich verwendet wurden (Lazy Stacking) \cite[S. 28 ff.]{valvanoRealtimeOperatingSystems2017}.
+    \item Kontextwechsel: Der Wechsel zwischen Aufgaben wird als Context Switch bezeichnet. Der Zustand der unterbrochenen Aufgabe (Register, Stack) wird gesichert und der Zustand der nächsten Aufgabe wiederhergestellt. Auf Arm-Cortex-M-Prozessoren erfolgt der initiale Start über einen Supervisor Call (SVC), der eigentliche Wechsel über den PendSV-Interrupt. Der Prozessor unterscheidet zwischen dem Main Stack Pointer (MSP) für Interruptkontexte und dem Process Stack Pointer (PSP) für Aufgabenkontexte. Über das Process Stack Limit Register (PSPLIM) wird die Stack-Grenze überwacht. Bei Nutzung der FPU werden die Gleitkommaregister nur dann gesichert, wenn sie tatsächlich verwendet wurden (Lazy Stacking). \cite[S. 28 ff.]{valvanoRealtimeOperatingSystems2017}
     \item WFI: Im Leerlauf kann die CPU mit der Instruktion \texttt{WFI} (Wait For Interrupt) in einen energiearmen Wartezustand versetzt werden, aus dem sie erst durch ein Interrupt-Ereignis aufgeweckt wird. \cite[S. ~369]{rm0486}
     \item Fault-Handling: Aufgetretene Ausnahmezustände werden in mehrere Fault-Klassen unterteilt: \textit{HardFault} als zentraler Abfang-Interrupt sowie \textit{UsageFault}, \textit{BusFault} und \textit{MemManage Fault} für spezifische Fehlerursachen (ungültige Befehle, Speicherzugriffsfehler, MPU-Verletzungen). \cite[Kap. ~12]{yiuDefinitiveGuideARM2013}
     \item Zyklenmessung: Der DWT (Data Watchpoint and Trace) des Cortex-M55 stellt mit dem Zähler \texttt{CYCCNT} eine zyklen-genaue Zeitmessung bereit, mit der die Ausführungszeiten einzelner Tasks gemessen werden können. \cite[S. ~4422]{rm0486}
@@ -137,7 +137,7 @@ Neben der CPU stehen dedizierte Hardware-Einheiten zur Verfügung, die bestimmte
 \begin{itemize}
     \item DMA: Entlastet die CPU bei Datenübertragungen.
     \item DMA2D: Übernimmt 2D-Bildoperationen (Kopieren, Skalieren, Füllen) ohne CPU-Beteil-igung.
-    \item NPU (Neural Processing Unit): Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32 N6570\-DK arbeitet die NPU mit einer Taktfrequenz von bis zu 1000\,MHz und nativer INT8-Arithmetik \cite[S. 1011 ff.]{rm0486}.
+    \item NPU (Neural Processing Unit): Dedizierter Beschleuniger für neuronale Netze. Die NPU führt Matrix-Multiplikationen und Aktivierungsfunktionen mit hoher Parallelität aus und erreicht dabei deutlich höhere Energieeffizienz als die allgemeine CPU. Im STM32 N6570\-DK arbeitet die NPU mit einer Taktfrequenz von bis zu 1000\,MHz und nativer INT8-Arithmetik. \cite[S. 1011 ff.]{rm0486}
 \end{itemize}
 
 \section{Deutsches Einhand-Fingeralphabet}\label{sec:fingeralphabet}
@@ -151,7 +151,7 @@ Die deutsche Gebärdensprache (DGS) ist die natürlich entstandene Sprache der G
 Das Fingeralphabet ist ein Teilgebiet der deutschen Gebärdensprache \cite{aktion-mensch, DeutscheGebaerdensprache}. Es dient dem Buchstabieren einzelner Wörter und wird verwendet, wenn für ein Wort keine eigene Gebärde existiert. Etwa bei Eigennamen, Fachbegriffen oder bei der Kommunikation mit hörenden Gesprächspartnern. Im Gegensatz zur vollständigen Gebärdensprache beschränkt sich das Fingeralphabet auf die Darstellung von Handformen ohne Begleitung durch Mimik oder Bewegung im Raum. \cite{DeutscheGebaerdensprache}
 
 \subsection{Das deutsche Einhand-Fingeralphabet}\label{sub:deutsches-fingeralphabet}
-Das Fingeralphabet Umfasst die folgenden 29 Buchstaben: \texttt{A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü}.  Zudem existiert ein Sonderzeichen \texttt{SCH} (als Trigraph dargestellt, d.h. ein Zeichen für drei Buchstaben) \cite{aktion-mensch}
+Das Fingeralphabet Umfasst die folgenden 29 Buchstaben: \texttt{A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Ä, Ö, Ü}.  Zudem existiert ein Sonderzeichen \texttt{SCH} (als Trigraph dargestellt, d.h. ein Zeichen für drei Buchstaben). \cite{aktion-mensch}
 
 \begin{figure}[H]
     \centering
@@ -220,16 +220,15 @@ Maschinelles Lernen \textit{(ML, engl. machine learning)} ist ein Teilgebiet der
 
 \subsection{Supervised Learning}\label{sub:supervised-learning}
 
-Beim überwachten Lernen  \textit{(supervised learning)} wird dem Modell ein Datensatz bestehend aus Eingabedaten \textit{(Features/Feature-Vektor)} und zugehörigen korrekten Ausgaben \textit{(Labels)} präsentiert \cite[S. ~9, Kap. ~1.5]{hastieElementsStatisticalLearning2009, MachineLearning1st}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
+Beim überwachten Lernen  \textit{(supervised learning)} wird dem Modell ein Datensatz bestehend aus Eingabedaten \textit{(Features/Feature-Vektor)} und zugehörigen korrekten Ausgaben \textit{(Labels)} präsentiert \cite[S. ~9]{hastieElementsStatisticalLearning2009} \cite[Kap. ~1.5]{MachineLearning1st}. Das Modell lernt, eine Funktion $f: X \rightarrow Y$ zu approximieren, die Eingaben auf die zugehörigen Ausgaben abbildet.
 
 \subsection{Klassifikation}\label{sub:klassifikation}
 
-Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt \cite[Kap. ~2.7]{hastieElementsStatisticalLearning2009}.
+Klassifikation ist ein zentrales Teilgebiet des maschinellen Lernens, bei dem die Aufgabe besteht, eine Eingabe einer von diskreten Klassenzugehörigkeiten zuzuordnen. Das Modell produziert für jede Klasse einen Wahrscheinlichkeitswert, und die Klasse mit der höchsten Wahrscheinlichkeit wird als Vorhersage ausgegeben. Typischerweise werden die Klassen innerhalb des Datensatzes mit Hilfe des One-Hot-Formats dargestellt. \cite[Kap. ~2.7]{hastieElementsStatisticalLearning2009}
 
 \subsubsection{One-Hot-Format}\label{ssub:one-hot-format}
 
-Beim One-Hot-Format werden Klassen durch Binärvektoren dargestellt, deren Länge der Anzahl aller möglichen Klassen entspricht. Dabei wird genau ein Eintrag des Vektors auf den Wert 1 gesetzt, welcher die zugehörige Klasse repräsentiert, während alle übrigen Einträge den Wert 0 annehmen. Beispielsweise wird bei drei möglichen Klassen die zweite Klasse durch den Vektor $[0,,1,,0]$ dargestellt. Diese Repräsentation ermöglicht eine eindeutige numerische Darstellung diskreter Klassen.
-\cite{OneHotEncoder}
+Beim One-Hot-Format werden Klassen durch Binärvektoren dargestellt, deren Länge der Anzahl aller möglichen Klassen entspricht. Dabei wird genau ein Eintrag des Vektors auf den Wert 1 gesetzt, welcher die zugehörige Klasse repräsentiert, während alle übrigen Einträge den Wert 0 annehmen. Beispielsweise wird bei drei möglichen Klassen die zweite Klasse durch den Vektor $[0,,1,,0]$ dargestellt. Diese Repräsentation ermöglicht eine eindeutige numerische Darstellung diskreter Klassen. \cite{OneHotEncoder}
 
 \subsubsection{Sparse Categorical Crossentropy}\label{ssub:sparse-cce}
 
@@ -261,8 +260,8 @@ Das One-Hot-Format verbraucht bei Hunderten von Klassen viel Speicherplatz. Spar
 Neben neuronalen Netzen existieren weitere etablierte Klassifikationsverfahren, die im Rahmen der Modellauswahl in Betracht gezogen wurden:
 
 \begin{itemize}
-    \item Random Forest: Random Forests sind Ensemblemethoden, die eine Vielzahl von Entscheidungsbäumen kombinieren. Jeder Baum wird auf einer zufälligen Teilmenge der Trainingsdaten und Merkmale trainiert. Die Klassifikation erfolgt durch Mehrheitsabstimmung über alle Bäume. Random Forests sind robust gegenüber Overfitting und erfordern keine aufwendige Merkmalskalierung, geben jedoch nur harte Klassenzuordnungen und keine nativ kalibrierten Wahrscheinlichkeiten aus \cite[S. ~1 ff.]{rahmanComparisonSVMRandom2025}.
-    \item Support Vector Machines (SVM): SVMs trennen Klassen durch eine Hyperebene im Merkmalsraum, die den Abstand zu den nächstliegenden Trainingspunkten (Support Vectors) maximiert. Über den Kernel-Trick lassen sich auch nichtlinear trennbare Daten verarbeiten. SVMs liefern ohne zusätzliche Kalibrierung keine Wahrscheinlichkeiten. Zur Umrechnung der Diskriminanzwerte in Wahrscheinlichkeiten ist ein nachgelagertes Platt-Scaling erforderlich \cite[S. ~1 ff.]{rahmanComparisonSVMRandom2025}.
+    \item Random Forest: Random Forests sind Ensemblemethoden, die eine Vielzahl von Entscheidungsbäumen kombinieren. Jeder Baum wird auf einer zufälligen Teilmenge der Trainingsdaten und Merkmale trainiert. Die Klassifikation erfolgt durch Mehrheitsabstimmung über alle Bäume. Random Forests sind robust gegenüber Overfitting und erfordern keine aufwendige Merkmalskalierung, geben jedoch nur harte Klassenzuordnungen und keine nativ kalibrierten Wahrscheinlichkeiten aus. \cite[S. ~1 ff.]{rahmanComparisonSVMRandom2025}
+    \item Support Vector Machines (SVM): SVMs trennen Klassen durch eine Hyperebene im Merkmalsraum, die den Abstand zu den nächstliegenden Trainingspunkten (Support Vectors) maximiert. Über den Kernel-Trick lassen sich auch nichtlinear trennbare Daten verarbeiten. SVMs liefern ohne zusätzliche Kalibrierung keine Wahrscheinlichkeiten. Zur Umrechnung der Diskriminanzwerte in Wahrscheinlichkeiten ist ein nachgelagertes Platt-Scaling erforderlich. \cite[S. ~1 ff.]{rahmanComparisonSVMRandom2025}
 \end{itemize}
 
 \subsection{Metriken}\label{sub:metriken}
@@ -292,8 +291,7 @@ Zur Bewertung eines Klassifikationsmodells werden verschiedene Metriken herangez
 
 \subsection{Overfitting und Gegenmaßnahmen}\label{sub:overfitting}
 
-Overfitting liegt vor, wenn ein Modell die Trainingsdaten zu gut lernt und dabei spezifische Muster, Rauschen und Ausreißer mitinterpretiert, diese allerdings nicht für die Allgemeingültigkeit relevant sind. Das Modell performt auf Trainingsdaten exzellent (Hohe Genauigkeit), auf unbekannten Daten jedoch schlecht (Geringe Genauigkeit).
-\cite{yingOverviewOverfittingIts2019}
+Overfitting liegt vor, wenn ein Modell die Trainingsdaten zu gut lernt und dabei spezifische Muster, Rauschen und Ausreißer mitinterpretiert, diese allerdings nicht für die Allgemeingültigkeit relevant sind. Das Modell performt auf Trainingsdaten exzellent (Hohe Genauigkeit), auf unbekannten Daten jedoch schlecht (Geringe Genauigkeit). \cite{yingOverviewOverfittingIts2019}
 
 Gegenmaßnahmen bezüglich Overfitting umfassen:
 
@@ -306,7 +304,7 @@ Gegenmaßnahmen bezüglich Overfitting umfassen:
 
 \subsection{Parameter vs Hyperparameter}\label{sub:parameter-hyperparameter}
 
-Parameter sind Variablen welche aus dem zur Verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese Parameter bestimmen das Lernverhalten \cite[Kap. ~2.6]{burkovMachineLearningKompakt2019}.
+Parameter sind Variablen welche aus dem zur Verfügung gestellten Datensatz beim Training erlernt werden. Diese werden nicht durch den Programmierer festgelegt. Hyperparameter hingegen werden vor dem Trainingsprozessen bestimmt. Diese Parameter bestimmen das Lernverhalten. \cite[Kap. ~2.6]{burkovMachineLearningKompakt2019}
 
 \section{Neuronale Netze zur Klassifikation}\label{sec:neuronale-netze}
 \subsection{Künstliche Neuronale Netze}\label{sub:knn}
@@ -336,8 +334,8 @@ wobei $x_i$ die Eingaben, $w_i$ die Gewichte, $b$ der Bias und $f$ die Aktivieru
 Aktivierungsfunktionen fügen Nichtlinearität in das Netz ein und ermöglichen es, komplexe Muster zu erlernen. Die wesentlichen im Projekt verwendeten Funktionen sind \cite[S. 310 ff.]{sharmaACTIVATIONFUNCTIONSNEURAL2020}:
 
 \begin{itemize}
-    \item ReLU (Rectified Linear Unit): $f(x) = \max(0, x)$. Einfach zu berechnen, gradientenfreundlich und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.
-    \item Sigmoid: $\sigma(x) = \frac{1}{1 + e^{-x}}$. Die Funktion bildet eine beliebige reelle Zahl auf einen Wert zwischen 0 und 1 ab. Sie wird insbesondere zur Umwandlung von Logits einzelner Klassen in Wahrscheinlichkeiten verwendet, etwa in Detektionsmodellen \cite[S. 314 ff.]{sharmaACTIVATIONFUNCTIONSNEURAL2020}.
+    \item ReLU (Rectified Linear Unit): $f(x) = \max(0, x)$. Die Berechnung ist ressourcenarm und in versteckten Schichten Standard. Negative Eingaben werden auf 0 gesetzt.
+    \item Sigmoid: $\sigma(x) = \frac{1}{1 + e^{-x}}$. Die Funktion bildet eine beliebige reelle Zahl auf einen Wert zwischen 0 und 1 ab. Sie wird insbesondere zur Umwandlung von Logits einzelner Klassen in Wahrscheinlichkeiten verwendet, etwa in Detektionsmodellen. \cite[S. 314 ff.]{sharmaACTIVATIONFUNCTIONSNEURAL2020}
     \item Softmax: Wandelt einen Vektor von Rohergebnissen (Logits) in eine Wahrscheinlichkeitsverteilung um. Als \textit{Logits} werden die unnormalisierten Rohausgabewerte eines Netzwerks vor der Aktivierung bezeichnet. Für die Ausgabeschicht eines Klassifikators geeignet, da die Summe aller Ausgabewerte 1 ergibt. Jeder Wert liegt zwischen 0 und 1:
     $$
     \mathrm{softmax}(z_i)=\frac{e^{z_i}}{\sum_{j=1}^{K} e^{z_j}}
@@ -371,23 +369,23 @@ Dieser Zyklus wird über mehrere Epochen (Durchläufe durch den gesamten Datensa
 Das Training eines neuronalen Netzes erfordert die Festlegung eines Optimierungsverfahrens sowie mehrerer Hyperparameter, die das Lernverhalten bestimmen \cite[S. ~1]{a.g.TuningHyperparameterADAM2026}:
 
 \begin{itemize}
-    \item Optimizer: Der Optimizer legt fest, wie die Gewichte in Abhängigkeit vom Gradienten des Loss angepasst werden. Stochastic Gradient Descent (SGD) führt einen Aktualisierungsschritt pro Batch aus (vgl. Abschnitt \ref{sub:backpropagation}). Momentum erhält einen Teil der vorherigen Gradientenrichtung, wodurch die Konvergenz beschleunigt wird. Der Adam-Optimizer (Adaptive Moment Estimation) kombiniert Momentum und adaptive Lernraten und gilt als robuste Standardwahl für viele Anwendungen \cite[S. ~2]{a.g.TuningHyperparameterADAM2026}.
+    \item Optimizer: Der Optimizer legt fest, wie die Gewichte in Abhängigkeit vom Gradienten des Loss angepasst werden. Stochastic Gradient Descent (SGD) führt einen Aktualisierungsschritt pro Batch aus (vgl. Abschnitt \ref{sub:backpropagation}). Momentum erhält einen Teil der vorherigen Gradientenrichtung, wodurch die Konvergenz beschleunigt wird. Der Adam-Optimizer (Adaptive Moment Estimation) kombiniert Momentum und adaptive Lernraten und gilt als robuste Standardwahl für viele Anwendungen. \cite[S. ~2]{a.g.TuningHyperparameterADAM2026}
     \item Lernrate: Die Lernrate bestimmt die Größe der Gewichtsaktualisierungen. Eine zu große Lernrate führt zu instabilen Trainingsverläufen, eine zu kleine zu langsamer Konvergenz.
     \item Batch Size: Die Batch Size legt fest, wie viele Trainingsbeispiele vor einer Aktualisierung der Modellgewichte ausgewertet werden.
     \item Epochen: Eine Epoche bezeichnet einen vollständigen Durchlauf des Trainingsdatensatzes.
-    \item Early Stopping: Early Stopping beendet das Training vorzeitig, sobald sich die Validierungsleistung über mehrere Epochen nicht mehr verbessert. Dadurch wird Overfitting vermieden und das Modell mit der besten Validierungsleistung beibehalten \cite[S. ~2]{yingOverviewOverfittingIts2019}.
+    \item Early Stopping: Early Stopping beendet das Training vorzeitig, sobald sich die Validierungsleistung über mehrere Epochen nicht mehr verbessert. Dadurch wird Overfitting vermieden und das Modell mit der besten Validierungsleistung beibehalten. \cite[S. ~2]{yingOverviewOverfittingIts2019}
 \end{itemize}
 
 \section{Handdetektion und Handlandmarks}\label{sec:handdetektion}
 
 \subsection{Zweistufige Erkennungspipeline}\label{sub:erkennungspipeline}
 
-Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline mittels der Objectdetection von Mediapipe\cite{lugaresiMediaPipeFrameworkPerceiving, zhang3DGeometricFeatures2025, OnDeviceRealTimeHand}:
+Die Erkennung von Handzeichen in Kamerabildern erfordert eine mehrstufige Verarbeitung. Der gängigste Ansatz, der auch im vorliegenden Projekt verwendet wird, basiert auf einer zweistufigen Pipeline mittels der Objectdetection von Mediapipe \cite{lugaresiMediaPipeFrameworkPerceiving, zhang3DGeometricFeatures2025, OnDeviceRealTimeHand}:
 
 Stufe 1 - Palm Detection (Handflächen-Erkennung): Im gesamten Kamerabild wird die Position einer oder mehrerer Hände lokalisiert. Das Ergebnis ist eine Bounding Box (Umrahmung) um die erkannte Handfläche.
 Stufe 2 - Hand Landmark-Erkennung: Innerhalb der erstellten Bounding Box werden 21 charakteristische Landmark-Punkte bestimmt, die die Position der Finger-Gelenke und Fingerspitzen beschreiben.
 
-Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeitet auf einem downgesampelten Bild (192×192 Pixel), während die Landmark-Erkennung auf dem zugeschnittenen Hand-Ausschnitt (224×224 Pixel) arbeitet. Das Tracking erfolg über eine Region of Interest welche ressourcenarm verarbeitet werden kann. Dadurch wird die Rechenlast erheblich reduziert.
+Diese Zweiteilung ist aus Effizienzgründen sinnvoll: Die Palm Detection arbeitet auf einem downgesampelten Bild (192×192 Pixel), während die Landmark-Erkennung auf dem zugeschnittenen Hand-Ausschnitt (224×224 Pixel) arbeitet. Der zugeschnittene Hand-Ausschnitt wird mithilfe einer Region of Interest kontinuierlich und ressourcenarm aktuallisiert. Dadurch wird die Rechenlast erheblich reduziert.
 
 \subsection{Palm Detection}\label{sub:palm-detection}
 
@@ -402,7 +400,7 @@ Da das Modell pro Bild 2016 Kandidaten ausgibt, wird eine Non-Maximum Suppressio
 
 \subsection{Handlandmarks}\label{sub:handlandmarks}
 
-Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \texttt{Region of Interest}) und bestimmt darin 21 Landmark-Punkte \cite{zhang3DGeometricFeatures2025}. Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
+Die Handlandmark-Erkennung nimmt den durch die Palm Detection definierten Bildausschnitt (ROI, engl.\ \textit{Region of Interest}) und bestimmt darin 21 Landmark-Punkte \cite{zhang3DGeometricFeatures2025}. Jeder Punkt wird durch seine relative Position (x, y) innerhalb der ROI beschrieben. Die 21 Landmarks entsprechen den anatomisch relevanten Punkten der Hand:
 
 \begin{table}[htbp]
     \centering
@@ -440,7 +438,7 @@ Zusätzlich gibt das Modell einen Handedness-Score aus, der angibt, ob es sich u
 
 \subsection{Region of Interest}\label{sub:roi}
 
-Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll. Dies kann verwendet werden um Modelle gezielt auszuführen. \cite{OnDeviceRealTimeHand} 
+Eine ROI (Region of Interest) ist ein rotiertes Rechteck im Pixelraum, das genau definiert, welchen Bildausschnitt ein Modell fokussieren oder als Eingabe für ML Modelle dienen soll. Dies kann verwendet werden um Modelle gezielt auszuführen. \cite{OnDeviceRealTimeHand}
 
 \begin{figure}[H]
     \centering
@@ -497,7 +495,7 @@ Neuronale Netze verwenden bei Training und Inferenz üblicherweise Fließkommaza
 
 \begin{itemize}
     \item Scale und Zero-Point: Die Quantisierung bildet den Float32-Wertebereich auf einen Integer-Bereich ab
-    \item Post-Training-Quantisierung (PTQ): Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training \cite[Kap. 8-Quantization]{pointerPyTorchFuerDeep2020}. Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
+    \item Post-Training-Quantisierung (PTQ): Bei der Post-Training-Quantisierung wird ein bereits trainiertes Float32-Modell in ein INT8-Modell konvertiert, ohne erneutes Training \cite[Kap. 8]{pointerPyTorchFuerDeep2020}. Dafür wird ein Repräsentativer Datensatz verwendet. Es handelt sich um eine Stichprobe der Trainingsdaten, anhand derer die Aktivierungsbereiche der Schichten analysiert und die optimalen Skalierungsfaktoren bestimmt werden.
     \item Genauigkeitsverluste: Die Reduktion von Float32 auf INT8 kann zu einem leichten Rückgang der Modellgenauigkeit führen. In der Praxis ist dieser Verlust bei geeigneter Kalibrierung (Repräsentativer Datensatz) jedoch gering (typisch < 2 \% Accuracy-Verlust) und für die meisten Anwendungsfälle akzeptabel.
 \end{itemize}
 
@@ -522,7 +520,7 @@ Der Neural-Art-Beschleuniger ist eine parametrierbare und zur Laufzeit rekonfigu
 
 Die NPU arbeitet mit einer eigenen Speicherhierarchie: Die AXISRAM-Banken dienen als Puffer für Gewichte und Aktivierungen, sodass die NPU unabhängig von der CPU auf Daten zugreifen kann (vgl.\ Abschnitt~\ref{fig:stm32n6-architektur}).
 
-Für die Ausführung der konvertierten Modelle stellt STMicroelectronics eine Laufzeitumgebung bereit, die als \textit{ATON-Runtime} bezeichnet wird. Sie lädt die generierten Netzwerk-Binaries, verwaltet deren Ein- und Ausgabepuffer und führt die einzelnen NPU-Epochen aus. Die Kommunikation zwischen Anwendungssoftware und den NPU-Komponenten erfolgt über eine Middleware \cite{STNeuralARTCompiler}
+Für die Ausführung der konvertierten Modelle stellt STMicroelectronics eine Laufzeitumgebung bereit, die als \textit{ATON-Runtime} bezeichnet wird. Sie lädt die generierten Netzwerk-Binaries, verwaltet deren Ein- und Ausgabepuffer und führt die einzelnen NPU-Epochen aus. Die Kommunikation zwischen Anwendungssoftware und den NPU-Komponenten erfolgt über eine Middleware. \cite{STNeuralARTCompiler}
 
 \subsection{ST Edge AI Core CLI}\label{sub:stedge-ai}
 

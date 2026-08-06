@@ -95,16 +95,14 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
     \centering
     \includegraphics[width=0.4\textwidth]{material/figures/confusion_matrix.png}
     \includegraphics[width=0.4\textwidth]{material/figures/confusion_matrix_normalized.png}
-    \caption{Roh und Zeilennormierte Konfusionsmatrix}
+    \caption{Absolute und zeilennormierte Konfusionsmatrix}
     \label{fig:confusion-matrix}
 \end{figure}
 
-Die Konfusionsmatrizen basierent auf 371.547 Testdaten mit einer 99,28\% Accuracy.
-Die Matrix zeigt verschiedene Probleme des Modells auf.
-\texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D, F, H, N, S, T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
+Die Konfusionsmatrizen basierent auf 371.547 Testdaten zeigt eine 99,28\% Accuracy. Die Matrix zeigt verschiedene Probleme des Modells auf. \texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D, F, H, N, S, T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
  Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}).
 
- Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-\-Erkennung ist mit ca. 73\% der größte Schwachpunkt. Eine weitere ausführlichere Aufschlüsselungen befindet sich im Anhang \ref{tab:confusion-matrix}
+ Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-\-Erkennung ist mit ca. 73\% der größte Schwachpunkt. Weitere  und ausführlichere Aufschlüsselung ist im Anhang \ref{tab:confusion-matrix} zu finden.
  
 \subsection{Praktischer Versuch zur Erkennungsgenauigkeit}\label{sec:praktischerversuch}
 
@@ -245,7 +243,7 @@ Die Inferenzzeiten wurden mittels des Scheduler\_Tick gemessen und anschließend
     \hline
 \end{longtable}
 
-Die Ende-zu-Ende-Latenz beläuft sich auf 60--80ms. Aus der Messung der einzelnen Modellinferenzzeiten wissen wir das diese ca. 44ms beträgt. Die ergenzenden 16-36ms werden demnach der Vor- bzw. Nachverarbeitung von Inferenzdaten zugeordnet.
+Die Ende-zu-Ende-Latenz beträgt 60–-80 ms. Die Analyse der einzelnen Modellinferenzzeiten zeigt, dass die reine Ausführungszeit der Modelle etwa 44 ms beträgt. Die verbleibenden 16–-36 ms sind demnach der Vor- und Nachverarbeitung der Inferenzdaten sowie weiteren Verarbeitungsschritten innerhalb der Pipeline zuzuordnen.
 
 \section{Bildrate}\label{sec:bildrate}
 
