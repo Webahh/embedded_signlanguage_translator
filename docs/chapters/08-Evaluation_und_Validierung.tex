@@ -99,10 +99,10 @@ Zeilennormierte Konfusionsmatrix: Eine normierte Variante wird unter Verwendung 
     \label{fig:confusion-matrix}
 \end{figure}
 
-Die Konfusionsmatrizen basierent auf 371.547 Testdaten zeigt eine 99,28\% Accuracy. Die Matrix zeigt verschiedene Probleme des Modells auf. \texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D, F, H, N, S, T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
+Die Konfusionsmatrizen basierend auf 371.547 Testdaten zeigt eine 99,28\% Accuracy. Die Matrix zeigt verschiedene Probleme des Modells auf. \texttt{NONE} (Klasse 0) ist mit 72,6\% die mit Abstand schwächste Klasse. Sie wird häufig mit B (\texttt{388x} | 5\%), G, M, R (jeweils ca. \texttt{275x} | 3\%), A (2\%) und D, F, H, N, S, T, W, X, SCH (jeweils ca. \texttt{50} | 1\%) verwechselt. Es werden leere/ungesehene Hände oft als Buchstaben klassifiziert.
  Die Buchstaben N und M sind sich handgeometrisch sehr ähnlich (beide Faust mit ausgestreckten Fingern) und dadurch verwechselt (N $\rightarrow$ M \texttt{198x}).
 
- Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-\-Erkennung ist mit ca. 73\% der größte Schwachpunkt. Weitere  und ausführlichere Aufschlüsselung ist im Anhang \ref{tab:confusion-matrix} zu finden.
+ Das Modell ist bis auf NONE zuverlässig (99-100\% auf 24 von 26 Klassen). Die \texttt{NONE}-\-Erkennung ist mit ca. 73\% der größte Schwachpunkt. Eine weitere und ausführlichere Aufschlüsselung ist im Anhang \ref{tab:confusion-matrix} zu finden.
  
 \subsection{Praktischer Versuch zur Erkennungsgenauigkeit}\label{sec:praktischerversuch}
 

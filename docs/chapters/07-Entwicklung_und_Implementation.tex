@@ -111,7 +111,7 @@ Der Flatten-Layer überführt den mehrdimensionalen Input-Tensor in einen eindim
 
 Der erste Dense-Layer mit 88 Neuronen verwendet die ReLU-Aktivierung (vgl.\ Abschnitt~\ref{sub:aktivierungsfunktionen}). Durch die  Gewichtsmatrix (88×88) und den Bias-Vektor wird jedes Eingabemerkmal einzeln transformiert. Die ReLU-Aktivierung fügt Nicht-Linearität hinzu und ermöglicht es dem Modell, nicht-triviale Muster in den Landmark-Daten zu erkennen. Die Wahl von 88 Neuronen hält die Kapazität zunächst auf gleicher Dimension wie der Input und zwingt das Modell, die Merkmale in einem äquivalenten Raum abzubilden, bevor eine Dimensionserweiterung erfolgt.
 
-Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25\% der Ausgaben des vorherigen Dense-Layers. Die zufällige Deaktivierung von Neuronen dient der Regularisierung und verhindert das Overfitting des Modells (vgl.\ Abschnitt~\ref{sub:overfitting}). Jedes Neuron wird mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt. \cite{yingOverviewOverfittingIts2019}
+Der Dropout-Layer (0.25) deaktiviert während des Trainings zufällig 25\% der Ausgaben des vorherigen Dense-Layers. Die zufällige Deaktivierung von Neuronen dient der Regularisierung und verhindert das Overfitting des Modells (vgl.\ Abschnitt~\ref{sub:overfitting}). Jedes Neuron wird mit einer Wahrscheinlichkeit von 0.25 auf den Wert 0 gesetzt \cite{yingOverviewOverfittingIts2019}.
 
 Der zweite Dense-layer mit 128 Neuronen und ReLU-Aktivierung erweitert den Feature-Raum von 88 auf 128 Dimensionen. Durch die Erhöhung der Kapazität kann des Modell Inter-Feature-Beziehungen modellieren, die über die per-Feature-Transformationen des vorherigen Layers hinausgehen. Typische Beziehungen umfassen:
 
@@ -129,19 +129,19 @@ Der dritte Dense-Layer mit 26 Neuronen und Softmax-Aktivierung bildet die finale
 
 Für das Training des Modells wird die Verlustfunktion Sparse Categorical Crossentropy verwendet, die bereits in Abschnitt~\ref{ssub:sparse-cce} eingeführt wurde. Sie eignet sich insbesondere, da die Zielklassen als Integer und nicht als One-Hot-Vektoren kodiert vorliegen. Die Verlustfunktion berechnet die Abweichung zwischen den tatsächlichen Klassen und den durch die Softmax-Ausgabe vorhergesagten Klassenwahrscheinlichkeiten und lässt sich durch folgende Formel beschreiben:
 $$L = -\log(p_{y_{true}})$$
-wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet. \cite{WhatSparseCategorical10:49:00+00:00}
+wobei $p_{y_{true}}$ die vom Modell vorhergesagte Wahrscheinlichkeit der tatsächlichen Klasse bezeichnet \cite{WhatSparseCategorical10:49:00+00:00}.
 
 \subsection{Trainingsprozess}\label{sub:trainingsprozess}
 
-Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden (vgl.\ Abschnitt~\ref{sub:parameter-hyperparameter}). Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch size und Early stopping.
+Um einen Trainingsprozess durchlaufen zu können müssen Hyperparameter bestimmt werden (vgl.\ Abschnitt~\ref{sub:parameter-hyperparameter}). Zentral sind Optimizer, Lernrate, Verlustfunktion, Epochen, Trainingssplit, Batch Size und frühzeitiges Stoppen.
 
-Als Optimizer wird Adam (Adaptive Moment Estimation) verwendet, dessen Funktionsweise in Abschnitt~\ref{sub:optimierung-training} erläutert wurde. Adam kombiniert die Vorteile von Momentum und adaptiven Lernraten und konvergiert dadurch in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind. \cite{a.g.TuningHyperparameterADAM2026}
+Als Optimizer wird Adam (Adaptive Moment Estimation) verwendet, dessen Funktionsweise in Abschnitt~\ref{sub:optimierung-training} erläutert wurde. Adam kombiniert die Vorteile von Momentum und adaptiven Lernraten und konvergiert dadurch in der Regel schneller und stabiler als klassische Optimierungsverfahren wie Stochastic Gradient Descent (SGD). Insbesondere bei kleinen oder mittelgroßen Datensätzen sowie komplexen neuronalen Netzen liefert Adam häufig robuste Ergebnisse, da weniger aufwendige Hyperparameteranpassungen erforderlich sind \cite{a.g.TuningHyperparameterADAM2026}.
 
 Die Lernrate (siehe Abschnitt~\ref{sub:optimierung-training}) bestimmt die Größe der Aktualisierungsschritte während der Optimierung. Eine sehr kleine Lernrate von $10^{-5}$ reduziert das Risiko, das Minimum der Verlustfunktion zu überschreiten oder instabile Trainingsverläufe zu erzeugen. Der Nachteil einer geringeren Lernrate besteht in einer längeren Trainingsdauer, die jedoch durch eine stabilere Konvergenz ausgeglichen wird.
 
 Als Verlustfunktion dient die in Abschnitt~\ref{sub:verlustfunktion} eingeführte Sparse Categorical Crossentropy. Im Gegensatz zur Categorical Crossentropy ist keine One-Hot-Kodierung der Labels erforderlich, wodurch Speicherbedarf und Vorverarbeitungsaufwand reduziert werden.
 
-Die Sparse categorical accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar (vgl.\ Abschnitt~\ref{sub:metriken}). Da die Zielklassen als Integer vorliegen, passt sie zur verwendeten Verlustfunktion Sparse categorical crossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
+Die Sparse Categorical Accuracy Metrik gibt den Anteil der korrekt klassifizierten Beispiele an und stellt damit eine leicht interpretierbare Leistungskennzahl dar (vgl.\ Abschnitt~\ref{sub:metriken}). Da die Zielklassen als Integer vorliegen, passt sie zur verwendeten Verlustfunktion Sparse Categorical Crossentropy. Während die Verlustfunktion zur Optimierung dient, ermöglicht die Accuracy eine intuitive Bewertung der Modellleistung während des Trainings und auf den Validierungsdaten.
 
 Eine Epoche entspricht einem vollständigen Durchlauf des Trainingsdatensatzes (siehe Abschnitt~\ref{sub:optimierung-training}). Die Wahl von 20 Epochen bietet dem Modell ausreichend Möglichkeiten, die zugrunde liegenden Muster zu erlernen, ohne die Trainingszeit unnötig zu verlängern. Da zusätzlich Early Stopping eingesetzt wird, dient dieser Wert als maximale Obergrenze. Das Training endet automatisch früher, sobald keine Verbesserung der Validierungsleistung mehr festgestellt wird.
 
@@ -187,7 +187,7 @@ Early Stopping dient der Vermeidung von Overfitting und beendet das Training vor
 
 \section{Quantisierung, Konvertierung und Deployment der Modelle}\label{sec:quantisierung-deployment}
 
-Das folgende Kapitel beschreibt die Quantisierung des Fingeralphabet-Modell in TensorFlow Format, die Konvertierung der Quantisierten Handdetektion-, Handlandmark- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
+Das folgende Kapitel beschreibt die Quantisierung des Fingeralphabet-Modell in TensorFlow Format, die Konvertierung der quantisierten Handdetektion-, Handlandmark- und Fingeralphabet- Modelle in NPU ausführbare Binaries. Im letzten Schritt wird das Flashen der Modelle auf den STM32N650DK beschrieben.
 
 \newpage
 \subsection{Quantisierung von Tensorflow Modellen}\label{sub:quantisierung-tf}
@@ -227,7 +227,7 @@ Für die Kalibrierung wird mit \texttt{converter.representative\_dataset} ein re
 
 Da die Zielhardware ausschließlich INT8-Operationen unterstützt, wird die Konvertierung \linebreak durch \texttt{TFLITE\_BUILTINS\_INT8} entsprechend eingeschränkt und der Ein- und Ausgabedatentyp des Modells auf 8-Bit-Ganzzahlen festgelegt. Abschließend wird das Modell mit \linebreak \texttt{converter.convert()} in das TensorFlow-Lite-Format konvertiert und als \texttt{.tflite}-Datei gespeichert. Ergebnis ist ein vollständig quantisiertes TensorFlow-Lite-Modell, das den Anforderungen der eingesetzten NPU entspricht und anschließend mit STEdgeAI in eine für das Embedded-System ausführbare Binärdatei überführt werden kann. Durch die Quantisierung werden der Speicherbedarf und der Rechenaufwand reduziert, während die Modellgenauigkeit durch die Verwendung repräsentativer Kalibrierungsdaten weitgehend erhalten bleibt.
 
-\subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded binaries}\label{sub:konvertierung}
+\subsection{Konvertierung INT8-Quantisierte-Modelle zu Embedded Binaries}\label{sub:konvertierung}
 
 Nach der Quantisierung liegen alle drei Modelle (Handdetektion, Handlandmark-Erkennung und Fingeralphabet-Klassifikation) im TensorFlow-Lite-Format mit einer INT8-Quantisierung vor. Der nächste Verarbeitungsschritt ist diese Modelle mithilfe der ST Edge AI Core CLI (Kapitel ~\ref{sub:stedge-ai}) in für die Zielhardware ausführbare Binärdateien zu überführen. Die Verwendung der Kommandozeilenschnittstelle (CLI) wurde bewusst der grafischen Benutzeroberfläche (GUI) vorgezogen, da sich hierdurch der gesamte Konvertierungsprozess automatisieren lässt. Auf diese Weise können Skripte erstellt werden, welche die Generierung aller Modellartefakte reproduzierbar und mit einem einzelnen Aufruf durchführen.
 
@@ -597,7 +597,7 @@ tatsächlich belegte Größe ist deutlich geringer.
 
 Die Modellpartitionen werden als Binärdateien (\texttt{.bin}) mit dem \texttt{STM32\_Programmer\_CLI} unter Angabe des externen Loaders \texttt{MX66UW1G45G\_STM32N6570-DK.stldr} an ihre Memory-Mapped-Adresse geschrieben und anschließend verifiziert:
 
-\begin{lstlisting}[language=bash, caption={Flashen von Modellen mittels STM32\_Programmer\_CLI}, label={lst:flash-cmd}]
+\begin{lstlisting}[language=bash, caption={Flashen von Modellen mittels STM32Programmer--CLI}, label={lst:flash-cmd}]
 STM32_Programmer_CLI -c port=SWD mode=NORMAL \
     -el MX66UW1G45G_STM32N6570-DK.stldr \
     -d hand_landmark_model_v3_atonbuf.xSPI2.bin 0x71600000 -v
@@ -884,7 +884,7 @@ Kontextmodell: Pro Task wird der vollstaendige ARM-Kontext gespeichert. Der Sche
 
 Stack-Management: Tasks erhalten einen variablen Stack, der aus einem statischen Bump-Allocator Pool mit 8192 Words (32 KB) alloziert wird. Die Stack-Grösse pro Task ist konfigurierbar (min. 144 Words, max. 2048 Words). Jeder Stack wird mit einem Canary-Muster (0xA5A5A5A5) gefüllt, um Stack-Overflows näher betrachten zu können. Der untere Stack-Schutz erfolgt über PSPLIM (Process Stack Limit Register), wobei die Guard-Zone 25\% der Stack-Groesse (64–512 Bytes) plus 32 Bytes Exception-Frame-Marge beträgt. Da der Bump-Allocator keine Deallocation unterstuetzt, wird bei einem Re-Add mit grösserer Stackanforderung der alte Block aufgegeben und ein neuer aus dem Pool allokiert.
 
-Preemption: Tasks können durch höherpriorisierte Tasks unterbrochen werden. Die Prioritäten reichen von 0 (höchste) bis 0xFF (niedrigste, Idle-Task). Die Kontextwahl erfolgt über PendSV (Pending supervisor call) mit der niedrigsten Interruptpriorität (0xFF), sodass alle anderen Interrupts zuerst abgearbeitet werden. Die Selektion des nächsten Tasks erfolgt mittels Round-Robin mit Prioritätssuche: Es wird ab dem aktuellen Task-Index zirkulär gesucht und der höchstpriorisierte bereite Task ausgewählt.
+Preemption: Tasks können durch höher priorisierte Tasks unterbrochen werden. Die Prioritäten reichen von 0 (höchste) bis 0xFF (niedrigste, Idle-Task). Die Kontextwahl erfolgt über PendSV (Pending supervisor call) mit der niedrigsten Interruptpriorität (0xFF), sodass alle anderen Interrupts zuerst abgearbeitet werden. Die Selektion des nächsten Tasks erfolgt mittels Round-Robin mit Prioritätssuche: Es wird ab dem aktuellen Task-Index zirkulär gesucht und der höchstpriorisierte bereite Task ausgewählt.
 
 \subsection{Task-Lebenszyklus (State machine)}\label{sub:task-lebenszyklus}
 
@@ -898,8 +898,8 @@ Preemption: Tasks können durch höherpriorisierte Tasks unterbrochen werden. Di
 Ein Task hat vier Zustände:
 \begin{itemize}
     \item \texttt{Deleted}: Task wartet auf Zuweisung eines Prozesses
-    \item \texttt{Ready}: Task ist Ausführbereit. Wartet auf Scheduler Auswahl.
-    \item \texttt{Blocked}: Task wartet auf Ablauf seiner scheduling Periode
+    \item \texttt{Ready}: Task ist ausführbereit. Wartet auf Scheduler Auswahl.
+    \item \texttt{Blocked}: Task wartet auf Ablauf seiner Scheduling-Periode
     \item \texttt{Suspended}: Task wird an der Ausführung gehindert  bis ein externes Event diesen fortsetzt (z.B. DMA2D pausiert Task bis die Speicheroperation vollendet ist).
 \end{itemize}
 
@@ -907,7 +907,7 @@ Ein Task hat vier Zustände:
 
 \subsection{Interrupt-Hierrarchie \& Context Switching}\label{sub:interrupt-hierarchie}
 
-Die Kontextwahl ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 zu drei Zeitpunken: Dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentliche Kontextwächsel via PendSV\_Handler.
+Die Kontextwahl ist der Kernmechanismus des Schedulers und erfolgt auf ARM Cortex-M55 zu drei Zeitpunken: Dem anfänglichen Bootstrap des ersten Tasks, der periodischen Tick-gesteuerten Aktivierung via TIM7\_IRQHandler, und der eigentliche Kontextwechsel via \linebreak PendSV\_Handler.
 
 \newpage
 
@@ -949,7 +949,7 @@ SCHEDULER_Tasks_run()
 \end{lstlisting}
 
 \subsubsection{Periodische Aktivierung (Tim7\_IRQhandler)}\label{ssub:tim7-irq}
-Jede Millisekunde löst der TIM7-Interrupt aus und steuert den Scheduling-Ablauf. Jeder registrierte Task welcher nicht \texttt{TaskDeleted} oder \texttt{TaskSuspended} ist wird auf Ablauf des Ausführungs Intervalls geprüft. Ein Task dessen Intervall abgelaufen ist wird in \texttt{TaskReady} Zustand versetzt. Dies ist notwendig um den Task für den scheduling Algorithmus auswählbar zu machen. Im Anschluss wird die PendSV Ausführung angefordert.
+Jede Millisekunde löst der TIM7-Interrupt aus und steuert den Scheduling-Ablauf. Jeder registrierte Task welcher nicht \texttt{TaskDeleted} oder \texttt{TaskSuspended} ist wird auf Ablauf des Ausführungsintervalls geprüft. Ein Task dessen Intervall abgelaufen ist wird in den \texttt{TaskReady} Zustand versetzt. Dies ist notwendig um den Task für den Scheduling-Algorithmus auswählbar zu machen. Im Anschluss wird die PendSV Ausführung angefordert.
 
 PendSV wird nicht sofort ausgeführt, sondern läuft erst, wenn alle anderen ISRs abgearbeitet sind.
 
@@ -972,11 +972,11 @@ PendSV\_Handler:
        TCB->saved_exc_return = lr                             
     6. _Task_SelectNext() aufrufen (C-Funktion):              
        |- Scannt alle Tasks (Round-Robin ab _task_current+1)
-       |- Waehlt hoechstpriorisierten TaskReady-Task
+       |- Wählt höchstpriorisierten TaskReady-Task
        |- Falls keiner bereit: IDLE_TASK (Slot 8)
        |- Aktualisiert CPU-Zyklen-Statistiken:
             - Vorherigen Task: total_cycles += active_cycles
-            - Preemption-Zaehler erhoehen (falls Taskwechsel)  
+            - Preemption-Zähler erhöhen (falls Taskwechsel)  
             - Naechsten Task: invocations++, start_cycle setzen
        \- Gibt Index des naechsten Tasks zurueck
     7. _task_current = neuer Index
@@ -992,11 +992,11 @@ PendSV\_Handler:
     14. PSP auf neuen Stack setzen
     15. IRQs aktivieren
     16. bx lr                                                  
-       -> EXC_RETURN fuehrt zur Task-Rueckkehr:
+       -> EXC_RETURN führt zur Task-Rückkehr:
             - Thread-Modus
             - PSP als Stack-Pointer
             - Stack-Frame automatisch popped (R0-R3,R12,LR,PC)
-            - CPU springt zu PC (naechste Instruktion des Tasks)
+            - CPU springt zu PC (nächste Instruktion des Tasks)
 
 \end{lstlisting}
 
@@ -1051,7 +1051,7 @@ Die Messung erfolgt bei jedem Context-Switch im \texttt{\_Task\_SelectNext()}: D
 Um Interrupt-Zyklen sauber von Task-Zyklen zu trennen, muss jede Peripheral-ISR am Ein- und Ausgang die Funktionen \texttt{SCHEDULER\_ISR\_enter()} und \linebreak \texttt{SCHEDULER\_ISR\_exit()} aufrufen. Bei Einstieg wird der aktuelle \texttt{DWT->CYCCNT}-Wert gespeichert. Bei Ausgang wird die Differenz berechnet und dem unterbrochenen Task in \linebreak \texttt{\_task\_isr\_cycles} zugeordnet.
 
 \paragraph{Ausgabe}
-Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit Informationen zu den ausgeführten Tasks. Sie enthält den Namen, die Anzahl der Insgesamt verwendeten CPU-Zyklen sowie die minimale, maximale und durchschnittliche Anzahl an CPU-Zyklen bis zur Beendigung des Tasks, den Aktiv-Anteil in Prozent an der verwendeten CPU-Zeit, die Anzahl der Unterbrechung durch andere Tasks und die Anzahl der Aufrufe des Tasks im Zeitraum. Zusätzlich werden ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jeder Ausgabe zurückgesetzt.
+Alle 1000\,ms, getriggert durch den \texttt{TIM7\_IRQHandler}, wird \texttt{\_stats\_pending} gesetzt und im Idle-Task die Funktion \texttt{\_PrintStats()} aufgerufen. Diese erzeugt eine tabellarische Ausgabe mit Informationen zu den ausgeführten Tasks. Sie enthält den Namen, die Anzahl der insgesamt verwendeten CPU-Zyklen sowie die minimale, maximale und durchschnittliche Anzahl an CPU-Zyklen bis zur Beendigung des Tasks, den Aktiv-Anteil in Prozent an der verwendeten CPU-Zeit, die Anzahl der Unterbrechung durch andere Tasks und die Anzahl der Aufrufe des Tasks im Zeitraum. Zusätzlich werden ISR-Overhead und die CPU-Auslastung in Prozent ausgegeben. Die Statistik wird nach jeder Ausgabe zurückgesetzt.
 
 \section{Integration der NPU und einheitliche KI-Schnittstelle}\label{sec:npu-integration}
 
@@ -1305,7 +1305,7 @@ Die Farben sind wie folgt definiert: Verbindungslinien in Grün, Landmark-Marker
 
 \subsubsection{Fingeralphabetmodell}\label{ssub:darstellung-fingeralphabet}
 
-Das Ergebnis des Fingeralphabetmodell wird über \texttt{USART} und als Textbox auf dem Display ausgegeben.
+Das Ergebnis des Fingeralphabetmodell wird über \texttt{USART} und als Textbox auf dem Display ausgegeben. Ist kein gültiges Inferenzergebnis vorliegt wird statt des Ergebnisses \linebreak \texttt{SEARCHING...} angezeigt.
 
 \subsection{Benutzeroberfläche und Bedienung}\label{sub:benutzeroberflaeche}
 
@@ -1367,7 +1367,7 @@ Composite (Kontrollpanel): Kombiniert ein Beschriftungsfeld, ein Augen-Symbol zu
 
 Die Eingabe erfolgt über einen Goodix GT911 kapazitiven Touch-Controller, der über den I2C-Bus (I2C2) mit dem Mikrocontroller kommuniziert.
 
-Konfiguration: Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \linebreak \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird eine Prüfsumme berechnet um die Korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
+Konfiguration: Der GT911 wird über einen 248\,Byte langen Konfigurationsblock (Register \linebreak \texttt{0x8047} bis \texttt{0x80FF}) initialisiert. Die Auflösung wird auf 800$\times$480\,Pixel gesetzt, um die Displayauflösung abzubilden. Das MSW1-Register wird auf \texttt{0x0C} gesetzt, wodurch die X- und Y-Achsen invertiert werden, um die physische Display-Orientierung zu korrigieren. Nach dem Schreiben der Konfiguration wird eine Prüfsumme berechnet um die korrekte Konfiguration zu verifizieren und Konfigurationsfehler zu tracken.
 
 Interruptgestützte Erfassung: Bei Berührung der Displayfläche löst der GT911 einen steigenden Flanken-Interrupt über PQ4 aus. Im Interrupt-Handler (\texttt{EXTI4\_IRQHandler}) wird über I2C der Touch-Status gelesen, der die Anzahl der berührenden Finger (0--5) angibt. Bei mindestens einer Berührung werden die 12-Bit-Koordinaten der ersten Berührung aus den Registern gelesen und in statischen Variablen abgelegt. Anschließend wird eine Pending-Flag gesetzt.
 
